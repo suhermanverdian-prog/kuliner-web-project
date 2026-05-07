@@ -555,76 +555,53 @@ app.put('/api/po/:id', (req, res) => {
   writeDB(db); res.json(existingPo);
 });
 
-// ---- LOCATIONS ----
-app.get('/api/locations', (req, res) => res.json(readDB().locations || []));
-app.post('/api/locations', (req, res) => {
-  const db = readDB();
-  const item = { ...req.body, id: Date.now() };
-  db.locations = db.locations || [];
-  db.locations.push(item);
-  writeDB(db);
-  res.json(item);
+app.get('/api/locations', async (req, res) => {
+  const { data, error } = await supabase.from('locations').select('*').order('name');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
 });
-app.delete('/api/locations/:id', (req, res) => {
-  const db = readDB();
-  if (db.locations) {
-    db.locations = db.locations.filter(l => l.id !== Number(req.params.id));
-    writeDB(db);
-  }
+app.post('/api/locations', async (req, res) => {
+  const { data, error } = await supabase.from('locations').insert([req.body]).select();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data[0]);
+});
+app.delete('/api/locations/:id', async (req, res) => {
+  const { error } = await supabase.from('locations').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true });
 });
 
 // ---- STOCK TRANSFER ----
-app.post('/api/stock-transfer', (req, res) => {
-  const db = readDB();
+app.post('/api/stock-transfer', async (req, res) => {
   const { bahanId, fromLocation, toLocation, qty } = req.body;
   const quantity = Number(qty);
+  
+  const { data: source, error: e1 } = await supabase.from('bahan').select('*').eq('id', bahanId).single();
+  if (e1 || !source) return res.status(404).json({ error: 'Bahan tidak ditemukan' });
+  
+  await supabase.from('bahan').update({ stock: source.stock - quantity }).eq('id', bahanId);
 
-  // Find source item
-  const sourceItem = db.bahan.find(b => b.id === Number(bahanId) && b.location === fromLocation);
-  if (!sourceItem) return res.status(404).json({ error: 'Bahan di lokasi asal tidak ditemukan' });
-  if (sourceItem.stock < quantity) return res.status(400).json({ error: 'Stok tidak cukup di lokasi asal' });
+  const { data: target, error: e2 } = await supabase.from('bahan')
+    .select('*').eq('name', source.name).eq('location', toLocation).single();
 
-  // Find destination item or create new one
-  let destItem = db.bahan.find(b => b.name === sourceItem.name && b.location === toLocation);
-  if (!destItem) {
-    destItem = {
-      ...sourceItem,
-      id: Date.now() + Math.floor(Math.random() * 1000),
-      stock: 0,
-      location: toLocation
-    };
-    db.bahan.push(destItem);
+  if (target) {
+    await supabase.from('bahan').update({ stock: target.stock + quantity }).eq('id', target.id);
+  } else {
+    const { id, ...rest } = source;
+    await supabase.from('bahan').insert([{ ...rest, location: toLocation, stock: quantity }]);
   }
-
-  // Perform transfer
-  sourceItem.stock -= quantity;
-  destItem.stock += quantity;
-
-  // Record transaction for audit (optional but good for stock opname)
-  const transferLog = {
-    id: Date.now(),
-    type: 'Transfer',
-    bahanId,
-    bahanName: sourceItem.name,
-    fromLocation,
-    toLocation,
-    qty: quantity,
-    date: new Date().toISOString()
-  };
-  db.transactions = db.transactions || [];
-  db.transactions.push(transferLog);
-
-  writeDB(db);
-  res.json({ ok: true, source: sourceItem, dest: destItem });
+  res.json({ ok: true });
 });
 
 // ---- INVENTORY META ----
-app.get('/api/inventory/meta', (req, res) => res.json(readDB().inventory_meta));
-app.post('/api/inventory/meta', (req, res) => {
-  const db = readDB();
-  db.inventory_meta = req.body;
-  writeDB(db);
+app.get('/api/inventory/meta', async (req, res) => {
+  const { data, error } = await supabase.from('inventory_meta').select('*').single();
+  if (error) return res.json({ categories: [], packageUnits: [], itemUnits: [] });
+  res.json(data);
+});
+app.post('/api/inventory/meta', async (req, res) => {
+  const { data, error } = await supabase.from('inventory_meta').upsert({ id: 1, ...req.body }).select();
+  if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true });
 });
 
