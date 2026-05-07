@@ -77,50 +77,50 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
   const totalVolumeText = form.packageItemsCount && form.packageItemVolume ? `${form.packageItemsCount} ${form.packageItemUnit} (${Number(form.packageItemsCount) * Number(form.packageItemVolume)} ${form.packageItemVolumeUnit})` : '-';
 
   return (
-    <div className="modal-overlay" style={{ zIndex: 9999, overflowY: 'auto', padding: '20px 0' }} onClick={onClose}>
-      <div className="modal" style={{ maxWidth: '1000px', width: '95%', maxHeight: '90vh', background: '#f8fafc', padding: 0, display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" style={{ zIndex: 9999 }} onClick={onClose}>
+      <div className="modal" style={{ maxWidth: '1000px', width: '95%', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
         
         {/* Header */}
-        <div style={{ padding: '20px 24px', background: '#fff', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '12px 12px 0 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ background: '#e0e7ff', color: '#4f46e5', width: '40px', height: '40px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+        <div className="modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ background: 'var(--accent-light)', color: 'var(--primary-dark)', width: '48px', height: '48px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', box_shadow: 'var(--shadow-sm)' }}>
               📦
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>{initialData ? 'Edit Barang' : 'Tambah Barang'}</h2>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>{initialData ? 'Ubah data barang inventori' : 'Tambahkan barang baru ke inventori'}</p>
+              <h2 className="modal-title">{initialData ? 'Ubah Master Barang' : 'Tambah Barang Baru'}</h2>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>{initialData ? 'Perbarui informasi stok dan harga barang' : 'Masukkan data inventori ke dalam sistem'}</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>✕</button>
+          <button className="modal-close" onClick={onClose}>✕</button>
         </div>
 
         {/* Body (Scrollable Grid) */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', padding: '24px', flex: 1, overflowY: 'auto' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '32px', padding: '32px', flex: 1, overflowY: 'auto', background: 'white' }}>
           
           {/* Left Column (Forms) */}
-          <div style={{ flex: '1 1 500px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div style={{ flex: '1 1 500px', display: 'flex', flexDirection: 'column', gap: '40px' }}>
             
             {/* Step 1: Info */}
             <section>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <span style={{ background: '#6366f1', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>1</span>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Informasi Barang</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <span style={{ background: 'var(--primary)', color: '#fff', borderRadius: '8px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: '800' }}>1</span>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--primary-dark)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>Informasi Dasar</h3>
               </div>
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: '200px' }}>
-                  <label className="form-label">Nama Barang <span style={{color:'red'}}>*</span></label>
-                  <input className="form-control" placeholder="Contoh: Sirup ABC" value={form.name} onChange={e => setForm({...form, name: e.target.value})} style={{ background: '#fff' }} />
+              <div className="grid-2 mb-4">
+                <div className="form-group">
+                  <label className="form-label">Nama Barang <span style={{color:'var(--danger)'}}>*</span></label>
+                  <input className="form-control" placeholder="cth: Biji Kopi Arabica" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
                 </div>
-                <div style={{ flex: 1, minWidth: '200px' }}>
-                  <label className="form-label">Kategori <span style={{color:'red'}}>*</span></label>
-                  <select className="form-control" value={form.category} onChange={e => setForm({...form, category: e.target.value})} style={{ background: '#fff' }}>
+                <div className="form-group">
+                  <label className="form-label">Kategori <span style={{color:'var(--danger)'}}>*</span></label>
+                  <select className="form-control" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
               </div>
-              <div style={{ flex: 1 }}>
-                <label className="form-label">Lokasi Penyimpanan <span style={{color:'red'}}>*</span></label>
-                <select className="form-control" value={form.location} onChange={e => setForm({...form, location: e.target.value})} style={{ background: '#fff' }}>
+              <div className="form-group">
+                <label className="form-label">Lokasi Gudang <span style={{color:'var(--danger)'}}>*</span></label>
+                <select className="form-control" value={form.location} onChange={e => setForm({...form, location: e.target.value})}>
                   {locations.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
                 </select>
               </div>
@@ -128,24 +128,18 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
 
             {/* Step 2: Jenis */}
             <section>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <span style={{ background: '#6366f1', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>2</span>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Jenis Penyimpanan</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <span style={{ background: 'var(--primary)', color: '#fff', borderRadius: '8px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: '800' }}>2</span>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--primary-dark)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>Model Penyimpanan</h3>
               </div>
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                <div onClick={() => setForm({...form, storageType: 'Satuan Biasa'})} style={{ flex: 1, minWidth: '250px', padding: '16px', background: form.storageType === 'Satuan Biasa' ? '#f0f5ff' : '#fff', border: form.storageType === 'Satuan Biasa' ? '2px solid #6366f1' : '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '12px' }}>
-                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: form.storageType === 'Satuan Biasa' ? '6px solid #6366f1' : '2px solid #cbd5e1', flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#1e293b' }}>Satuan Biasa</div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Untuk barang yang dijual per pcs, gram, liter, dll.</div>
-                  </div>
+              <div className="grid-2">
+                <div onClick={() => setForm({...form, storageType: 'Satuan Biasa'})} style={{ padding: '20px', background: form.storageType === 'Satuan Biasa' ? 'rgba(74, 43, 29, 0.05)' : '#fff', border: form.storageType === 'Satuan Biasa' ? '2px solid var(--primary)' : '2px solid var(--border-light)', borderRadius: '16px', cursor: 'pointer', transition: 'var(--transition)' }}>
+                  <div style={{ fontWeight: '800', marginBottom: '6px', color: 'var(--primary-dark)', fontSize: '1rem' }}>📦 Satuan Eceran</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>Cocok untuk barang yang digunakan per satuan kecil (pcs, gr, ml).</div>
                 </div>
-                <div onClick={() => setForm({...form, storageType: 'Kemasan'})} style={{ flex: 1, minWidth: '250px', padding: '16px', background: form.storageType === 'Kemasan' ? '#f0f5ff' : '#fff', border: form.storageType === 'Kemasan' ? '2px solid #6366f1' : '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '12px' }}>
-                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: form.storageType === 'Kemasan' ? '6px solid #6366f1' : '2px solid #cbd5e1', flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#1e293b' }}>Kemasan (Karton/Dus)</div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Untuk barang yang dijual per karton/dus isi beberapa unit.</div>
-                  </div>
+                <div onClick={() => setForm({...form, storageType: 'Kemasan'})} style={{ padding: '20px', background: form.storageType === 'Kemasan' ? 'rgba(74, 43, 29, 0.05)' : '#fff', border: form.storageType === 'Kemasan' ? '2px solid var(--primary)' : '2px solid var(--border-light)', borderRadius: '16px', cursor: 'pointer', transition: 'var(--transition)' }}>
+                  <div style={{ fontWeight: '800', marginBottom: '6px', color: 'var(--primary-dark)', fontSize: '1rem' }}>🍱 Model Kemasan</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>Cocok untuk barang grosir (Karton/Dus) yang berisi banyak unit.</div>
                 </div>
               </div>
             </section>
@@ -153,271 +147,159 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
             {/* Step 3: Satuan & Stok */}
             {form.storageType === 'Satuan Biasa' ? (
               <section>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                  <span style={{ background: '#6366f1', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>3</span>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Satuan & Stok</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                  <span style={{ background: 'var(--primary)', color: '#fff', borderRadius: '8px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: '800' }}>3</span>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--primary-dark)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>Persediaan & Harga</h3>
                 </div>
-                <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: '150px' }}>
-                      <label className="form-label">Satuan <span style={{color:'red'}}>*</span></label>
+                <div style={{ background: '#FDFBF9', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                  <div className="grid-3 mb-4">
+                    <div className="form-group">
+                      <label className="form-label">Satuan</label>
                       <select className="form-control" value={form.unit} onChange={e => setForm({...form, unit: e.target.value})}>
                         {itemUnits.map(u => <option key={u} value={u}>{u}</option>)}
                       </select>
                     </div>
-                    <div style={{ flex: 1, minWidth: '150px' }}>
-                      <label className="form-label">Jumlah Stok <span style={{color:'red'}}>*</span></label>
-                      <div style={{ display: 'flex' }}>
-                        <input type="number" className="form-control" style={{ borderRadius: '6px 0 0 6px', borderRight: 'none' }} value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} />
-                        <span style={{ padding: '8px 12px', background: '#f1f5f9', border: '1px solid var(--border)', borderRadius: '0 6px 6px 0', color: '#64748b' }}>{form.unit}</span>
-                      </div>
+                    <div className="form-group">
+                      <label className="form-label">Stok Saat Ini</label>
+                      <input type="number" className="form-control" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} />
                     </div>
-                    <div style={{ flex: 1, minWidth: '150px' }}>
-                      <label className="form-label">Stok Minimum <span style={{color:'red'}}>*</span></label>
-                      <div style={{ display: 'flex' }}>
-                        <input type="number" className="form-control" style={{ borderRadius: '6px 0 0 6px', borderRight: 'none' }} value={form.minStock} onChange={e => setForm({...form, minStock: e.target.value})} />
-                        <span style={{ padding: '8px 12px', background: '#f1f5f9', border: '1px solid var(--border)', borderRadius: '0 6px 6px 0', color: '#64748b' }}>{form.unit}</span>
-                      </div>
+                    <div className="form-group">
+                      <label className="form-label">Batas Aman</label>
+                      <input type="number" className="form-control" value={form.minStock} onChange={e => setForm({...form, minStock: e.target.value})} />
                     </div>
                   </div>
-                  <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '6px', fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: '#6366f1' }}>ℹ️</span> Stok akan dihitung dalam satuan: <strong>{form.unit}</strong>
+                  <div className="form-group">
+                    <label className="form-label">Harga Beli per {form.unit}</label>
+                    <div style={{ position: 'relative' }}>
+                      <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontWeight: '800', color: 'var(--primary)' }}>Rp</span>
+                      <input type="number" className="form-control" style={{ paddingLeft: '48px' }} value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
+                    </div>
                   </div>
                 </div>
               </section>
             ) : (
               <section>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                  <span style={{ background: '#6366f1', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>3</span>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Detail Kemasan</h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                  <span style={{ background: 'var(--primary)', color: '#fff', borderRadius: '8px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: '800' }}>3</span>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--primary-dark)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>Detail Kemasan Grosir</h3>
                 </div>
                 
-                <div style={{ background: '#faf5ff', padding: '20px', borderRadius: '8px', border: '1px solid #e9d5ff', marginBottom: '16px' }}>
-                  <div style={{ fontWeight: 'bold', color: '#6b21a8', marginBottom: '12px', fontSize: '0.9rem' }}>A. Kemasan (Satuan Besar)</div>
-                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <label className="form-label">Satuan Kemasan <span style={{color:'red'}}>*</span></label>
-                      <select className="form-control" value={form.packageUnit} onChange={e => setForm({...form, packageUnit: e.target.value})} style={{ background: '#fff' }}>
+                <div style={{ background: '#FDFBF9', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '20px' }}>
+                  <div className="grid-2 mb-4">
+                    <div className="form-group">
+                      <label className="form-label">Satuan Kemasan</label>
+                      <select className="form-control" value={form.packageUnit} onChange={e => setForm({...form, packageUnit: e.target.value})}>
                         {packageUnits.map(u => <option key={u} value={u}>{u}</option>)}
                       </select>
                     </div>
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <label className="form-label">Jumlah Kemasan (Stok) <span style={{color:'red'}}>*</span></label>
-                      <div style={{ display: 'flex' }}>
-                        <input type="number" className="form-control" style={{ background: '#fff', borderRadius: '6px 0 0 6px', borderRight: 'none' }} value={form.packageStock} onChange={e => setForm({...form, packageStock: e.target.value})} />
-                        <span style={{ padding: '8px 12px', background: '#f3e8ff', border: '1px solid #e9d5ff', borderRadius: '0 6px 6px 0', color: '#6b21a8' }}>{form.packageUnit}</span>
-                      </div>
+                    <div className="form-group">
+                      <label className="form-label">Stok Kemasan</label>
+                      <input type="number" className="form-control" value={form.packageStock} onChange={e => setForm({...form, packageStock: e.target.value})} />
+                    </div>
+                  </div>
+                  <div className="grid-2">
+                    <div className="form-group">
+                      <label className="form-label">Harga Beli per {form.packageUnit}</label>
+                      <input type="number" className="form-control" value={form.packagePrice} onChange={e => setForm({...form, packagePrice: e.target.value})} />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Batas Aman</label>
+                      <input type="number" className="form-control" value={form.packageMinStock} onChange={e => setForm({...form, packageMinStock: e.target.value})} />
                     </div>
                   </div>
                 </div>
 
-                <div style={{ background: '#f0f9ff', padding: '20px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
-                  <div style={{ fontWeight: 'bold', color: '#0369a1', marginBottom: '12px', fontSize: '0.9rem' }}>B. Isi per Kemasan (Satuan Kecil)</div>
-                  <div style={{ display: 'flex', gap: '16px', marginBottom: '12px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: '120px' }}>
-                      <label className="form-label">Isi per Kemasan <span style={{color:'red'}}>*</span></label>
-                      <div style={{ display: 'flex' }}>
-                        <input type="number" className="form-control" style={{ background: '#fff', borderRadius: '6px 0 0 6px', borderRight: 'none' }} value={form.packageItemsCount} onChange={e => setForm({...form, packageItemsCount: e.target.value})} />
-                        <span style={{ padding: '8px 12px', background: '#e0f2fe', border: '1px solid #bae6fd', borderRadius: '0 6px 6px 0', color: '#0369a1' }}>Unit</span>
-                      </div>
+                <div style={{ background: 'rgba(212, 154, 77, 0.03)', padding: '24px', borderRadius: '16px', border: '1px dashed var(--accent)' }}>
+                  <div style={{ fontWeight: '800', color: 'var(--primary-dark)', marginBottom: '16px', fontSize: '0.9rem' }}>📦 Konversi ke Satuan Eceran</div>
+                  <div className="grid-3">
+                    <div className="form-group">
+                      <label className="form-label">Isi per {form.packageUnit}</label>
+                      <input type="number" className="form-control" value={form.packageItemsCount} onChange={e => setForm({...form, packageItemsCount: e.target.value})} />
                     </div>
-                    <div style={{ flex: 1, minWidth: '120px' }}>
-                      <label className="form-label">Satuan Isi <span style={{color:'red'}}>*</span></label>
-                      <select className="form-control" value={form.packageItemUnit} onChange={e => setForm({...form, packageItemUnit: e.target.value})} style={{ background: '#fff' }}>
+                    <div className="form-group">
+                      <label className="form-label">Satuan Isi</label>
+                      <select className="form-control" value={form.packageItemUnit} onChange={e => setForm({...form, packageItemUnit: e.target.value})}>
                         {itemUnits.map(u => <option key={u} value={u}>{u}</option>)}
                       </select>
                     </div>
-                    <div style={{ flex: 1, minWidth: '150px' }}>
-                      <label className="form-label">Volume per Isi <span style={{color:'red'}}>*</span></label>
-                      <div style={{ display: 'flex' }}>
-                        <input type="number" className="form-control" style={{ background: '#fff', borderRadius: '6px 0 0 6px', borderRight: 'none' }} value={form.packageItemVolume} onChange={e => setForm({...form, packageItemVolume: e.target.value})} />
-                        <select className="form-control" style={{ background: '#fff', borderRadius: '0 6px 6px 0', borderLeft: 'none', width: '70px', padding: '8px' }} value={form.packageItemVolumeUnit} onChange={e => setForm({...form, packageItemVolumeUnit: e.target.value})}>
+                    <div className="form-group">
+                      <label className="form-label">Netto/Isi</label>
+                      <div className="flex">
+                        <input type="number" className="form-control" style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }} value={form.packageItemVolume} onChange={e => setForm({...form, packageItemVolume: e.target.value})} />
+                        <select className="form-control" style={{ width: '80px', borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: 'none' }} value={form.packageItemVolumeUnit} onChange={e => setForm({...form, packageItemVolumeUnit: e.target.value})}>
                           <option value="ml">ml</option>
                           <option value="gr">gr</option>
-                          <option value="L">L</option>
                         </select>
                       </div>
                     </div>
-                  </div>
-                  <div style={{ background: '#dcfce7', padding: '10px 12px', borderRadius: '6px', fontSize: '0.85rem', color: '#166534', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>✔️</span> Total per kemasan: <strong>{totalVolumeText}</strong>
                   </div>
                 </div>
               </section>
             )}
 
-            {/* Step 4: Harga */}
-            <section>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <span style={{ background: '#6366f1', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>4</span>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Harga</h3>
+            {/* Step 4: Opsional */}
+            <section style={{ paddingBottom: '40px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <span style={{ background: 'var(--primary)', color: '#fff', borderRadius: '8px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: '800' }}>4</span>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--primary-dark)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>Data Tambahan (Opsional)</h3>
               </div>
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                {form.storageType === 'Satuan Biasa' ? (
-                  <div style={{ flex: 1, minWidth: '200px' }}>
-                    <label className="form-label">Harga per Unit <span style={{color:'red'}}>*</span></label>
-                    <div style={{ display: 'flex' }}>
-                      <span style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid var(--border)', borderRadius: '6px 0 0 6px', color: '#64748b' }}>Rp</span>
-                      <input type="number" className="form-control" style={{ background: '#fff', borderRadius: '0 6px 6px 0', borderLeft: 'none' }} value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ flex: 1, minWidth: '200px' }}>
-                      <label className="form-label">Harga per Kemasan <span style={{color:'red'}}>*</span></label>
-                      <div style={{ display: 'flex' }}>
-                        <span style={{ padding: '8px 12px', background: '#f8fafc', border: '1px solid var(--border)', borderRadius: '6px 0 0 6px', color: '#64748b' }}>Rp</span>
-                        <input type="number" className="form-control" style={{ background: '#fff', borderRadius: '0 6px 6px 0', borderLeft: 'none' }} value={form.packagePrice} onChange={e => setForm({...form, packagePrice: e.target.value})} />
-                      </div>
-                    </div>
-                    <div style={{ flex: 1, minWidth: '200px', background: '#f0fdf4', padding: '16px', borderRadius: '8px', border: '1px solid #bbf7d0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                      <div style={{ fontSize: '0.8rem', color: '#16a34a', marginBottom: '4px' }}>Harga per Unit (Otomatis)</div>
-                      <div style={{ fontWeight: 'bold', color: '#15803d', fontSize: '1.1rem' }}>{formatRupiah(calculatedUnitPrice)} / {form.packageItemUnit}</div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </section>
-
-            {/* Step 5: Info Tambahan */}
-            <section style={{ paddingBottom: '20px' }}>
-              {form.storageType === 'Kemasan' && (
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                    <span style={{ background: '#6366f1', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>5</span>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Stok Minimum</h3>
-                  </div>
-                  <div style={{ maxWidth: '300px' }}>
-                    <label className="form-label">Stok Minimum <span style={{color:'red'}}>*</span></label>
-                    <div style={{ display: 'flex' }}>
-                      <input type="number" className="form-control" style={{ background: '#fff', borderRadius: '6px 0 0 6px', borderRight: 'none' }} value={form.packageMinStock} onChange={e => setForm({...form, packageMinStock: e.target.value})} />
-                      <span style={{ padding: '8px 12px', background: '#f1f5f9', border: '1px solid var(--border)', borderRadius: '0 6px 6px 0', color: '#64748b' }}>{form.packageUnit}</span>
-                    </div>
-                    <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '4px' }}>Akan muncul peringatan jika stok kemasan ≤ minimum</p>
-                  </div>
+              <div className="grid-2 mb-4">
+                <div className="form-group">
+                  <label className="form-label">Merek</label>
+                  <input className="form-control" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
                 </div>
-              )}
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <span style={{ background: '#6366f1', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>{form.storageType === 'Kemasan' ? '6' : '5'}</span>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Informasi Tambahan (Opsional)</h3>
-              </div>
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: '200px' }}>
-                  <label className="form-label">Merek / Brand</label>
-                  <input className="form-control" placeholder="Contoh: Gulaku" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} style={{ background: '#fff' }} />
-                </div>
-                <div style={{ flex: 1, minWidth: '200px' }}>
-                  <label className="form-label">Barcode / SKU</label>
-                  <input className="form-control" placeholder="Contoh: 8991234567890" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} style={{ background: '#fff' }} />
+                <div className="form-group">
+                  <label className="form-label">SKU / Barcode</label>
+                  <input className="form-control" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} />
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: '200px' }}>
-                  <label className="form-label">Tanggal Kadaluarsa</label>
-                  <input type="date" className="form-control" value={form.expiryDate} onChange={e => setForm({...form, expiryDate: e.target.value})} style={{ background: '#fff' }} />
-                </div>
-                <div style={{ flex: 1, minWidth: '200px' }}>
-                  <label className="form-label">Catatan</label>
-                  <input className="form-control" placeholder="Catatan tambahan" value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} style={{ background: '#fff' }} />
-                </div>
+              <div className="form-group">
+                <label className="form-label">Tanggal Kadaluarsa</label>
+                <input type="date" className="form-control" value={form.expiryDate} onChange={e => setForm({...form, expiryDate: e.target.value})} />
               </div>
             </section>
           </div>
 
-          {/* Right Column (Summary Sidebar) */}
-          <div style={{ flex: '0 0 300px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '24px', position: 'sticky', top: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px dashed #cbd5e1' }}>
-                <span style={{ fontSize: '1.2rem' }}>📋</span>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b' }}>Ringkasan Barang</h3>
-              </div>
-
+          {/* Right Column (Live Preview) */}
+          <div style={{ flex: '0 0 320px' }}>
+            <div className="card" style={{ position: 'sticky', top: 0, padding: '24px', border: '1px solid var(--accent-light)', background: 'linear-gradient(180deg, #fff, var(--bg))' }}>
               <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <h2 style={{ margin: '0 0 8px 0', fontSize: '1.3rem', color: '#0f172a' }}>{form.name || 'Nama Barang'}</h2>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                  <span style={{ padding: '4px 12px', background: '#f3e8ff', color: '#6b21a8', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 'bold' }}>{form.category}</span>
-                  {form.storageType === 'Kemasan' && (
-                    <span style={{ padding: '4px 12px', background: '#dcfce7', color: '#166534', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 'bold' }}>Kemasan</span>
-                  )}
+                <div style={{ width: '64px', height: '64px', background: 'var(--bg)', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', margin: '0 auto 16px', border: '2px solid white', boxShadow: 'var(--shadow-sm)' }}>
+                  📦
                 </div>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--primary-dark)', fontWeight: 800 }}>{form.name || 'Nama Barang'}</h4>
+                <div className="badge badge-brown mt-2">{form.category}</div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                  <span>Jenis Penyimpanan</span>
-                  <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{form.storageType}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted">Total Stok</span>
+                  <span className="font-bold">
+                    {form.storageType === 'Kemasan' ? `${form.packageStock || 0} ${form.packageUnit}` : `${form.stock || 0} ${form.unit}`}
+                  </span>
                 </div>
-                
-                {form.storageType === 'Satuan Biasa' ? (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>Satuan</span>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{form.unit}</span>
-                    </div>
-                    <div style={{ height: '1px', background: '#e2e8f0', margin: '8px 0' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>Stok</span>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{form.stock || 0} {form.unit}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>Stok Minimum</span>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{form.minStock || 0} {form.unit}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>Harga per Unit</span>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{formatRupiah(form.price)} / {form.unit}</span>
-                    </div>
-                    
-                    <div style={{ marginTop: '16px', background: '#f0fdf4', padding: '12px', borderRadius: '8px', display: 'flex', gap: '8px', color: '#166534', alignItems: 'flex-start' }}>
-                      <span>✔️</span>
-                      <div style={{fontSize:'0.75rem'}}>Stok akan dihitung dalam satuan {form.unit.toLowerCase()}.</div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>Kemasan</span>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>1 {form.packageUnit}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>Isi per Kemasan</span>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{form.packageItemsCount || 0} {form.packageItemUnit}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>Volume per Isi</span>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{form.packageItemVolume || 0} {form.packageItemVolumeUnit}</span>
-                    </div>
-                    <div style={{ height: '1px', background: '#e2e8f0', margin: '8px 0' }} />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>Total per Kemasan</span>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{totalVolumeText}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', marginTop: '8px' }}>
-                      <span>Harga per Kemasan</span>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{formatRupiah(form.packagePrice)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
-                      <span>Harga per Unit</span>
-                      <span style={{ fontWeight: 'bold', color: '#16a34a' }}>{formatRupiah(calculatedUnitPrice)} / {form.packageItemUnit}</span>
-                    </div>
-
-                    <div style={{ marginTop: '16px', background: '#f0fdf4', padding: '12px', borderRadius: '8px', display: 'flex', gap: '8px', color: '#166534', alignItems: 'flex-start' }}>
-                      <span>✔️</span>
-                      <div style={{fontSize:'0.75rem'}}>Stok akan dihitung dalam satuan kemasan ({form.packageUnit.toLowerCase()}).</div>
-                    </div>
-                  </>
-                )}
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted">Harga Satuan</span>
+                  <span className="font-bold text-accent" style={{ color: 'var(--accent)' }}>
+                    {formatRupiah(form.storageType === 'Kemasan' ? calculatedUnitPrice : form.price)}
+                  </span>
+                </div>
+                <div style={{ height: '1px', background: 'var(--border-light)', margin: '4px 0' }} />
+                <div className="text-xs text-muted" style={{ lineHeight: 1.5 }}>
+                  {form.storageType === 'Kemasan' 
+                    ? `Barang disimpan dalam bentuk ${form.packageUnit.toLowerCase()} yang berisi ${form.packageItemsCount || 0} unit ${form.packageItemUnit.toLowerCase()}.`
+                    : `Barang disimpan dalam satuan eceran ${form.unit.toLowerCase()}.`}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div style={{ padding: '16px 24px', background: '#fff', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: '12px', borderRadius: '0 0 12px 12px', position: 'sticky', bottom: 0, zIndex: 10 }}>
-          <button onClick={onClose} style={{ padding: '10px 20px', background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#475569', fontWeight: 'bold', cursor: 'pointer' }}>✕ Batal</button>
-          <button onClick={handleSave} style={{ padding: '10px 20px', background: '#6366f1', border: 'none', borderRadius: '8px', color: '#fff', fontWeight: 'bold', cursor: 'pointer', display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span>💾</span> Simpan Barang
+        {/* Footer Actions */}
+        <div className="modal-footer" style={{ background: 'white', borderTop: '1px solid var(--border)', padding: '24px 32px' }}>
+          <button className="btn btn-outline" onClick={onClose} style={{ minWidth: '120px' }}>Batal</button>
+          <button className="btn btn-primary" onClick={handleSave} style={{ minWidth: '180px' }}>
+            <span>💾</span> {initialData ? 'Simpan Perubahan' : 'Tambahkan Barang'}
           </button>
         </div>
       </div>

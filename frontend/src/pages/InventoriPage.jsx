@@ -294,29 +294,52 @@ export default function InventoriPage() {
       )}
       {showSettingsModal && (
         <div className="modal-overlay" onClick={() => setShowSettingsModal(false)}>
-          <div className="modal" style={{maxWidth:'500px'}} onClick={e => e.stopPropagation()}>
+          <div className="modal" style={{maxWidth:'500px', display:'flex', flexDirection:'column'}} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <span className="modal-title">⚙️ Pengaturan Master Data Inventori</span>
+              <span className="modal-title">⚙️ Pengaturan Master Data</span>
               <button className="modal-close" onClick={() => setShowSettingsModal(false)}>✕</button>
             </div>
-            <div className="modal-body">
-              <p className="text-sm text-muted mb-4">Pisahkan setiap item dengan tanda koma (,)</p>
-              <div className="form-group">
-                <label className="form-label">Daftar Kategori</label>
-                <textarea className="form-control" rows="3" value={metaForm.categories} onChange={e => setMetaForm({...metaForm, categories: e.target.value})} />
+            <div className="modal-body" style={{overflowY:'auto', flex:1}}>
+              <div style={{background:'var(--warning-light)', padding:'12px', borderRadius:'12px', marginBottom:'24px', border:'1px solid var(--warning)', fontSize:'0.85rem', color:'#92400E'}}>
+                <strong>Tips:</strong> Pisahkan setiap item dengan tanda koma (cth: Kopi, Teh, Susu)
               </div>
+              
               <div className="form-group">
-                <label className="form-label">Daftar Satuan Kemasan (Besar)</label>
-                <textarea className="form-control" rows="2" value={metaForm.packageUnits} onChange={e => setMetaForm({...metaForm, packageUnits: e.target.value})} />
+                <label className="form-label">Daftar Kategori Produk</label>
+                <textarea 
+                  className="form-control" 
+                  rows="3" 
+                  placeholder="cth: Makanan, Minuman, Dessert"
+                  value={metaForm.categories} 
+                  onChange={e => setMetaForm({...metaForm, categories: e.target.value})} 
+                />
               </div>
+              
               <div className="form-group">
-                <label className="form-label">Daftar Satuan Isi (Kecil)</label>
-                <textarea className="form-control" rows="3" value={metaForm.itemUnits} onChange={e => setMetaForm({...metaForm, itemUnits: e.target.value})} />
+                <label className="form-label">Satuan Kemasan (Grosir)</label>
+                <textarea 
+                  className="form-control" 
+                  rows="2" 
+                  placeholder="cth: Karton, Dus, Ball"
+                  value={metaForm.packageUnits} 
+                  onChange={e => setMetaForm({...metaForm, packageUnits: e.target.value})} 
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="form-label">Satuan Isi (Retail/Eceran)</label>
+                <textarea 
+                  className="form-control" 
+                  rows="3" 
+                  placeholder="cth: Gram, Liter, Pcs, Botol"
+                  value={metaForm.itemUnits} 
+                  onChange={e => setMetaForm({...metaForm, itemUnits: e.target.value})} 
+                />
               </div>
             </div>
-            <div className="modal-footer">
+            <div className="modal-footer" style={{boxShadow:'0 -4px 12px rgba(0,0,0,0.05)'}}>
               <button className="btn btn-outline" onClick={() => setShowSettingsModal(false)}>Batal</button>
-              <button className="btn btn-primary" onClick={handleSaveMeta}>💾 Simpan Pengaturan</button>
+              <button className="btn btn-primary" onClick={handleSaveMeta}>💾 Simpan Perubahan</button>
             </div>
           </div>
         </div>
