@@ -9,11 +9,13 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
   const [loading, setLoading] = useState(false);
 
   const staffRoles = [
-    { key: 'kasir',    label: 'Kasir',       icon: '💰' },
-    { key: 'koki',     label: 'Koki/Barista', icon: '👨‍🍳' },
-    { key: 'admin',    label: 'Admin',        icon: '⚙️' },
-    { key: 'owner',    label: 'Owner',        icon: '👑' },
-    { key: 'gudang',   label: 'Gudang',       icon: '📦' },
+    { key: 'kasir',      label: 'Kasir',       icon: '💰' },
+    { key: 'koki',       label: 'Koki/Barista', icon: '👨‍🍳' },
+    { key: 'admin',      label: 'Manager',      icon: '⚙️' },
+    { key: 'owner',      label: 'Owner',        icon: '👑' },
+    { key: 'gudang',     label: 'Gudang',       icon: '📦' },
+    { key: 'akuntan',    label: 'Akuntan',      icon: '📈' },
+    { key: 'superadmin', label: 'SuperAdmin',   icon: '🛡️' },
   ];
 
   const handleLogin = async (e) => {
@@ -32,8 +34,7 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
 
   const fillDemo = () => {
     if (selectedRole === 'customer') { setUsername('08123456789'); setPassword('user123'); }
-    else if (selectedRole === 'admin') { setUsername('admin'); setPassword('admin123'); }
-    else { setUsername(selectedRole); setPassword(selectedRole + '123'); }
+    else { setUsername(selectedRole); setPassword('password123'); }
   };
 
   // ── Mode Member Only (dipanggil dari GuestMenuPage) ──────────
