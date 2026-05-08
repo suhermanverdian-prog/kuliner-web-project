@@ -41,6 +41,19 @@ export default function App() {
   const [hash, setHash] = useState(window.location.hash);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [offlineCount, setOfflineCount] = useState(0);
+  const [isDarkMode, setIsDarkMode] = useState(localStorage.getItem('theme') === 'dark');
+
+  // Pantau dan terapkan perubahan tema
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
 
   // Pantau perubahan hash URL
   useEffect(() => {
@@ -152,7 +165,9 @@ export default function App() {
               </div>
             ) : null}
             <button className="icon-btn" title="Notifikasi">🔔</button>
-            <button className="icon-btn" title="Mode Gelap">🌙</button>
+            <button className="icon-btn" title={isDarkMode ? "Mode Terang" : "Mode Gelap"} onClick={() => setIsDarkMode(!isDarkMode)}>
+              {isDarkMode ? '☀️' : '🌙'}
+            </button>
             <div className="user-avatar" style={{width:'36px', height:'36px', fontSize:'0.8rem'}}>{user.avatar}</div>
           </div>
         </header>

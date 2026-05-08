@@ -30,8 +30,8 @@ const upload = multer({ storage });
 // ---- Simple JSON "Database" ----
 const readDB = () => {
   if (!fs.existsSync(DB_PATH)) return initDB();
-  try { 
-    const data = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8')); 
+  try {
+    const data = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
     if (!data.suppliers) data.suppliers = [];
     if (!data.purchase_orders) data.purchase_orders = [];
     if (!data.inventory_meta) data.inventory_meta = { categories: [], packageUnits: [], itemUnits: [] };
@@ -92,7 +92,7 @@ const initDB = () => {
 // ---- AUTH ----
 app.post('/api/login', async (req, res) => {
   const { username, password, role } = req.body;
-  
+
   let user;
   if (role === 'customer') {
     const { data, error } = await supabase
@@ -114,7 +114,7 @@ app.post('/api/login', async (req, res) => {
   }
 
   if (!user) return res.status(401).json({ error: 'Kredensial tidak valid' });
-  
+
   const { password: _, ...safeUser } = user;
   res.json({ user: { ...safeUser, role: role || user.role }, token: 'supabase-token-' + user.id });
 });
@@ -156,7 +156,7 @@ app.get('/api/menu', async (req, res) => {
 });
 app.post('/api/menu', async (req, res) => {
   const { bom, ...menuData } = req.body;
-  
+
   // 1. Simpan Menu
   const { data: newMenu, error: menuError } = await supabase.from('menu').insert([menuData]).select().single();
   if (menuError) return res.status(500).json({ error: menuError.message });
@@ -233,7 +233,7 @@ app.post('/api/transactions', async (req, res) => {
   const body = req.body;
   const isSelfOrder = body.cashierName === 'Self Service';
   const paymentStatus = isSelfOrder ? 'pending_payment' : 'paid';
-  
+
   // Ambil count untuk generate ID
   const { count } = await supabase.from('transactions').select('*', { count: 'exact', head: true });
   const trxId = 'TRX-' + String((count || 0) + 1).padStart(4, '0');
@@ -263,27 +263,39 @@ app.post('/api/transactions', async (req, res) => {
     }));
     await supabase.from('transaction_items').insert(itemsToInsert);
 
-    // --- LOGIKA POTONG STOK (BOM) ---
+    // --- LOGIKA POTONG STOK (HANYA DARI BAR/KITCHEN) ---
     if (!isSelfOrder) {
       for (const cartItem of body.items) {
-        // Cari resep untuk menu ini
-        const { data: boms } = await supabase
-          .from('menu_bom')
-          .select('bahan_id, qty, bahan(unit, stock)')
-          .eq('menu_id', cartItem.id);
+        // 1. Cari resep (BOM) untuk menu ini
+        const { data: boms } = await supabase.from('menu_bom').select('bahan_id, qty').eq('menu_id', cartItem.id);
 
         if (boms && boms.length > 0) {
           for (const bom of boms) {
-            let ratio = 1;
-            const u = (bom.bahan.unit || '').toLowerCase();
-            // Konversi kg/liter ke gram/ml jika perlu
-            if (['kg', 'kilogram', 'liter', 'l'].includes(u)) ratio = 1000;
-            
-            const deduction = (Number(bom.qty) / ratio) * cartItem.qty;
-            const newStock = Math.max(0, Number(bom.bahan.stock) - deduction);
-            
-            // Update stok bahan baku di Supabase
-            await supabase.from('bahan').update({ stock: newStock }).eq('id', bom.bahan_id);
+            // 2. Cari info bahan asli (untuk ambil namanya)
+            const { data: masterBahan } = await supabase.from('bahan').select('name, unit').eq('id', bom.bahan_id).single();
+            if (!masterBahan) continue;
+
+            // 3. CARI STOK DI BAR/KITCHEN (Lokasi Produksi)
+            // Kita asumsikan minuman dari 'Bar' dan makanan dari 'Kitchen'
+            const targetLocation = cartItem.category === 'Makanan' ? 'Kitchen' : 'Bar';
+
+            const { data: prodBahan } = await supabase.from('bahan')
+              .select('id, stock, unit')
+              .eq('name', masterBahan.name)
+              .eq('location', targetLocation)
+              .single();
+
+            if (prodBahan) {
+              let ratio = 1;
+              const u = (prodBahan.unit || '').toLowerCase();
+              if (['kg', 'kilogram', 'liter', 'l'].includes(u)) ratio = 1000;
+
+              const deduction = (Number(bom.qty) / ratio) * cartItem.qty;
+              const newStock = Number(prodBahan.stock) - deduction;
+
+              // 4. Update hanya stok di lokasi produksi (Bar/Kitchen)
+              await supabase.from('bahan').update({ stock: newStock }).eq('id', prodBahan.id);
+            }
           }
         }
       }
@@ -297,7 +309,7 @@ app.post('/api/transactions', async (req, res) => {
 app.post('/api/webhook/ojol', (req, res) => {
   const db = readDB();
   const body = req.body;
-  
+
   // Format body webhook Ojol simulasi:
   // { platform: 'GoFood', orderId: 'GF-123', items: [{id, name, qty, price}], total: 50000, customerName: 'Budi' }
   const trx = {
@@ -328,7 +340,7 @@ app.post('/api/payments/webhook', (req, res) => {
   const db = readDB();
   const { orderId, status, paymentMethod, total } = req.body;
   const trx = db.transactions.find(t => t.id === orderId);
-  
+
   if (!trx) return res.status(404).json({ error: 'Transaction not found' });
   if (trx.paymentStatus === 'paid') return res.json({ ok: true, message: 'Already paid' });
 
@@ -361,36 +373,69 @@ app.post('/api/payments/webhook', (req, res) => {
   res.json({ ok: false, message: 'Unhandled status' });
 });
 
-app.put('/api/transactions/:id/confirm-payment', (req, res) => {
-  const db = readDB();
-  const trx = db.transactions.find(t => t.id === req.params.id);
-  if (!trx) return res.status(404).json({ error: 'Transaction not found' });
+app.put('/api/transactions/:id/confirm-payment', async (req, res) => {
+  const { id } = req.params;
+  const { cashReceived, change, paymentMethod, cashierName } = req.body;
 
-  const { cashReceived, change, paymentMethod } = req.body;
+  // 1. Update status transaksi di Supabase
+  const { data: trx, error: fetchErr } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  trx.paymentStatus = 'paid';
-  trx.kdsStatus = 'new';           // Sekarang baru masuk KDS
-  trx.paidAt = new Date().toISOString();
-  trx.cashierName = req.body.cashierName || 'Kasir';
-  if (cashReceived !== undefined) trx.cashReceived = cashReceived;
-  if (change !== undefined) trx.change = change;
-  if (paymentMethod) trx.paymentMethod = paymentMethod;
+  if (fetchErr || !trx) return res.status(404).json({ error: 'Transaksi tidak ditemukan' });
 
-  // Kurangi stok BOM setelah pembayaran dikonfirmasi
-  if (trx.items && Array.isArray(trx.items)) {
-    trx.items.forEach(cartItem => {
-      const menuItem = db.menu.find(m => m.id === cartItem.id);
-      if (menuItem?.bom?.length > 0) {
-        menuItem.bom.forEach(bomRow => {
-          const bahan = db.bahan.find(b => b.id === Number(bomRow.bahanId));
-          if (bahan) bahan.stock = Math.max(0, bahan.stock - (Number(bomRow.qty) * cartItem.qty));
-        });
+  const updateData = {
+    payment_status: 'paid',
+    kds_status: 'new',
+    paid_at: new Date().toISOString(),
+    cashier_name: cashierName || 'Kasir',
+    cash_received: cashReceived,
+    change: change,
+    payment_method: paymentMethod
+  };
+
+  const { error: updateErr } = await supabase.from('transactions').update(updateData).eq('id', id);
+  if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+  // 2. AMBIL ITEM TRANSAKSI UNTUK POTONG STOK
+  const { data: items } = await supabase.from('transaction_items').select('*, menu(*)').eq('transaction_id', id);
+
+  if (items && items.length > 0) {
+    for (const item of items) {
+      // Cari resep (BOM)
+      const { data: boms } = await supabase.from('menu_bom').select('bahan_id, qty').eq('menu_id', item.menu_id);
+
+      if (boms && boms.length > 0) {
+        for (const bom of boms) {
+          // Cari info bahan
+          const { data: masterBahan } = await supabase.from('bahan').select('name, unit').eq('id', bom.bahan_id).single();
+          if (!masterBahan) continue;
+
+          // Lokasi Produksi (Bar/Kitchen)
+          const targetLocation = item.menu.category === 'Makanan' ? 'Kitchen' : 'Bar';
+
+          const { data: prodBahan } = await supabase.from('bahan')
+            .select('id, stock, unit')
+            .eq('name', masterBahan.name)
+            .eq('location', targetLocation)
+            .single();
+
+          if (prodBahan) {
+            let ratio = 1;
+            const u = (prodBahan.unit || '').toLowerCase();
+            if (['kg', 'kilogram', 'liter', 'l'].includes(u)) ratio = 1000;
+
+            const deduction = (Number(bom.qty) / ratio) * item.qty;
+            await supabase.from('bahan').update({ stock: Number(prodBahan.stock) - deduction }).eq('id', prodBahan.id);
+          }
+        }
       }
-    });
+    }
   }
 
-  writeDB(db);
-  res.json(trx);
+  res.json({ ok: true, ...updateData });
 });
 app.put('/api/transactions/:id/kds', (req, res) => {
   const db = readDB();
@@ -479,12 +524,12 @@ app.get('/api/customers', async (req, res) => {
   res.json(data || []);
 });
 app.post('/api/customers', async (req, res) => {
-  const { data, error } = await supabase.from('customers').insert([{ 
-    ...req.body, 
-    points: 0, 
-    total_spend: 0, 
-    visits: 0, 
-    join_date: new Date().toISOString().split('T')[0] 
+  const { data, error } = await supabase.from('customers').insert([{
+    ...req.body,
+    points: 0,
+    total_spend: 0,
+    visits: 0,
+    join_date: new Date().toISOString().split('T')[0]
   }]).select();
   if (error) return res.status(500).json({ error: error.message });
   res.json(data[0]);
@@ -523,7 +568,7 @@ app.put('/api/po/:id', (req, res) => {
   if (!existingPo) return res.status(404).json({ error: 'PO not found' });
 
   const { status, items: updatedItems } = req.body;
-  
+
   if (status === 'Diterima' && existingPo.status !== 'Diterima') {
     // Process receiving items and updating stock
     if (updatedItems && Array.isArray(updatedItems)) {
@@ -531,7 +576,7 @@ app.put('/api/po/:id', (req, res) => {
         // Cari bahan dengan ID dan lokasi yang sesuai
         const targetLocation = existingPo.location || 'Gudang Utama';
         let bahan = db.bahan.find(b => b.id === Number(receivedItem.bahanId) && b.location === targetLocation);
-        
+
         if (bahan) {
           bahan.stock += Number(receivedItem.receivedQty);
         } else {
@@ -575,10 +620,10 @@ app.delete('/api/locations/:id', async (req, res) => {
 app.post('/api/stock-transfer', async (req, res) => {
   const { bahanId, fromLocation, toLocation, qty } = req.body;
   const quantity = Number(qty);
-  
+
   const { data: source, error: e1 } = await supabase.from('bahan').select('*').eq('id', bahanId).single();
   if (e1 || !source) return res.status(404).json({ error: 'Bahan tidak ditemukan' });
-  
+
   await supabase.from('bahan').update({ stock: source.stock - quantity }).eq('id', bahanId);
 
   const { data: target, error: e2 } = await supabase.from('bahan')
@@ -821,7 +866,7 @@ app.get('/api/laporan/report/:type', (req, res) => {
   const storeAddress = settings.address || 'Jl. Kopi Nikmat No. 1, Jakarta';
   const storePhone = settings.phone || 'Telp. 021-1234567';
   const now = new Date().toLocaleString('id-ID');
-  const periodLabel = period === 'today' ? `Tanggal : ${start.toLocaleDateString('id-ID')}` : `Periode : ${start.toLocaleDateString('id-ID')} - ${new Date(end.getTime()-1).toLocaleDateString('id-ID')}`;
+  const periodLabel = period === 'today' ? `Tanggal : ${start.toLocaleDateString('id-ID')}` : `Periode : ${start.toLocaleDateString('id-ID')} - ${new Date(end.getTime() - 1).toLocaleDateString('id-ID')}`;
 
   const trx = filterTrx(db.transactions, start, end);
   const totalRevenue = trx.reduce((s, t) => s + (t.total || 0), 0);
@@ -842,8 +887,8 @@ app.get('/api/laporan/report/:type', (req, res) => {
     return res.json({
       meta, type: 'penjualan-harian', title: 'Laporan Penjualan Harian',
       summary: { totalTrx: trx.length, memberTrx: memberTrx.length, guestTrx: guestTrx.length, grossSales: totalRevenue, discount: 0, netSales: totalRevenue },
-      memberSales: memberTrx.reduce((s,t)=>s+(t.total||0),0),
-      guestSales: guestTrx.reduce((s,t)=>s+(t.total||0),0),
+      memberSales: memberTrx.reduce((s, t) => s + (t.total || 0), 0),
+      guestSales: guestTrx.reduce((s, t) => s + (t.total || 0), 0),
       payment: { cash, cashless, total: totalRevenue, selisih: 0 },
       byMethod: Object.entries(byMethod).map(([name, amount]) => ({ name, amount }))
     });
@@ -852,8 +897,8 @@ app.get('/api/laporan/report/:type', (req, res) => {
   if (type === 'penjualan-periode') {
     const byDay = {};
     trx.forEach(t => {
-      const d = new Date(t.createdAt||t.paidAt).toLocaleDateString('id-ID');
-      byDay[d] = (byDay[d]||0) + (t.total||0);
+      const d = new Date(t.createdAt || t.paidAt).toLocaleDateString('id-ID');
+      byDay[d] = (byDay[d] || 0) + (t.total || 0);
     });
     return res.json({ meta, type, title: 'Laporan Penjualan Periode', summary: { totalRevenue, totalTrx: trx.length, grossSales: totalRevenue, discount: 0, netSales: totalRevenue }, byDay });
   }
@@ -871,53 +916,53 @@ app.get('/api/laporan/report/:type', (req, res) => {
 
   if (type === 'waste') {
     const wasteItems = (db.waste || []).filter(w => { const d = new Date(w.date); return d >= start && d < end; });
-    const totalWaste = wasteItems.reduce((s,w) => s+(w.amount||0), 0);
-    const wasteRatio = totalRevenue > 0 ? ((totalWaste/totalRevenue)*100).toFixed(2) : 0;
+    const totalWaste = wasteItems.reduce((s, w) => s + (w.amount || 0), 0);
+    const wasteRatio = totalRevenue > 0 ? ((totalWaste / totalRevenue) * 100).toFixed(2) : 0;
     const categories = {};
-    wasteItems.forEach(w => { categories[w.category||'Lainnya'] = (categories[w.category||'Lainnya']||0)+(w.amount||0); });
-    return res.json({ meta, type, title: 'Laporan Waste (Kerugian)', summary: { totalWaste, wasteRatio, status: wasteRatio > 3 ? 'PERLU PERHATIAN' : 'Normal', totalRevenue }, items: wasteItems, categories: Object.entries(categories).map(([name,amount])=>({name,amount})) });
+    wasteItems.forEach(w => { categories[w.category || 'Lainnya'] = (categories[w.category || 'Lainnya'] || 0) + (w.amount || 0); });
+    return res.json({ meta, type, title: 'Laporan Waste (Kerugian)', summary: { totalWaste, wasteRatio, status: wasteRatio > 3 ? 'PERLU PERHATIAN' : 'Normal', totalRevenue }, items: wasteItems, categories: Object.entries(categories).map(([name, amount]) => ({ name, amount })) });
   }
 
   if (type === 'hpp') {
     const products = {};
-    trx.forEach(t => (t.items||[]).forEach(item => {
+    trx.forEach(t => (t.items || []).forEach(item => {
       const m = db.menu.find(x => x.id === item.id);
       if (!m) return;
       const k = item.id;
-      if (!products[k]) products[k] = { name: item.name, unit: m.unit||'Pcs', stokAwal: 0, pembelian: 0, stokAkhir: 0, terpakai: 0, hargaSatuan: m.cost||0, totalHPP: 0 };
-      products[k].terpakai += item.qty||1;
-      products[k].totalHPP += (m.cost||0) * (item.qty||1);
+      if (!products[k]) products[k] = { name: item.name, unit: m.unit || 'Pcs', stokAwal: 0, pembelian: 0, stokAkhir: 0, terpakai: 0, hargaSatuan: m.cost || 0, totalHPP: 0 };
+      products[k].terpakai += item.qty || 1;
+      products[k].totalHPP += (m.cost || 0) * (item.qty || 1);
     }));
     const rows = Object.values(products);
-    const foodCostPct = totalRevenue > 0 ? ((totalHPP/totalRevenue)*100).toFixed(2) : 0;
+    const foodCostPct = totalRevenue > 0 ? ((totalHPP / totalRevenue) * 100).toFixed(2) : 0;
     return res.json({ meta, type, title: 'Laporan HPP (COGS)', rows, summary: { totalRevenue, totalHPP, foodCostPct } });
   }
 
   if (type === 'laba-rugi') {
-    const wasteItems = (db.waste||[]).filter(w => { const d = new Date(w.date); return d>=start&&d<end; });
-    const totalWaste = wasteItems.reduce((s,w)=>s+(w.amount||0),0);
+    const wasteItems = (db.waste || []).filter(w => { const d = new Date(w.date); return d >= start && d < end; });
+    const totalWaste = wasteItems.reduce((s, w) => s + (w.amount || 0), 0);
     const opEx = { gaji: 0, sewa: 0, utilitas: 0, lainnya: 0 };
-    const totalOpEx = Object.values(opEx).reduce((s,v)=>s+v,0);
+    const totalOpEx = Object.values(opEx).reduce((s, v) => s + v, 0);
     const labaKotor = totalRevenue - totalHPP;
     const labaBersih = labaKotor - totalOpEx - totalWaste;
-    return res.json({ meta, type, title: 'Laporan Laba Rugi', pendapatan: { penjualanNetto: totalRevenue, total: totalRevenue }, hpp: totalHPP, labaKotor, opEx, totalOpEx, waste: totalWaste, labaBersih, marginPct: totalRevenue > 0 ? ((labaBersih/totalRevenue)*100).toFixed(1) : 0 });
+    return res.json({ meta, type, title: 'Laporan Laba Rugi', pendapatan: { penjualanNetto: totalRevenue, total: totalRevenue }, hpp: totalHPP, labaKotor, opEx, totalOpEx, waste: totalWaste, labaBersih, marginPct: totalRevenue > 0 ? ((labaBersih / totalRevenue) * 100).toFixed(1) : 0 });
   }
 
   if (type === 'owner-dashboard') {
     const products = {};
-    trx.forEach(t => (t.items||[]).forEach(item => {
-      if (!products[item.id]) products[item.id] = { name: item.name, icon: item.icon||'☕', qty: 0, revenue: 0 };
-      products[item.id].qty += item.qty||1;
-      products[item.id].revenue += (item.price||0)*(item.qty||1);
+    trx.forEach(t => (t.items || []).forEach(item => {
+      if (!products[item.id]) products[item.id] = { name: item.name, icon: item.icon || '☕', qty: 0, revenue: 0 };
+      products[item.id].qty += item.qty || 1;
+      products[item.id].revenue += (item.price || 0) * (item.qty || 1);
     }));
-    const bestSellers = Object.values(products).sort((a,b)=>b.qty-a.qty).slice(0,5);
-    const wasteItems = (db.waste||[]).filter(w=>{const d=new Date(w.date);return d>=start&&d<end;});
-    const totalWaste = wasteItems.reduce((s,w)=>s+(w.amount||0),0);
+    const bestSellers = Object.values(products).sort((a, b) => b.qty - a.qty).slice(0, 5);
+    const wasteItems = (db.waste || []).filter(w => { const d = new Date(w.date); return d >= start && d < end; });
+    const totalWaste = wasteItems.reduce((s, w) => s + (w.amount || 0), 0);
     const labaKotor = totalRevenue - totalHPP;
-    const marginPct = totalRevenue > 0 ? ((labaKotor/totalRevenue)*100).toFixed(1) : 0;
+    const marginPct = totalRevenue > 0 ? ((labaKotor / totalRevenue) * 100).toFixed(1) : 0;
     const hours = {};
-    trx.forEach(t => { const h = new Date(t.createdAt||t.paidAt).getHours(); hours[h] = (hours[h]||0) + (t.total||0); });
-    const trendJam = Array.from({length:24},(_,i)=>({hour:i, value: hours[i]||0}));
+    trx.forEach(t => { const h = new Date(t.createdAt || t.paidAt).getHours(); hours[h] = (hours[h] || 0) + (t.total || 0); });
+    const trendJam = Array.from({ length: 24 }, (_, i) => ({ hour: i, value: hours[i] || 0 }));
     return res.json({ meta, type, title: 'Dashboard Ringkasan Owner', kpi: { totalRevenue, totalHPP, totalWaste, labaKotor, marginPct, totalTrx: trx.length }, bestSellers, trendJam });
   }
 
@@ -926,11 +971,11 @@ app.get('/api/laporan/report/:type', (req, res) => {
       const fisik = b.stock; // In real system, physical count would differ
       const sistem = b.stock;
       const selisih = fisik - sistem;
-      const selisihPct = sistem > 0 ? ((selisih/sistem)*100).toFixed(2) : 0;
+      const selisihPct = sistem > 0 ? ((selisih / sistem) * 100).toFixed(2) : 0;
       return { ...b, fisik, sistem, selisih, selisihPct };
     });
-    const totalSelisih = items.reduce((s,b)=>s+(b.selisih*b.price),0);
-    const itemSelisih = items.filter(b=>b.selisih!==0).length;
+    const totalSelisih = items.reduce((s, b) => s + (b.selisih * b.price), 0);
+    const itemSelisih = items.filter(b => b.selisih !== 0).length;
     return res.json({ meta, type, title: 'Laporan Stok Opname', items, summary: { total: items.length, itemSelisih, totalSelisih } });
   }
 
@@ -942,7 +987,7 @@ app.get('/api/report/excel', async (req, res) => {
   const db = readDB();
   const { type = 'all', period = 'today', customStart, customEnd } = req.query;
   const { start, end } = getDateRange(period, customStart, customEnd);
-  
+
   const trx = filterTrx(db.transactions, start, end);
   const totalRevenue = trx.reduce((s, t) => s + (t.total || 0), 0);
   const totalHPP = trx.reduce((s, t) => s + (t.items || []).reduce((ss, item) => {
@@ -957,7 +1002,7 @@ app.get('/api/report/excel', async (req, res) => {
   const titleFont = { name: 'Arial', family: 4, size: 14, bold: true };
   const headerFont = { name: 'Arial', family: 4, size: 11, bold: true };
   const borderAll = {
-    top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'}
+    top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' }
   };
   const alignCenter = { vertical: 'middle', horizontal: 'center' };
   const currencyFmt = '"Rp"#,##0';
@@ -975,7 +1020,7 @@ app.get('/api/report/excel', async (req, res) => {
     sheet.insertRow(1, ['LAPORAN PENJUALAN']);
     sheet.getCell('A1').font = titleFont;
     sheet.mergeCells('A1:F1');
-    sheet.insertRow(2, [`Periode: ${start.toLocaleDateString('id-ID')} - ${new Date(end.getTime()-1).toLocaleDateString('id-ID')}`]);
+    sheet.insertRow(2, [`Periode: ${start.toLocaleDateString('id-ID')} - ${new Date(end.getTime() - 1).toLocaleDateString('id-ID')}`]);
     sheet.mergeCells('A2:F2');
     sheet.insertRow(3, []);
 
@@ -983,19 +1028,19 @@ app.get('/api/report/excel', async (req, res) => {
     headerRow.values = ['No', 'Waktu', 'ID Transaksi', 'Pelanggan', 'Metode Pembayaran', 'Total (Rp)'];
     headerRow.font = headerFont;
     headerRow.alignment = alignCenter;
-    headerRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFF0F0F0'} }; });
+    headerRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } }; });
 
     let rIdx = 5;
     trx.forEach((t, i) => {
       const row = sheet.insertRow(rIdx++, [
-        i+1, new Date(t.createdAt||t.paidAt).toLocaleString('id-ID'), t.id, 
+        i + 1, new Date(t.createdAt || t.paidAt).toLocaleString('id-ID'), t.id,
         t.customerName || 'Tamu', t.paymentMethod || 'Cash', t.total || 0
       ]);
       row.getCell(6).numFmt = currencyFmt;
       row.eachCell(c => c.border = borderAll);
     });
 
-    const totalRow = sheet.insertRow(rIdx, ['','','','','TOTAL PENJUALAN', totalRevenue]);
+    const totalRow = sheet.insertRow(rIdx, ['', '', '', '', 'TOTAL PENJUALAN', totalRevenue]);
     totalRow.font = headerFont;
     totalRow.getCell(6).numFmt = currencyFmt;
     totalRow.eachCell(c => c.border = borderAll);
@@ -1022,13 +1067,13 @@ app.get('/api/report/excel', async (req, res) => {
     headerRow.values = ['No', 'Nama Bahan', 'Satuan', 'Stok Saat Ini', 'Stok Minimum', 'Status'];
     headerRow.font = headerFont;
     headerRow.alignment = alignCenter;
-    headerRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFF0F0F0'} }; });
+    headerRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } }; });
 
     let rIdx = 5;
     db.bahan.forEach((b, i) => {
       const ratio = b.minStock > 0 ? b.stock / b.minStock : 2;
       const status = b.stock === 0 ? 'Habis' : ratio < 0.5 ? 'Kritis' : ratio < 1 ? 'Rendah' : 'Aman';
-      const row = sheet.insertRow(rIdx++, [i+1, b.name, b.unit, b.stock, b.minStock, status]);
+      const row = sheet.insertRow(rIdx++, [i + 1, b.name, b.unit, b.stock, b.minStock, status]);
       row.eachCell(c => c.border = borderAll);
       if (status !== 'Aman') {
         row.getCell(6).font = { color: { argb: status === 'Habis' || status === 'Kritis' ? 'FFFF0000' : 'FFFFA500' }, bold: true };
@@ -1049,7 +1094,7 @@ app.get('/api/report/excel', async (req, res) => {
     sheet.insertRow(1, ['LAPORAN WASTE (KERUGIAN)']);
     sheet.getCell('A1').font = titleFont;
     sheet.mergeCells('A1:F1');
-    sheet.insertRow(2, [`Periode: ${start.toLocaleDateString('id-ID')} - ${new Date(end.getTime()-1).toLocaleDateString('id-ID')}`]);
+    sheet.insertRow(2, [`Periode: ${start.toLocaleDateString('id-ID')} - ${new Date(end.getTime() - 1).toLocaleDateString('id-ID')}`]);
     sheet.mergeCells('A2:F2');
     sheet.insertRow(3, []);
 
@@ -1057,19 +1102,19 @@ app.get('/api/report/excel', async (req, res) => {
     headerRow.values = ['No', 'Nama Bahan', 'Alasan', 'Jumlah', 'Satuan', 'Nilai Kerugian (Rp)'];
     headerRow.font = headerFont;
     headerRow.alignment = alignCenter;
-    headerRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFF0F0F0'} }; });
+    headerRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } }; });
 
     const wasteItems = (db.waste || []).filter(w => { const d = new Date(w.date); return d >= start && d < end; });
-    const totalWaste = wasteItems.reduce((s,w) => s+(w.amount||0), 0);
+    const totalWaste = wasteItems.reduce((s, w) => s + (w.amount || 0), 0);
 
     let rIdx = 5;
     wasteItems.forEach((w, i) => {
-      const row = sheet.insertRow(rIdx++, [i+1, w.bahanName||'-', w.category||'Lainnya', w.qty||1, w.unit||'-', w.amount||0]);
+      const row = sheet.insertRow(rIdx++, [i + 1, w.bahanName || '-', w.category || 'Lainnya', w.qty || 1, w.unit || '-', w.amount || 0]);
       row.getCell(6).numFmt = currencyFmt;
       row.eachCell(c => c.border = borderAll);
     });
 
-    const totalRow = sheet.insertRow(rIdx, ['','','','','TOTAL WASTE', totalWaste]);
+    const totalRow = sheet.insertRow(rIdx, ['', '', '', '', 'TOTAL WASTE', totalWaste]);
     totalRow.font = headerFont;
     totalRow.getCell(6).numFmt = currencyFmt;
     totalRow.getCell(6).font = { color: { argb: 'FFFF0000' }, bold: true };
@@ -1089,7 +1134,7 @@ app.get('/api/report/excel', async (req, res) => {
     sheet.insertRow(1, ['LAPORAN HPP (COGS)']);
     sheet.getCell('A1').font = titleFont;
     sheet.mergeCells('A1:F1');
-    sheet.insertRow(2, [`Periode: ${start.toLocaleDateString('id-ID')} - ${new Date(end.getTime()-1).toLocaleDateString('id-ID')}`]);
+    sheet.insertRow(2, [`Periode: ${start.toLocaleDateString('id-ID')} - ${new Date(end.getTime() - 1).toLocaleDateString('id-ID')}`]);
     sheet.mergeCells('A2:F2');
     sheet.insertRow(3, []);
 
@@ -1097,26 +1142,26 @@ app.get('/api/report/excel', async (req, res) => {
     headerRow.values = ['No', 'Nama Bahan', 'Satuan', 'Terpakai', 'Harga Satuan (Rp)', 'Total HPP (Rp)'];
     headerRow.font = headerFont;
     headerRow.alignment = alignCenter;
-    headerRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFF0F0F0'} }; });
+    headerRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } }; });
 
     const products = {};
-    trx.forEach(t => (t.items||[]).forEach(item => {
+    trx.forEach(t => (t.items || []).forEach(item => {
       const m = db.menu.find(x => x.id === item.id);
       if (!m) return;
-      if (!products[item.id]) products[item.id] = { name: item.name, unit: m.unit||'Pcs', terpakai: 0, hargaSatuan: m.cost||0, totalHPP: 0 };
-      products[item.id].terpakai += item.qty||1;
-      products[item.id].totalHPP += (m.cost||0) * (item.qty||1);
+      if (!products[item.id]) products[item.id] = { name: item.name, unit: m.unit || 'Pcs', terpakai: 0, hargaSatuan: m.cost || 0, totalHPP: 0 };
+      products[item.id].terpakai += item.qty || 1;
+      products[item.id].totalHPP += (m.cost || 0) * (item.qty || 1);
     }));
 
     let rIdx = 5;
     Object.values(products).forEach((p, i) => {
-      const row = sheet.insertRow(rIdx++, [i+1, p.name, p.unit, p.terpakai, p.hargaSatuan, p.totalHPP]);
+      const row = sheet.insertRow(rIdx++, [i + 1, p.name, p.unit, p.terpakai, p.hargaSatuan, p.totalHPP]);
       row.getCell(5).numFmt = currencyFmt;
       row.getCell(6).numFmt = currencyFmt;
       row.eachCell(c => c.border = borderAll);
     });
 
-    const totalRow = sheet.insertRow(rIdx, ['','','','','TOTAL HPP', totalHPP]);
+    const totalRow = sheet.insertRow(rIdx, ['', '', '', '', 'TOTAL HPP', totalHPP]);
     totalRow.font = headerFont;
     totalRow.getCell(6).numFmt = currencyFmt;
     totalRow.eachCell(c => c.border = borderAll);
@@ -1131,7 +1176,7 @@ app.get('/api/report/excel', async (req, res) => {
     sheet.insertRow(1, ['LAPORAN LABA RUGI']);
     sheet.getCell('A1').font = titleFont;
     sheet.mergeCells('A1:B1');
-    sheet.insertRow(2, [`Periode: ${start.toLocaleDateString('id-ID')} - ${new Date(end.getTime()-1).toLocaleDateString('id-ID')}`]);
+    sheet.insertRow(2, [`Periode: ${start.toLocaleDateString('id-ID')} - ${new Date(end.getTime() - 1).toLocaleDateString('id-ID')}`]);
     sheet.mergeCells('A2:B2');
     sheet.insertRow(3, []);
 
@@ -1139,35 +1184,35 @@ app.get('/api/report/excel', async (req, res) => {
     const addSection = (title, items, totalLabel, totalVal, isNegative = false) => {
       const titleRow = sheet.insertRow(rIdx++, [title]);
       titleRow.font = headerFont;
-      
+
       items.forEach(it => {
         const row = sheet.insertRow(rIdx++, [it.label, it.val * (isNegative ? -1 : 1)]);
         row.getCell(2).numFmt = currencyFmt;
       });
-      
+
       const totalRow = sheet.insertRow(rIdx++, [totalLabel, totalVal * (isNegative ? -1 : 1)]);
       totalRow.font = headerFont;
       totalRow.getCell(2).numFmt = currencyFmt;
-      totalRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FFF0F0F0'} }; });
+      totalRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } }; });
       sheet.insertRow(rIdx++, []);
     };
 
-    const wasteItems = (db.waste||[]).filter(w => { const d = new Date(w.date); return d>=start&&d<end; });
-    const totalWaste = wasteItems.reduce((s,w)=>s+(w.amount||0),0);
+    const wasteItems = (db.waste || []).filter(w => { const d = new Date(w.date); return d >= start && d < end; });
+    const totalWaste = wasteItems.reduce((s, w) => s + (w.amount || 0), 0);
     const labaKotor = totalRevenue - totalHPP;
     const labaBersih = labaKotor - totalWaste; // Assuming 0 opEx for now since it's not fully stored in DB
 
-    addSection('PENDAPATAN', [{label: 'Penjualan Netto', val: totalRevenue}], 'TOTAL PENDAPATAN', totalRevenue);
-    addSection('HARGA POKOK PENJUALAN (HPP)', [{label: 'Total HPP', val: totalHPP}], 'LABA KOTOR', labaKotor, false);
-    
+    addSection('PENDAPATAN', [{ label: 'Penjualan Netto', val: totalRevenue }], 'TOTAL PENDAPATAN', totalRevenue);
+    addSection('HARGA POKOK PENJUALAN (HPP)', [{ label: 'Total HPP', val: totalHPP }], 'LABA KOTOR', labaKotor, false);
+
     // Add Laba Kotor row separately to be positive
     sheet.getRow(rIdx - 2).getCell(2).value = labaKotor; // Fix the negative calculation for Laba Kotor
-    
-    addSection('BIAYA & LOSS', [{label: 'Waste / Loss', val: totalWaste}], 'TOTAL BIAYA', totalWaste, true);
+
+    addSection('BIAYA & LOSS', [{ label: 'Waste / Loss', val: totalWaste }], 'TOTAL BIAYA', totalWaste, true);
 
     const netRow = sheet.insertRow(rIdx++, ['LABA BERSIH', labaBersih]);
     netRow.font = { ...titleFont, color: { argb: 'FFFFFFFF' } };
-    netRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern:'solid', fgColor:{argb:'FF6366F1'} }; });
+    netRow.eachCell(c => { c.border = borderAll; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } }; });
     netRow.getCell(2).numFmt = currencyFmt;
   };
 
@@ -1187,13 +1232,13 @@ app.get('/api/report/excel', async (req, res) => {
       return res.status(400).json({ error: 'Tipe laporan Excel tidak valid' });
     }
 
-    const filename = type === 'all' 
-      ? `laporan-semua-${start.toISOString().slice(0,10)}.xlsx` 
-      : `laporan-${type}-${start.toISOString().slice(0,10)}.xlsx`;
+    const filename = type === 'all'
+      ? `laporan-semua-${start.toISOString().slice(0, 10)}.xlsx`
+      : `laporan-${type}-${start.toISOString().slice(0, 10)}.xlsx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    
+
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {

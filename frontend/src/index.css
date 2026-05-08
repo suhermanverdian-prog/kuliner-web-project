@@ -58,6 +58,38 @@
   --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
+/* ===== SHADCN-INSPIRED DARK MODE ===== */
+[data-theme="dark"] {
+  /* Sleek Dark Backgrounds */
+  --bg: #09090b; /* Zinc 950 */
+  --bg-card: rgba(24, 24, 27, 0.85); /* Zinc 900 with glass */
+  --bg-sidebar: #000000;
+  
+  /* Coffee Accents adapted for Dark Mode (Slightly brighter for contrast) */
+  --primary: #D49A4D; 
+  --primary-dark: #F0C484;
+  --primary-light: #B87A22;
+  
+  --accent: #E8A855; 
+  --accent-light: rgba(232, 168, 85, 0.2); 
+  
+  /* Text - High Legibility */
+  --text-primary: #FAFAFA; /* Zinc 50 */
+  --text-secondary: #A1A1AA; /* Zinc 400 */
+  --text-muted: #71717A; /* Zinc 500 */
+  --text-light: #FFFFFF;
+  
+  /* Borders - Subtle structure */
+  --border: rgba(255, 255, 255, 0.1);
+  --border-light: rgba(255, 255, 255, 0.05);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  
+  /* Shadows - Darker for depth */
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.9);
+}
+
 /* ===== RESET ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -71,17 +103,24 @@ body {
   color: var(--text-primary);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+[data-theme="dark"] body {
+  background-image: radial-gradient(at 0% 0%, rgba(212, 154, 77, 0.03) 0px, transparent 50%);
+}
+
 img { max-width: 100%; }
 button { cursor: pointer; font-family: var(--font-body); border: none; outline: none; }
 input, select, textarea { font-family: var(--font-body); outline: none; }
 a { text-decoration: none; color: inherit; }
 
 /* ===== SCROLLBAR ===== */
-::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(74, 43, 29, 0.15); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(74, 43, 29, 0.3); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
 
 /* ===== LAYOUT ===== */
 .app-layout { display: flex; min-height: 100vh; }
