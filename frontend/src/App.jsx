@@ -38,6 +38,7 @@ const DEFAULT_PAGE = {
 export default function App() {
   const [user, setUser] = useState(null);
   const [activePage, setActivePage] = useState('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hash, setHash] = useState(window.location.hash);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [offlineCount, setOfflineCount] = useState(0);
@@ -134,7 +135,8 @@ export default function App() {
   // ── Login biasa (staf) ──────────────────────────────────────
   if (!user) return <LoginPage onLogin={(u) => { setUser(u); setActivePage(DEFAULT_PAGE[u.role] || 'dashboard'); }} />;
 
-  const handleLogout = () => { setUser(null); setActivePage('dashboard'); window.location.hash = ''; };
+  const handleLogout = () => { setUser(null); setActivePage('dashboard'); window.location.hash = ''; setIsSidebarOpen(false); };
+  const handleNavigate = (page) => { setActivePage(page); setIsSidebarOpen(false); };
 
   // ── Customer yang sudah login → langsung ke menu ordering ──
   if (user.role === 'customer') {
@@ -146,13 +148,18 @@ export default function App() {
   const isFullWidth = activePage === 'kasir';
 
   return (
-    <div className="app-layout">
-      <Sidebar user={user} activePage={activePage} onNavigate={setActivePage} onLogout={handleLogout} />
+    <div className={`app-layout ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+      <Sidebar user={user} activePage={activePage} onNavigate={handleNavigate} onLogout={handleLogout} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div className="main-content">
         <header className="topbar">
-          <div className="topbar-title">
-            <h2>{pageInfo.title}</h2>
-            <p>{pageInfo.subtitle}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button className="menu-toggle" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+              {isSidebarOpen ? '✕' : '☰'}
+            </button>
+            <div className="topbar-title">
+              <h2>{pageInfo.title}</h2>
+              <p>{pageInfo.subtitle}</p>
+            </div>
           </div>
           <div className="topbar-actions">
             {isOffline ? (

@@ -1,4 +1,4 @@
-export default function Sidebar({ user, activePage, onNavigate, onLogout }) {
+export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen, onClose }) {
   const ROLE_LABELS = { admin:'Admin', owner:'Owner', kasir:'Kasir', koki:'Koki/Barista', gudang:'Gudang', akuntan:'Akuntan' };
 
   const allNav = [
@@ -35,7 +35,11 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout }) {
   })).filter(group => group.items.length > 0);
 
   return (
-    <aside className="sidebar">
+    <>
+      {/* Overlay for mobile */}
+      {isOpen && <div className="sidebar-overlay" onClick={onClose} />}
+      
+      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-logo">
         <h1>☕ BrewMaster</h1>
         <p>Coffee Shop Management</p>
@@ -67,5 +71,6 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout }) {
         <button className="logout-btn" onClick={onLogout} title="Keluar">🚪</button>
       </div>
     </aside>
+    </>
   );
 }
