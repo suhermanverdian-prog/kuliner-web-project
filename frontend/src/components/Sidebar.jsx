@@ -25,15 +25,20 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen
   ];
 
   const hasAccess = (item) => {
-    // 1. SuperAdmin bypass
+    // 1. Jika menu ini KHUSUS SuperAdmin, maka WAJIB punya flag is_superadmin
+    if (item.perm === 'superadmin') {
+      return user.is_superadmin === true;
+    }
+
+    // 2. SuperAdmin bisa melihat semua menu lainnya
     if (user.is_superadmin) return true;
 
-    // 2. Cek Tier Pelanggan (Tenant)
+    // 3. Cek Tier Pelanggan (Tenant) untuk menu biasa
     const tenantTier = user.tenant?.tier || 'lite';
     if (item.minTier === 'pro' && tenantTier === 'lite') return false;
     if (item.minTier === 'franchise' && (tenantTier === 'lite' || tenantTier === 'pro')) return false;
 
-    // 3. Cek Role & Permission
+    // 4. Cek Role & Permission untuk level Toko
     if (user.role === 'admin' || user.permissions?.all) return true;
     if (item.perm && user.permissions?.[item.perm]) return true;
     return item.roles.includes(user.role);
