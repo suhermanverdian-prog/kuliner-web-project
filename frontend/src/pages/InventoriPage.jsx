@@ -1,7 +1,47 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatRupiah } from '../data';
 import { api } from '../api';
 import InventoryFormModal from '../components/InventoryFormModal';
+
+const TagInput = ({ label, tags, onChange }) => {
+  const [inputValue, setInputValue] = useState('');
+  
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const val = inputValue.trim();
+      if (val && !tags.includes(val)) onChange([...tags, val]);
+      setInputValue('');
+    }
+  };
+
+  const removeTag = (indexToRemove) => {
+    onChange(tags.filter((_, index) => index !== indexToRemove));
+  };
+
+  return (
+    <div className="form-group mb-4" style={{ padding: '12px', background: 'var(--bg)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+      <label className="form-label" style={{ fontWeight: 600, color: 'var(--primary-dark)', marginBottom: '12px' }}>{label}</label>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+        {tags.length === 0 && <span className="text-muted text-sm">Belum ada data</span>}
+        {tags.map((tag, index) => (
+          <span key={index} className="badge" style={{ background: 'var(--primary-light)', color: '#fff', display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '8px' }}>
+            {tag}
+            <button onClick={() => removeTag(index)} style={{ background: 'rgba(0,0,0,0.1)', border: 'none', color: '#fff', cursor: 'pointer', padding: '0', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', transition: 'var(--transition)' }} onMouseOver={e => e.currentTarget.style.background = 'var(--danger)'} onMouseOut={e => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'}>✕</button>
+          </span>
+        ))}
+      </div>
+      <input 
+        className="form-control" 
+        value={inputValue} 
+        onChange={e => setInputValue(e.target.value)} 
+        onKeyDown={handleKeyDown} 
+        placeholder="Ketik lalu tekan Enter untuk menambah..." 
+        style={{ border: '1px dashed var(--border)', background: 'transparent' }}
+      />
+    </div>
+  );
+};
 
 export default function InventoriPage() {
   const [search, setSearch] = useState('');
@@ -17,7 +57,7 @@ export default function InventoriPage() {
   const [inventoryMeta, setInventoryMeta] = useState({ categories: [], packageUnits: [], itemUnits: [] });
   const [transferForm, setTransferForm] = useState({ bahanName: '', fromLocation: '', toLocation: '', qty: 0 });
   const [locForm, setLocForm] = useState({ name: '', type: 'Warehouse' });
-  const [metaForm, setMetaForm] = useState({ categories: '', packageUnits: '', itemUnits: '' });
+  const [metaForm, setMetaForm] = useState({ categories: [], packageUnits: [], itemUnits: [] });
 
   const loadData = async () => {
     try {
@@ -27,9 +67,9 @@ export default function InventoriPage() {
       setLocations(locData);
       setInventoryMeta(metaData);
       setMetaForm({
-        categories: metaData.categories.join(', '),
-        packageUnits: metaData.packageUnits.join(', '),
-        itemUnits: metaData.itemUnits.join(', ')
+        categories: metaData.categories || [],
+        packageUnits: metaData.packageUnits || [],
+        itemUnits: metaData.itemUnits || []
       });
     } catch (e) {
       console.error(e);
@@ -73,12 +113,7 @@ export default function InventoriPage() {
   };
 
   const handleSaveMeta = async () => {
-    const newMeta = {
-      categories: metaForm.categories.split(',').map(s => s.trim()).filter(s => s),
-      packageUnits: metaForm.packageUnits.split(',').map(s => s.trim()).filter(s => s),
-      itemUnits: metaForm.itemUnits.split(',').map(s => s.trim()).filter(s => s)
-    };
-    await api.saveInventoryMeta(newMeta);
+    await api.saveInventoryMeta(metaForm);
     loadData();
     setShowSettingsModal(false);
     alert('Pengaturan inventori berhasil disimpan');
@@ -300,44 +335,23 @@ export default function InventoriPage() {
               <button className="modal-close" onClick={() => setShowSettingsModal(false)}>✕</button>
             </div>
             <div className="modal-body" style={{overflowY:'auto', flex:1}}>
-              <div style={{background:'var(--warning-light)', padding:'12px', borderRadius:'12px', marginBottom:'24px', border:'1px solid var(--warning)', fontSize:'0.85rem', color:'#92400E'}}>
-                <strong>Tips:</strong> Pisahkan setiap item dengan tanda koma (cth: Kopi, Teh, Susu)
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Daftar Kategori Produk</label>
-                <textarea 
-                  className="form-control" 
-                  rows="3" 
-                  placeholder="cth: Makanan, Minuman, Dessert"
-                  value={metaForm.categories} 
-                  onChange={e => setMetaForm({...metaForm, categories: e.target.value})} 
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Satuan Kemasan (Grosir)</label>
-                <textarea 
-                  className="form-control" 
-                  rows="2" 
-                  placeholder="cth: Karton, Dus, Ball"
-                  value={metaForm.packageUnits} 
-                  onChange={e => setMetaForm({...metaForm, packageUnits: e.target.value})} 
-                />
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Satuan Isi (Retail/Eceran)</label>
-                <textarea 
-                  className="form-control" 
-                  rows="3" 
-                  placeholder="cth: Gram, Liter, Pcs, Botol"
-                  value={metaForm.itemUnits} 
-                  onChange={e => setMetaForm({...metaForm, itemUnits: e.target.value})} 
-                />
-              </div>
+              <TagInput 
+                label="Daftar Kategori Produk" 
+                tags={metaForm.categories} 
+                onChange={tags => setMetaForm({...metaForm, categories: tags})} 
+              />
+              <TagInput 
+                label="Satuan Kemasan (Grosir)" 
+                tags={metaForm.packageUnits} 
+                onChange={tags => setMetaForm({...metaForm, packageUnits: tags})} 
+              />
+              <TagInput 
+                label="Satuan Isi (Retail/Eceran)" 
+                tags={metaForm.itemUnits} 
+                onChange={tags => setMetaForm({...metaForm, itemUnits: tags})} 
+              />
             </div>
-            <div className="modal-footer" style={{boxShadow:'0 -4px 12px rgba(0,0,0,0.05)'}}>
+            <div className="modal-footer" style={{boxShadow:'0 -4px 12px rgba(0,0,0,0.05)', marginTop: 'auto'}}>
               <button className="btn btn-outline" onClick={() => setShowSettingsModal(false)}>Batal</button>
               <button className="btn btn-primary" onClick={handleSaveMeta}>💾 Simpan Perubahan</button>
             </div>
