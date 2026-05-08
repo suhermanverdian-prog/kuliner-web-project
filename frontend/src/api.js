@@ -42,12 +42,24 @@ export const api = new Proxy(apiBase, {
       return () => fetch(`${API_URL}/${resource}`).then(res => res.json());
     }
     
-    // Jika fungsi berawalan 'add' atau 'update'
-    if (prop.startsWith('add') || prop.startsWith('update')) {
-      return (data) => fetch(`${API_URL}/${prop.toLowerCase()}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+    // Jika fungsi berawalan 'add', 'update', atau 'save'
+    if (prop.startsWith('add') || prop.startsWith('update') || prop.startsWith('save')) {
+      return (data) => {
+        const isUpdate = prop.startsWith('update') && data.id;
+        const resource = prop.replace('add', '').replace('update', '').replace('save', '').toLowerCase();
+        const url = isUpdate ? `${API_URL}/${resource}/${data.id}` : `${API_URL}/${resource}`;
+        return fetch(url, {
+          method: isUpdate ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        }).then(res => res.json());
+      };
+    }
+
+    // Jika fungsi berawalan 'delete'
+    if (prop.startsWith('delete')) {
+      return (id) => fetch(`${API_URL}/${prop.replace('delete', '').toLowerCase()}/${id}`, {
+        method: 'DELETE'
       }).then(res => res.json());
     }
 

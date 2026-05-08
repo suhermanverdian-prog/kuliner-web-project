@@ -63,6 +63,21 @@ export default function PembelianPage() {
   };
 
   // --- PO ACTIONS ---
+  const [showQuickBahan, setShowQuickBahan] = useState(false);
+  const [quickBahanForm, setQuickBahanForm] = useState({ name: '', category: '', unit: '', minStock: 10, price: 0 });
+
+  const handleQuickSaveBahan = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await api.addBahan(quickBahanForm);
+      setBahanList([...bahanList, res]);
+      setShowQuickBahan(false);
+      alert('Bahan baku baru berhasil ditambahkan!');
+    } catch (err) {
+      alert('Gagal menambah bahan baku');
+    }
+  };
+
   const handleAddPoItem = () => {
     setPoForm({ ...poForm, items: [...poForm.items, { bahanId: '', qty: 1, price: 0 }] });
   };
@@ -385,9 +400,16 @@ export default function PembelianPage() {
                 {poForm.items.map((item, i) => (
                   <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'flex-start' }}>
                     <div style={{ flex: 2 }}>
-                      <select className="form-control" required value={item.bahanId} onChange={e => updatePoItem(i, 'bahanId', e.target.value)}>
+                      <select className="form-control" required value={item.bahanId} onChange={e => {
+                        if (e.target.value === 'NEW') {
+                          setShowQuickBahan(true);
+                        } else {
+                          updatePoItem(i, 'bahanId', e.target.value);
+                        }
+                      }}>
                         <option value="">- Bahan Baku -</option>
                         {bahanList.map(b => <option key={b.id} value={b.id}>{b.name} ({b.unit})</option>)}
+                        <option value="NEW" style={{ fontWeight: 800, color: 'var(--primary)' }}>✨ + Tambah Barang Baru</option>
                       </select>
                     </div>
                     <div style={{ flex: 1 }}>
@@ -447,6 +469,36 @@ export default function PembelianPage() {
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowReceiveModal(false)}>Batal</button>
                 <button type="submit" className="btn-primary" style={{ flex: 1, background: '#166534' }}>✅ Konfirmasi Diterima</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL QUICK ADD BAHAN --- */}
+      {showQuickBahan && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', padding: '24px', borderRadius: 'var(--radius-lg)', width: '400px', boxShadow: 'var(--shadow-xl)' }}>
+            <h3 style={{ marginBottom: '4px' }}>✨ Tambah Barang Baru</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Buat master data barang baru secara cepat.</p>
+            <form onSubmit={handleQuickSaveBahan}>
+              <div className="form-group">
+                <label className="form-label">Nama Barang</label>
+                <input className="form-control" required value={quickBahanForm.name} onChange={e => setQuickBahanForm({...quickBahanForm, name: e.target.value})} />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Kategori</label>
+                  <input className="form-control" required placeholder="cth: Sirup" value={quickBahanForm.category} onChange={e => setQuickBahanForm({...quickBahanForm, category: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Satuan</label>
+                  <input className="form-control" required placeholder="cth: Liter" value={quickBahanForm.unit} onChange={e => setQuickBahanForm({...quickBahanForm, unit: e.target.value})} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowQuickBahan(false)}>Batal</button>
+                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Simpan Barang</button>
               </div>
             </form>
           </div>

@@ -536,68 +536,140 @@ app.post('/api/customers', async (req, res) => {
 });
 
 // ---- SUPPLIERS ----
-app.get('/api/suppliers', (req, res) => res.json(readDB().suppliers));
-app.post('/api/suppliers', (req, res) => {
-  const db = readDB();
-  const item = { ...req.body, id: Date.now() };
-  db.suppliers.push(item); writeDB(db); res.json(item);
+app.get('/api/suppliers', async (req, res) => {
+  const { data, error } = await supabase.from('suppliers').select('*').order('name');
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
 });
-app.put('/api/suppliers/:id', (req, res) => {
-  const db = readDB();
-  db.suppliers = db.suppliers.map(s => s.id === Number(req.params.id) ? { ...s, ...req.body } : s);
-  writeDB(db); res.json({ ok: true });
+app.post('/api/suppliers', async (req, res) => {
+  const { data, error } = await supabase.from('suppliers').insert([req.body]).select();
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data[0]);
 });
-app.delete('/api/suppliers/:id', (req, res) => {
-  const db = readDB();
-  db.suppliers = db.suppliers.filter(s => s.id !== Number(req.params.id));
-  writeDB(db); res.json({ ok: true });
+app.put('/api/suppliers/:id', async (req, res) => {
+  const { error } = await supabase.from('suppliers').update(req.body).eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+app.delete('/api/suppliers/:id', async (req, res) => {
+  const { error } = await supabase.from('suppliers').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
 });
 
 // ---- PURCHASE ORDERS ----
-app.get('/api/po', (req, res) => res.json(readDB().purchase_orders));
-app.post('/api/po', (req, res) => {
-  const db = readDB();
-  const poNum = 'PO-' + String(db.purchase_orders.length + 1).padStart(4, '0');
-  const item = { ...req.body, id: Date.now(), poNumber: poNum, status: 'Pending', createdAt: new Date().toISOString() };
-  db.purchase_orders.push(item); writeDB(db); res.json(item);
+app.get('/api/po', async (req, res) => {
+  // Fetch POs with their items
+  const { data: pos, error } = await supabase.from('pembelian').select('*, items:pembelian_items(*)').order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  
+  // Transform to match frontend expectation (mapping po_number to poNumber, etc.)
+  const result = pos.map(p => ({
+    ...p,
+    poNumber: p.po_number,
+    supplierId: p.supplier_id,
+    createdAt: p.created_at,
+    items: (p.items || []).map(i => ({
+      ...i,
+      bahanId: i.bahan_id,
+      qty: i.qty_ordered,
+      receivedQty: i.qty_received,
+      price: i.price_at_order
+    }))
+  }));
+  res.json(result);
 });
-app.put('/api/po/:id', (req, res) => {
-  const db = readDB();
-  const poId = Number(req.params.id);
-  const existingPo = db.purchase_orders.find(p => p.id === poId);
-  if (!existingPo) return res.status(404).json({ error: 'PO not found' });
 
+app.post('/api/po', async (req, res) => {
+  const { supplierId, location, items } = req.body;
+  
+  // 1. Generate PO Number
+  const { count } = await supabase.from('pembelian').select('*', { count: 'exact', head: true });
+  const poNum = 'PO-' + String((count || 0) + 1).padStart(4, '0');
+  
+  const totalAmount = items.reduce((sum, i) => sum + (Number(i.qty) * Number(i.price)), 0);
+
+  // 2. Insert Header
+  const { data: po, error: poErr } = await supabase.from('pembelian').insert([{
+    po_number: poNum,
+    supplier_id: Number(supplierId),
+    location: location,
+    status: 'Pending',
+    total_amount: totalAmount
+  }]).select().single();
+
+  if (poErr) return res.status(500).json({ error: poErr.message });
+
+  // 3. Insert Items
+  const itemsToInsert = items.map(i => ({
+    pembelian_id: po.id,
+    bahan_id: Number(i.bahanId),
+    qty_ordered: Number(i.qty),
+    qty_received: 0,
+    price_at_order: Number(i.price)
+  }));
+  
+  const { error: itemsErr } = await supabase.from('pembelian_items').insert(itemsToInsert);
+  if (itemsErr) return res.status(500).json({ error: itemsErr.message });
+
+  res.json(po);
+});
+
+app.put('/api/po/:id', async (req, res) => {
+  const poId = req.params.id;
   const { status, items: updatedItems } = req.body;
 
-  if (status === 'Diterima' && existingPo.status !== 'Diterima') {
-    // Process receiving items and updating stock
-    if (updatedItems && Array.isArray(updatedItems)) {
-      updatedItems.forEach(receivedItem => {
-        // Cari bahan dengan ID dan lokasi yang sesuai
-        const targetLocation = existingPo.location || 'Gudang Utama';
-        let bahan = db.bahan.find(b => b.id === Number(receivedItem.bahanId) && b.location === targetLocation);
+  // 1. Get existing PO
+  const { data: po, error: poErr } = await supabase.from('pembelian').select('*').eq('id', poId).single();
+  if (poErr || !po) return res.status(404).json({ error: 'PO tidak ditemukan' });
 
-        if (bahan) {
-          bahan.stock += Number(receivedItem.receivedQty);
+  // 2. If status becomes 'Diterima', update inventory
+  if (status === 'Diterima' && po.status !== 'Diterima') {
+    if (updatedItems && Array.isArray(updatedItems)) {
+      for (const item of updatedItems) {
+        // a. Update qty_received in PO Items
+        await supabase.from('pembelian_items')
+          .update({ qty_received: Number(item.receivedQty) })
+          .eq('pembelian_id', poId)
+          .eq('bahan_id', item.bahanId);
+
+        // b. Update STOCK in Bahan table
+        const targetLoc = po.location || 'Gudang Utama';
+        
+        // Cari bahan di lokasi tersebut
+        const { data: masterBahan } = await supabase.from('bahan').select('name, unit').eq('id', item.bahanId).single();
+        if (!masterBahan) continue;
+
+        const { data: existingBahan } = await supabase.from('bahan')
+          .select('id, stock')
+          .eq('name', masterBahan.name)
+          .eq('location', targetLoc)
+          .single();
+
+        if (existingBahan) {
+          // Update stok yang sudah ada
+          await supabase.from('bahan')
+            .update({ stock: Number(existingBahan.stock) + Number(item.receivedQty) })
+            .eq('id', existingBahan.id);
         } else {
-          // Jika belum ada bahan tersebut di lokasi tujuan, buat baru berdasarkan master data
-          const masterBahan = db.bahan.find(b => b.id === Number(receivedItem.bahanId));
-          if (masterBahan) {
-            db.bahan.push({
-              ...masterBahan,
-              id: Date.now() + Math.floor(Math.random() * 1000), // Generate new ID for new location entry
-              stock: Number(receivedItem.receivedQty),
-              location: targetLocation
-            });
-          }
+          // Buat record baru untuk lokasi ini
+          const { data: masterFull } = await supabase.from('bahan').select('*').eq('id', item.bahanId).single();
+          const { id, created_at, ...newBahanData } = masterFull;
+          await supabase.from('bahan').insert([{
+            ...newBahanData,
+            stock: Number(item.receivedQty),
+            location: targetLoc
+          }]);
         }
-      });
-      existingPo.items = updatedItems; // update PO items with receivedQty
+      }
     }
   }
 
-  existingPo.status = status;
-  writeDB(db); res.json(existingPo);
+  // 3. Update PO Status
+  const { error: updateErr } = await supabase.from('pembelian').update({ status }).eq('id', poId);
+  if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+  res.json({ ok: true });
 });
 
 app.get('/api/locations', async (req, res) => {
