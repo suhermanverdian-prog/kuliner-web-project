@@ -48,6 +48,14 @@ const sendWA = (order) => {
   window.open(`https://wa.me/${order.customerPhone}?text=${text}`, '_blank');
 };
 
+function ProductImage({ src, alt, icon }) {
+  const [error, setError] = useState(false);
+  if (src && !error) {
+    return <img src={src} alt={alt} onError={() => setError(true)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
+  }
+  return <span style={{ fontSize: '1.2rem' }}>{icon || '☕'}</span>;
+}
+
 function CartDrawer({ cart, onClose, onChangeQty, onCheckout }) {
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const tax = Math.round(subtotal * 0.1);
@@ -208,7 +216,7 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
               <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', padding: '6px 0', color: 'var(--text-secondary)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <div style={{ width: '28px', height: '28px', borderRadius: '4px', overflow: 'hidden', background: 'var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
-                    {item.image ? <img src={item.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : item.icon}
+                    <ProductImage src={item.image} alt={item.name} icon={item.icon} />
                   </div>
                   <span>{item.name} × {item.qty}</span>
                 </div>
@@ -702,11 +710,7 @@ export default function GuestMenuPage({ user, tableFromQR }) {
                 transition: 'var(--transition)'
               }}>
                 <div style={{ height: '140px', background: 'linear-gradient(135deg, #FFF8F4, #FEECD8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.5rem', position: 'relative' }}>
-                  {item.image ? (
-                    <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    item.icon
-                  )}
+                  <ProductImage src={item.image} alt={item.name} icon={item.icon} />
                 </div>
                 <div style={{ padding: '12px' }}>
                   <div style={{ fontWeight: 700, fontSize: '0.875rem', marginBottom: '2px' }}>{item.name}</div>

@@ -115,7 +115,6 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
     }
   };
 
-  // Hitung HPP otomatis dari BOM
   const calcHPP = (bom) => bom.reduce((sum, row) => {
     const b = bahanList?.find(x => x.id === Number(row.bahanId));
     if (!b) return sum;
@@ -175,14 +174,11 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
             <label className="form-label">Foto Produk (Opsional)</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
-                width: '60px', height: '60px', borderRadius: '8px', border: '1.5px solid var(--border)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', overflow: 'hidden'
+                width: '80px', height: '80px', borderRadius: '12px', overflow: 'hidden',
+                background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '2px solid var(--border)'
               }}>
-                {form.image ? (
-                  <img src={form.image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <span style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>📸</span>
-                )}
+                <ProductImage src={form.image} alt="Preview" icon={form.icon} />
               </div>
               <div style={{ flex: 1 }}>
                 <input type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} id="upload-image" />
@@ -300,11 +296,7 @@ export default function MenuPage() {
           {filtered.map(item => (
             <div key={item.id} className="card" style={{ overflow: 'hidden', transition: 'var(--transition)' }}>
               <div style={{ height: '120px', background: 'linear-gradient(135deg, #FFF8F4, #FEECD8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', position: 'relative' }}>
-                {item.image ? (
-                  <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  item.icon
-                )}
+                <ProductImage src={item.image} alt={item.name} icon={item.icon} />
               </div>
               <div style={{ padding: '14px' }}>
                 <div style={{ fontWeight: 700, marginBottom: '2px' }}>{item.name}</div>
@@ -362,7 +354,7 @@ export default function MenuPage() {
                     <td>
                       <div className="flex items-center gap-2">
                         <div style={{ width: '32px', height: '32px', borderRadius: '4px', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', overflow: 'hidden' }}>
-                          {item.image ? <img src={item.image} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : item.icon}
+                          <ProductImage src={item.image} alt={item.name} icon={item.icon} />
                         </div>
                         <strong>{item.name}</strong>
                       </div>
