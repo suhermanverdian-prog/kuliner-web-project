@@ -14,6 +14,7 @@ import GuestMenuPage from './pages/GuestMenuPage';
 import PembelianPage from './pages/PembelianPage';
 import CustomerPortalPage from './pages/CustomerPortalPage';
 import RegisterPage from './pages/RegisterPage';
+import SuperAdminPage from './pages/SuperAdminPage';
 import Sidebar from './components/Sidebar';
 
 const PAGE_TITLES = {
@@ -28,6 +29,7 @@ const PAGE_TITLES = {
   menu:       { title: 'Menu & Produk',          subtitle: 'Kelola menu, harga, dan resep BOM' },
   pelanggan:  { title: 'Data Pelanggan',         subtitle: 'Kelola member dan loyalty program' },
   shift:      { title: 'Manajemen Shift',        subtitle: 'Buka & tutup shift kasir' },
+  superadmin: { title: 'SuperAdmin Dashboard',   subtitle: 'Kelola seluruh platform SaaS' },
 };
 
 const DEFAULT_PAGE = {
@@ -193,6 +195,7 @@ export default function App() {
             {activePage === 'menu'       && <MenuPage />}
             {activePage === 'pelanggan'  && <PelangganPage />}
             {activePage === 'shift'      && <ShiftPage user={user} />}
+            {activePage === 'superadmin' && <SuperAdminPage />}
           </div>
         )}
       </div>

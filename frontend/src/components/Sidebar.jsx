@@ -3,27 +3,37 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen
 
   const allNav = [
     { group: 'Utama', items: [
-      { id: 'dashboard', icon: '📊', label: 'Dashboard',      roles: ['admin','owner','akuntan'], perm: 'akses_keuangan' },
-      { id: 'kasir',     icon: '🧾', label: 'Kasir / POS',    roles: ['admin','kasir'],           perm: 'akses_kasir' },
-      { id: 'meja',      icon: '🪑', label: 'Manajemen Meja', roles: ['admin','kasir','koki'],    perm: 'akses_kasir' },
-      { id: 'kds',       icon: '👨‍🍳', label: 'Dapur (KDS)',   roles: ['admin','koki','kasir'],    perm: 'akses_dapur' },
-      { id: 'shift',     icon: '🔄', label: 'Shift Kasir',    roles: ['admin','kasir','owner'],   perm: 'akses_kasir' },
+      { id: 'dashboard', icon: '📊', label: 'Dashboard',      roles: ['admin','owner','akuntan'], perm: 'akses_keuangan', minTier: 'lite' },
+      { id: 'kasir',     icon: '🧾', label: 'Kasir / POS',    roles: ['admin','kasir'],           perm: 'akses_kasir',    minTier: 'lite' },
+      { id: 'meja',      icon: '🪑', label: 'Manajemen Meja', roles: ['admin','kasir','koki'],    perm: 'akses_kasir',    minTier: 'lite' },
+      { id: 'kds',       icon: '👨‍🍳', label: 'Dapur (KDS)',   roles: ['admin','koki','kasir'],    perm: 'akses_dapur',    minTier: 'lite' },
+      { id: 'shift',     icon: '🔄', label: 'Shift Kasir',    roles: ['admin','kasir','owner'],   perm: 'akses_kasir',    minTier: 'lite' },
     ]},
     { group: 'Produk & Stok', items: [
-      { id: 'inventori', icon: '📦', label: 'Bahan Baku',     roles: ['admin','gudang','owner'],  perm: 'akses_gudang' },
-      { id: 'pembelian', icon: '🛒', label: 'Pembelian (PO)', roles: ['admin','gudang','owner'],  perm: 'akses_gudang' },
-      { id: 'menu',      icon: '☕', label: 'Menu & Produk',  roles: ['admin','owner'],           perm: 'akses_gudang' },
+      { id: 'inventori', icon: '📦', label: 'Bahan Baku',     roles: ['admin','gudang','owner'],  perm: 'akses_gudang',   minTier: 'lite' },
+      { id: 'pembelian', icon: '🛒', label: 'Pembelian (PO)', roles: ['admin','gudang','owner'],  perm: 'akses_gudang',   minTier: 'pro' },
+      { id: 'menu',      icon: '☕', label: 'Menu & Produk',  roles: ['admin','owner'],           perm: 'akses_gudang',   minTier: 'pro' },
     ]},
     { group: 'Bisnis', items: [
-      { id: 'laporan',   icon: '📈', label: 'Laporan',        roles: ['admin','owner','akuntan'], perm: 'lihat_laba' },
-      { id: 'pelanggan', icon: '👥', label: 'Pelanggan',      roles: ['admin','owner'],           perm: 'atur_user' },
+      { id: 'laporan',   icon: '📈', label: 'Laporan',        roles: ['admin','owner','akuntan'], perm: 'lihat_laba',     minTier: 'pro' },
+      { id: 'pelanggan', icon: '👥', label: 'Pelanggan',      roles: ['admin','owner'],           perm: 'atur_user',      minTier: 'pro' },
     ]},
     { group: 'Sistem', items: [
-      { id: 'pengaturan', icon: '⚙️', label: 'Pengaturan',   roles: ['admin','owner'],           perm: 'atur_user' },
+      { id: 'pengaturan', icon: '⚙️', label: 'Pengaturan',   roles: ['admin','owner'],           perm: 'atur_user',      minTier: 'pro' },
+      { id: 'superadmin', icon: '🛡️', label: 'SuperAdmin',    roles: [],                          perm: 'superadmin',     minTier: 'franchise' },
     ]},
   ];
 
   const hasAccess = (item) => {
+    // 1. SuperAdmin bypass
+    if (user.is_superadmin) return true;
+
+    // 2. Cek Tier Pelanggan (Tenant)
+    const tenantTier = user.tenant?.tier || 'lite';
+    if (item.minTier === 'pro' && tenantTier === 'lite') return false;
+    if (item.minTier === 'franchise' && (tenantTier === 'lite' || tenantTier === 'pro')) return false;
+
+    // 3. Cek Role & Permission
     if (user.role === 'admin' || user.permissions?.all) return true;
     if (item.perm && user.permissions?.[item.perm]) return true;
     return item.roles.includes(user.role);
@@ -42,7 +52,12 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-logo">
         <h1>☕ BrewMaster</h1>
-        <p>Coffee Shop Management</p>
+        <p>{user.tenant?.name || 'SaaS Management'}</p>
+        {user.tenant?.tier && (
+          <span className={`badge-tier ${user.tenant.tier}`}>
+            {user.tenant.tier.toUpperCase()}
+          </span>
+        )}
       </div>
       <nav className="sidebar-nav">
         {visibleNav.map(group => (

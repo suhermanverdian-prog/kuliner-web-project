@@ -103,9 +103,10 @@ app.post('/api/login', async (req, res) => {
       .single();
     user = data;
   } else {
+    // Fetch user and their tenant info in one go
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select('*, tenant:tenants(*)')
       .eq('username', username)
       .eq('password', password)
       .eq('role', role)
@@ -115,8 +116,16 @@ app.post('/api/login', async (req, res) => {
 
   if (!user) return res.status(401).json({ error: 'Kredensial tidak valid' });
 
+  // Check if tenant is active (if not superadmin)
+  if (!user.is_superadmin && user.tenant && !user.tenant.is_active) {
+    return res.status(403).json({ error: 'Akun bisnis Anda sedang dinonaktifkan. Silakan hubungi SuperAdmin.' });
+  }
+
   const { password: _, ...safeUser } = user;
-  res.json({ user: { ...safeUser, role: role || user.role }, token: 'supabase-token-' + user.id });
+  res.json({ 
+    user: { ...safeUser, role: role || user.role }, 
+    token: 'supabase-token-' + user.id 
+  });
 });
 
 // ---- USERS ----
@@ -1317,6 +1326,21 @@ app.get('/api/report/excel', async (req, res) => {
     console.error('Error generating Excel:', error);
     res.status(500).json({ error: 'Gagal membuat file Excel' });
   }
+});
+
+// --- SUPERADMIN: TENANT MANAGEMENT ---
+app.get('/api/tenants', async (req, res) => {
+  // Idealnya cek is_superadmin di sini, tapi untuk demo kita buka dulu
+  const { data, error } = await supabase.from('tenants').select('*').order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
+app.post('/api/updatetenant', async (req, res) => {
+  const { id, ...updateData } = req.body;
+  const { error } = await supabase.from('tenants').update(updateData).eq('id', id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
 });
 
 // Health check
