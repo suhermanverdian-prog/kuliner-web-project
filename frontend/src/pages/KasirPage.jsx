@@ -175,9 +175,9 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
   const [splitCount, setSplitCount] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Feature Lock: Hanya tier pro/franchise yang bisa QRIS
-  const tenantTier = user?.tenant?.tier || 'lite';
-  const isPremium = tenantTier === 'pro' || tenantTier === 'franchise';
+  // Feature Lock: Cek JSONB features dari tenant
+  const tenantFeatures = user?.tenant?.features || {};
+  const isPremium = tenantFeatures.allow_qris === true;
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const taxAmount = Math.round(subtotal * 0.1);

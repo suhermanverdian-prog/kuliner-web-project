@@ -38,6 +38,17 @@ export default function SuperAdminPage() {
     }
   };
 
+  const toggleFeature = async (tenant, featureKey) => {
+    try {
+      const currentFeatures = tenant.features || {};
+      const newFeatures = { ...currentFeatures, [featureKey]: !currentFeatures[featureKey] };
+      await api.updateTenant({ id: tenant.id, features: newFeatures });
+      fetchTenants();
+    } catch (err) {
+      alert('Gagal update fitur');
+    }
+  };
+
   return (
     <div style={{ padding: '24px' }}>
       <div style={{ marginBottom: '32px' }}>
@@ -55,6 +66,7 @@ export default function SuperAdminPage() {
               <tr>
                 <th>Nama Bisnis</th>
                 <th>Paket / Tier</th>
+                <th>Fitur QRIS</th>
                 <th>Status</th>
                 <th>Tgl Terdaftar</th>
                 <th>Aksi</th>
@@ -74,6 +86,16 @@ export default function SuperAdminPage() {
                       <option value="pro">Pro</option>
                       <option value="franchise">Franchise</option>
                     </select>
+                  </td>
+                  <td>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={t.features?.allow_qris === true} 
+                        onChange={() => toggleFeature(t, 'allow_qris')} 
+                      />
+                      Aktifkan
+                    </label>
                   </td>
                   <td>
                     <span className={`badge ${t.is_active ? 'badge-success' : 'badge-danger'}`}>
