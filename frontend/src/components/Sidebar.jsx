@@ -1,10 +1,14 @@
 import { 
   LayoutDashboard, ShoppingCart, Coffee, ChefHat, 
   Clock, PackageOpen, ShoppingBag, BarChart3, 
-  Users, Settings, ShieldCheck, LogOut, Armchair 
+  Users, Settings, ShieldCheck, LogOut, Armchair,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 
-export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen, onClose }) {
+export default function Sidebar({ 
+  user, activePage, onNavigate, onLogout, isOpen, onClose, 
+  isCollapsed, onToggleCollapse 
+}) {
   const ROLE_LABELS = { admin:'Admin', owner:'Owner', kasir:'Kasir', koki:'Koki/Barista', gudang:'Gudang', akuntan:'Akuntan' };
 
   const allNav = [
@@ -31,25 +35,14 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen
   ];
 
   const hasAccess = (item) => {
-    // 1. Jika menu ini KHUSUS SuperAdmin, maka WAJIB punya flag is_superadmin
-    if (item.perm === 'superadmin') {
-      return user.is_superadmin === true;
-    }
-
-    // 2. Jika user adalah SuperAdmin, beri akses ke SEMUA menu (kecuali yang dilarang eksplisit jika ada)
+    if (item.perm === 'superadmin') return user.is_superadmin === true;
     if (user.is_superadmin) return true;
-
-    // 3. FASE 7: Feature-Locked Access (Periksa fitur tenant)
     const tenantFeatures = user.tenant?.features || {};
-    
     if (item.id === 'laporan' && tenantFeatures.accounting !== true) return false;
     if (item.id === 'pelanggan' && tenantFeatures.crm !== true) return false;
-
-    // 4. Validasi Role Base Access Control (RBAC) Biasa
-    if (user.permissions && user.permissions.all) return true; // Owner/Admin bypass
+    if (user.permissions && user.permissions.all) return true; 
     if (item.roles.includes(user.role)) return true;
     if (user.permissions && user.permissions[item.perm]) return true;
-
     return false;
   };
 
@@ -61,16 +54,25 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen
   return (
     <>
       <div className={`sidebar-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} />
-      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <aside className={`sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-logo">
-          <h1>BrewMaster<span style={{ color: 'var(--accent)' }}>.</span></h1>
-          <p>Tenant: {user.tenant?.name || 'Sistem Pusat'}</p>
+          {!isCollapsed && (
+            <div className="logo-text">
+              <h1>BrewMaster<span style={{ color: 'var(--accent)' }}>.</span></h1>
+              <p>Tenant: {user.tenant?.name || 'Sistem Pusat'}</p>
+            </div>
+          )}
+          {isCollapsed && <div className="logo-short">B<span style={{ color: 'var(--accent)' }}>.</span></div>}
+          <button className="collapse-toggle" onClick={onToggleCollapse} title={isCollapsed ? 'Expand' : 'Collapse'}>
+            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
         </div>
         
         <nav className="sidebar-nav">
           {navs.map((group, i) => (
             <div key={i} style={{ marginBottom: '16px' }}>
-              <div className="nav-group-label">{group.group}</div>
+              {!isCollapsed && <div className="nav-group-label">{group.group}</div>}
+              {isCollapsed && <div className="nav-group-separator" />}
               {group.items.map(item => {
                 const IconComponent = item.icon;
                 return (
@@ -78,9 +80,10 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen
                     key={item.id}
                     className={`nav-item ${activePage === item.id ? 'active' : ''}`}
                     onClick={() => onNavigate(item.id)}
+                    title={isCollapsed ? item.label : ''}
                   >
-                    <IconComponent size={18} className="nav-icon" />
-                    <span style={{ flex: 1, textAlign: 'left', marginLeft: '6px' }}>{item.label}</span>
+                    <IconComponent size={20} className="nav-icon" />
+                    {!isCollapsed && <span style={{ flex: 1, textAlign: 'left', marginLeft: '6px' }}>{item.label}</span>}
                   </button>
                 );
               })}
@@ -89,13 +92,15 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen
         </nav>
 
         <div className="sidebar-user">
-          <div className="user-avatar">{user.avatar || 'U'}</div>
-          <div className="user-info">
-            <div className="user-name">{user.name}</div>
-            <div className="user-role">
-              {user.is_superadmin ? 'Super Admin' : ROLE_LABELS[user.role] || user.role}
+          <div className="user-avatar">{user.name?.[0] || 'U'}</div>
+          {!isCollapsed && (
+            <div className="user-info">
+              <div className="user-name">{user.name}</div>
+              <div className="user-role">
+                {user.is_superadmin ? 'Super Admin' : ROLE_LABELS[user.role] || user.role}
+              </div>
             </div>
-          </div>
+          )}
           <button className="logout-btn" onClick={onLogout} title="Keluar">
             <LogOut size={16} />
           </button>

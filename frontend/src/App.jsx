@@ -41,6 +41,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [activePage, setActivePage] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [hash, setHash] = useState(window.location.hash);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [offlineCount, setOfflineCount] = useState(0);
@@ -150,8 +151,17 @@ export default function App() {
   const isFullWidth = activePage === 'kasir';
 
   return (
-    <div className={`app-layout ${isSidebarOpen ? 'sidebar-open' : ''}`}>
-      <Sidebar user={user} activePage={activePage} onNavigate={handleNavigate} onLogout={handleLogout} isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+    <div className={`app-layout ${isSidebarOpen ? 'sidebar-open' : ''} ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <Sidebar 
+        user={user} 
+        activePage={activePage} 
+        onNavigate={handleNavigate} 
+        onLogout={handleLogout} 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+      />
       <div className="main-content">
         <header className="topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
