@@ -1,133 +1,135 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-/* ===== PREMIUM CSS VARIABLES - BREWMASTER ===== */
+/* ===== PREMIUM CSS VARIABLES (SHADCN/ZINC AESTHETICS) ===== */
 :root {
-  /* Rich Coffee Palette */
-  --primary: #4A2B1D; /* Deep Espresso */
-  --primary-dark: #28140B; /* Dark Roast */
-  --primary-light: #7A4B34; /* Mocha */
+  /* Brand/Coffee Accents (Refined) */
+  --primary: #18181b; /* Zinc 900 */
+  --primary-dark: #09090b; /* Zinc 950 */
+  --primary-light: #27272a; /* Zinc 800 */
   
-  --accent: #D49A4D; /* Golden Caramel */
-  --accent-light: #F0C484; /* Latte */
-  --accent-hover: #E8A855;
+  --accent: #d97706; /* Amber 600 - Coffee accent */
+  --accent-light: #fef3c7; /* Amber 100 */
+  --accent-hover: #b45309; /* Amber 700 */
   
-  /* Backgrounds (Premium Light Mode) */
-  --bg: #FDFCFB; /* Warmer, softer off-white */
-  --bg-card: #FFFFFF; /* Pure white for cards to pop */
-  --bg-sidebar: #18181b; /* Sleek Dark Sidebar (Zinc 900) */
-  --bg-topbar: rgba(253, 252, 251, 0.85);
-  --bg-input: rgba(255, 255, 255, 0.7);
-  --bg-input-focus: #FFFFFF;
-  --bg-icon-btn: #FFFFFF;
-  --bg-btn-outline: rgba(255, 255, 255, 0.5);
-  --bg-table-header: rgba(0,0,0,0.02);
-  --bg-table-hover: rgba(212, 154, 77, 0.03);
+  /* Backgrounds */
+  --bg: #fafafa; /* Zinc 50 */
+  --bg-card: #ffffff; /* Pure white */
+  --bg-sidebar: #ffffff;
+  --bg-topbar: rgba(255, 255, 255, 0.8);
+  --bg-input: #ffffff;
+  --bg-input-focus: #ffffff;
+  --bg-icon-btn: #f4f4f5; /* Zinc 100 */
+  --bg-btn-outline: transparent;
+  --bg-table-header: #f4f4f5;
+  --bg-table-hover: #fafafa;
   
   /* Sidebar Variables */
-  --sidebar-bg: #FFFFFF;
-  --sidebar-border: var(--border-light);
-  --sidebar-text: #71717A;
-  --sidebar-text-hover: #18181b;
-  --sidebar-text-active: var(--primary-dark);
-  --sidebar-bg-hover: #F4F4F5;
-  --sidebar-bg-active: #F4F4F5;
-  --sidebar-logo: var(--primary-dark);
-  --sidebar-label: #A1A1AA;
-  --sidebar-user-bg: #FAFAFA;
-  --sidebar-user-border: var(--border-light);
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e4e4e7; /* Zinc 200 */
+  --sidebar-text: #71717a; /* Zinc 500 */
+  --sidebar-text-hover: #18181b; /* Zinc 900 */
+  --sidebar-text-active: #18181b;
+  --sidebar-bg-hover: #f4f4f5;
+  --sidebar-bg-active: #f4f4f5;
+  --sidebar-logo: #18181b;
+  --sidebar-label: #a1a1aa; /* Zinc 400 */
+  --sidebar-user-bg: #ffffff;
+  --sidebar-user-border: #e4e4e7;
   
   /* Text */
-  --text-primary: #1C1008;
-  --text-secondary: #5C4A40;
-  --text-muted: #9E8C82;
-  --text-light: #FDFBF9;
+  --text-primary: #09090b; /* Zinc 950 */
+  --text-secondary: #3f3f46; /* Zinc 700 */
+  --text-muted: #71717a; /* Zinc 500 */
+  --text-light: #ffffff;
   
-  /* Borders */
-  --border: rgba(0, 0, 0, 0.08);
-  --border-light: rgba(0, 0, 0, 0.04);
-  --border-glass: rgba(255, 255, 255, 0.8);
+  /* Borders & UI Elements */
+  --border: #e4e4e7; /* Zinc 200 */
+  --border-light: #f4f4f5; /* Zinc 100 */
+  --border-glass: rgba(255, 255, 255, 0.5);
+  --ring: rgba(24, 24, 27, 0.2); /* For focus rings */
   
   /* Status Colors */
-  --success: #10B981;
-  --success-light: #D1FAE5;
-  --warning: #F59E0B;
-  --warning-light: #FEF3C7;
-  --danger: #EF4444;
-  --danger-light: #FEE2E2;
-  --info: #3B82F6;
-  --info-light: #DBEAFE;
+  --success: #10b981;
+  --success-light: #ecfdf5;
+  --warning: #f59e0b;
+  --warning-light: #fffbeb;
+  --danger: #ef4444;
+  --danger-light: #fef2f2;
+  --info: #3b82f6;
+  --info-light: #eff6ff;
   
-  /* Modern Shadows - Softer and wider for floating effect */
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.06);
-  --shadow-glow: 0 0 20px rgba(212, 154, 77, 0.15);
+  /* Shadcn Shadows - Crisp and layered */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ring); /* Focus ring */
   
-  /* Border Radii */
-  --radius-sm: 10px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --radius-xl: 32px;
+  /* Border Radii (Slightly sharper like Shadcn) */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   
   /* Typography */
-  --font-body: 'Plus Jakarta Sans', sans-serif;
-  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-display: 'Inter', sans-serif;
   
   /* Animations */
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 /* ===== SHADCN-INSPIRED DARK MODE ===== */
 [data-theme="dark"] {
-  /* Sleek Dark Backgrounds */
+  --primary: #fafafa; /* Zinc 50 */
+  --primary-dark: #ffffff;
+  --primary-light: #e4e4e7; /* Zinc 200 */
+  
+  --accent: #f59e0b; /* Amber 500 */
+  --accent-light: rgba(245, 158, 11, 0.15); 
+  --accent-hover: #fbbf24;
+  
+  /* Deep Dark Backgrounds */
   --bg: #09090b; /* Zinc 950 */
-  --bg-card: rgba(24, 24, 27, 0.85); /* Zinc 900 with glass */
-  --bg-sidebar: #000000;
-  --bg-topbar: rgba(9, 9, 11, 0.85);
-  --bg-input: rgba(39, 39, 42, 0.7); /* Zinc 800 */
-  --bg-input-focus: #27272a;
+  --bg-card: #09090b; /* Match bg for seamless look or slightly lighter */
+  --bg-sidebar: #09090b;
+  --bg-topbar: rgba(9, 9, 11, 0.8);
+  --bg-input: #09090b;
+  --bg-input-focus: #18181b; /* Zinc 900 */
   --bg-icon-btn: #18181b;
-  --bg-btn-outline: rgba(39, 39, 42, 0.5);
-  --bg-table-header: rgba(255,255,255,0.02);
-  --bg-table-hover: rgba(255,255,255,0.05);
+  --bg-btn-outline: transparent;
+  --bg-table-header: #18181b;
+  --bg-table-hover: rgba(255, 255, 255, 0.03);
 
   /* Sidebar Variables (Dark Mode) */
-  --sidebar-bg: #000000;
-  --sidebar-border: rgba(255, 255, 255, 0.05);
-  --sidebar-text: #A1A1AA;
-  --sidebar-text-hover: #FAFAFA;
-  --sidebar-text-active: var(--primary);
-  --sidebar-bg-hover: rgba(255,255,255,0.05);
-  --sidebar-bg-active: rgba(212, 154, 77, 0.1);
-  --sidebar-logo: var(--primary);
-  --sidebar-label: rgba(255,255,255,0.3);
-  --sidebar-user-bg: rgba(255,255,255,0.02);
-  --sidebar-user-border: rgba(255,255,255,0.05);
+  --sidebar-bg: #09090b;
+  --sidebar-border: #27272a; /* Zinc 800 */
+  --sidebar-text: #a1a1aa; /* Zinc 400 */
+  --sidebar-text-hover: #fafafa; /* Zinc 50 */
+  --sidebar-text-active: #fafafa;
+  --sidebar-bg-hover: #18181b; /* Zinc 900 */
+  --sidebar-bg-active: #18181b;
+  --sidebar-logo: #fafafa;
+  --sidebar-label: #71717a; /* Zinc 500 */
+  --sidebar-user-bg: #09090b;
+  --sidebar-user-border: #27272a;
   
-  /* Coffee Accents adapted for Dark Mode (Slightly brighter for contrast) */
-  --primary: #D49A4D; 
-  --primary-dark: #F0C484;
-  --primary-light: #B87A22;
+  /* Text */
+  --text-primary: #fafafa; /* Zinc 50 */
+  --text-secondary: #a1a1aa; /* Zinc 400 */
+  --text-muted: #71717a; /* Zinc 500 */
+  --text-light: #ffffff;
   
-  --accent: #E8A855; 
-  --accent-light: rgba(232, 168, 85, 0.2); 
+  /* Borders */
+  --border: #27272a; /* Zinc 800 */
+  --border-light: #18181b; /* Zinc 900 */
+  --border-glass: rgba(255, 255, 255, 0.05);
+  --ring: rgba(255, 255, 255, 0.2);
   
-  /* Text - High Legibility */
-  --text-primary: #FAFAFA; /* Zinc 50 */
-  --text-secondary: #A1A1AA; /* Zinc 400 */
-  --text-muted: #71717A; /* Zinc 500 */
-  --text-light: #FFFFFF;
-  
-  /* Borders - Subtle structure */
-  --border: rgba(255, 255, 255, 0.1);
-  --border-light: rgba(255, 255, 255, 0.05);
-  --border-glass: rgba(255, 255, 255, 0.08);
-  
-  /* Shadows - Darker for depth */
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.8);
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.9);
+  /* Shadows - Use solid borders for depth in dark mode */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.9);
 }
 
 /* ===== RESET ===== */
