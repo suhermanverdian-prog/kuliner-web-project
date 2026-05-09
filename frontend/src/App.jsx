@@ -182,7 +182,7 @@ export default function App() {
         </header>
 
         {isFullWidth ? (
-          <KasirPage />
+          <KasirPage user={user} />
         ) : (
           <div className="page-content">
             {activePage === 'dashboard'  && <Dashboard user={user} />}

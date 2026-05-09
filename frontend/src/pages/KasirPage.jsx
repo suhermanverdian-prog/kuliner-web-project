@@ -167,17 +167,23 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
 
 
 
-function CheckoutModal({ cart, onClose, onSuccess }) {
+function CheckoutModal({ cart, onClose, onSuccess, user }) {
   const [payMethod, setPayMethod] = useState('Tunai');
   const [discount, setDiscount] = useState(0);
   const [tableNum, setTableNum] = useState('');
   const [orderType, setOrderType] = useState('Dine-in');
+  const [splitCount, setSplitCount] = useState(1);
   const [loading, setLoading] = useState(false);
+
+  // Feature Lock: Hanya tier pro/franchise yang bisa QRIS
+  const tenantTier = user?.tenant?.tier || 'lite';
+  const isPremium = tenantTier === 'pro' || tenantTier === 'franchise';
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const taxAmount = Math.round(subtotal * 0.1);
   const discountAmount = discount ? Math.round(subtotal * (discount / 100)) : 0;
   const total = subtotal + taxAmount - discountAmount;
+  const splitTotal = splitCount > 1 ? Math.round(total / splitCount) : total;
 
   const handlePay = async () => {
     setLoading(true);
@@ -229,23 +235,44 @@ function CheckoutModal({ cart, onClose, onSuccess }) {
           <div className="form-group">
             <label className="form-label">Metode Pembayaran</label>
             <div className="flex gap-2" style={{flexWrap:'wrap'}}>
-              {['Tunai','QRIS','Kartu Debit','Transfer','Hutang'].map(m => (
-                <button key={m} type="button"
-                  className={`cat-tab ${payMethod === m ? 'active' : ''}`}
-                  onClick={() => setPayMethod(m)}
-                >{m}</button>
-              ))}
+              {['Tunai','QRIS','Kartu Debit','Transfer','Hutang'].map(m => {
+                const isLocked = !isPremium && m !== 'Tunai';
+                return (
+                  <button key={m} type="button"
+                    className={`cat-tab ${payMethod === m ? 'active' : ''}`}
+                    onClick={() => {
+                      if (isLocked) return alert('Fitur ini hanya tersedia untuk Paket Pro. Silakan upgrade!');
+                      setPayMethod(m);
+                    }}
+                    style={{ opacity: isLocked ? 0.5 : 1, position: 'relative' }}
+                  >
+                    {m} {isLocked && <span style={{fontSize:'0.7rem', marginLeft:'4px'}}>🔒</span>}
+                  </button>
+                );
+              })}
             </div>
           </div>
-          <div className="form-group">
-            <label className="form-label">Diskon (%)</label>
-            <input type="number" className="form-control" min="0" max="100" value={discount} onChange={e => setDiscount(Number(e.target.value))} />
+          <div className="form-row">
+            <div className="form-group">
+              <label className="form-label">Diskon (%)</label>
+              <input type="number" className="form-control" min="0" max="100" value={discount} onChange={e => setDiscount(Number(e.target.value))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Split Bill (Orang)</label>
+              <input type="number" className="form-control" min="1" max="20" value={splitCount} onChange={e => setSplitCount(Number(e.target.value))} />
+            </div>
           </div>
           <div style={{background:'var(--bg)', borderRadius:'var(--radius-sm)', padding:'16px', marginTop:'8px'}}>
             <div className="cart-summary-row"><span>Subtotal</span><span>{formatRupiah(subtotal)}</span></div>
             <div className="cart-summary-row"><span>Pajak (10%)</span><span>{formatRupiah(taxAmount)}</span></div>
             {discount > 0 && <div className="cart-summary-row" style={{color:'var(--success)'}}><span>Diskon {discount}%</span><span>-{formatRupiah(discountAmount)}</span></div>}
             <div className="cart-total-row"><span>Total</span><span style={{color:'var(--primary)'}}>{formatRupiah(total)}</span></div>
+            {splitCount > 1 && (
+              <div className="cart-summary-row" style={{marginTop:'8px', paddingTop:'8px', borderTop:'1px dashed var(--border-light)', color:'var(--accent)', fontWeight:800}}>
+                <span>Tagihan per orang ({splitCount}x)</span>
+                <span>{formatRupiah(splitTotal)}</span>
+              </div>
+            )}
           </div>
         </div>
         <div className="modal-footer">
@@ -303,9 +330,10 @@ function SuccessModal({ tx, onClose }) {
   );
 }
 
-export default function KasirPage() {
+export default function KasirPage({ user }) {
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeShift, setActiveShift] = useState(null);
   const [category, setCategory] = useState('Semua');
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState([]);
@@ -320,8 +348,13 @@ export default function KasirPage() {
   const fetchMenuAndOrders = async (isInitial = false) => {
     try {
       if (isInitial) setLoading(true);
-      const [menuData, txData] = await Promise.all([api.getMenu(), api.getTransactions()]);
+      const [menuData, txData, shiftData] = await Promise.all([
+        api.getMenu(), 
+        api.getTransactions(),
+        api.getActiveShift()
+      ]);
       setMenus(menuData);
+      setActiveShift(shiftData);
       setPendingOrders(txData.filter(t => 
         (t.paymentStatus === 'pending_payment' && t.paymentMethod === 'Tunai') || 
         t.paymentStatus === 'pending_acceptance'
@@ -369,6 +402,22 @@ export default function KasirPage() {
     setShowSuccess(true);
     setCart([]);
   };
+
+  // BR-001: Block UI if no active shift
+  if (!loading && !activeShift) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '40px', background: 'var(--bg)' }}>
+        <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🔒</div>
+        <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: '8px', color: 'var(--text-primary)' }}>Kasir Terkunci</h2>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '24px', textAlign: 'center', maxWidth: '400px' }}>
+          Shift kasir belum dimulai. Berdasarkan aturan BR-001, pesanan hanya bisa dibuat jika ada shift yang aktif.
+        </p>
+        <button className="btn btn-primary btn-lg" onClick={() => window.location.hash = '#/shift'}>
+          Buka Shift Sekarang
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="pos-layout">
@@ -535,7 +584,7 @@ export default function KasirPage() {
         )}
       </div>
 
-      {showCheckout && <CheckoutModal cart={cart} onClose={() => setShowCheckout(false)} onSuccess={handleSuccess} />}
+      {showCheckout && <CheckoutModal cart={cart} onClose={() => setShowCheckout(false)} onSuccess={handleSuccess} user={user} />}
       {showSuccess && <SuccessModal tx={lastTx} onClose={() => setShowSuccess(false)} />}
       {selectedPendingTx && <ConfirmPaymentModal tx={selectedPendingTx} onClose={() => setSelectedPendingTx(null)} onSuccess={(tx) => { setSelectedPendingTx(null); handleSuccess(tx); fetchMenuAndOrders(); }} />}
     </div>
