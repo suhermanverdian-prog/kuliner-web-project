@@ -109,6 +109,30 @@ const initDB = () => {
   return initial;
 };
 
+// ---- FASE 7: FULL ACCOUNTING HELPER ----
+// Memastikan integritas BR-016: Nilai Debit harus sama dengan Kredit
+const createJournal = async (reference, description, lines, tenantId = null) => {
+  const totalDebit = lines.reduce((sum, l) => sum + Number(l.debit || 0), 0);
+  const totalCredit = lines.reduce((sum, l) => sum + Number(l.credit || 0), 0);
+  
+  if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    throw new Error(`BR-016 Violation: Jurnal tidak seimbang. Debit: ${totalDebit}, Credit: ${totalCredit}`);
+  }
+
+  const { data: journal, error: jErr } = await supabase.from('journals').insert([{
+    reference, description, tenant_id: tenantId
+  }]).select('id').single();
+
+  if (jErr) throw new Error(jErr.message);
+
+  const { error: lErr } = await supabase.from('journal_lines').insert(
+    lines.map(l => ({ ...l, journal_id: journal.id }))
+  );
+  if (lErr) throw new Error(lErr.message);
+  
+  return journal;
+};
+
 // ---- AUTH ----
 app.post('/api/login', async (req, res) => {
   const { username, password, role } = req.body;
@@ -1016,6 +1040,53 @@ app.get('/api/v1/analytics/financial', async (req, res) => {
   });
 
   res.json({ pnl: { revenue, expense, net_profit: revenue - expense }, cash_flow: { net_kas: cash } });
+});
+
+// FASE 7: FULL ACCOUNTING REPORTS (Feature-Locked)
+app.get('/api/v1/accounting/reports', async (req, res) => {
+  const { period = 'month' } = req.query;
+  const tenantId = req.headers['x-tenant-id'];
+
+  // 1. Aktivasi Feature-Locked Accounting
+  if (tenantId) {
+    const { data: tenant } = await supabase.from('tenants').select('features').eq('id', tenantId).single();
+    if (tenant && tenant.features && tenant.features.allow_accounting === false) {
+      return res.status(403).json({ error: 'Fitur Akuntansi (Full Ledger) belum diaktifkan untuk paket Anda.' });
+    }
+  }
+
+  const { start, end } = getDateRange(period);
+  const { data: lines, error } = await supabase
+    .from('journal_lines')
+    .select('account_name, debit, credit, journals!inner(created_at)')
+    .gte('journals.created_at', start.toISOString())
+    .lt('journals.created_at', end.toISOString());
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  const balanceSheet = { Asset: 0, Liability: 0, Equity: 0 };
+  const pnl = { Revenue: 0, Expense: 0 };
+  const cashFlow = { Operating: 0 };
+
+  lines.forEach(l => {
+    const acc = (l.account_name || '').toLowerCase();
+    const net = Number(l.debit) - Number(l.credit);
+    
+    // Klasifikasi Chart of Accounts (COA) Sederhana
+    if (acc.includes('kas') || acc.includes('clearing') || acc.includes('inventory')) balanceSheet.Asset += net;
+    else if (acc.includes('payable') || acc.includes('hutang') || acc.includes('grni')) balanceSheet.Liability -= net; 
+    else if (acc.includes('sales') || acc.includes('revenue')) pnl.Revenue -= net; 
+    else if (acc.includes('cogs') || acc.includes('expense') || acc.includes('waste')) pnl.Expense += net;
+
+    // Cash flow khusus akun Kas Tunai
+    if (acc === 'kas') cashFlow.Operating += net;
+  });
+
+  res.json({
+    balance_sheet: balanceSheet,
+    profit_and_loss: { ...pnl, NetProfit: (pnl.Revenue * -1) - pnl.Expense },
+    cash_flow: cashFlow
+  });
 });
 
 app.get('/api/v1/analytics/inventory', async (req, res) => {
