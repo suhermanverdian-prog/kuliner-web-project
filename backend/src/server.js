@@ -304,10 +304,37 @@ app.post('/api/transactions', async (req, res) => {
 
               // 4. Update hanya stok di lokasi produksi (Bar/Kitchen)
               await supabase.from('bahan').update({ stock: newStock }).eq('id', prodBahan.id);
+
+              // 5. FASE 3: Event-Based Movement
+              await supabase.from('stock_movements').insert([{
+                product_id: prodBahan.id,
+                type: 'out',
+                qty: deduction,
+                reference_type: 'sales',
+                reference_id: trxId
+              }]);
             }
           }
         }
       }
+    }
+  }
+
+  // FASE 3: Auto-Journaling (Jika langsung lunas)
+  if (paymentStatus === 'paid') {
+    const { data: journal } = await supabase.from('journals').insert([{
+      reference: trxId,
+      description: `Penjualan POS via ${body.paymentMethod || 'Tunai'}`
+    }]).select('id').single();
+
+    if (journal) {
+      const isTunai = body.paymentMethod === 'Tunai';
+      const debitAccount = isTunai ? 'Kas' : `${body.paymentMethod} Clearing`;
+      
+      await supabase.from('journal_lines').insert([
+        { journal_id: journal.id, account_name: debitAccount, debit: body.total, credit: 0 },
+        { journal_id: journal.id, account_name: 'Sales', debit: 0, credit: body.total }
+      ]);
     }
   }
 
@@ -438,10 +465,34 @@ app.put('/api/transactions/:id/confirm-payment', async (req, res) => {
 
             const deduction = (Number(bom.qty) / ratio) * item.qty;
             await supabase.from('bahan').update({ stock: Number(prodBahan.stock) - deduction }).eq('id', prodBahan.id);
+
+            // FASE 3: Event-Based Movement
+            await supabase.from('stock_movements').insert([{
+              product_id: prodBahan.id,
+              type: 'out',
+              qty: deduction,
+              reference_type: 'sales',
+              reference_id: id
+            }]);
           }
         }
       }
     }
+  }
+
+  // 3. FASE 3: Auto-Journaling saat Konfirmasi Pembayaran
+  const actualPaymentMethod = paymentMethod || trx.payment_method || 'Tunai';
+  const { data: journal } = await supabase.from('journals').insert([{
+    reference: id,
+    description: `Pelunasan Transaksi via ${actualPaymentMethod}`
+  }]).select('id').single();
+
+  if (journal) {
+    const debitAccount = actualPaymentMethod === 'Tunai' ? 'Kas' : `${actualPaymentMethod} Clearing`;
+    await supabase.from('journal_lines').insert([
+      { journal_id: journal.id, account_name: debitAccount, debit: trx.total, credit: 0 },
+      { journal_id: journal.id, account_name: 'Sales', debit: 0, credit: trx.total }
+    ]);
   }
 
   res.json({ ok: true, ...updateData });
