@@ -2,51 +2,33 @@
 
 /* ===== PREMIUM CSS VARIABLES (SHADCN/ZINC AESTHETICS) ===== */
 :root {
-  /* Brand/Coffee Accents (Refined) */
+  /* Brand Accents */
   --primary: #18181b; /* Zinc 900 */
-  --primary-dark: #09090b; /* Zinc 950 */
-  --primary-light: #27272a; /* Zinc 800 */
-  
-  --accent: #d97706; /* Amber 600 - Coffee accent */
-  --accent-light: #fef3c7; /* Amber 100 */
-  --accent-hover: #b45309; /* Amber 700 */
+  --primary-foreground: #fafafa; /* Zinc 50 */
+  --accent: #d97706; /* Amber 600 */
+  --accent-foreground: #ffffff;
   
   /* Backgrounds */
   --bg: #fafafa; /* Zinc 50 */
-  --bg-card: #ffffff; /* Pure white */
-  --bg-sidebar: #ffffff;
-  --bg-topbar: rgba(255, 255, 255, 0.8);
-  --bg-input: #ffffff;
-  --bg-input-focus: #ffffff;
-  --bg-icon-btn: #f4f4f5; /* Zinc 100 */
-  --bg-btn-outline: transparent;
-  --bg-table-header: #f4f4f5;
-  --bg-table-hover: #fafafa;
+  --bg-card: #ffffff;
+  --bg-muted: #f4f4f5; /* Zinc 100 */
   
-  /* Sidebar Variables */
-  --sidebar-bg: var(--bg-card);
+  /* Sidebar Variables (Light) */
+  --sidebar-bg: var(--bg); /* Seamless blend */
   --sidebar-border: var(--border);
-  --sidebar-text: var(--text-muted);
-  --sidebar-text-hover: var(--text-primary);
-  --sidebar-text-active: var(--bg-card); /* White text */
-  --sidebar-bg-hover: var(--border-light);
-  --sidebar-bg-active: var(--primary); /* Black/Dark bg */
-  --sidebar-logo: var(--text-primary);
-  --sidebar-label: var(--text-muted);
-  --sidebar-user-bg: var(--bg-card);
-  --sidebar-user-border: var(--border);
+  --sidebar-text: #71717a; /* Zinc 500 */
+  --sidebar-text-active: var(--primary);
+  --sidebar-bg-active: #f4f4f5; /* Zinc 100 */
+  --sidebar-logo: var(--primary);
+  --sidebar-label: #a1a1aa; /* Zinc 400 */
   
-  /* Text */
+  /* Global UI */
   --text-primary: #09090b; /* Zinc 950 */
   --text-secondary: #3f3f46; /* Zinc 700 */
   --text-muted: #71717a; /* Zinc 500 */
-  --text-light: #ffffff;
-  
-  /* Borders & UI Elements */
   --border: #e4e4e7; /* Zinc 200 */
   --border-light: #f4f4f5; /* Zinc 100 */
-  --border-glass: rgba(255, 255, 255, 0.5);
-  --ring: rgba(24, 24, 27, 0.2); /* For focus rings */
+  --ring: rgba(24, 24, 27, 0.1);
   
   /* Status Colors */
   --success: #10b981;
@@ -57,79 +39,40 @@
   --danger-light: #fef2f2;
   --info: #3b82f6;
   --info-light: #eff6ff;
-  
-  /* Shadcn Shadows - Crisp and layered */
+
+  /* Misc */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-glow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ring); /* Focus ring */
-  
-  /* Border Radii (Slightly sharper like Shadcn) */
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  --radius-xl: 16px;
-  
-  /* Typography */
-  --font-body: 'Inter', sans-serif;
-  --font-display: 'Inter', sans-serif;
-  
-  /* Animations */
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 /* ===== SHADCN-INSPIRED DARK MODE ===== */
 [data-theme="dark"] {
   --primary: #fafafa; /* Zinc 50 */
-  --primary-dark: #ffffff;
-  --primary-light: #e4e4e7; /* Zinc 200 */
-  
-  --accent: #f59e0b; /* Amber 500 */
-  --accent-light: rgba(245, 158, 11, 0.15); 
-  --accent-hover: #fbbf24;
-  
-  /* Deep Dark Backgrounds */
+  --primary-foreground: #09090b; /* Zinc 950 */
   --bg: #09090b; /* Zinc 950 */
-  --bg-card: #09090b; /* Match bg for seamless look or slightly lighter */
-  --bg-sidebar: #09090b;
-  --bg-topbar: rgba(9, 9, 11, 0.8);
-  --bg-input: #09090b;
-  --bg-input-focus: #18181b; /* Zinc 900 */
-  --bg-icon-btn: #18181b;
-  --bg-btn-outline: transparent;
-  --bg-table-header: #18181b;
-  --bg-table-hover: rgba(255, 255, 255, 0.03);
-
-  /* Sidebar Variables (Dark Mode) */
-  --sidebar-bg: var(--bg-card);
-  --sidebar-border: var(--border);
-  --sidebar-text: var(--text-muted);
-  --sidebar-text-hover: var(--text-primary);
-  --sidebar-text-active: var(--bg-card);
-  --sidebar-bg-hover: var(--border-light);
-  --sidebar-bg-active: var(--primary);
-  --sidebar-logo: var(--text-primary);
-  --sidebar-label: var(--text-muted);
-  --sidebar-user-bg: var(--bg-card);
-  --sidebar-user-border: var(--border);
+  --bg-card: #09090b;
+  --bg-muted: #18181b; /* Zinc 900 */
   
-  /* Text */
-  --text-primary: #fafafa; /* Zinc 50 */
-  --text-secondary: #a1a1aa; /* Zinc 400 */
-  --text-muted: #71717a; /* Zinc 500 */
-  --text-light: #ffffff;
+  /* Sidebar Variables (Dark) */
+  --sidebar-bg: var(--bg);
+  --sidebar-border: #27272a; /* Zinc 800 */
+  --sidebar-text: #a1a1aa; /* Zinc 400 */
+  --sidebar-text-active: var(--primary);
+  --sidebar-bg-active: #18181b; /* Zinc 900 */
+  --sidebar-logo: var(--primary);
+  --sidebar-label: #71717a; /* Zinc 500 */
   
-  /* Borders */
-  --border: #27272a; /* Zinc 800 */
-  --border-light: #18181b; /* Zinc 900 */
-  --border-glass: rgba(255, 255, 255, 0.05);
-  --ring: rgba(255, 255, 255, 0.2);
-  
-  /* Shadows - Use solid borders for depth in dark mode */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.8);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.9);
+  /* Global UI (Dark) */
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border: #27272a;
+  --border-light: #18181b;
+  --ring: rgba(255, 255, 255, 0.1);
 }
 
 /* ===== RESET ===== */
@@ -181,11 +124,10 @@ a { text-decoration: none; color: inherit; }
 .sidebar-logo p { color: var(--sidebar-label); font-size: 0.75rem; margin-top: 6px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; }
 .sidebar-nav { padding: 20px 12px; flex: 1; }
 .nav-group-label { color: var(--sidebar-label); font-size: 0.65rem; font-weight: 800; letter-spacing: 0.15em; text-transform: uppercase; padding: 16px 12px 8px; }
-.nav-item { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: var(--radius-sm); color: var(--sidebar-text); font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; transition: var(--transition); cursor: pointer; position: relative; overflow: hidden; }
-.nav-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); height: 0; width: 3px; background: var(--sidebar-text-active); transition: var(--transition); border-radius: 4px; }
-.nav-item:hover { background: var(--sidebar-bg-hover); color: var(--sidebar-text-hover); transform: translateX(4px); }
-.nav-item.active { background: var(--sidebar-bg-active); color: var(--sidebar-text-active); font-weight: 700; }
-.nav-item.active::before { height: 50%; }
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: var(--radius-md); color: var(--sidebar-text); font-size: 0.9rem; font-weight: 500; margin-bottom: 4px; transition: var(--transition); cursor: pointer; position: relative; }
+.nav-item:hover { background: var(--sidebar-bg-active); color: var(--sidebar-text-active); transform: translateX(4px); }
+.nav-item.active { background: var(--sidebar-bg-active); color: var(--sidebar-text-active); font-weight: 600; box-shadow: var(--shadow-sm); }
+.nav-item.active::before { content: ''; position: absolute; left: 6px; top: 25%; bottom: 25%; width: 3px; background: var(--accent); border-radius: 4px; }
 .nav-item .nav-icon { font-size: 1.2rem; width: 24px; text-align: center; }
 
 .sidebar-user { padding: 20px 16px; background: var(--sidebar-user-bg); display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--sidebar-user-border); }

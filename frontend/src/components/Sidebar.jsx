@@ -1,7 +1,7 @@
 import { 
   LayoutDashboard, ShoppingCart, Coffee, ChefHat, 
-  Clock, PackageOpen, ShoppingBag, BookOpen, 
-  Users, Settings, ShieldCheck, LogOut 
+  Clock, PackageOpen, ShoppingBag, BarChart3, 
+  Users, Settings, ShieldCheck, LogOut, Armchair 
 } from 'lucide-react';
 
 export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen, onClose }) {
@@ -11,7 +11,7 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen
     { group: 'Utama', items: [
       { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard',      roles: ['admin','owner','akuntan'], perm: 'akses_keuangan', minTier: 'lite' },
       { id: 'kasir',     icon: ShoppingCart,    label: 'Kasir / POS',    roles: ['admin','kasir'],           perm: 'akses_kasir',    minTier: 'lite' },
-      { id: 'meja',      icon: Coffee,          label: 'Manajemen Meja', roles: ['admin','kasir','koki'],    perm: 'akses_kasir',    minTier: 'lite' },
+      { id: 'meja',      icon: Armchair,        label: 'Manajemen Meja', roles: ['admin','kasir','koki'],    perm: 'akses_kasir',    minTier: 'lite' },
       { id: 'kds',       icon: ChefHat,         label: 'Dapur (KDS)',    roles: ['admin','koki','kasir'],    perm: 'akses_dapur',    minTier: 'lite' },
       { id: 'shift',     icon: Clock,           label: 'Shift Kasir',    roles: ['admin','kasir','owner'],   perm: 'akses_kasir',    minTier: 'lite' },
     ]},
@@ -21,7 +21,7 @@ export default function Sidebar({ user, activePage, onNavigate, onLogout, isOpen
       { id: 'menu',      icon: Coffee,          label: 'Menu & Produk',  roles: ['admin','owner'],           perm: 'akses_gudang',   minTier: 'pro' },
     ]},
     { group: 'Bisnis', items: [
-      { id: 'laporan',   icon: BookOpen,        label: 'Laporan',        roles: ['admin','owner','akuntan'], perm: 'lihat_laba',     minTier: 'pro' },
+      { id: 'laporan',   icon: BarChart3,       label: 'Laporan',        roles: ['admin','owner','akuntan'], perm: 'lihat_laba',     minTier: 'pro' },
       { id: 'pelanggan', icon: Users,           label: 'Pelanggan',      roles: ['admin','owner'],           perm: 'atur_user',      minTier: 'pro' },
     ]},
     { group: 'Sistem', items: [
