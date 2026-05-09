@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { formatRupiah } from '../data';
 import { api } from '../api';
+import { 
+  DollarSign, ReceiptText, Coffee, Armchair, 
+  TrendingUp, TrendingDown, Package, Activity,
+  Star, Puzzle, Carrot, SearchX, BarChart3,
+  Trophy, Zap, Users, Bookmark
+} from 'lucide-react';
 
 /* ── Komponen Grafik Bar SVG 7 hari ─────────────────────────────── */
 function BarChart({ data }) {
@@ -110,10 +116,10 @@ export default function Dashboard({ user }) {
   const activeTables = tables.filter(t => t.status === 'occupied').length;
 
   const stats = [
-    { label: 'Pendapatan Hari Ini', value: formatRupiah(todayRevenue), icon: '💰', color: 'brown', badge: `${todayTx.length} transaksi`, up: true },
-    { label: 'Total Transaksi', value: totalTx.toString(), icon: '🧾', color: 'gold', badge: 'All time', up: true },
-    { label: 'Menu Terjual', value: totalMenuSold.toString(), icon: '☕', color: 'green', badge: 'Semua item', up: true },
-    { label: 'Meja Aktif', value: `${activeTables} / ${tables.length}`, icon: '🪑', color: 'blue', badge: 'Sekarang', up: activeTables > 0 },
+    { label: 'Pendapatan Hari Ini', value: formatRupiah(todayRevenue), icon: DollarSign, color: 'var(--success)', badge: `${todayTx.length} transaksi`, up: true },
+    { label: 'Total Transaksi', value: totalTx.toString(), icon: ReceiptText, color: 'var(--info)', badge: 'All time', up: true },
+    { label: 'Menu Terjual', value: totalMenuSold.toString(), icon: Coffee, color: 'var(--accent)', badge: 'Semua item', up: true },
+    { label: 'Meja Aktif', value: `${activeTables} / ${tables.length}`, icon: Armchair, color: 'var(--warning)', badge: 'Sekarang', up: activeTables > 0 },
   ];
 
   /* ── Data Grafik 7 Hari ── */
@@ -174,34 +180,41 @@ export default function Dashboard({ user }) {
 
       {/* ── Stats Cards ── */}
       <div className="stats-grid">
-        {user.role === 'kasir' ? stats.map((s, i) => (
-          <div className="stat-card" key={i}>
-            <div className="stat-card-top">
-              <div className={`stat-icon ${s.color}`}>{s.icon}</div>
-              <span className={`stat-badge ${s.up ? 'up' : 'down'}`}>{s.up ? '▲' : '▼'} {s.badge}</span>
+        {user.role === 'kasir' ? stats.map((s, i) => {
+          const Icon = s.icon;
+          return (
+            <div className="stat-card" key={i}>
+              <div className="stat-card-top">
+                <div className="stat-icon" style={{ color: s.color, background: `${s.color}15` }}>
+                  <Icon size={24} strokeWidth={2} />
+                </div>
+                <span className={`stat-badge ${s.up ? 'up' : 'down'}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  {s.up ? <TrendingUp size={14} /> : <TrendingDown size={14} />} {s.badge}
+                </span>
+              </div>
+              <div className="stat-value">{s.value}</div>
+              <div className="stat-label">{s.label}</div>
             </div>
-            <div className="stat-value">{s.value}</div>
-            <div className="stat-label">{s.label}</div>
-          </div>
-        )) : (
+          );
+        }) : (
           <>
             <div className="stat-card">
-              <div className="stat-card-top"><div className="stat-icon green">💸</div></div>
+              <div className="stat-card-top"><div className="stat-icon" style={{ color: 'var(--success)', background: 'var(--success-light)' }}><DollarSign size={24} /></div></div>
               <div className="stat-value">{formatRupiah(financialAnalytics?.pnl?.revenue || 0)}</div>
               <div className="stat-label">Total Revenue (Bulan Ini)</div>
             </div>
             <div className="stat-card">
-              <div className="stat-card-top"><div className="stat-icon red">📉</div></div>
+              <div className="stat-card-top"><div className="stat-icon" style={{ color: 'var(--danger)', background: 'var(--danger-light)' }}><TrendingDown size={24} /></div></div>
               <div className="stat-value">{formatRupiah(financialAnalytics?.pnl?.expense || 0)}</div>
               <div className="stat-label">Total Expense (COGS)</div>
             </div>
             <div className="stat-card">
-              <div className="stat-card-top"><div className="stat-icon blue">🏦</div></div>
+              <div className="stat-card-top"><div className="stat-icon" style={{ color: 'var(--info)', background: 'var(--info-light)' }}><Activity size={24} /></div></div>
               <div className="stat-value">{formatRupiah(financialAnalytics?.pnl?.net_profit || 0)}</div>
               <div className="stat-label">Net Profit Estimation</div>
             </div>
             <div className="stat-card">
-              <div className="stat-card-top"><div className="stat-icon brown">📦</div></div>
+              <div className="stat-card-top"><div className="stat-icon" style={{ color: 'var(--accent)', background: 'var(--accent-light)' }}><Package size={24} /></div></div>
               <div className="stat-value">{inventoryAnalytics?.turnover_ratio || 0}x</div>
               <div className="stat-label">Stock Turnover Ratio</div>
             </div>
@@ -211,21 +224,32 @@ export default function Dashboard({ user }) {
 
       {user.role !== 'kasir' && salesAnalytics?.menu_engineering && (
         <div className="card mb-4" style={{ padding: '24px' }}>
-          <h3 style={{ marginBottom: '16px' }}>📊 Menu Engineering Matrix</h3>
+          <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <BarChart3 size={20} color="var(--primary-dark)" /> Menu Engineering Matrix
+          </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
-            {['Stars', 'Puzzles', 'Plow Horses', 'Dogs'].map(category => (
-              <div key={category} style={{ border: '1px solid var(--border)', padding: '16px', borderRadius: '8px', background: 'var(--bg-light)' }}>
-                <h4 style={{ color: 'var(--primary-dark)', marginBottom: '12px' }}>{category}</h4>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.85rem' }}>
-                  {salesAnalytics.menu_engineering.filter(m => m.category === category).map((m, idx) => (
-                    <li key={idx} style={{ marginBottom: '6px' }}>• {m.name}</li>
-                  ))}
-                  {salesAnalytics.menu_engineering.filter(m => m.category === category).length === 0 && (
-                    <li style={{ color: 'var(--text-muted)' }}>Kosong</li>
-                  )}
-                </ul>
-              </div>
-            ))}
+            {['Stars', 'Puzzles', 'Plow Horses', 'Dogs'].map(category => {
+              let CatIcon = Star; let catColor = 'var(--success)';
+              if(category === 'Puzzles') { CatIcon = Puzzle; catColor = 'var(--info)'; }
+              if(category === 'Plow Horses') { CatIcon = Carrot; catColor = 'var(--warning)'; }
+              if(category === 'Dogs') { CatIcon = SearchX; catColor = 'var(--danger)'; }
+              
+              return (
+                <div key={category} style={{ border: '1px solid var(--border)', padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)' }}>
+                  <h4 style={{ color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CatIcon size={16} color={catColor} /> {category}
+                  </h4>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.85rem' }}>
+                    {salesAnalytics.menu_engineering.filter(m => m.category === category).map((m, idx) => (
+                      <li key={idx} style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>• {m.name}</li>
+                    ))}
+                    {salesAnalytics.menu_engineering.filter(m => m.category === category).length === 0 && (
+                      <li style={{ color: 'var(--text-muted)' }}>Kosong</li>
+                    )}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -235,13 +259,17 @@ export default function Dashboard({ user }) {
         {/* Bar Chart 7 Hari */}
         <div className="card">
           <div className="card-header">
-            <span className="card-title">📈 Penjualan 7 Hari Terakhir</span>
+            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BarChart3 size={18} className="text-primary" /> Penjualan 7 Hari Terakhir
+            </span>
             <span className="badge badge-brown">{formatRupiah(weekData.reduce((s, d) => s + d.value, 0))}</span>
           </div>
           <div className="card-body">
             {weekData.every(d => d.value === 0) ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>📊</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px', opacity: 0.5 }}>
+                  <BarChart3 size={40} />
+                </div>
                 <div>Belum ada data penjualan minggu ini</div>
               </div>
             ) : (
@@ -253,13 +281,17 @@ export default function Dashboard({ user }) {
         {/* Top Produk */}
         <div className="card">
           <div className="card-header">
-            <span className="card-title">🏆 Produk Terlaris</span>
+            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Trophy size={18} className="text-warning" /> Produk Terlaris
+            </span>
             <span className="badge badge-success">{topProducts.length} item</span>
           </div>
           <div className="card-body">
             {topProducts.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                <div style={{ fontSize: '2rem', marginBottom: '8px' }}>☕</div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px', opacity: 0.5 }}>
+                  <Coffee size={40} />
+                </div>
                 <div>Belum ada produk terjual</div>
               </div>
             ) : (
@@ -293,7 +325,9 @@ export default function Dashboard({ user }) {
         {/* Status Meja Visual */}
         <div className="card">
           <div className="card-header">
-            <span className="card-title">🪑 Status Meja</span>
+            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Armchair size={18} className="text-info" /> Status Meja
+            </span>
             <span className="badge badge-info">{tables.length} meja</span>
           </div>
           <div className="card-body">
@@ -311,11 +345,12 @@ export default function Dashboard({ user }) {
                 const color = t.status === 'available' ? 'var(--success)' : t.status === 'occupied' ? 'var(--danger)' : 'var(--warning)';
                 return (
                   <div key={t.id} style={{
-                    background: t.status === 'available' ? '#EDFAF3' : t.status === 'occupied' ? '#FEF0EE' : '#FFF8ED',
-                    border: `1.5px solid ${color}`, borderRadius: '8px',
-                    padding: '6px 4px', textAlign: 'center', fontSize: '0.65rem', fontWeight: 700, color
+                    background: t.status === 'available' ? 'var(--success-light)' : t.status === 'occupied' ? 'var(--danger-light)' : 'var(--warning-light)',
+                    border: `1px solid ${color}`, borderRadius: 'var(--radius-md)',
+                    padding: '8px 4px', textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
                   }}>
-                    <div>{t.status === 'available' ? '🪑' : t.status === 'occupied' ? '👥' : '🔖'}</div>
+                    {t.status === 'available' ? <Armchair size={14} /> : t.status === 'occupied' ? <Users size={14} /> : <Bookmark size={14} />}
                     <div>{t.name.replace('Meja ', 'M')}</div>
                   </div>
                 );
@@ -327,7 +362,9 @@ export default function Dashboard({ user }) {
         {/* Aktivitas Terbaru */}
         <div className="card">
           <div className="card-header">
-            <span className="card-title">⚡ Aktivitas Terbaru</span>
+            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Zap size={18} className="text-accent" /> Aktivitas Terbaru
+            </span>
             <span className="badge badge-brown">{recentTx.length} transaksi</span>
           </div>
           <div style={{ padding: '8px 0' }}>
@@ -348,8 +385,10 @@ export default function Dashboard({ user }) {
                       width: '36px', height: '36px', borderRadius: '10px',
                       background: 'linear-gradient(135deg, var(--primary), var(--accent))',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '1rem', flexShrink: 0
-                    }}>🧾</div>
+                      flexShrink: 0
+                    }}>
+                      <ReceiptText size={18} color="#fff" />
+                    </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--primary)', fontFamily: 'monospace' }}>{tx.id}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tx.tableType || 'Take Away'} · {totalItems} item · {tx.paymentMethod}</div>
