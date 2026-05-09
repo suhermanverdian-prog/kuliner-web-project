@@ -33,7 +33,7 @@ export default function ShiftPage({ user }) {
   const getShiftStats = (shift) => {
     const start = new Date(shift.startTime).getTime();
     const end = shift.endTime ? new Date(shift.endTime).getTime() : new Date().getTime();
-    
+
     const shiftTxs = transactions.filter(t => {
       if (!t.createdAt) return false;
       const tTime = new Date(t.createdAt).getTime();
@@ -65,7 +65,7 @@ export default function ShiftPage({ user }) {
     }
   };
 
-  if (loading) return <div style={{padding:'40px', textAlign:'center'}}>Memuat data shift...</div>;
+  if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Memuat data shift...</div>;
 
   const totalRevenue = (stats) => stats.totalCash + stats.totalQRIS + stats.totalTransfer;
   const selisih = (stats, openCash) => (stats.totalCash - openCash);
@@ -101,63 +101,64 @@ export default function ShiftPage({ user }) {
       <div className="grid-2">
         {shifts.map(s => {
           const stats = getShiftStats(s);
-          const startStr = new Date(s.startTime).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
-          const endStr = s.endTime ? new Date(s.endTime).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : null;
+          const startStr = new Date(s.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+          const endStr = s.endTime ? new Date(s.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : null;
           return (
-          <div key={s.id} className="card">
-            <div className="card-header">
-              <div className="flex items-center gap-3">
-                <div className="user-avatar">{s.avatar}</div>
-                <div>
-                  <div className="card-title">{s.kasir}</div>
-                  <div className="text-xs text-muted">⏰ {startStr} – {endStr || 'Sekarang'}</div>
-                </div>
-              </div>
-              <span className={`badge ${s.status === 'closed' ? 'badge-brown' : 'badge-success'}`}>
-                {s.status === 'closed' ? 'Selesai' : '🟢 Aktif'}
-              </span>
-            </div>
-            <div className="card-body">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
-                {[
-                  ['🧾 Transaksi', stats.totalTrx],
-                  ['💵 Tunai', formatRupiah(stats.totalCash)],
-                  ['📱 QRIS', formatRupiah(stats.totalQRIS)],
-                  ['🏦 Transfer', formatRupiah(stats.totalTransfer)],
-                  ['📋 Hutang', formatRupiah(0)],
-                  ['❌ Void', `0x (Rp 0)`],
-                ].map(([k, v]) => (
-                  <div key={k} style={{ padding: '8px 12px', background: 'var(--bg)', borderRadius: '8px' }}>
-                    <div className="text-xs text-muted">{k}</div>
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', marginTop: '2px' }}>{v}</div>
+            <div key={s.id} className="card">
+              <div className="card-header">
+                <div className="flex items-center gap-3">
+                  <div className="user-avatar">{s.avatar}</div>
+                  <div>
+                    <div className="card-title">{s.kasir}</div>
+                    <div className="text-xs text-muted">⏰ {startStr} – {endStr || 'Sekarang'}</div>
                   </div>
-                ))}
-              </div>
-              <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, var(--bg-card), var(--border-light))', borderRadius: 'var(--radius-sm)', marginBottom: '14px' }}>
-                <div className="flex justify-between">
-                  <span style={{ fontWeight: 600 }}>💰 Total Pendapatan</span>
-                  <strong style={{ color: 'var(--primary)', fontSize: '1.1rem' }}>{formatRupiah(totalRevenue(stats))}</strong>
                 </div>
-                <div className="flex justify-between mt-2 text-sm">
-                  <span className="text-muted">Selisih Kas Tunai</span>
-                  <span style={{ fontWeight: 700, color: selisih(stats, s.openCash) >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                    {selisih(stats, s.openCash) >= 0 ? '+' : ''}{formatRupiah(selisih(stats, s.openCash))}
-                  </span>
-                </div>
+                <span className={`badge ${s.status === 'closed' ? 'badge-brown' : 'badge-success'}`}>
+                  {s.status === 'closed' ? 'Selesai' : '🟢 Aktif'}
+                </span>
               </div>
-              {s.status === 'open' && (
-                <button className="btn btn-danger w-full" style={{ justifyContent: 'center' }} onClick={() => handleCloseShift(s.id)}>
-                  🔒 Tutup Shift
-                </button>
-              )}
-              {s.status === 'closed' && (
-                <button className="btn btn-outline w-full" style={{ justifyContent: 'center' }}>
-                  🖨️ Cetak Laporan Shift
-                </button>
-              )}
+              <div className="card-body">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                  {[
+                    ['🧾 Transaksi', stats.totalTrx],
+                    ['💵 Tunai', formatRupiah(stats.totalCash)],
+                    ['📱 QRIS', formatRupiah(stats.totalQRIS)],
+                    ['🏦 Transfer', formatRupiah(stats.totalTransfer)],
+                    ['📋 Hutang', formatRupiah(0)],
+                    ['❌ Void', `0x (Rp 0)`],
+                  ].map(([k, v]) => (
+                    <div key={k} style={{ padding: '8px 12px', background: 'var(--bg)', borderRadius: '8px' }}>
+                      <div className="text-xs text-muted">{k}</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', marginTop: '2px' }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, var(--bg-card), var(--border-light))', borderRadius: 'var(--radius-sm)', marginBottom: '14px' }}>
+                  <div className="flex justify-between">
+                    <span style={{ fontWeight: 600 }}>💰 Total Pendapatan</span>
+                    <strong style={{ color: 'var(--primary)', fontSize: '1.1rem' }}>{formatRupiah(totalRevenue(stats))}</strong>
+                  </div>
+                  <div className="flex justify-between mt-2 text-sm">
+                    <span className="text-muted">Selisih Kas Tunai</span>
+                    <span style={{ fontWeight: 700, color: selisih(stats, s.openCash) >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                      {selisih(stats, s.openCash) >= 0 ? '+' : ''}{formatRupiah(selisih(stats, s.openCash))}
+                    </span>
+                  </div>
+                </div>
+                {s.status === 'open' && (
+                  <button className="btn btn-danger w-full" style={{ justifyContent: 'center' }} onClick={() => handleCloseShift(s.id)}>
+                    🔒 Tutup Shift
+                  </button>
+                )}
+                {s.status === 'closed' && (
+                  <button className="btn btn-outline w-full" style={{ justifyContent: 'center' }}>
+                    🖨️ Cetak Laporan Shift
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        )})}
+          )
+        })}
       </div>
 
       {showOpen && (
@@ -183,7 +184,14 @@ export default function ShiftPage({ user }) {
             </div>
             <div className="modal-footer">
               <button className="btn btn-outline" onClick={() => setShowOpen(false)}>Batal</button>
-              <button className="btn btn-primary" onClick={handleOpenShift}>✅ Mulai Shift</button>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleOpenShift}
+                disabled={!kasInput}
+                style={{ opacity: !kasInput ? 0.5 : 1, cursor: !kasInput ? 'not-allowed' : 'pointer' }}
+              >
+                ✅ Mulai Shift
+              </button>
             </div>
           </div>
         </div>
