@@ -66,7 +66,7 @@ export default function SuperAdminPage() {
               <tr>
                 <th>Nama Bisnis</th>
                 <th>Paket / Tier</th>
-                <th>Fitur QRIS</th>
+                <th>Fitur Metode Pembayaran</th>
                 <th>Status</th>
                 <th>Tgl Terdaftar</th>
                 <th>Aksi</th>
@@ -88,14 +88,22 @@ export default function SuperAdminPage() {
                     </select>
                   </td>
                   <td>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.9rem' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={t.features?.allow_qris === true} 
-                        onChange={() => toggleFeature(t, 'allow_qris')} 
-                      />
-                      Aktifkan
-                    </label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {['QRIS', 'Debit', 'Transfer', 'Hutang', 'Points'].map(m => {
+                        const key = `allow_${m.toLowerCase()}`;
+                        return (
+                          <label key={m} style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={t.features?.[key] === true} 
+                              onChange={() => toggleFeature(t, key)} 
+                              style={{ accentColor: 'var(--primary)' }}
+                            />
+                            {m}
+                          </label>
+                        );
+                      })}
+                    </div>
                   </td>
                   <td>
                     <span className={`badge ${t.is_active ? 'badge-success' : 'badge-danger'}`}>

@@ -15,6 +15,24 @@ const apiBase = {
     return res.json();
   },
 
+  async checkout(data) {
+    const res = await fetch(`${API_URL}/transactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+
+  async confirmPayment(id, data) {
+    const res = await fetch(`${API_URL}/transactions/${id}/confirm-payment`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+
   async syncOfflineQueue() {
     const queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
     if (queue.length === 0) return;

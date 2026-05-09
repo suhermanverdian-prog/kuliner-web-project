@@ -649,16 +649,26 @@ app.post('/api/po', async (req, res) => {
   
   const totalAmount = items.reduce((sum, i) => sum + (Number(i.qty) * Number(i.price)), 0);
 
+  // FASE 4: BR-012 PO Approval Limit
+  const initialStatus = totalAmount > 5000000 ? 'Pending Approval' : 'Pending';
+
   // 2. Insert Header
   const { data: po, error: poErr } = await supabase.from('pembelian').insert([{
     po_number: poNum,
     supplier_id: Number(supplierId),
     location: location,
-    status: 'Pending',
+    status: initialStatus,
     total_amount: totalAmount
   }]).select().single();
 
   if (poErr) return res.status(500).json({ error: poErr.message });
+
+  // FASE 4: Audit Trail Pembuatan PO
+  await supabase.from('audit_logs').insert([{
+    action_type: 'CREATE_PO',
+    description: `PO ${poNum} dibuat dengan total ${totalAmount}. Status: ${initialStatus}`,
+    user_name: req.body.createdBy || 'System'
+  }]);
 
   // 3. Insert Items
   const itemsToInsert = items.map(i => ({
@@ -706,7 +716,9 @@ app.put('/api/po/:id', async (req, res) => {
           .eq('location', targetLoc)
           .single();
 
+        let targetBahanId = item.bahanId;
         if (existingBahan) {
+          targetBahanId = existingBahan.id;
           // Update stok yang sudah ada
           await supabase.from('bahan')
             .update({ stock: Number(existingBahan.stock) + Number(item.receivedQty) })
@@ -715,12 +727,35 @@ app.put('/api/po/:id', async (req, res) => {
           // Buat record baru untuk lokasi ini
           const { data: masterFull } = await supabase.from('bahan').select('*').eq('id', item.bahanId).single();
           const { id, created_at, ...newBahanData } = masterFull;
-          await supabase.from('bahan').insert([{
+          const { data: newBahan } = await supabase.from('bahan').insert([{
             ...newBahanData,
             stock: Number(item.receivedQty),
             location: targetLoc
-          }]);
+          }]).select().single();
+          if (newBahan) targetBahanId = newBahan.id;
         }
+
+        // FASE 4: Event-Based Movement (Purchasing IN)
+        await supabase.from('stock_movements').insert([{
+          product_id: targetBahanId,
+          type: 'in',
+          qty: Number(item.receivedQty),
+          reference_type: 'purchase',
+          reference_id: poId
+        }]);
+      }
+
+      // FASE 4: Auto-Journaling Purchasing (Hutang & Persediaan)
+      const { data: journal } = await supabase.from('journals').insert([{
+        reference: po.po_number,
+        description: `Penerimaan Barang (GRN) dari PO ${po.po_number}`
+      }]).select('id').single();
+
+      if (journal) {
+        await supabase.from('journal_lines').insert([
+          { journal_id: journal.id, account_name: 'Inventory', debit: po.total_amount, credit: 0 },
+          { journal_id: journal.id, account_name: 'Accounts Payable', debit: 0, credit: po.total_amount }
+        ]);
       }
     }
   }
@@ -728,6 +763,13 @@ app.put('/api/po/:id', async (req, res) => {
   // 3. Update PO Status
   const { error: updateErr } = await supabase.from('pembelian').update({ status }).eq('id', poId);
   if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+  // FASE 4: Audit Trail Perubahan Status PO
+  await supabase.from('audit_logs').insert([{
+    action_type: 'UPDATE_PO_STATUS',
+    description: `PO ${po.po_number} diubah statusnya dari ${po.status} menjadi ${status}`,
+    user_name: req.body.updatedBy || 'System'
+  }]);
 
   res.json({ ok: true });
 });

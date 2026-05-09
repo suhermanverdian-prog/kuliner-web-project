@@ -177,7 +177,14 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
 
   // Feature Lock: Cek JSONB features dari tenant
   const tenantFeatures = user?.tenant?.features || {};
-  const isPremium = tenantFeatures.allow_qris === true;
+  const isAllowed = (method) => {
+    if (method === 'Tunai') return true;
+    if (method === 'QRIS') return tenantFeatures.allow_qris === true;
+    if (method === 'Kartu Debit') return tenantFeatures.allow_debit === true;
+    if (method === 'Transfer') return tenantFeatures.allow_transfer === true;
+    if (method === 'Hutang') return tenantFeatures.allow_hutang === true;
+    return false;
+  };
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const taxAmount = Math.round(subtotal * 0.1);
@@ -236,7 +243,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
             <label className="form-label">Metode Pembayaran</label>
             <div className="flex gap-2" style={{flexWrap:'wrap'}}>
               {['Tunai','QRIS','Kartu Debit','Transfer','Hutang'].map(m => {
-                const isLocked = !isPremium && m !== 'Tunai';
+                const isLocked = !isAllowed(m);
                 return (
                   <button key={m} type="button"
                     className={`cat-tab ${payMethod === m ? 'active' : ''}`}
