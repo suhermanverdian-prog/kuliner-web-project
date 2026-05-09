@@ -46,6 +46,20 @@ const apiBase = {
       } catch (err) { console.error('Sync failed', err); }
     }
     localStorage.removeItem('offlineQueue');
+  },
+
+  // FASE 5: Analitik
+  async getAnalyticsSales(period) {
+    const res = await fetch(`${API_URL}/v1/analytics/sales?period=${period || 'month'}`);
+    return res.json();
+  },
+  async getAnalyticsFinancial(period) {
+    const res = await fetch(`${API_URL}/v1/analytics/financial?period=${period || 'month'}`);
+    return res.json();
+  },
+  async getAnalyticsInventory(period) {
+    const res = await fetch(`${API_URL}/v1/analytics/inventory?period=${period || 'month'}`);
+    return res.json();
   }
 };
 

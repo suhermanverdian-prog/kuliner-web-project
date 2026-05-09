@@ -851,6 +851,101 @@ function filterTrx(transactions, start, end) {
   });
 }
 
+// ---- FASE 5: ANALITIK (Stateless Analytics API) ----
+app.get('/api/v1/analytics/sales', async (req, res) => {
+  const { period = 'month' } = req.query;
+  const { start, end } = getDateRange(period);
+
+  // 1. Menu Engineering (Stars, Puzzles, Plow Horses, Dogs)
+  const { data: trxItems, error } = await supabase
+    .from('transaction_items')
+    .select('menu_id, qty, price, transactions!inner(created_at, payment_status)')
+    .gte('transactions.created_at', start.toISOString())
+    .lt('transactions.created_at', end.toISOString())
+    .eq('transactions.payment_status', 'paid');
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  const agg = {};
+  trxItems.forEach(item => {
+    if (!agg[item.menu_id]) agg[item.menu_id] = { qty: 0, revenue: 0 };
+    agg[item.menu_id].qty += Number(item.qty);
+    agg[item.menu_id].revenue += (Number(item.price) * Number(item.qty));
+  });
+
+  const { data: menus } = await supabase.from('menu').select('id, name, cost');
+  let totalQty = 0; let totalProfit = 0;
+  const matrix = Object.keys(agg).map(menuId => {
+    const stat = agg[menuId];
+    const m = menus.find(x => x.id === Number(menuId)) || {};
+    const cost = Number(m.cost || 0);
+    const profit = stat.revenue - (cost * stat.qty);
+    totalQty += stat.qty;
+    totalProfit += profit;
+    return { name: m.name || 'Unknown', qty: stat.qty, profit };
+  });
+
+  const avgQty = matrix.length > 0 ? totalQty / matrix.length : 0;
+  const avgProfit = matrix.length > 0 ? totalProfit / matrix.length : 0;
+
+  const engineered = matrix.map(m => {
+    let category = 'Dogs';
+    if (m.qty >= avgQty && m.profit >= avgProfit) category = 'Stars';
+    else if (m.qty < avgQty && m.profit >= avgProfit) category = 'Puzzles';
+    else if (m.qty >= avgQty && m.profit < avgProfit) category = 'Plow Horses';
+    return { ...m, category };
+  });
+
+  res.json({ menu_engineering: engineered });
+});
+
+app.get('/api/v1/analytics/financial', async (req, res) => {
+  const { period = 'month' } = req.query;
+  const { start, end } = getDateRange(period);
+
+  const { data: lines, error } = await supabase
+    .from('journal_lines')
+    .select('account_name, debit, credit, journals!inner(created_at)')
+    .gte('journals.created_at', start.toISOString())
+    .lt('journals.created_at', end.toISOString());
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  let revenue = 0; let expense = 0; let cash = 0;
+  lines.forEach(line => {
+    const acc = line.account_name.toLowerCase();
+    if (acc.includes('sales') || acc.includes('revenue')) revenue += Number(line.credit);
+    if (acc.includes('cogs') || acc.includes('expense')) expense += Number(line.debit);
+    if (acc === 'kas') cash += (Number(line.debit) - Number(line.credit));
+  });
+
+  res.json({ pnl: { revenue, expense, net_profit: revenue - expense }, cash_flow: { net_kas: cash } });
+});
+
+app.get('/api/v1/analytics/inventory', async (req, res) => {
+  const { period = 'month' } = req.query;
+  const { start, end } = getDateRange(period);
+
+  const { data: movements, error } = await supabase
+    .from('stock_movements')
+    .select('type, qty, product_id, reference_type, created_at')
+    .gte('created_at', start.toISOString())
+    .lt('created_at', end.toISOString());
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  let totalIn = 0; let totalOut = 0; let totalWaste = 0;
+  movements.forEach(m => {
+    if (m.type === 'in') totalIn += Number(m.qty);
+    if (m.type === 'out' && m.reference_type === 'sales') totalOut += Number(m.qty);
+    if (m.type === 'waste' || m.reference_type === 'waste') totalWaste += Number(m.qty);
+  });
+
+  const turnover_ratio = totalIn > 0 ? (totalOut / totalIn).toFixed(2) : 0;
+
+  res.json({ turnover_ratio, total_in: totalIn, total_out: totalOut, total_waste: totalWaste });
+});
+
 app.get('/api/laporan/summary', async (req, res) => {
   const { period = 'today', customStart, customEnd } = req.query;
   const { start, end } = getDateRange(period, customStart, customEnd);

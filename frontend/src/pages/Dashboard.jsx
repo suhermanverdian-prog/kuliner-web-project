@@ -79,11 +79,24 @@ export default function Dashboard({ user }) {
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // FASE 5: Analytics State
+  const [salesAnalytics, setSalesAnalytics] = useState(null);
+  const [financialAnalytics, setFinancialAnalytics] = useState(null);
+  const [inventoryAnalytics, setInventoryAnalytics] = useState(null);
+
   useEffect(() => {
-    Promise.all([api.getTransactions(), api.getMenu(), api.getTables()]).then(([txData, menuData, tblData]) => {
+    Promise.all([
+      api.getTransactions(), api.getMenu(), api.getTables(),
+      api.getAnalyticsSales('month').catch(() => null),
+      api.getAnalyticsFinancial('month').catch(() => null),
+      api.getAnalyticsInventory('month').catch(() => null)
+    ]).then(([txData, menuData, tblData, salesData, finData, invData]) => {
       setTransactions(txData);
       setMenu(menuData);
       setTables(tblData);
+      if (salesData) setSalesAnalytics(salesData);
+      if (finData) setFinancialAnalytics(finData);
+      if (invData) setInventoryAnalytics(invData);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -161,7 +174,7 @@ export default function Dashboard({ user }) {
 
       {/* ── Stats Cards ── */}
       <div className="stats-grid">
-        {stats.map((s, i) => (
+        {user.role === 'kasir' ? stats.map((s, i) => (
           <div className="stat-card" key={i}>
             <div className="stat-card-top">
               <div className={`stat-icon ${s.color}`}>{s.icon}</div>
@@ -170,8 +183,52 @@ export default function Dashboard({ user }) {
             <div className="stat-value">{s.value}</div>
             <div className="stat-label">{s.label}</div>
           </div>
-        ))}
+        )) : (
+          <>
+            <div className="stat-card">
+              <div className="stat-card-top"><div className="stat-icon green">💸</div></div>
+              <div className="stat-value">{formatRupiah(financialAnalytics?.pnl?.revenue || 0)}</div>
+              <div className="stat-label">Total Revenue (Bulan Ini)</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-top"><div className="stat-icon red">📉</div></div>
+              <div className="stat-value">{formatRupiah(financialAnalytics?.pnl?.expense || 0)}</div>
+              <div className="stat-label">Total Expense (COGS)</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-top"><div className="stat-icon blue">🏦</div></div>
+              <div className="stat-value">{formatRupiah(financialAnalytics?.pnl?.net_profit || 0)}</div>
+              <div className="stat-label">Net Profit Estimation</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-top"><div className="stat-icon brown">📦</div></div>
+              <div className="stat-value">{inventoryAnalytics?.turnover_ratio || 0}x</div>
+              <div className="stat-label">Stock Turnover Ratio</div>
+            </div>
+          </>
+        )}
       </div>
+
+      {user.role !== 'kasir' && salesAnalytics?.menu_engineering && (
+        <div className="card mb-4" style={{ padding: '24px' }}>
+          <h3 style={{ marginBottom: '16px' }}>📊 Menu Engineering Matrix</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
+            {['Stars', 'Puzzles', 'Plow Horses', 'Dogs'].map(category => (
+              <div key={category} style={{ border: '1px solid var(--border)', padding: '16px', borderRadius: '8px', background: 'var(--bg-light)' }}>
+                <h4 style={{ color: 'var(--primary-dark)', marginBottom: '12px' }}>{category}</h4>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.85rem' }}>
+                  {salesAnalytics.menu_engineering.filter(m => m.category === category).map((m, idx) => (
+                    <li key={idx} style={{ marginBottom: '6px' }}>• {m.name}</li>
+                  ))}
+                  {salesAnalytics.menu_engineering.filter(m => m.category === category).length === 0 && (
+                    <li style={{ color: 'var(--text-muted)' }}>Kosong</li>
+                  )}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Grafik + Top Produk ── */}
       <div className="grid-2 mb-4">
