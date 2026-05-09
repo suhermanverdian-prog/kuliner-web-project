@@ -14,6 +14,26 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
+// ---- FASE 6: RBAC & Tenant Isolation Middleware ----
+const rbacMiddleware = async (req, res, next) => {
+  const role = req.headers['x-user-role'] || 'guest';
+  const tenantId = req.headers['x-tenant-id'] || null;
+
+  // Bebaskan endpoint public
+  if (req.path.includes('/login') || req.path.includes('/uploads')) return next();
+
+  // BR-020: Isolasi Tenant (Inject ke req object)
+  req.userContext = { role, tenantId };
+
+  // Validasi Sederhana RBAC
+  if (role === 'kasir' && req.method === 'DELETE') {
+    return res.status(403).json({ error: 'RBAC: Role Kasir tidak diizinkan menghapus data.' });
+  }
+
+  next();
+};
+app.use(rbacMiddleware);
+
 // Multer Storage Setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -497,6 +517,60 @@ app.put('/api/transactions/:id/confirm-payment', async (req, res) => {
 
   res.json({ ok: true, ...updateData });
 });
+
+// FASE 6: BR-003 Void Transaksi & Approval
+app.post('/api/transactions/:id/request-void', async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  // Audit Log: Request Void
+  await supabase.from('audit_logs').insert([{
+    action_type: 'REQUEST_VOID',
+    table_name: 'transactions',
+    description: `Kasir meminta VOID untuk transaksi ${id}. Alasan: ${reason}`,
+    user_name: req.headers['x-user-role'] || 'Kasir'
+  }]);
+
+  await supabase.from('transactions').update({ payment_status: 'pending_void_approval' }).eq('id', id);
+  res.json({ ok: true, message: 'Permintaan Void dikirim ke Manager' });
+});
+
+app.post('/api/transactions/:id/approve-void', async (req, res) => {
+  const { id } = req.params;
+  if (req.userContext?.role !== 'manager' && req.userContext?.role !== 'owner' && req.userContext?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'RBAC: Hanya Manager/Owner yang dapat menyetujui VOID' });
+  }
+
+  // Ambil transaksi lama untuk audit
+  const { data: oldTx } = await supabase.from('transactions').select('*').eq('id', id).single();
+
+  // Audit Log: Approve Void dengan JSONB
+  await supabase.from('audit_logs').insert([{
+    action_type: 'APPROVE_VOID',
+    table_name: 'transactions',
+    description: `Manager menyetujui VOID untuk transaksi ${id}.`,
+    user_name: req.headers['x-user-role'],
+    old_value: oldTx,
+    new_value: { ...oldTx, payment_status: 'void' }
+  }]);
+
+  // Jurnal Balik (Reversal) untuk Void
+  const { data: journal } = await supabase.from('journals').insert([{
+    reference: `VOID-${id}`,
+    description: `Reversal Jurnal Void Transaksi ${id}`
+  }]).select('id').single();
+
+  if (journal && oldTx) {
+    const debitAccount = oldTx.payment_method === 'Tunai' ? 'Kas' : `${oldTx.payment_method} Clearing`;
+    await supabase.from('journal_lines').insert([
+      { journal_id: journal.id, account_name: 'Sales', debit: oldTx.total, credit: 0 },
+      { journal_id: journal.id, account_name: debitAccount, debit: 0, credit: oldTx.total }
+    ]);
+  }
+
+  await supabase.from('transactions').update({ payment_status: 'void' }).eq('id', id);
+  res.json({ ok: true });
+});
 app.put('/api/transactions/:id/kds', (req, res) => {
   const db = readDB();
   const trx = db.transactions.find(t => t.id === req.params.id);
@@ -683,6 +757,28 @@ app.post('/api/po', async (req, res) => {
   if (itemsErr) return res.status(500).json({ error: itemsErr.message });
 
   res.json(po);
+});
+
+// FASE 6: BR-012 PO Approval 
+app.post('/api/po/:id/approve', async (req, res) => {
+  const { id } = req.params;
+  if (req.userContext?.role !== 'manager' && req.userContext?.role !== 'owner' && req.userContext?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'RBAC: Hanya Manager/Owner yang dapat menyetujui PO' });
+  }
+
+  const { data: po } = await supabase.from('pembelian').select('*').eq('id', id).single();
+
+  await supabase.from('audit_logs').insert([{
+    action_type: 'APPROVE_PO',
+    table_name: 'pembelian',
+    description: `Manager menyetujui PO ${po?.po_number || id} senilai ${po?.total_amount}.`,
+    user_name: req.headers['x-user-role'],
+    old_value: po,
+    new_value: { ...po, status: 'Pending' }
+  }]);
+
+  await supabase.from('pembelian').update({ status: 'Pending' }).eq('id', id);
+  res.json({ ok: true });
 });
 
 app.put('/api/po/:id', async (req, res) => {

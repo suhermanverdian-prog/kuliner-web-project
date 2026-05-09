@@ -16,18 +16,20 @@ const apiBase = {
   },
 
   async checkout(data) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
     const res = await fetch(`${API_URL}/transactions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' },
       body: JSON.stringify(data)
     });
     return res.json();
   },
 
   async confirmPayment(id, data) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
     const res = await fetch(`${API_URL}/transactions/${id}/confirm-payment`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' },
       body: JSON.stringify(data)
     });
     return res.json();
@@ -50,15 +52,24 @@ const apiBase = {
 
   // FASE 5: Analitik
   async getAnalyticsSales(period) {
-    const res = await fetch(`${API_URL}/v1/analytics/sales?period=${period || 'month'}`);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const res = await fetch(`${API_URL}/v1/analytics/sales?period=${period || 'month'}`, {
+      headers: { 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' }
+    });
     return res.json();
   },
   async getAnalyticsFinancial(period) {
-    const res = await fetch(`${API_URL}/v1/analytics/financial?period=${period || 'month'}`);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const res = await fetch(`${API_URL}/v1/analytics/financial?period=${period || 'month'}`, {
+      headers: { 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' }
+    });
     return res.json();
   },
   async getAnalyticsInventory(period) {
-    const res = await fetch(`${API_URL}/v1/analytics/inventory?period=${period || 'month'}`);
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const res = await fetch(`${API_URL}/v1/analytics/inventory?period=${period || 'month'}`, {
+      headers: { 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' }
+    });
     return res.json();
   }
 };
@@ -68,10 +79,20 @@ export const api = new Proxy(apiBase, {
   get(target, prop) {
     if (prop in target) return target[prop];
     
+    // Helper untuk headers otentikasi
+    const getHeaders = () => {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return {
+        'Content-Type': 'application/json',
+        'x-user-role': user.role || 'guest',
+        'x-tenant-id': user.tenant?.id || ''
+      };
+    };
+
     // Jika fungsi yang dipanggil berawalan 'get' (contoh: getTransactions)
     if (prop.startsWith('get')) {
       const resource = prop.replace('get', '').toLowerCase();
-      return () => fetch(`${API_URL}/${resource}`).then(res => res.json());
+      return () => fetch(`${API_URL}/${resource}`, { headers: getHeaders() }).then(res => res.json());
     }
     
     // Jika fungsi berawalan 'add', 'update', atau 'save'
@@ -82,7 +103,7 @@ export const api = new Proxy(apiBase, {
         const url = isUpdate ? `${API_URL}/${resource}/${data.id}` : `${API_URL}/${resource}`;
         return fetch(url, {
           method: isUpdate ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getHeaders(),
           body: JSON.stringify(data)
         }).then(res => res.json());
       };
@@ -91,7 +112,8 @@ export const api = new Proxy(apiBase, {
     // Jika fungsi berawalan 'delete'
     if (prop.startsWith('delete')) {
       return (id) => fetch(`${API_URL}/${prop.replace('delete', '').toLowerCase()}/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getHeaders()
       }).then(res => res.json());
     }
 
