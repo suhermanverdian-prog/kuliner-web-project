@@ -14,10 +14,20 @@ export default function ShiftPage({ user }) {
   }, []);
 
   const fetchData = async () => {
-    const [shiftData, txData] = await Promise.all([api.getShifts(), api.getTransactions()]);
-    setShifts(shiftData.reverse());
-    setTransactions(txData);
-    setLoading(false);
+    try {
+      const [shiftData, txData] = await Promise.all([
+        api.getShifts().catch(() => []),
+        api.getTransactions().catch(() => [])
+      ]);
+      setShifts(Array.isArray(shiftData) ? [...shiftData].reverse() : []);
+      setTransactions(Array.isArray(txData) ? txData : []);
+    } catch (err) {
+      console.error("ShiftPage Fetch Error:", err);
+      setShifts([]);
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getShiftStats = (shift) => {

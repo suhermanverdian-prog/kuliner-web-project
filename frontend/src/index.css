@@ -272,6 +272,9 @@ tr:hover td { background-color: var(--bg-subtle); }
 .badge-danger { background: var(--danger-bg); color: var(--danger); }
 .badge-warning { background: var(--warning-bg); color: var(--warning); }
 
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px; }
+.badge-brown { background: #78350f20; color: #78350f; }
+
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 

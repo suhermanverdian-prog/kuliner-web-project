@@ -6,6 +6,12 @@ const emptyForm = {
   name: '', category: 'Kopi', price: 0, cost: 0, icon: '☕', image: '', unit: 'Cup', bom: []
 };
 
+// Helper for image fallback
+function ProductImage({ src, alt, icon }) {
+  if (src) return <img src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
+  return <div style={{ fontSize: '2.5rem' }}>{icon || '☕'}</div>;
+}
+
 function getConversion(bahan) {
   if (!bahan) return { ratio: 1, unit: '' };
   if (bahan.storageType === 'Kemasan') {
@@ -233,13 +239,15 @@ export default function MenuPage() {
     try {
       setLoading(true);
       const [menuData, bahanData] = await Promise.all([
-        api.getMenu(),
-        api.getBahan()
+        api.getMenu().catch(() => []),
+        api.getBahan().catch(() => [])
       ]);
-      setMenus(menuData);
-      setBahanList(bahanData);
+      setMenus(Array.isArray(menuData) ? menuData : []);
+      setBahanList(Array.isArray(bahanData) ? bahanData : []);
     } catch (e) {
       console.error(e);
+      setMenus([]);
+      setBahanList([]);
     } finally {
       setLoading(false);
     }
