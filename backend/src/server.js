@@ -153,7 +153,6 @@ app.post('/api/login', async (req, res) => {
       .select('*, tenant:tenants(*)')
       .eq('username', username)
       .eq('password', password)
-      .eq('role', role)
       .single();
     user = data;
   }
@@ -165,9 +164,14 @@ app.post('/api/login', async (req, res) => {
     return res.status(403).json({ error: 'Akun bisnis Anda sedang dinonaktifkan. Silakan hubungi SuperAdmin.' });
   }
 
+  // Jika user adalah superadmin, set role-nya agar frontend menyesuaikan
+  if (user.is_superadmin) {
+    user.role = 'superadmin';
+  }
+
   const { password: _, ...safeUser } = user;
   res.json({ 
-    user: { ...safeUser, role: role || user.role }, 
+    user: safeUser, 
     token: 'supabase-token-' + user.id 
   });
 });
