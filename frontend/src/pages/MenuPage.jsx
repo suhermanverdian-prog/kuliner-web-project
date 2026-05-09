@@ -295,7 +295,7 @@ export default function MenuPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
           {filtered.map(item => (
             <div key={item.id} className="card" style={{ overflow: 'hidden', transition: 'var(--transition)' }}>
-              <div style={{ height: '120px', background: 'linear-gradient(135deg, #FFF8F4, #FEECD8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', position: 'relative' }}>
+              <div style={{ height: '120px', background: 'linear-gradient(135deg, var(--bg-card), var(--border-light))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', position: 'relative' }}>
                 <ProductImage src={item.image} alt={item.name} icon={item.icon} />
               </div>
               <div style={{ padding: '14px' }}>

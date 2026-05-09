@@ -232,7 +232,7 @@ export default function PengaturanPage() {
                   </div>
                 </div>
                 {selected.permissions?.all && (
-                  <div style={{background:'#EDFAF3', border:'1px solid var(--success)', borderRadius:'var(--radius-sm)', padding:'10px 14px', marginBottom:'12px', fontSize:'0.8rem', color:'var(--success)', fontWeight:600}}>
+                  <div style={{background:'var(--success-light)', border:'1px solid var(--success)', borderRadius:'var(--radius-sm)', padding:'10px 14px', marginBottom:'12px', fontSize:'0.8rem', color:'var(--success)', fontWeight:600}}>
                     ✅ Admin memiliki semua hak akses penuh
                   </div>
                 )}
@@ -325,7 +325,7 @@ export default function PengaturanPage() {
                 <div style={{background:'var(--bg)', borderRadius:'var(--radius-sm)', padding:'12px 16px', display:'flex', gap:'12px', flexWrap:'wrap'}}>
                   {['Midtrans', 'Xendit', 'Doku'].map(gw => (
                     <div key={gw} style={{padding:'8px 16px', borderRadius:'var(--radius-sm)', border:'1.5px dashed var(--border)', fontSize:'0.8rem', color:'var(--text-muted)', fontWeight:600}}>
-                      {gw} <span style={{fontSize:'0.7rem', marginLeft:'4px', background:'#FEF3C7', color:'#92400E', borderRadius:'4px', padding:'1px 6px'}}>Segera</span>
+                      {gw} <span style={{fontSize:'0.7rem', marginLeft:'4px', background:'var(--warning-light)', color:'#92400E', borderRadius:'4px', padding:'1px 6px'}}>Segera</span>
                     </div>
                   ))}
                 </div>

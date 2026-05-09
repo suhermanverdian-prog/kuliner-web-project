@@ -15,7 +15,7 @@ function WaitTime({ since }) {
     const t = setInterval(calc, 30000);
     return () => clearInterval(t);
   }, [since]);
-  const color = mins < 5 ? '#16a34a' : mins < 10 ? '#d97706' : '#dc2626';
+  const color = mins < 5 ? 'var(--success)' : mins < 10 ? 'var(--warning)' : 'var(--danger)';
   return (
     <span style={{ fontSize: '0.72rem', fontWeight: 700, color, background: `${color}18`, borderRadius: '4px', padding: '2px 6px' }}>
       ⏱ {mins}m
@@ -101,7 +101,7 @@ export default function KDSPage() {
             const isMember = order.type !== 'Self Order' ? false : !!order.customerPhone;
             const customerTypeLabel = order.customerName && order.customerPhone ? 'Member' : 'Guest';
             const customerTypeBadge = customerTypeLabel === 'Member'
-              ? { bg: '#EDFAF3', color: '#166534', border: '#86EFAC' }
+              ? { bg: 'var(--success-light)', color: '#166534', border: '#86EFAC' }
               : { bg: '#F3F4F6', color: '#6B7280', border: '#D1D5DB' };
 
             return (
@@ -143,7 +143,7 @@ export default function KDSPage() {
                         <div>
                           <div style={{ fontWeight: 600 }}>{item.name}</div>
                           {item.note && (
-                            <div style={{ fontSize: '0.75rem', color: '#d97706', marginTop: '2px', fontStyle: 'italic' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--warning)', marginTop: '2px', fontStyle: 'italic' }}>
                               📝 {item.note}
                             </div>
                           )}
@@ -153,7 +153,7 @@ export default function KDSPage() {
                   ))}
                   {/* Global order note */}
                   {order.note && (
-                    <div style={{ padding: '8px 12px', background: '#FFFBEB', borderRadius: '6px', margin: '8px 0', fontSize: '0.78rem', color: '#92400E', border: '1px solid #FDE68A' }}>
+                    <div style={{ padding: '8px 12px', background: 'var(--warning-light)', borderRadius: '6px', margin: '8px 0', fontSize: '0.78rem', color: '#92400E', border: '1px solid #FDE68A' }}>
                       📋 Catatan: {order.note}
                     </div>
                   )}

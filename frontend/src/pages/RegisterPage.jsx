@@ -103,7 +103,7 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
 
           {error && (
             <div style={{
-              background: '#FEF0EE', color: '#E85D4A', padding: '10px 14px',
+              background: 'var(--danger-light)', color: 'var(--danger)', padding: '10px 14px',
               borderRadius: '8px', fontSize: '0.8rem', marginBottom: '16px'
             }}>
               ⚠️ {error}
@@ -129,7 +129,7 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
         </div>
 
         <div style={{
-          marginTop: '20px', padding: '12px', background: '#FFF8F4',
+          marginTop: '20px', padding: '12px', background: 'var(--bg-card)',
           borderRadius: '10px', border: '1px solid var(--border-light)'
         }}>
           <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '6px' }}>

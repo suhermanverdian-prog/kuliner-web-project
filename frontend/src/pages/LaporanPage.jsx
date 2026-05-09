@@ -15,7 +15,7 @@ const PERIODS = [
   { key: 'custom', label: '🔧 Kustom' },
 ];
 
-const COLORS_PAYMENT = ['#f59e0b', '#6366f1', '#10b981', '#ef4444', '#8b5cf6'];
+const COLORS_PAYMENT = ['var(--warning)', '#6366f1', 'var(--success)', 'var(--danger)', '#8b5cf6'];
 
 function KPICard({ label, value, sub, icon, delta, color }) {
   const up = delta >= 0;
@@ -30,7 +30,7 @@ function KPICard({ label, value, sub, icon, delta, color }) {
         <div style={{ width: 42, height: 42, borderRadius: 10, background: color || '#f0f4ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem' }}>{icon}</div>
       </div>
       {delta !== undefined && (
-        <div style={{ marginTop: 10, fontSize: '0.78rem', color: up ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
+        <div style={{ marginTop: 10, fontSize: '0.78rem', color: up ? 'var(--success)' : 'var(--danger)', fontWeight: 600 }}>
           {up ? '▲' : '▼'} {Math.abs(delta)}% <span style={{ color: '#94a3b8', fontWeight: 400 }}>vs periode sebelumnya</span>
         </div>
       )}
@@ -228,7 +228,7 @@ export default function LaporanPage() {
     }
   };
 
-  const insightStyle = { danger: { bg: '#fff1f2', border: '#fecaca', icon: '⚠️' }, warning: { bg: '#fffbeb', border: '#fde68a', icon: '🟡' }, success: { bg: '#f0fdf4', border: '#bbf7d0', icon: '✅' }, info: { bg: '#f0f9ff', border: '#bae6fd', icon: 'ℹ️' } };
+  const insightStyle = { danger: { bg: '#fff1f2', border: 'var(--danger-light)', icon: '⚠️' }, warning: { bg: 'var(--warning-light)', border: '#fde68a', icon: '🟡' }, success: { bg: '#f0fdf4', border: '#bbf7d0', icon: '✅' }, info: { bg: 'var(--info-light)', border: '#bae6fd', icon: 'ℹ️' } };
 
   return (
     <div style={{ maxWidth: 1400, margin: '0 auto' }}>
@@ -262,7 +262,7 @@ export default function LaporanPage() {
                     <div style={{ flex: 1, fontSize: '0.78rem', fontWeight: 500, color: '#374151', padding: '0 4px' }}>{rt.label}</div>
                     <button onClick={() => handlePDF(rt.key)} disabled={exporting}
                       title="Download PDF"
-                      style={{ padding: '6px 10px', background: '#ef4444', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.72rem', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      style={{ padding: '6px 10px', background: 'var(--danger)', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: '0.72rem', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
                       ⬇ PDF
                     </button>
                     <button onClick={() => handlePrint(rt.key)} disabled={exporting}
@@ -293,8 +293,8 @@ export default function LaporanPage() {
         <>
           {/* KPI Cards */}
           <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 20 }}>
-            <KPICard label="Total Penjualan" value={fmt(summary.totalRevenue)} sub={`${summary.totalTransactions || 0} transaksi`} icon="💰" delta={summary.vsYesterday?.revenue} color="#fef3c7" />
-            <KPICard label="Estimasi HPP (COGS)" value={fmt(summary.totalHPP)} sub={`${summary.foodCostPct || 0}% dari penjualan`} icon="📦" delta={summary.vsYesterday?.hpp} color="#fee2e2" />
+            <KPICard label="Total Penjualan" value={fmt(summary.totalRevenue)} sub={`${summary.totalTransactions || 0} transaksi`} icon="💰" delta={summary.vsYesterday?.revenue} color="var(--warning-light)" />
+            <KPICard label="Estimasi HPP (COGS)" value={fmt(summary.totalHPP)} sub={`${summary.foodCostPct || 0}% dari penjualan`} icon="📦" delta={summary.vsYesterday?.hpp} color="var(--danger-light)" />
             <KPICard label="Laba Kotor" value={fmt(summary.grossProfit)} sub={`${summary.marginPct || 0}% margin`} icon="📈" delta={summary.vsYesterday?.grossProfit} color="#dcfce7" />
             <KPICard label="Rata-rata/Transaksi" value={fmt(summary.avgTransaction)} sub="Per transaksi" icon="⚡" delta={summary.vsYesterday?.avg} color="#e0e7ff" />
             <KPICard label="Total Transaksi" value={summary.totalTransactions || 0} sub="Transaksi" icon="🧾" delta={summary.vsYesterday?.transactions} color="#f3e8ff" />
@@ -318,14 +318,14 @@ export default function LaporanPage() {
             <div style={{ background: '#fff', borderRadius: 14, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
               <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 14, color: '#1e293b' }}>🚨 Stok Kritis</div>
               {criticalStock.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#10b981', padding: 20, fontSize: '0.85rem' }}>✅ Semua stok aman</div>
+                <div style={{ textAlign: 'center', color: 'var(--success)', padding: 20, fontSize: '0.85rem' }}>✅ Semua stok aman</div>
               ) : criticalStock.map((b, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{b.name}</div>
                     <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{b.stock} {b.unit} tersisa</div>
                   </div>
-                  <span style={{ padding: '3px 9px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, background: b.status === 'kritis' || b.status === 'habis' ? '#fee2e2' : '#fef9c3', color: b.status === 'kritis' || b.status === 'habis' ? '#dc2626' : '#b45309' }}>
+                  <span style={{ padding: '3px 9px', borderRadius: 20, fontSize: '0.7rem', fontWeight: 700, background: b.status === 'kritis' || b.status === 'habis' ? 'var(--danger-light)' : '#fef9c3', color: b.status === 'kritis' || b.status === 'habis' ? 'var(--danger)' : '#b45309' }}>
                     {b.status === 'habis' ? 'Habis' : b.status === 'kritis' ? 'Kritis' : 'Rendah'}
                   </span>
                 </div>
@@ -349,7 +349,7 @@ export default function LaporanPage() {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{p.qty}</div>
-                    {i === 0 && <span style={{ fontSize: '0.65rem', background: '#fef3c7', color: '#b45309', padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>⭐ Best</span>}
+                    {i === 0 && <span style={{ fontSize: '0.65rem', background: 'var(--warning-light)', color: '#b45309', padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>⭐ Best</span>}
                   </div>
                 </div>
               ))}
@@ -361,8 +361,8 @@ export default function LaporanPage() {
               <div style={{ background: '#fff', borderRadius: 14, padding: 20, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 12, color: '#1e293b' }}>🗑️ Waste (Kerugian)</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#ef4444' }}>{fmt(waste.totalWaste)}</div>
-                  <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 700, background: waste.wasteRatio > 3 ? '#fee2e2' : '#dcfce7', color: waste.wasteRatio > 3 ? '#dc2626' : '#16a34a' }}>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--danger)' }}>{fmt(waste.totalWaste)}</div>
+                  <span style={{ padding: '4px 10px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 700, background: waste.wasteRatio > 3 ? 'var(--danger-light)' : '#dcfce7', color: waste.wasteRatio > 3 ? 'var(--danger)' : 'var(--success)' }}>
                     {waste.wasteRatio || 0}%
                   </span>
                 </div>
@@ -372,9 +372,9 @@ export default function LaporanPage() {
                     <span>{fmt(c.amount)} ({c.pct}%)</span>
                   </div>
                 ))}
-                {(!waste.categories || waste.categories.length === 0) && <div style={{ fontSize: '0.8rem', color: '#10b981' }}>✅ Tidak ada waste tercatat</div>}
+                {(!waste.categories || waste.categories.length === 0) && <div style={{ fontSize: '0.8rem', color: 'var(--success)' }}>✅ Tidak ada waste tercatat</div>}
                 {waste.wasteRatio > 3 && (
-                  <div style={{ marginTop: 10, padding: '8px 12px', background: '#fee2e2', borderRadius: 8, fontSize: '0.75rem', color: '#dc2626', fontWeight: 600 }}>
+                  <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--danger-light)', borderRadius: 8, fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>
                     ⚠️ Waste melebihi 3%! Harap evaluasi operasional.
                   </div>
                 )}

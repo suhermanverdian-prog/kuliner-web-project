@@ -128,7 +128,7 @@ export default function SuperAdminPage() {
       </div>
 
       <div style={{ marginTop: '32px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
-        <div className="card" style={{ padding: '20px', background: '#F0F9FF', border: 'none' }}>
+        <div className="card" style={{ padding: '20px', background: 'var(--info-light)', border: 'none' }}>
           <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>🚀</div>
           <h4>Total Tenant</h4>
           <div style={{ fontSize: '2rem', fontWeight: 800 }}>{tenants.length}</div>

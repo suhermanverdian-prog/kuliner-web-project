@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import { Armchair, Users, Bookmark, Map, ClipboardList, Plus, CheckCircle2, Trash2, X } from 'lucide-react';
 
 const STATUS_STYLE = {
-  available: { bg: '#EDFAF3', border: '#4CAF7D', color: '#1A4A2E', label: 'Kosong' },
-  occupied:  { bg: '#FEF0EE', border: '#E85D4A', color: '#5C1A12', label: 'Terisi' },
-  reserved:  { bg: '#FFF8ED', border: '#F5A623', color: '#5C3A00', label: 'Reservasi' },
+  available: { bg: 'var(--success-light)', border: 'var(--success)', color: 'var(--success)', label: 'Kosong' },
+  occupied:  { bg: 'var(--danger-light)',  border: 'var(--danger)',  color: 'var(--danger)',  label: 'Terisi' },
+  reserved:  { bg: 'var(--warning-light)', border: 'var(--warning)', color: 'var(--warning)', label: 'Reservasi' },
 };
 
 export default function MejaPage() {
@@ -50,10 +51,14 @@ export default function MejaPage() {
     <div>
       <div className="flex justify-between items-center mb-4" style={{flexWrap:'wrap'}}>
         <div>
-          <h1 className="page-title">🪑 Manajemen Meja</h1>
+          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Armchair size={28} className="text-primary" /> Manajemen Meja
+          </h1>
           <p className="page-subtitle">Pantau status semua meja secara real-time</p>
         </div>
-        <button className="btn btn-primary" onClick={handleAddTable}>+ Tambah Meja</button>
+        <button className="btn btn-primary" onClick={handleAddTable}>
+          <Plus size={16} /> Tambah Meja
+        </button>
       </div>
 
       <div className="flex gap-3 mb-4" style={{flexWrap:'wrap'}}>
@@ -71,7 +76,11 @@ export default function MejaPage() {
 
       <div className="flex gap-4" style={{alignItems:'flex-start', flexWrap:'wrap'}}>
         <div className="card" style={{flex:'1', minWidth:'300px'}}>
-          <div className="card-header"><span className="card-title">🗺️ Peta Meja</span></div>
+          <div className="card-header">
+            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Map size={18} /> Peta Meja
+            </span>
+          </div>
           <div className="card-body">
             <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(130px, 1fr))', gap:'12px'}}>
               {tables.map(t => {
@@ -93,11 +102,13 @@ export default function MejaPage() {
                       outlineOffset: '2px',
                     }}
                   >
-                    <div style={{fontSize:'1.75rem', marginBottom:'6px'}}>
-                      {t.status === 'available' ? '🪑' : t.status === 'occupied' ? '👥' : '🔖'}
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom:'6px', color: st.color }}>
+                      {t.status === 'available' ? <Armchair size={24} /> : t.status === 'occupied' ? <Users size={24} /> : <Bookmark size={24} />}
                     </div>
-                    <div style={{fontWeight:700, fontSize:'0.875rem', color: st.color}}>{t.name}</div>
-                    <div style={{fontSize:'0.72rem', color: st.color, opacity:0.8}}>👤 {t.capacity} kursi</div>
+                    <div style={{fontWeight:800, fontSize:'0.9rem', color: 'var(--text-primary)'}}>{t.name}</div>
+                    <div style={{fontSize:'0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '2px'}}>
+                      <Users size={12} /> {t.capacity} kursi
+                    </div>
                     <div style={{marginTop:'6px'}}>
                       <span style={{background: st.border, color:'#fff', fontSize:'0.65rem', fontWeight:700, padding:'2px 8px', borderRadius:'99px'}}>
                         {st.label}
@@ -113,11 +124,15 @@ export default function MejaPage() {
 
         {selected && (
           <div className="card" style={{width:'260px', flexShrink:0}}>
-            <div className="card-header"><span className="card-title">📋 Detail Meja</span></div>
+            <div className="card-header">
+              <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ClipboardList size={18} /> Detail Meja
+              </span>
+            </div>
             <div className="card-body">
               <div style={{textAlign:'center', marginBottom:'20px'}}>
-                <div style={{fontSize:'3rem'}}>
-                  {selected.status === 'available' ? '🪑' : selected.status === 'occupied' ? '👥' : '🔖'}
+                <div style={{ display: 'flex', justifyContent: 'center', color: STATUS_STYLE[selected.status].color }}>
+                  {selected.status === 'available' ? <Armchair size={48} /> : selected.status === 'occupied' ? <Users size={48} /> : <Bookmark size={48} />}
                 </div>
                 <h3 style={{fontWeight:800, marginTop:'8px'}}>{selected.name}</h3>
                 <span className={`badge ${selected.status === 'available' ? 'badge-success' : selected.status === 'occupied' ? 'badge-danger' : 'badge-warning'}`}>
@@ -131,12 +146,12 @@ export default function MejaPage() {
               <div style={{display:'flex', flexDirection:'column', gap:'8px', marginTop:'20px'}}>
                 {selected.status === 'available' && (
                   <button className="btn btn-primary" onClick={() => changeStatus(selected.id, 'occupied')}>
-                    🪑 Buka Meja
+                    <Armchair size={16} /> Buka Meja
                   </button>
                 )}
                 {selected.status === 'occupied' && (
-                  <button className="btn btn-outline" onClick={() => changeStatus(selected.id, 'available')}>
-                    ✅ Tutup Meja
+                  <button className="btn btn-outline" style={{borderColor:'var(--success)', color:'var(--success)'}} onClick={() => changeStatus(selected.id, 'available')}>
+                    <CheckCircle2 size={16} /> Tutup Meja
                   </button>
                 )}
                 <button className="btn btn-outline" style={{borderColor:'var(--danger)', color:'var(--danger)'}} onClick={async () => {
@@ -145,8 +160,12 @@ export default function MejaPage() {
                     setSelected(null);
                     fetchTables();
                   }
-                }}>🗑️ Hapus Meja</button>
-                <button className="btn btn-outline" onClick={() => setSelected(null)}>✕ Tutup</button>
+                }}>
+                  <Trash2 size={16} /> Hapus Meja
+                </button>
+                <button className="btn btn-outline" onClick={() => setSelected(null)}>
+                  <X size={16} /> Tutup
+                </button>
               </div>
             </div>
           </div>

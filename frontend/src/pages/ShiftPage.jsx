@@ -123,7 +123,7 @@ export default function ShiftPage({ user }) {
                   </div>
                 ))}
               </div>
-              <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, #FFF3EC, #FEECD8)', borderRadius: 'var(--radius-sm)', marginBottom: '14px' }}>
+              <div style={{ padding: '12px 16px', background: 'linear-gradient(135deg, var(--bg-card), var(--border-light))', borderRadius: 'var(--radius-sm)', marginBottom: '14px' }}>
                 <div className="flex justify-between">
                   <span style={{ fontWeight: 600 }}>💰 Total Pendapatan</span>
                   <strong style={{ color: 'var(--primary)', fontSize: '1.1rem' }}>{formatRupiah(totalRevenue(stats))}</strong>

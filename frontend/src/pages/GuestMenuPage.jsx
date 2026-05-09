@@ -186,7 +186,7 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
               <span>Total</span><span style={{ color: 'var(--primary)' }}>{formatRupiah(total)}</span>
             </div>
           </div>
-          <div style={{ background: '#EDFAF3', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: '0.85rem', color: '#1A4A2E', marginBottom: '20px' }}>
+          <div style={{ background: 'var(--success-light)', borderRadius: 'var(--radius-sm)', padding: '12px', fontSize: '0.85rem', color: '#1A4A2E', marginBottom: '20px' }}>
             📱 Notifikasi akan dikirim ke <strong>{form.phone}</strong> via WhatsApp
           </div>
           <button onClick={onSuccess} style={{
@@ -275,7 +275,7 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
                       padding: '12px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
                       textAlign: 'left', transition: 'var(--transition)',
                       border: isSelected ? '2px solid var(--primary)' : '1.5px solid var(--border)',
-                      background: isSelected ? '#FFF3EC' : '#fff',
+                      background: isSelected ? 'var(--bg-card)' : '#fff',
                       boxShadow: isSelected ? '0 0 0 3px rgba(111,78,55,0.1)' : 'none'
                     }}>
                       <div style={{ fontSize: '1.4rem', marginBottom: '4px' }}>{pm.icon}</div>
@@ -289,17 +289,17 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
 
             {/* Info pembayaran sesuai metode */}
             {form.paymentMethod === 'QRIS' && (
-              <div style={{ background: '#EDF5FA', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: '16px', fontSize: '0.82rem', color: '#1A4A5F' }}>
+              <div style={{ background: 'var(--info-light)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: '16px', fontSize: '0.82rem', color: 'var(--info)' }}>
                 📱 <strong>QRIS:</strong> Tunjukkan kode QR saat tiba di kasir untuk pembayaran.
               </div>
             )}
             {form.paymentMethod === 'Transfer Bank' && (
-              <div style={{ background: '#EDF5FA', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: '16px', fontSize: '0.82rem', color: '#1A4A5F' }}>
+              <div style={{ background: 'var(--info-light)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: '16px', fontSize: '0.82rem', color: 'var(--info)' }}>
                 🏦 <strong>Transfer Bank:</strong> No. Rekening BCA <strong>1234-5678-90</strong> a/n BrewMaster Coffee. Tunjukkan bukti transfer ke kasir.
               </div>
             )}
             {form.paymentMethod === 'E-Wallet' && (
-              <div style={{ background: '#EDF5FA', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: '16px', fontSize: '0.82rem', color: '#1A4A5F' }}>
+              <div style={{ background: 'var(--info-light)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: '16px', fontSize: '0.82rem', color: 'var(--info)' }}>
                 📲 <strong>E-Wallet:</strong> Scan QR OVO/GoPay/Dana yang tersedia di kasir.
               </div>
             )}
@@ -380,7 +380,7 @@ function OrderTracking({ orderId, onBack }) {
           <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: '4px' }}>Selesaikan Pembayaran</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '24px' }}>Order ID: <strong>{orderId}</strong></p>
 
-          <div style={{ background: '#FFF8EC', border: `2px solid ${isCash ? '#F59E0B' : '#3B82F6'}`, borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px', textAlign: 'left' }}>
+          <div style={{ background: '#FFF8EC', border: `2px solid ${isCash ? 'var(--warning)' : 'var(--info)'}`, borderRadius: 'var(--radius-md)', padding: '20px', marginBottom: '24px', textAlign: 'left' }}>
             {isCash && (
               <>
                 <div style={{ fontWeight: 700, marginBottom: '8px', color: '#92400E' }}>📢 Silakan ke kasir untuk membayar</div>
@@ -436,7 +436,7 @@ function OrderTracking({ orderId, onBack }) {
           {!isCash && (
             <div style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>👇 Simulasi jika sistem menerima Webhook Payment Gateway</div>
-              <button onClick={handleSimulateWebhook} className="btn" style={{ background: '#10B981', color: '#fff', width: '100%', justifyContent: 'center', padding: '12px', borderRadius: 'var(--radius-md)', fontWeight: 700, border: 'none' }}>
+              <button onClick={handleSimulateWebhook} className="btn" style={{ background: 'var(--success)', color: '#fff', width: '100%', justifyContent: 'center', padding: '12px', borderRadius: 'var(--radius-md)', fontWeight: 700, border: 'none' }}>
                 🔄 Simulasikan Pembayaran Berhasil
               </button>
             </div>
@@ -476,7 +476,7 @@ function OrderTracking({ orderId, onBack }) {
                 <div style={{ 
                   position: 'absolute', left: '-27px', top: '2px', width: '16px', height: '16px', borderRadius: '99px',
                   background: isDone ? 'var(--primary)' : 'var(--border)',
-                  border: isCurrent ? '4px solid #FEECD8' : 'none',
+                  border: isCurrent ? '4px solid var(--border-light)' : 'none',
                   zIndex: 2
                 }} />
                 <div style={{ fontWeight: 700, fontSize: '1rem', color: isCurrent ? 'var(--primary)' : 'var(--text-primary)' }}>
@@ -709,7 +709,7 @@ export default function GuestMenuPage({ user, tableFromQR }) {
                 boxShadow: 'var(--shadow-sm)', border: qty > 0 ? '2px solid var(--primary)' : '1.5px solid var(--border)',
                 transition: 'var(--transition)'
               }}>
-                <div style={{ height: '140px', background: 'linear-gradient(135deg, #FFF8F4, #FEECD8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.5rem', position: 'relative' }}>
+                <div style={{ height: '140px', background: 'linear-gradient(135deg, var(--bg-card), var(--border-light))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.5rem', position: 'relative' }}>
                   <ProductImage src={item.image} alt={item.name} icon={item.icon} />
                 </div>
                 <div style={{ padding: '12px' }}>

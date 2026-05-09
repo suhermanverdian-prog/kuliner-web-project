@@ -93,7 +93,7 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
                       style={{
                         flex: 1, minWidth: '80px', padding: '8px 4px', borderRadius: 'var(--radius-sm)',
                         border: cashNum === amt ? '2px solid var(--primary)' : '1px solid var(--border)',
-                        background: cashNum === amt ? '#FFF3EC' : '#fff',
+                        background: cashNum === amt ? 'var(--bg-card)' : '#fff',
                         cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600
                       }}>
                       {amt === total ? 'Uang Pas' : formatRupiah(amt)}
@@ -104,8 +104,8 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 padding: '16px 20px', borderRadius: 'var(--radius-md)', marginTop: '4px',
-                background: change >= 0 ? '#EDFAF3' : '#FEF0EE',
-                color: change >= 0 ? '#1A4A2E' : '#E85D4A',
+                background: change >= 0 ? 'var(--success-light)' : 'var(--danger-light)',
+                color: change >= 0 ? '#1A4A2E' : 'var(--danger)',
                 border: `2px solid ${change >= 0 ? '#86EFAC' : '#FCA5A5'}`
               }}>
                 <div>
@@ -124,18 +124,18 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
           {/* NON-TUNAI: instruksi + checkbox */}
           {!isCash && methodInfo && (
             <div>
-              <div style={{ background: '#EDF5FA', borderRadius: 'var(--radius-sm)', padding: '14px 16px', marginBottom: '12px' }}>
+              <div style={{ background: 'var(--info-light)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', marginBottom: '12px' }}>
                 <div style={{ fontWeight: 700, marginBottom: '6px' }}>
                   {methodInfo.icon} Langkah Konfirmasi {tx.paymentMethod}
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#1A4A5F', lineHeight: 1.7 }}>
+                <div style={{ fontSize: '0.85rem', color: 'var(--info)', lineHeight: 1.7 }}>
                   {methodInfo.instruction}
                 </div>
               </div>
               <label style={{
                 display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer',
                 padding: '14px', borderRadius: 'var(--radius-sm)',
-                background: confirmed ? '#EDFAF3' : 'var(--bg)',
+                background: confirmed ? 'var(--success-light)' : 'var(--bg)',
                 border: `2px solid ${confirmed ? '#86EFAC' : 'var(--border)'}`
               }}>
                 <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)}
@@ -473,7 +473,7 @@ export default function KasirPage({ user }) {
           ) : (
             filtered.map(item => (
               <div key={item.id} className="card" style={{ cursor: 'pointer', overflow: 'hidden', transition: 'var(--transition)' }} onClick={() => addToCart(item)}>
-                <div style={{ height: '120px', background: 'linear-gradient(135deg, #FFF8F4, #FEECD8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', position: 'relative' }}>
+                <div style={{ height: '120px', background: 'linear-gradient(135deg, var(--bg-card), var(--border-light))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', position: 'relative' }}>
                   {item.image ? (
                     <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (

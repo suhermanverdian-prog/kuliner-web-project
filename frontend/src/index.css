@@ -24,17 +24,17 @@
   --bg-table-hover: #fafafa;
   
   /* Sidebar Variables */
-  --sidebar-bg: #ffffff;
-  --sidebar-border: #e4e4e7; /* Zinc 200 */
-  --sidebar-text: #71717a; /* Zinc 500 */
-  --sidebar-text-hover: #18181b; /* Zinc 900 */
-  --sidebar-text-active: #18181b;
-  --sidebar-bg-hover: #f4f4f5;
-  --sidebar-bg-active: #f4f4f5;
-  --sidebar-logo: #18181b;
-  --sidebar-label: #a1a1aa; /* Zinc 400 */
-  --sidebar-user-bg: #ffffff;
-  --sidebar-user-border: #e4e4e7;
+  --sidebar-bg: var(--bg-card);
+  --sidebar-border: var(--border);
+  --sidebar-text: var(--text-muted);
+  --sidebar-text-hover: var(--text-primary);
+  --sidebar-text-active: var(--bg-card); /* White text */
+  --sidebar-bg-hover: var(--border-light);
+  --sidebar-bg-active: var(--primary); /* Black/Dark bg */
+  --sidebar-logo: var(--text-primary);
+  --sidebar-label: var(--text-muted);
+  --sidebar-user-bg: var(--bg-card);
+  --sidebar-user-border: var(--border);
   
   /* Text */
   --text-primary: #09090b; /* Zinc 950 */
@@ -102,17 +102,17 @@
   --bg-table-hover: rgba(255, 255, 255, 0.03);
 
   /* Sidebar Variables (Dark Mode) */
-  --sidebar-bg: #09090b;
-  --sidebar-border: #27272a; /* Zinc 800 */
-  --sidebar-text: #a1a1aa; /* Zinc 400 */
-  --sidebar-text-hover: #fafafa; /* Zinc 50 */
-  --sidebar-text-active: #fafafa;
-  --sidebar-bg-hover: #18181b; /* Zinc 900 */
-  --sidebar-bg-active: #18181b;
-  --sidebar-logo: #fafafa;
-  --sidebar-label: #71717a; /* Zinc 500 */
-  --sidebar-user-bg: #09090b;
-  --sidebar-user-border: #27272a;
+  --sidebar-bg: var(--bg-card);
+  --sidebar-border: var(--border);
+  --sidebar-text: var(--text-muted);
+  --sidebar-text-hover: var(--text-primary);
+  --sidebar-text-active: var(--bg-card);
+  --sidebar-bg-hover: var(--border-light);
+  --sidebar-bg-active: var(--primary);
+  --sidebar-logo: var(--text-primary);
+  --sidebar-label: var(--text-muted);
+  --sidebar-user-bg: var(--bg-card);
+  --sidebar-user-border: var(--border);
   
   /* Text */
   --text-primary: #fafafa; /* Zinc 50 */

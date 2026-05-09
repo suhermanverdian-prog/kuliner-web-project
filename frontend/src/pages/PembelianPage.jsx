@@ -272,7 +272,7 @@ export default function PembelianPage() {
                   <td>{s.address}</td>
                   <td>
                     <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => openEditSupplier(s)} style={{ padding: '6px', background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✏️</button>
+                      <button onClick={() => openEditSupplier(s)} style={{ padding: '6px', background: 'var(--info-light)', color: '#0369a1', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✏️</button>
                       <button onClick={() => handleDeleteSupplier(s.id)} style={{ padding: '6px', background: '#ffe4e6', color: '#be123c', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
                     </div>
                   </td>
@@ -315,7 +315,7 @@ export default function PembelianPage() {
                     <td>
                       <span style={{ 
                         padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600,
-                        background: po.status === 'Pending' ? '#fef9c3' : po.status === 'Diterima' ? '#dcfce7' : '#fee2e2',
+                        background: po.status === 'Pending' ? '#fef9c3' : po.status === 'Diterima' ? '#dcfce7' : 'var(--danger-light)',
                         color: po.status === 'Pending' ? '#854d0e' : po.status === 'Diterima' ? '#166534' : '#991b1b'
                       }}>
                         {po.status}
@@ -327,7 +327,7 @@ export default function PembelianPage() {
                         {po.status === 'Pending' && (
                           <>
                             <button onClick={() => openReceiveModal(po)} title="Terima Barang" style={{ padding: '6px 12px', background: '#dcfce7', color: '#166534', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>📥 Terima</button>
-                            <button onClick={() => cancelPO(po.id)} title="Batalkan PO" style={{ padding: '6px 12px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>❌ Batal</button>
+                            <button onClick={() => cancelPO(po.id)} title="Batalkan PO" style={{ padding: '6px 12px', background: 'var(--danger-light)', color: '#991b1b', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>❌ Batal</button>
                           </>
                         )}
                       </div>

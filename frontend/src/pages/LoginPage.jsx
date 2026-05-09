@@ -95,7 +95,7 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
             </div>
 
             {error && (
-              <div style={{ background: '#FEF0EE', color: '#E85D4A', padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '16px' }}>
+              <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '16px' }}>
                 ⚠️ {error}
               </div>
             )}
@@ -172,7 +172,7 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
               value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
           {error && (
-            <div style={{ background: '#FEF0EE', color: '#E85D4A', padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '16px' }}>
+            <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '16px' }}>
               ⚠️ {error}
             </div>
           )}
