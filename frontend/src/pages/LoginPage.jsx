@@ -34,6 +34,12 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
 
   const fillDemo = () => {
     if (selectedRole === 'customer') { setUsername('08123456789'); setPassword('user123'); }
+    else if (selectedRole === 'superadmin') { setUsername('messi'); setPassword('super123'); }
+    else if (selectedRole === 'owner') { setUsername('ronaldo'); setPassword('owner123'); }
+    else if (selectedRole === 'admin') { setUsername('debruyne'); setPassword('admin123'); }
+    else if (selectedRole === 'kasir') { setUsername('mbappe'); setPassword('kasir123'); }
+    else if (selectedRole === 'koki') { setUsername('haaland'); setPassword('koki123'); }
+    else if (selectedRole === 'gudang') { setUsername('vinicius'); setPassword('gudang123'); }
     else { setUsername(selectedRole); setPassword('password123'); }
   };
 
