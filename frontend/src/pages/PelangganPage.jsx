@@ -1,5 +1,17 @@
 import { useState } from 'react';
 import { formatRupiah } from '../data';
+import { 
+  Users, UserPlus, Gift, Star, 
+  Crown, QrCode, Search, Filter, 
+  MoreHorizontal, Download, Phone, 
+  Mail, Calendar, History, TrendingUp,
+  CreditCard, ChevronRight, X, Save,
+  CheckCircle2, Bell
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { cn } from "../lib/utils";
 
 const MOCK_CUSTOMERS = [
   { id: 1, name: 'Rina Marlina', phone: '081234567890', email: 'rina@email.com', points: 450, totalSpend: 1250000, visits: 18, lastVisit: '2026-05-01', status: 'member', joinDate: '2026-01-15' },
@@ -16,9 +28,9 @@ const MOCK_HISTORY = [
 ];
 
 const STATUS_BADGE = {
-  vip: { cls: 'badge-warning', label: '⭐ VIP' },
-  member: { cls: 'badge-info', label: '👤 Member' },
-  guest: { cls: 'badge-brown', label: '👣 Guest' },
+  vip: { bg: 'bg-amber-500/10', text: 'text-amber-600', label: 'VIP', icon: Crown },
+  member: { bg: 'bg-blue-500/10', text: 'text-blue-600', label: 'MEMBER', icon: UserPlus },
+  guest: { bg: 'bg-slate-500/10', text: 'text-slate-600', label: 'GUEST', icon: Users },
 };
 
 export default function PelangganPage() {
@@ -50,252 +62,344 @@ export default function PelangganPage() {
   };
 
   return (
-    <div>
-      <h1 className="page-title">👥 Data Pelanggan</h1>
-      <p className="page-subtitle">Kelola member, poin, dan loyalitas pelanggan</p>
+    <div className="space-y-8 pb-10 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Data Pelanggan & CRM</h2>
+          <p className="text-muted-foreground mt-1">Kelola data member, program loyalitas, dan analitik pelanggan.</p>
+        </div>
+        <Button size="lg" className="h-12 px-8 font-bold gap-2 shadow-xl shadow-accent/20" onClick={() => setShowAddModal(true)}>
+          <UserPlus size={20} strokeWidth={3} /> Tambah Member
+        </Button>
+      </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px', marginBottom: '24px' }}>
+      {/* Stats Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
-          { label: 'Total Pelanggan', val: customers.length, icon: '👥', color: 'brown' },
-          { label: 'Total Member', val: totalMembers, icon: '🎫', color: 'gold' },
-          { label: 'Pelanggan VIP', val: vipCount, icon: '⭐', color: 'green' },
-          { label: 'Total Poin Beredar', val: totalPoints.toLocaleString('id-ID'), icon: '🏆', color: 'blue' },
+          { label: 'Total Pelanggan', val: customers.length, icon: Users, color: 'text-primary', bg: 'bg-muted/30' },
+          { label: 'Total Member', val: totalMembers, icon: UserPlus, color: 'text-blue-600', bg: 'bg-blue-600/10' },
+          { label: 'Pelanggan VIP', val: vipCount, icon: Crown, color: 'text-amber-600', bg: 'bg-amber-600/10' },
+          { label: 'Poin Beredar', val: totalPoints.toLocaleString('id-ID'), icon: Gift, color: 'text-emerald-600', bg: 'bg-emerald-600/10' },
         ].map((s, i) => (
-          <div key={i} className="stat-card">
-            <div className={`stat-icon ${s.color}`}>{s.icon}</div>
-            <div className="stat-value" style={{ fontSize: '1.5rem', marginTop: '12px' }}>{s.val}</div>
-            <div className="stat-label">{s.label}</div>
-          </div>
+          <Card key={i} className="border-none shadow-md bg-card transition-all hover:scale-[1.02]">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{s.label}</p>
+                <h3 className={cn("text-2xl font-black mt-1", s.color)}>{s.val}</h3>
+              </div>
+              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner", s.bg)}>
+                <s.icon className={s.color} size={24} />
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      {/* Reward Toggle */}
-      <div className="card mb-4" style={{ marginBottom: '20px' }}>
-        <div className="card-body" style={{ padding: '16px 20px' }}>
-          <div className="flex justify-between items-center">
-            <div>
-              <strong>🎁 Program Poin & Reward</strong>
-              <p className="text-sm text-muted mt-1">Aktifkan agar pelanggan bisa kumpulkan poin setiap transaksi (1 poin = Rp 1.000)</p>
-            </div>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-              <span className={`badge ${rewardEnabled ? 'badge-success' : 'badge-danger'}`}>
-                {rewardEnabled ? 'Aktif' : 'Nonaktif'}
-              </span>
-              <div
-                onClick={() => setRewardEnabled(!rewardEnabled)}
-                style={{
-                  width: '48px', height: '26px', borderRadius: '99px', cursor: 'pointer',
-                  background: rewardEnabled ? 'var(--success)' : 'var(--border)',
-                  position: 'relative', transition: 'var(--transition)'
-                }}>
-                <div style={{
-                  position: 'absolute', top: '3px',
-                  left: rewardEnabled ? '25px' : '3px',
-                  width: '20px', height: '20px', borderRadius: '50%',
-                  background: '#fff', transition: 'var(--transition)',
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.2)'
-                }} />
+      {/* Reward Settings Card */}
+      <Card className="border-none shadow-xl bg-card overflow-hidden border-l-4 border-l-accent">
+        <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+           <div className="flex gap-4 items-center text-center md:text-left">
+              <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center text-accent shrink-0">
+                 <Gift size={32} />
               </div>
-            </label>
-          </div>
-        </div>
-      </div>
+              <div>
+                <h4 className="text-lg font-black leading-tight">Program Loyalitas & Reward</h4>
+                <p className="text-xs text-muted-foreground mt-1 max-w-md font-medium">Aktifkan akumulasi poin otomatis untuk setiap transaksi pelanggan guna meningkatkan retensi dan kunjungan ulang.</p>
+              </div>
+           </div>
+           <div className="flex items-center gap-4 bg-muted/20 p-2 rounded-2xl border">
+              <span className={cn("text-[10px] font-black uppercase tracking-widest px-3", rewardEnabled ? "text-emerald-600" : "text-destructive")}>
+                 {rewardEnabled ? "AKTIF" : "NONAKTIF"}
+              </span>
+              <button 
+                onClick={() => setRewardEnabled(!rewardEnabled)}
+                className={cn(
+                  "w-14 h-7 rounded-full transition-all relative p-1",
+                  rewardEnabled ? "bg-accent" : "bg-muted-foreground/30"
+                )}
+              >
+                <div className={cn(
+                  "w-5 h-5 bg-white rounded-full transition-all shadow-sm",
+                  rewardEnabled ? "translate-x-7" : "translate-x-0"
+                )} />
+              </button>
+           </div>
+        </CardContent>
+      </Card>
 
       {/* Tabs */}
-      <div className="category-tabs mb-4">
-        {[{ k: 'list', l: '📋 Daftar Pelanggan' }, { k: 'qr', l: '📱 Mode Guest / QR' }].map(t => (
-          <button key={t.k} className={`cat-tab ${activeTab === t.k ? 'active' : ''}`} onClick={() => setActiveTab(t.k)}>{t.l}</button>
+      <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-2xl border w-fit">
+        {[
+          { key: 'list', label: 'Daftar Pelanggan', icon: Users },
+          { key: 'qr', label: 'QR Self-Order', icon: QrCode },
+        ].map(t => (
+          <Button 
+            key={t.key}
+            variant={activeTab === t.key ? "secondary" : "ghost"} 
+            className={cn("h-10 px-6 font-bold rounded-xl", activeTab === t.key && "bg-background shadow-sm")}
+            onClick={() => setActiveTab(t.key)}
+          >
+            <t.icon size={16} className="mr-2" /> {t.label}
+          </Button>
         ))}
       </div>
 
       {activeTab === 'list' && (
-        <div className="flex gap-4" style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          {/* List */}
-          <div style={{ flex: 1, minWidth: '300px' }}>
-            <div className="flex justify-between items-center mb-3">
-              <div style={{ position: 'relative', flex: 1, marginRight: '12px' }}>
-                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
-                <input className="form-control" style={{ paddingLeft: '36px' }} placeholder="Cari nama atau nomor HP..." value={search} onChange={e => setSearch(e.target.value)} />
-              </div>
-              <button id="btn-tambah-member" className="btn btn-primary" onClick={() => setShowAddModal(true)}>+ Tambah Member</button>
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          {/* Main List */}
+          <div className="flex-1 space-y-4 w-full">
+            <div className="flex flex-col sm:flex-row gap-4">
+               <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <Input 
+                    className="pl-12 h-12 rounded-2xl shadow-sm border-none bg-card focus:ring-accent" 
+                    placeholder="Cari nama, email atau nomor WhatsApp..." 
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+               </div>
+               <Button variant="outline" className="h-12 px-6 font-bold gap-2 bg-card border-none shadow-sm hover:bg-muted/50">
+                  <Filter size={18} /> Filter
+               </Button>
             </div>
-            <div className="card">
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Pelanggan</th>
-                      <th>No. HP</th>
-                      <th>Status</th>
-                      <th>Poin</th>
-                      <th>Total Belanja</th>
-                      <th>Kunjungan</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map(c => (
-                      <tr key={c.id}>
-                        <td>
-                          <div className="flex items-center gap-2">
-                            <div className="user-avatar" style={{ width: '32px', height: '32px', fontSize: '0.75rem', flexShrink: 0 }}>
-                              {c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{c.name}</div>
-                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Bergabung {c.joinDate}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="text-sm">{c.phone}</td>
-                        <td><span className={`badge ${STATUS_BADGE[c.status].cls}`}>{STATUS_BADGE[c.status].label}</span></td>
-                        <td>
-                          {rewardEnabled
-                            ? <span style={{ fontWeight: 700, color: 'var(--accent)' }}>🏆 {c.points}</span>
-                            : <span className="text-muted text-xs">-</span>
-                          }
-                        </td>
-                        <td><strong>{formatRupiah(c.totalSpend)}</strong></td>
-                        <td>{c.visits}x</td>
-                        <td>
-                          <button className="btn btn-outline btn-sm" onClick={() => setSelected(c)}>📋 Detail</button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+
+            <Card className="border-none shadow-xl bg-card overflow-hidden">
+               <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                     <thead>
+                        <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
+                           <th className="px-6 py-4">Pelanggan</th>
+                           <th className="px-6 py-4">Kontak</th>
+                           <th className="px-6 py-4">Status</th>
+                           <th className="px-6 py-4">Poin</th>
+                           <th className="px-6 py-4">Total Belanja</th>
+                           <th className="px-6 py-4 text-right">Aksi</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y">
+                        {filtered.map(c => (
+                          <tr key={c.id} className="hover:bg-muted/20 transition-colors group">
+                             <td className="px-6 py-4">
+                                <div className="flex items-center gap-4">
+                                   <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-black group-hover:scale-110 transition-transform shadow-sm">
+                                      {c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                                   </div>
+                                   <div>
+                                      <p className="text-sm font-black group-hover:text-accent transition-colors">{c.name}</p>
+                                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Join: {c.joinDate}</p>
+                                   </div>
+                                </div>
+                             </td>
+                             <td className="px-6 py-4">
+                                <p className="text-xs font-bold text-primary">{c.phone}</p>
+                                <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{c.email || '-'}</p>
+                             </td>
+                             <td className="px-6 py-4">
+                                <span className={cn(
+                                  "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border",
+                                  STATUS_BADGE[c.status].bg, STATUS_BADGE[c.status].text, "border-transparent"
+                                )}>
+                                   {STATUS_BADGE[c.status].label}
+                                </span>
+                             </td>
+                             <td className="px-6 py-4">
+                                <div className="flex items-center gap-1.5 font-black text-sm text-accent">
+                                   <Star size={14} fill="currentColor" /> {c.points}
+                                </div>
+                             </td>
+                             <td className="px-6 py-4 font-black text-sm">{formatRupiah(c.totalSpend)}</td>
+                             <td className="px-6 py-4 text-right">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-accent" onClick={() => setSelected(c)}>
+                                   <ChevronRight size={20} />
+                                </Button>
+                             </td>
+                          </tr>
+                        ))}
+                     </tbody>
+                  </table>
+               </div>
+            </Card>
           </div>
 
-          {/* Detail panel */}
-          {selected && (
-            <div className="card" style={{ width: '280px', flexShrink: 0 }}>
-              <div className="card-header">
-                <span className="card-title">📋 Profil Pelanggan</span>
-                <button className="modal-close" onClick={() => setSelected(null)}>✕</button>
-              </div>
-              <div className="card-body">
-                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                  <div className="user-avatar" style={{ width: '56px', height: '56px', fontSize: '1.2rem', margin: '0 auto 12px' }}>
-                    {selected.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: '1rem' }}>{selected.name}</div>
-                  <span className={`badge ${STATUS_BADGE[selected.status].cls}`}>{STATUS_BADGE[selected.status].label}</span>
-                </div>
-                <div style={{ fontSize: '0.85rem', lineHeight: '2.2' }}>
-                  {[
-                    ['📱 HP', selected.phone],
-                    ['📧 Email', selected.email || '-'],
-                    ['📅 Bergabung', selected.joinDate],
-                    ['🕐 Kunjungan Terakhir', selected.lastVisit],
-                    ['🔢 Total Kunjungan', selected.visits + 'x'],
-                    ['💰 Total Belanja', formatRupiah(selected.totalSpend)],
-                  ].map(([k, v]) => (
-                    <div key={k} className="flex justify-between">
-                      <span className="text-muted">{k}</span>
-                      <strong>{v}</strong>
+          {/* Profile Sidebar */}
+          <Card className={cn(
+            "w-full lg:w-[350px] border-none shadow-xl bg-card shrink-0 overflow-hidden transition-all duration-500",
+            !selected && "opacity-50 grayscale pointer-events-none"
+          )}>
+            {selected ? (
+              <div className="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                 <div className="p-8 bg-muted/10 border-b flex flex-col items-center text-center relative">
+                    <Button variant="ghost" size="icon" className="absolute top-4 right-4" onClick={() => setSelected(null)}>
+                       <X size={20} />
+                    </Button>
+                    <div className="w-24 h-24 rounded-3xl bg-accent shadow-xl shadow-accent/20 flex items-center justify-center text-white text-3xl font-black mb-4">
+                       {selected.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                     </div>
-                  ))}
-                  {rewardEnabled && (
-                    <div className="flex justify-between">
-                      <span className="text-muted">🏆 Poin</span>
-                      <strong style={{ color: 'var(--accent)' }}>{selected.points} poin</strong>
+                    <h3 className="text-2xl font-black">{selected.name}</h3>
+                    <div className="flex gap-2 mt-2">
+                       <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest", STATUS_BADGE[selected.status].bg, STATUS_BADGE[selected.status].text)}>
+                          {STATUS_BADGE[selected.status].label}
+                       </span>
                     </div>
-                  )}
-                </div>
+                 </div>
 
-                <div style={{ borderTop: '1px solid var(--border)', marginTop: '16px', paddingTop: '12px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.8rem', marginBottom: '10px' }}>📜 Riwayat Transaksi</div>
-                  {MOCK_HISTORY.map(h => (
-                    <div key={h.id} style={{ padding: '8px', background: 'var(--bg)', borderRadius: '8px', marginBottom: '6px', fontSize: '0.78rem' }}>
-                      <div className="flex justify-between">
-                        <span style={{ fontFamily: 'monospace', color: 'var(--primary)', fontWeight: 700 }}>{h.id}</span>
-                        <span className="text-muted">{h.date}</span>
-                      </div>
-                      <div className="text-muted mt-1">{h.items}</div>
-                      <div className="flex justify-between mt-1">
-                        <strong>{formatRupiah(h.total)}</strong>
-                        {rewardEnabled && <span style={{ color: 'var(--success)', fontWeight: 700 }}>{h.points} poin</span>}
-                      </div>
+                 <CardContent className="p-8 space-y-8 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="p-4 bg-muted/30 rounded-2xl space-y-1">
+                          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Total Belanja</p>
+                          <p className="text-sm font-black text-primary">{formatRupiah(selected.totalSpend)}</p>
+                       </div>
+                       <div className="p-4 bg-accent/5 rounded-2xl space-y-1 border border-accent/10">
+                          <p className="text-[9px] font-black text-accent uppercase tracking-widest">Saldo Poin</p>
+                          <p className="text-sm font-black text-accent flex items-center gap-1"><Star size={12} fill="currentColor" /> {selected.points}</p>
+                       </div>
                     </div>
-                  ))}
-                </div>
+
+                    <div className="space-y-4">
+                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b pb-2">Informasi Kontak</p>
+                       <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground"><Phone size={14} /></div>
+                             <p className="text-sm font-bold">{selected.phone}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground"><Mail size={14} /></div>
+                             <p className="text-sm font-bold truncate">{selected.email || 'Email belum ditautkan'}</p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground"><Calendar size={14} /></div>
+                             <p className="text-sm font-bold">Terdaftar: {selected.joinDate}</p>
+                          </div>
+                       </div>
+                    </div>
+
+                    <div className="space-y-4">
+                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b pb-2">Riwayat Terakhir</p>
+                       <div className="space-y-3">
+                          {MOCK_HISTORY.map(h => (
+                            <div key={h.id} className="p-3 bg-card border rounded-2xl space-y-2 hover:border-accent/40 transition-colors shadow-sm">
+                               <div className="flex justify-between items-center">
+                                  <span className="text-[10px] font-black text-accent">{h.id}</span>
+                                  <span className="text-[10px] font-bold text-muted-foreground">{h.date}</span>
+                               </div>
+                               <p className="text-xs font-black truncate">{h.items}</p>
+                               <div className="flex justify-between items-center pt-2 border-t border-dashed">
+                                  <p className="text-xs font-black">{formatRupiah(h.total)}</p>
+                                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">{h.points} Poin</span>
+                               </div>
+                            </div>
+                          ))}
+                       </div>
+                    </div>
+                 </CardContent>
+                 
+                 <CardFooter className="p-6 border-t bg-muted/5 gap-3">
+                    <Button variant="outline" className="flex-1 h-11 font-bold">Edit Profil</Button>
+                    <Button className="flex-1 h-11 font-black bg-accent">Kirim Promo</Button>
+                 </CardFooter>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="p-20 text-center space-y-6 opacity-30">
+                 <Users size={80} strokeWidth={1} />
+                 <div>
+                    <p className="text-lg font-black">Detail Profil</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest">Pilih pelanggan dari daftar</p>
+                 </div>
+              </div>
+            )}
+          </Card>
         </div>
       )}
 
       {activeTab === 'qr' && (
-        <div className="grid-2">
-          <div className="card">
-            <div className="card-header"><span className="card-title">📱 QR Code Pemesanan Pelanggan</span></div>
-            <div className="card-body" style={{ textAlign: 'center' }}>
-              <div style={{
-                width: '180px', height: '180px', margin: '0 auto 20px',
-                background: 'var(--bg)', border: '2px solid var(--border)',
-                borderRadius: 'var(--radius-md)', display: 'flex',
-                alignItems: 'center', justifyContent: 'center', fontSize: '6rem'
-              }}>
-                🔲
-              </div>
-              <p style={{ fontWeight: 600, marginBottom: '8px' }}>Scan untuk Pesan Mandiri</p>
-              <p className="text-sm text-muted mb-4">Pelanggan scan QR ini → Langsung ke halaman menu → Pesan tanpa daftar akun (Guest Mode)</p>
-              <button className="btn btn-primary">⬇️ Download QR Code</button>
-            </div>
-          </div>
-          <div className="card">
-            <div className="card-header"><span className="card-title">⚙️ Pengaturan Mode Pelanggan</span></div>
-            <div className="card-body">
-              {[
-                { label: 'Tampilkan Harga di Menu Publik', desc: 'Sembunyikan jika tidak ingin harga terlihat oleh umum', default: true },
-                { label: 'Wajib Isi Nama saat Checkout', desc: 'Pelanggan wajib isi nama sebelum pesan', default: true },
-                { label: 'Wajib Isi Nomor WA', desc: 'Untuk notifikasi status pesanan via WhatsApp', default: true },
-                { label: 'Tampilkan Catatan Pesanan', desc: 'Pelanggan bisa tambahkan catatan khusus', default: true },
-              ].map((opt, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '12px 0', borderBottom: '1px solid var(--border-light)' }}>
-                  <div>
-                    <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{opt.label}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{opt.desc}</div>
-                  </div>
-                  <input type="checkbox" defaultChecked={opt.default} style={{ width: '18px', height: '18px', accentColor: 'var(--primary)', cursor: 'pointer', flexShrink: 0, marginLeft: '16px' }} />
-                </div>
-              ))}
-              <button className="btn btn-primary w-full mt-4" style={{ justifyContent: 'center' }}>💾 Simpan Pengaturan</button>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+           <Card className="border-none shadow-xl bg-card overflow-hidden">
+              <CardHeader className="bg-muted/10 border-b">
+                 <CardTitle className="text-xl">QR Code Digital Menu</CardTitle>
+                 <CardDescription>Akses langsung untuk pelanggan mandiri (Guest Mode).</CardDescription>
+              </CardHeader>
+              <CardContent className="p-12 flex flex-col items-center text-center space-y-8">
+                 <div className="relative group cursor-pointer">
+                    <div className="absolute inset-0 bg-accent rounded-[32px] blur-2xl opacity-10 group-hover:opacity-20 transition-opacity" />
+                    <div className="w-56 h-56 bg-white rounded-[32px] shadow-2xl border-2 border-muted flex items-center justify-center p-6 relative">
+                       <QrCode size={180} strokeWidth={1.5} className="text-primary" />
+                       <div className="absolute inset-0 flex items-center justify-center bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-[32px]">
+                          <Button className="font-black bg-accent shadow-xl shadow-accent/20 gap-2">
+                             <Download size={18} /> Unduh QR
+                          </Button>
+                       </div>
+                    </div>
+                 </div>
+                 <div className="max-w-sm space-y-2">
+                    <h4 className="text-lg font-black leading-tight">Berikan kemudahan memesan dari meja pelanggan</h4>
+                    <p className="text-xs text-muted-foreground font-medium">Pelanggan dapat memindai kode ini untuk melihat menu digital, memesan mandiri, dan membayar tanpa harus antri di kasir.</p>
+                 </div>
+              </CardContent>
+           </Card>
+
+           <Card className="border-none shadow-xl bg-card">
+              <CardHeader className="bg-muted/10 border-b">
+                 <CardTitle className="text-xl">Konfigurasi Mode Pelanggan</CardTitle>
+                 <CardDescription>Atur kebijakan interaksi pelanggan pada digital menu.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                 {[
+                   { id: '1', title: 'Tampilkan Harga Menu', desc: 'Sembunyikan jika ingin harga hanya terlihat di kasir.', active: true },
+                   { id: '2', title: 'Wajib Verifikasi WA', desc: 'Pelanggan harus memasukkan OTP WhatsApp sebelum pesan.', active: false },
+                   { id: '3', title: 'Izinkan Catatan Kustom', desc: 'Berikan kolom catatan untuk setiap item pesanan.', active: true },
+                   { id: '4', title: 'Pembayaran Ditempat', desc: 'Izinkan pelanggan membayar langsung via QRIS mandiri.', active: true },
+                 ].map(opt => (
+                   <div key={opt.id} className="flex justify-between items-start gap-4 p-4 rounded-2xl hover:bg-muted/20 transition-all border border-transparent hover:border-muted-foreground/10 group">
+                      <div className="space-y-1">
+                         <p className="text-sm font-black group-hover:text-accent transition-colors">{opt.title}</p>
+                         <p className="text-[10px] text-muted-foreground font-medium">{opt.desc}</p>
+                      </div>
+                      <input type="checkbox" className="w-5 h-5 accent-accent cursor-pointer" defaultChecked={opt.active} />
+                   </div>
+                 ))}
+                 <div className="pt-6 border-t">
+                    <Button className="w-full h-12 font-black shadow-lg shadow-accent/20">
+                       <Save size={18} className="mr-2" /> Simpan Pengaturan
+                    </Button>
+                 </div>
+              </CardContent>
+           </Card>
         </div>
       )}
 
       {/* Add Member Modal */}
       {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <span className="modal-title">➕ Daftarkan Member Baru</span>
-              <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label">Nama Lengkap *</label>
-                <input className="form-control" value={newForm.name} onChange={e => setNewForm({ ...newForm, name: e.target.value })} placeholder="cth: Rina Marlina" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Nomor WhatsApp *</label>
-                <input className="form-control" value={newForm.phone} onChange={e => setNewForm({ ...newForm, phone: e.target.value })} placeholder="cth: 081234567890" />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Email (opsional)</label>
-                <input className="form-control" value={newForm.email} onChange={e => setNewForm({ ...newForm, email: e.target.value })} placeholder="cth: nama@email.com" />
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-outline" onClick={() => setShowAddModal(false)}>Batal</button>
-              <button id="btn-simpan-member" className="btn btn-primary" onClick={handleAdd}>💾 Daftarkan</button>
-            </div>
-          </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+           <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+              <CardHeader className="border-b pb-4">
+                 <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                       <UserPlus className="text-accent" /> Registrasi Member
+                    </CardTitle>
+                    <Button variant="ghost" size="icon" onClick={() => setShowAddModal(false)}><X size={20} /></Button>
+                 </div>
+                 <CardDescription>Berikan pengalaman eksklusif untuk pelanggan setia.</CardDescription>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                 <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Nama Lengkap *</label>
+                    <Input value={newForm.name} onChange={e => setNewForm({ ...newForm, name: e.target.value })} placeholder="cth: Rina Marlina" />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Nomor WhatsApp (Aktif) *</label>
+                    <Input value={newForm.phone} onChange={e => setNewForm({ ...newForm, phone: e.target.value })} placeholder="cth: 081234567890" />
+                 </div>
+                 <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Email (Opsional)</label>
+                    <Input value={newForm.email} onChange={e => setNewForm({ ...newForm, email: e.target.value })} placeholder="cth: rina@email.com" />
+                 </div>
+              </CardContent>
+              <CardFooter className="border-t pt-6 gap-3">
+                 <Button variant="outline" className="flex-1 h-12" onClick={() => setShowAddModal(false)}>Batal</Button>
+                 <Button className="flex-[2] h-12 font-black bg-accent hover:bg-accent/90" onClick={handleAdd}>Daftarkan Sekarang</Button>
+              </CardFooter>
+           </Card>
         </div>
       )}
     </div>

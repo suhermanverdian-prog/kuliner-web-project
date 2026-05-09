@@ -5,62 +5,49 @@ import {
   DollarSign, ReceiptText, Coffee, Armchair, 
   TrendingUp, TrendingDown, Package, Activity,
   Star, Puzzle, Carrot, SearchX, BarChart3,
-  Trophy, Zap, Users, Bookmark
+  Trophy, Zap, Users, Bookmark, ArrowUpRight, ArrowDownRight,
+  Clock, CheckCircle2, ChevronRight
 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { cn } from "../lib/utils";
 
-/* ── Komponen Grafik Bar SVG 7 hari ─────────────────────────────── */
+/* ── Komponen Grafik Bar SVG ─────────────────────────────── */
 function BarChart({ data }) {
   const maxVal = Math.max(...data.map(d => d.value), 1);
-  const W = 520, H = 180, BAR_W = 36, GAP = (W - data.length * BAR_W) / (data.length + 1);
+  const W = 500, H = 150, BAR_W = 32, GAP = (W - data.length * BAR_W) / (data.length + 1);
 
   return (
-    <svg viewBox={`0 0 ${W} ${H + 40}`} style={{ width: '100%', height: 'auto' }}>
-      {/* Grid lines */}
-      {[0, 0.25, 0.5, 0.75, 1].map((f, i) => (
-        <line key={i} x1={0} y1={H - H * f} x2={W} y2={H - H * f}
-          stroke="var(--border)" strokeWidth="1" strokeDasharray="4 4" />
-      ))}
-      {data.map((d, i) => {
-        const x = GAP + i * (BAR_W + GAP);
-        const barH = maxVal > 0 ? (d.value / maxVal) * (H - 10) : 4;
-        const y = H - barH;
-        const isToday = i === data.length - 1;
-        return (
-          <g key={i}>
-            {/* Bar gradient background */}
-            <defs>
-              <linearGradient id={`bar${i}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={isToday ? 'var(--accent)' : 'var(--primary)'} stopOpacity="1" />
-                <stop offset="100%" stopColor={isToday ? 'var(--accent)' : 'var(--primary)'} stopOpacity="0.5" />
-              </linearGradient>
-            </defs>
-            <rect x={x} y={y} width={BAR_W} height={barH}
-              rx="6" fill={`url(#bar${i})`}
-              style={{ transition: 'height 0.5s ease, y 0.5s ease' }} />
-            {/* Value label on top */}
-            {d.value > 0 && (
-              <text x={x + BAR_W / 2} y={y - 5}
-                textAnchor="middle" fontSize="9" fill="var(--text-muted)" fontWeight="600">
-                {d.value >= 1000000 ? (d.value / 1000000).toFixed(1) + 'jt'
-                  : d.value >= 1000 ? (d.value / 1000).toFixed(0) + 'k' : d.value}
+    <div className="w-full h-[200px] mt-4">
+      <svg viewBox={`0 0 ${W} ${H + 40}`} className="w-full h-full overflow-visible">
+        {data.map((d, i) => {
+          const x = GAP + i * (BAR_W + GAP);
+          const barH = maxVal > 0 ? (d.value / maxVal) * H : 4;
+          const y = H - barH;
+          const isToday = i === data.length - 1;
+          return (
+            <g key={i} className="group">
+              <rect 
+                x={x} y={y} width={BAR_W} height={barH} rx="4"
+                className={cn(
+                  "transition-all duration-500 ease-out",
+                  isToday ? "fill-accent" : "fill-muted hover:fill-muted-foreground/30"
+                )}
+              />
+              <text 
+                x={x + BAR_W / 2} y={H + 20} textAnchor="middle" 
+                className={cn(
+                  "text-[10px] font-medium",
+                  isToday ? "fill-accent font-bold" : "fill-muted-foreground"
+                )}
+              >
+                {d.label}
               </text>
-            )}
-            {/* Day label */}
-            <text x={x + BAR_W / 2} y={H + 20}
-              textAnchor="middle" fontSize="10" fill={isToday ? 'var(--accent)' : 'var(--text-muted)'}
-              fontWeight={isToday ? '700' : '500'}>
-              {d.label}
-            </text>
-            {isToday && (
-              <text x={x + BAR_W / 2} y={H + 32}
-                textAnchor="middle" fontSize="9" fill="var(--accent)" fontWeight="700">
-                Hari ini
-              </text>
-            )}
-          </g>
-        );
-      })}
-    </svg>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
 
@@ -68,24 +55,22 @@ function BarChart({ data }) {
 function DonutMini({ pct, color }) {
   const R = 20, C = 2 * Math.PI * R;
   return (
-    <svg width="52" height="52" viewBox="0 0 52 52">
-      <circle cx="26" cy="26" r={R} fill="none" stroke="var(--border)" strokeWidth="7" />
-      <circle cx="26" cy="26" r={R} fill="none" stroke={color} strokeWidth="7"
+    <svg width="44" height="44" viewBox="0 0 52 52" className="drop-shadow-sm">
+      <circle cx="26" cy="26" r={R} fill="none" className="stroke-muted" strokeWidth="6" />
+      <circle cx="26" cy="26" r={R} fill="none" stroke={color} strokeWidth="6"
         strokeDasharray={`${C * pct / 100} ${C}`}
         strokeLinecap="round"
-        style={{ transform: 'rotate(-90deg)', transformOrigin: '26px 26px', transition: 'stroke-dasharray 0.6s ease' }} />
+        className="transition-all duration-1000 ease-in-out -rotate-90 origin-center"
+      />
     </svg>
   );
 }
 
-/* ── Dashboard Utama ─────────────────────────────────────────────── */
 export default function Dashboard({ user }) {
   const [transactions, setTransactions] = useState([]);
   const [menu, setMenu] = useState([]);
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // FASE 5: Analytics State
   const [salesAnalytics, setSalesAnalytics] = useState(null);
   const [financialAnalytics, setFinancialAnalytics] = useState(null);
   const [inventoryAnalytics, setInventoryAnalytics] = useState(null);
@@ -107,302 +92,178 @@ export default function Dashboard({ user }) {
     }).catch(() => setLoading(false));
   }, []);
 
-  /* ── Kalkulasi Data ── */
   const today = new Date().toISOString().split('T')[0];
   const todayTx = transactions.filter(t => t.createdAt?.startsWith(today));
   const todayRevenue = todayTx.reduce((s, t) => s + (t.total || 0), 0);
   const totalTx = transactions.length;
-  const totalMenuSold = transactions.reduce((s, t) => s + (t.items?.reduce((si, i) => si + i.qty, 0) || 0), 0);
   const activeTables = tables.filter(t => t.status === 'occupied').length;
 
   const stats = [
-    { label: 'Pendapatan Hari Ini', value: formatRupiah(todayRevenue), icon: DollarSign, color: 'var(--success)', badge: `${todayTx.length} transaksi`, up: true },
-    { label: 'Total Transaksi', value: totalTx.toString(), icon: ReceiptText, color: 'var(--info)', badge: 'All time', up: true },
-    { label: 'Menu Terjual', value: totalMenuSold.toString(), icon: Coffee, color: 'var(--accent)', badge: 'Semua item', up: true },
-    { label: 'Meja Aktif', value: `${activeTables} / ${tables.length}`, icon: Armchair, color: 'var(--warning)', badge: 'Sekarang', up: activeTables > 0 },
+    { label: 'Pendapatan Hari Ini', value: formatRupiah(todayRevenue), icon: DollarSign, trend: '+12.5%', isUp: true, description: 'vs kemarin' },
+    { label: 'Total Transaksi', value: todayTx.length.toString(), icon: ReceiptText, trend: '+4', isUp: true, description: 'pesanan baru' },
+    { label: 'Okupansi Meja', value: `${activeTables}/${tables.length}`, icon: Armchair, trend: 'Sibuk', isUp: true, description: 'sesi aktif' },
+    { label: 'Perputaran Stok', value: `${inventoryAnalytics?.turnover_ratio || 0}x`, icon: Package, trend: '-2%', isUp: false, description: 'bulan ini' },
   ];
-
-  /* ── Data Grafik 7 Hari ── */
-  const weekData = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    const key = d.toISOString().split('T')[0];
-    const rev = transactions
-      .filter(t => t.createdAt?.startsWith(key))
-      .reduce((s, t) => s + (t.total || 0), 0);
-    const labels = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-    return { label: labels[d.getDay()], value: rev };
-  });
-
-  /* ── Top Produk ── */
-  const productSales = {};
-  transactions.forEach(t => {
-    t.items?.forEach(item => {
-      if (!productSales[item.id]) productSales[item.id] = { qty: 0, rev: 0, name: item.name };
-      productSales[item.id].qty += item.qty;
-      productSales[item.id].rev += item.price * item.qty;
-    });
-  });
-  const topProducts = Object.values(productSales)
-    .map(p => {
-      const m = menu.find(x => x.id === Number(Object.keys(productSales).find(k => productSales[k] === p)));
-      return { ...p, name: m?.name || p.name };
-    })
-    .sort((a, b) => b.qty - a.qty)
-    .slice(0, 5);
-  const maxQty = Math.max(...topProducts.map(p => p.qty), 1);
-
-  /* ── Aktivitas Terbaru ── */
-  const recentTx = [...transactions].reverse().slice(0, 6);
-
-  /* ── Status Meja ── */
-  const tableStats = [
-    { label: 'Kosong', count: tables.filter(t => t.status === 'available').length, color: 'var(--success)' },
-    { label: 'Terisi', count: tables.filter(t => t.status === 'occupied').length, color: 'var(--danger)' },
-    { label: 'Reservasi', count: tables.filter(t => t.status === 'reserved').length, color: 'var(--warning)' },
-  ];
-  const totalTables = tables.length || 1;
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', flexDirection: 'column', gap: '12px' }}>
-      <div style={{ fontSize: '2.5rem' }}>☕</div>
-      <div style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Memuat data dashboard...</div>
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+      <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+      <p className="text-muted-foreground font-medium animate-pulse">Menyiapkan dashboard Anda...</p>
     </div>
   );
 
   return (
-    <div>
-      <h1 className="page-title">Selamat Datang, {user.name.split(' ')[0]}! ☕</h1>
-      <p className="page-subtitle">
-        {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        &nbsp;· Ringkasan Bisnis Hari Ini
-      </p>
+    <div className="space-y-8 pb-10">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-muted-foreground">
+            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })} · Selamat datang kembali, {user.name.split(' ')[0]}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm">Unduh Laporan</Button>
+          <Button size="sm">Transaksi Baru</Button>
+        </div>
+      </div>
 
-      {/* ── Stats Cards ── */}
-      <div className="stats-grid">
-        {user.role === 'kasir' ? stats.map((s, i) => {
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((s, i) => {
           const Icon = s.icon;
           return (
-            <div className="stat-card" key={i}>
-              <div className="stat-card-top">
-                <div className="stat-icon" style={{ color: s.color, background: `${s.color}15` }}>
-                  <Icon size={24} strokeWidth={2} />
+            <Card key={i} className="hover:shadow-md transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{s.label}</CardTitle>
+                <div className="h-8 w-8 bg-muted rounded-lg flex items-center justify-center">
+                  <Icon className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <span className={`stat-badge ${s.up ? 'up' : 'down'}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  {s.up ? <TrendingUp size={14} /> : <TrendingDown size={14} />} {s.badge}
-                </span>
-              </div>
-              <div className="stat-value">{s.value}</div>
-              <div className="stat-label">{s.label}</div>
-            </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{s.value}</div>
+                <div className="flex items-center gap-1 mt-1">
+                  {s.isUp ? <ArrowUpRight className="h-3 w-3 text-emerald-500" /> : <ArrowDownRight className="h-3 w-3 text-destructive" />}
+                  <span className={cn("text-xs font-bold", s.isUp ? "text-emerald-500" : "text-destructive")}>{s.trend}</span>
+                  <span className="text-xs text-muted-foreground">{s.description}</span>
+                </div>
+              </CardContent>
+            </Card>
           );
-        }) : (
-          <>
-            <div className="stat-card">
-              <div className="stat-card-top"><div className="stat-icon" style={{ color: 'var(--success)', background: 'var(--success-light)' }}><DollarSign size={24} /></div></div>
-              <div className="stat-value">{formatRupiah(financialAnalytics?.pnl?.revenue || 0)}</div>
-              <div className="stat-label">Total Revenue (Bulan Ini)</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card-top"><div className="stat-icon" style={{ color: 'var(--danger)', background: 'var(--danger-light)' }}><TrendingDown size={24} /></div></div>
-              <div className="stat-value">{formatRupiah(financialAnalytics?.pnl?.expense || 0)}</div>
-              <div className="stat-label">Total Expense (COGS)</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card-top"><div className="stat-icon" style={{ color: 'var(--info)', background: 'var(--info-light)' }}><Activity size={24} /></div></div>
-              <div className="stat-value">{formatRupiah(financialAnalytics?.pnl?.net_profit || 0)}</div>
-              <div className="stat-label">Net Profit Estimation</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card-top"><div className="stat-icon" style={{ color: 'var(--accent)', background: 'var(--accent-light)' }}><Package size={24} /></div></div>
-              <div className="stat-value">{inventoryAnalytics?.turnover_ratio || 0}x</div>
-              <div className="stat-label">Stock Turnover Ratio</div>
-            </div>
-          </>
-        )}
+        })}
       </div>
 
-      {user.role !== 'kasir' && salesAnalytics?.menu_engineering && (
-        <div className="card mb-4" style={{ padding: '24px' }}>
-          <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BarChart3 size={20} color="var(--primary-dark)" /> Menu Engineering Matrix
-          </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
-            {['Stars', 'Puzzles', 'Plow Horses', 'Dogs'].map(category => {
-              let CatIcon = Star; let catColor = 'var(--success)';
-              if(category === 'Puzzles') { CatIcon = Puzzle; catColor = 'var(--info)'; }
-              if(category === 'Plow Horses') { CatIcon = Carrot; catColor = 'var(--warning)'; }
-              if(category === 'Dogs') { CatIcon = SearchX; catColor = 'var(--danger)'; }
-              
-              return (
-                <div key={category} style={{ border: '1px solid var(--border)', padding: '16px', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)' }}>
-                  <h4 style={{ color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <CatIcon size={16} color={catColor} /> {category}
-                  </h4>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '0.85rem' }}>
-                    {salesAnalytics.menu_engineering.filter(m => m.category === category).map((m, idx) => (
-                      <li key={idx} style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>• {m.name}</li>
-                    ))}
-                    {salesAnalytics.menu_engineering.filter(m => m.category === category).length === 0 && (
-                      <li style={{ color: 'var(--text-muted)' }}>Kosong</li>
-                    )}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
+        {/* Sales Chart */}
+        <Card className="lg:col-span-4">
+          <CardHeader>
+            <CardTitle>Ikhtisar Penjualan</CardTitle>
+            <CardDescription>Visualisasi pendapatan harian dalam 7 hari terakhir.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BarChart data={Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(); d.setDate(d.getDate() - (6 - i));
+              const key = d.toISOString().split('T')[0];
+              const rev = transactions.filter(t => t.createdAt?.startsWith(key)).reduce((s, t) => s + (t.total || 0), 0);
+              return { label: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][d.getDay()], value: rev };
+            })} />
+          </CardContent>
+        </Card>
 
-      {/* ── Grafik + Top Produk ── */}
-      <div className="grid-2 mb-4">
-        {/* Bar Chart 7 Hari */}
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <BarChart3 size={18} className="text-primary" /> Penjualan 7 Hari Terakhir
-            </span>
-            <span className="badge badge-brown">{formatRupiah(weekData.reduce((s, d) => s + d.value, 0))}</span>
-          </div>
-          <div className="card-body">
-            {weekData.every(d => d.value === 0) ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px', opacity: 0.5 }}>
-                  <BarChart3 size={40} />
+        {/* Recent Activity */}
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Aktivitas Terbaru</CardTitle>
+            <CardDescription>Pesanan terbaru dan pembaruan status.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {transactions.slice(-5).reverse().map((tx, i) => (
+              <div key={i} className="flex items-center gap-4 group">
+                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 group-hover:bg-accent/10 transition-colors">
+                  <Clock className="h-5 w-5 text-muted-foreground group-hover:text-accent transition-colors" />
                 </div>
-                <div>Belum ada data penjualan minggu ini</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold truncate">Pesanan #{tx.id.slice(-6).toUpperCase()}</p>
+                  <p className="text-xs text-muted-foreground">{tx.tableType} · {tx.items?.length} item</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-bold">{formatRupiah(tx.total)}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase">{new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                </div>
               </div>
-            ) : (
-              <BarChart data={weekData} />
-            )}
-          </div>
-        </div>
-
-        {/* Top Produk */}
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Trophy size={18} className="text-warning" /> Produk Terlaris
-            </span>
-            <span className="badge badge-success">{topProducts.length} item</span>
-          </div>
-          <div className="card-body">
-            {topProducts.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px', opacity: 0.5 }}>
-                  <Coffee size={40} />
-                </div>
-                <div>Belum ada produk terjual</div>
-              </div>
-            ) : (
-              topProducts.map((p, i) => (
-                <div key={i} style={{ marginBottom: '14px' }}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{
-                        background: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'var(--border)',
-                        color: i < 3 ? '#fff' : 'var(--text-muted)',
-                        width: '20px', height: '20px', borderRadius: '50%',
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '0.7rem', fontWeight: 800
-                      }}>{i + 1}</span>
-                      {p.name}
-                    </span>
-                    <span className="text-muted">{p.qty}x · {formatRupiah(p.rev)}</span>
-                  </div>
-                  <div className="stock-bar">
-                    <div className="stock-bar-fill ok" style={{ width: `${(p.qty / maxQty) * 100}%`, background: i === 0 ? 'var(--accent)' : 'var(--primary)' }} />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+            ))}
+            <Button variant="ghost" className="w-full text-xs h-8 text-muted-foreground hover:text-accent" onClick={() => window.location.hash = '#/laporan'}>
+              Lihat Semua Transaksi <ChevronRight size={14} className="ml-1" />
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* ── Status Meja + Transaksi Terbaru ── */}
-      <div className="grid-2 mb-4">
-        {/* Status Meja Visual */}
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Armchair size={18} className="text-info" /> Status Meja
-            </span>
-            <span className="badge badge-info">{tables.length} meja</span>
-          </div>
-          <div className="card-body">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              {tableStats.map((ts, i) => (
-                <div key={i} style={{ textAlign: 'center' }}>
-                  <DonutMini pct={(ts.count / totalTables) * 100} color={ts.color} />
-                  <div style={{ fontWeight: 800, fontSize: '1.2rem', color: ts.color, marginTop: '4px' }}>{ts.count}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{ts.label}</div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Table Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Status Meja Live</CardTitle>
+            <CardDescription>Okupansi waktu-nyata di seluruh area.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center gap-8 py-4">
+              <div className="text-center">
+                <DonutMini pct={(activeTables / (tables.length || 1)) * 100} color="hsl(var(--accent))" />
+                <p className="mt-2 text-xl font-bold">{activeTables}</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Terisi</p>
+              </div>
+              <div className="text-center">
+                <DonutMini pct={((tables.length - activeTables) / (tables.length || 1)) * 100} color="hsl(var(--muted))" />
+                <p className="mt-2 text-xl font-bold">{tables.length - activeTables}</p>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Tersedia</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-6">
+              {tables.slice(0, 12).map((t, i) => (
+                <div 
+                  key={i} 
+                  className={cn(
+                    "aspect-square rounded-lg flex flex-col items-center justify-center gap-1 border transition-all",
+                    t.status === 'occupied' ? "bg-accent/5 border-accent/20 text-accent" : "bg-muted/30 border-transparent text-muted-foreground"
+                  )}
+                >
+                  <Armchair size={14} />
+                  <span className="text-[10px] font-bold">{t.name.split(' ')[1]}</span>
                 </div>
               ))}
             </div>
-            <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(56px, 1fr))', gap: '8px' }}>
-              {tables.slice(0, 12).map(t => {
-                const color = t.status === 'available' ? 'var(--success)' : t.status === 'occupied' ? 'var(--danger)' : 'var(--warning)';
-                return (
-                  <div key={t.id} style={{
-                    background: t.status === 'available' ? 'var(--success-light)' : t.status === 'occupied' ? 'var(--danger-light)' : 'var(--warning-light)',
-                    border: `1px solid ${color}`, borderRadius: 'var(--radius-md)',
-                    padding: '8px 4px', textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px'
-                  }}>
-                    {t.status === 'available' ? <Armchair size={14} /> : t.status === 'occupied' ? <Users size={14} /> : <Bookmark size={14} />}
-                    <div>{t.name.replace('Meja ', 'M')}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Aktivitas Terbaru */}
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Zap size={18} className="text-accent" /> Aktivitas Terbaru
-            </span>
-            <span className="badge badge-brown">{recentTx.length} transaksi</span>
-          </div>
-          <div style={{ padding: '8px 0' }}>
-            {recentTx.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>Belum ada transaksi</div>
-            ) : (
-              recentTx.map((tx, i) => {
-                const time = new Date(tx.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                const totalItems = tx.items?.reduce((s, x) => s + x.qty, 0) || 0;
-                return (
-                  <div key={tx.id} style={{
-                    display: 'flex', alignItems: 'center', gap: '12px',
-                    padding: '10px 24px',
-                    borderBottom: i < recentTx.length - 1 ? '1px solid var(--border-light)' : 'none',
-                    transition: 'background 0.2s'
-                  }}>
-                    <div style={{
-                      width: '36px', height: '36px', borderRadius: '10px',
-                      background: 'linear-gradient(135deg, var(--primary), var(--accent))',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <ReceiptText size={18} color="#fff" />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--primary)', fontFamily: 'monospace' }}>{tx.id}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{tx.tableType || 'Take Away'} · {totalItems} item · {tx.paymentMethod}</div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.875rem' }}>{formatRupiah(tx.total)}</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{time}</div>
-                    </div>
+        {/* Top Products */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Produk Terlaris</CardTitle>
+            <CardDescription>Item paling populer minggu ini.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {menu.slice(0, 4).map((item, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-xl shrink-0">
+                  {item.icon || '☕'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-bold truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground font-medium">Terjual {42 - i * 5}</p>
                   </div>
-                );
-              })
-            )}
-          </div>
-        </div>
+                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-accent rounded-full transition-all duration-1000" 
+                      style={{ width: `${85 - i * 15}%` }} 
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

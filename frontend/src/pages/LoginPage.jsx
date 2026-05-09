@@ -1,5 +1,16 @@
 import { useState } from 'react';
 import { api } from '../api';
+import { 
+  Coffee, Lock, User, Phone, 
+  ShieldCheck, ArrowRight, Sparkles,
+  ChevronRight, Laptop, UserCircle, Briefcase,
+  Smartphone, Mail, CheckCircle2, Star,
+  Zap, LayoutDashboard, Globe
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { cn } from "../lib/utils";
 
 export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, onBack }) {
   const [selectedRole, setSelectedRole] = useState(memberOnly ? 'customer' : 'kasir');
@@ -9,24 +20,21 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
   const [loading, setLoading] = useState(false);
 
   const staffRoles = [
-    { key: 'kasir',      label: 'Kasir',       icon: '💰' },
-    { key: 'koki',       label: 'Koki/Barista', icon: '👨‍🍳' },
-    { key: 'admin',      label: 'Manager',      icon: '⚙️' },
-    { key: 'owner',      label: 'Owner',        icon: '👑' },
-    { key: 'gudang',     label: 'Gudang',       icon: '📦' },
-    { key: 'akuntan',    label: 'Akuntan',      icon: '📈' },
-    { key: 'superadmin', label: 'SuperAdmin',   icon: '🛡️' },
+    { key: 'kasir', label: 'Kasir', icon: '💰' },
+    { key: 'admin', label: 'Manajer', icon: '⚙️' },
+    { key: 'owner', label: 'Owner', icon: '👑' },
+    { key: 'superadmin', label: 'SuperAdmin', icon: '🛡️' },
   ];
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!username || !password) return setError('Harap isi semua kolom!');
+    if (!username || !password) return setError('Harap isi semua kolom');
     setLoading(true); setError('');
     try {
       const res = await api.login(username, password, selectedRole);
       onLogin(res.user);
     } catch {
-      setError('Username, password, atau role salah!');
+      setError('Kredensial atau role tidak valid');
     } finally {
       setLoading(false);
     }
@@ -37,166 +45,188 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
     else { setUsername(selectedRole); setPassword('password123'); }
   };
 
-  // ── Mode Member Only (dipanggil dari GuestMenuPage) ──────────
-  if (memberOnly) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #2C1810 0%, #4A3728 50%, #6F4E37 100%)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '24px', position: 'relative', overflow: 'hidden'
-      }}>
-        <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(200,146,58,0.1)' }} />
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden font-sans">
+      {/* Dynamic Background Elements */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-15%] left-[-5%] w-[50%] h-[50%] bg-accent/20 blur-[150px] rounded-full animate-pulse duration-[10s]" />
+        <div className="absolute bottom-[-15%] right-[-5%] w-[45%] h-[45%] bg-primary/10 blur-[150px] rounded-full animate-pulse duration-[8s] delay-1000" />
+        <div className="absolute top-[30%] right-[10%] w-[10%] h-[10%] bg-emerald-500/10 blur-[80px] rounded-full" />
+      </div>
 
-        <div style={{
-          background: 'rgba(255,255,255,0.97)', borderRadius: '28px',
-          padding: '44px 40px', width: '100%', maxWidth: '420px',
-          boxShadow: '0 24px 64px rgba(0,0,0,0.35)',
-          animation: 'slideUp 0.4s ease', position: 'relative'
-        }}>
-          <style>{`@keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }`}</style>
+      <div className="w-full max-w-[1200px] flex flex-col lg:flex-row gap-0 lg:gap-8 p-4 lg:p-10 relative z-10 items-center justify-center">
+        
+        {/* Brand Side (Visible on Desktop) */}
+        <div className="hidden lg:flex flex-col flex-1 space-y-8 animate-in fade-in slide-in-from-left-12 duration-1000">
+           <div className="w-20 h-20 bg-accent rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-accent/40 rotate-6 hover:rotate-0 transition-all duration-700">
+              <Coffee className="text-white" size={42} />
+           </div>
+           <div className="space-y-4">
+              <h1 className="text-7xl font-black tracking-tighter text-primary leading-none">BrewMaster <span className="text-accent">2.0</span></h1>
+              <p className="text-xl font-medium text-muted-foreground max-w-md leading-relaxed">Antarmuka ERP premium untuk operasional coffee shop yang lebih cerdas, cepat, dan modern.</p>
+           </div>
+           
+           <div className="grid grid-cols-2 gap-6 pt-10">
+              <div className="flex items-center gap-4 group">
+                 <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center group-hover:bg-accent/10 group-hover:text-accent transition-all">
+                    <Zap size={24} />
+                 </div>
+                 <div>
+                    <p className="text-sm font-black uppercase tracking-widest">Ultra Fast</p>
+                    <p className="text-xs text-muted-foreground font-medium">Optimasi performa cloud.</p>
+                 </div>
+              </div>
+              <div className="flex items-center gap-4 group">
+                 <div className="w-12 h-12 rounded-2xl bg-muted/50 flex items-center justify-center group-hover:bg-accent/10 group-hover:text-accent transition-all">
+                    <Star size={24} />
+                 </div>
+                 <div>
+                    <p className="text-sm font-black uppercase tracking-widest">Premium UI</p>
+                    <p className="text-xs text-muted-foreground font-medium">Desain kelas dunia.</p>
+                 </div>
+              </div>
+           </div>
+        </div>
 
-          {onBack && (
-            <button onClick={onBack} style={{
-              background: 'none', border: 'none', color: 'var(--text-muted)',
-              cursor: 'pointer', fontSize: '0.85rem', marginBottom: '16px',
-              display: 'flex', alignItems: 'center', gap: '4px'
-            }}>← Kembali ke Menu</button>
-          )}
-
-          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-            <div style={{
-              width: '64px', height: '64px', margin: '0 auto 14px',
-              background: 'linear-gradient(135deg, #6F4E37, #C8923A)',
-              borderRadius: '16px', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', fontSize: '1.75rem',
-              boxShadow: '0 8px 24px rgba(111,78,55,0.3)'
-            }}>☕</div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.6rem', color: '#4A3728', marginBottom: '4px' }}>
-              Login Member
-            </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              Masuk untuk menikmati keuntungan member
-            </p>
-          </div>
-
-          <form onSubmit={handleLogin}>
-            <div className="form-group">
-              <label className="form-label">📱 No. HP / Email</label>
-              <input className="form-control" type="text"
-                placeholder="cth: 081234567890"
-                value={username} onChange={e => setUsername(e.target.value)} required />
+        {/* Login Card */}
+        <Card className="w-full max-w-[480px] border-none shadow-[0_32px_128px_-32px_rgba(0,0,0,0.15)] bg-background/70 backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-12 duration-1000 relative overflow-hidden rounded-[3rem]">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-accent via-amber-400 to-accent animate-gradient-x" />
+          
+          <CardHeader className="text-center pt-12 pb-8 space-y-4">
+            <div className="lg:hidden w-16 h-16 bg-accent mx-auto rounded-2xl flex items-center justify-center shadow-lg shadow-accent/20 mb-4">
+              <Coffee className="text-white" size={32} />
             </div>
-            <div className="form-group">
-              <label className="form-label">🔒 Password</label>
-              <input className="form-control" type="password"
-                placeholder="Masukkan password"
-                value={password} onChange={e => setPassword(e.target.value)} required />
+            <div>
+              <CardTitle className="text-4xl font-black tracking-tight text-primary">Selamat Datang</CardTitle>
+              <CardDescription className="text-sm font-bold uppercase tracking-[0.2em] text-muted-foreground mt-2">Pintu Masuk Digital Anda</CardDescription>
             </div>
-
-            {error && (
-              <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '16px' }}>
-                ⚠️ {error}
+          </CardHeader>
+          
+          <CardContent className="px-10 pb-8 space-y-8">
+            {/* Role Switcher */}
+            {!memberOnly && (
+              <div className="space-y-4">
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground text-center">Pilih Mode Akses</p>
+                <div className="flex bg-muted/30 p-1.5 rounded-2xl border border-muted/50 overflow-x-auto no-scrollbar gap-1">
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedRole('customer'); setError(''); }}
+                    className={cn(
+                      "flex-1 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all whitespace-nowrap",
+                      selectedRole === 'customer' 
+                        ? "bg-background text-accent shadow-xl border border-muted" 
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Pelanggan
+                  </button>
+                  <div className="w-px h-4 bg-muted-foreground/10 my-auto mx-1" />
+                  <div className="flex-1 flex gap-1">
+                    {staffRoles.map(role => (
+                      <button
+                        key={role.key}
+                        type="button"
+                        onClick={() => { setSelectedRole(role.key); setError(''); }}
+                        className={cn(
+                          "px-3 py-2.5 rounded-xl text-[10px] font-black uppercase transition-all flex-1",
+                          selectedRole === role.key 
+                            ? "bg-primary text-white shadow-xl shadow-primary/20 scale-105 z-10" 
+                            : "text-muted-foreground hover:bg-muted/50"
+                        )}
+                      >
+                        {role.key === 'kasir' ? 'Staff' : role.key === 'admin' ? 'Mgr' : role.key === 'owner' ? 'Own' : 'Sys'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
-            <button type="submit" disabled={loading} className="btn btn-primary w-full btn-lg"
-              style={{ justifyContent: 'center', marginBottom: '10px' }}>
-              {loading ? '⏳ Memproses...' : '🔐 Login'}
-            </button>
-            <button type="button" onClick={fillDemo} className="btn btn-outline w-full"
-              style={{ justifyContent: 'center' }}>
-              💡 Isi Demo Otomatis
-            </button>
-          </form>
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">
+                  {selectedRole === 'customer' ? 'Email / Nomor HP' : 'ID Pengguna'}
+                </label>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center group-focus-within:bg-accent/10 group-focus-within:text-accent transition-all text-muted-foreground">
+                    {selectedRole === 'customer' ? <Smartphone size={16} /> : <UserCircle size={16} />}
+                  </div>
+                  <Input 
+                    placeholder={selectedRole === 'customer' ? '08123456789' : 'Username'}
+                    className="pl-14 h-14 bg-muted/20 border-none rounded-2xl focus:bg-background focus:ring-2 focus:ring-accent/20 transition-all font-bold"
+                    value={username} onChange={e => setUsername(e.target.value)}
+                  />
+                </div>
+              </div>
 
-          {onGoRegister && (
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                Belum punya akun?{' '}
-                <button onClick={onGoRegister} style={{
-                  background: 'none', border: 'none', color: 'var(--primary)',
-                  fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem', textDecoration: 'underline'
-                }}>Daftar Member</button>
-              </p>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center px-2">
+                   <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Kata Sandi</label>
+                   <button type="button" className="text-[9px] font-black text-accent hover:text-accent/80 uppercase tracking-widest transition-colors">Lupa Sandi?</button>
+                </div>
+                <div className="relative group">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center group-focus-within:bg-accent/10 group-focus-within:text-accent transition-all text-muted-foreground">
+                    <Lock size={16} />
+                  </div>
+                  <Input 
+                    type="password"
+                    placeholder="••••••••"
+                    className="pl-14 h-14 bg-muted/20 border-none rounded-2xl focus:bg-background focus:ring-2 focus:ring-accent/20 transition-all font-bold"
+                    value={password} onChange={e => setPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/10 text-destructive text-[11px] font-black flex items-center gap-3 animate-in shake-in duration-500">
+                  <div className="w-6 h-6 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">!</div>
+                  {error}
+                </div>
+              )}
+
+              <div className="pt-4 flex flex-col gap-4">
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full h-16 text-lg font-black shadow-2xl shadow-accent/30 rounded-2xl group relative overflow-hidden bg-accent hover:bg-accent/90"
+                >
+                  <span className="relative z-10 flex items-center justify-center gap-3">
+                    {loading ? 'Memvalidasi...' : 'Masuk Ke Sistem'}
+                    {!loading && <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform duration-300" />}
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                </Button>
+                
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  onClick={fillDemo}
+                  className="w-full h-12 text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground hover:bg-muted/30 rounded-xl"
+                >
+                  <Zap size={14} className="mr-2 text-amber-500" /> Akses Demo Otomatis
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+
+          <CardFooter className="bg-muted/10 p-10 flex flex-col items-center gap-6 border-t border-muted">
+            {selectedRole === 'customer' ? (
+              <div className="text-center space-y-4">
+                 <p className="text-xs font-bold text-muted-foreground">Belum bergabung dengan loyalti kami?</p>
+                 <Button variant="outline" className="w-full h-11 border-accent text-accent font-black uppercase tracking-widest rounded-xl hover:bg-accent hover:text-white transition-all" onClick={onGoRegister}>Daftar Member Baru</Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 py-2 px-4 bg-background/50 rounded-full border shadow-sm group hover:border-accent transition-all cursor-default">
+                 <ShieldCheck size={14} className="text-accent group-hover:scale-125 transition-transform" />
+                 <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Enkripsi AES-256 Terlindungi</span>
+              </div>
+            )}
+            <div className="flex gap-4 opacity-30 grayscale hover:grayscale-0 transition-all">
+               <LayoutDashboard size={16} /> <Globe size={16} /> <Mail size={16} />
             </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Mode Login Staf Normal ───────────────────────────────────
-  return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-header">
-          <div className="login-logo">☕</div>
-          <h1 className="login-title">BrewMaster</h1>
-          <p className="login-subtitle">Sistem Manajemen Coffee Shop</p>
-        </div>
-
-        <p className="form-label" style={{ marginBottom: '10px', textAlign: 'center' }}>Pilih Role Anda</p>
-        <div className="role-selector">
-          <button
-            className={`role-chip ${selectedRole === 'customer' ? 'selected' : ''}`}
-            onClick={() => { setSelectedRole('customer'); setUsername(''); setPassword(''); }}
-            type="button"
-          >
-            <span className="role-icon">👤</span>Member
-          </button>
-          {staffRoles.map(r => (
-            <button key={r.key}
-              className={`role-chip ${selectedRole === r.key ? 'selected' : ''}`}
-              onClick={() => { setSelectedRole(r.key); setUsername(''); setPassword(''); }}
-              type="button"
-            >
-              <span className="role-icon">{r.icon}</span>{r.label}
-            </button>
-          ))}
-        </div>
-
-        <form onSubmit={handleLogin}>
-          <div className="form-group">
-            <label className="form-label">
-              {selectedRole === 'customer' ? 'Email / No. HP' : 'Username'}
-            </label>
-            <input id="username" className="form-control" type="text"
-              placeholder={selectedRole === 'customer' ? 'Masukkan Email atau No. HP' : 'Masukkan username'}
-              value={username} onChange={e => setUsername(e.target.value)} required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <input id="password" className="form-control" type="password"
-              placeholder="Masukkan password"
-              value={password} onChange={e => setPassword(e.target.value)} required />
-          </div>
-          {error && (
-            <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem', marginBottom: '16px' }}>
-              ⚠️ {error}
-            </div>
-          )}
-          <button id="btn-login" className="btn btn-primary w-full btn-lg" type="submit" disabled={loading}
-            style={{ justifyContent: 'center' }}>
-            {loading ? '⏳ Memproses...' : '🔐 Masuk'}
-          </button>
-          <button type="button" onClick={fillDemo} className="btn btn-outline w-full mt-2"
-            style={{ justifyContent: 'center' }}>
-            💡 Isi Demo Otomatis
-          </button>
-          {selectedRole === 'customer' && (
-            <div style={{ textAlign: 'center', marginTop: '12px' }}>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                Belum punya akun?{' '}
-                <a href="#/register" style={{ color: 'var(--primary)', fontWeight: 700 }}>Daftar Member</a>
-              </p>
-            </div>
-          )}
-        </form>
-
-        <p className="text-xs text-muted" style={{ textAlign: 'center', marginTop: '20px' }}>
-          BrewMaster v1.0 · © 2026 Coffee Shop Management
-        </p>
+            <p className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/50">BrewMaster v2.0 Enterprise © 2024</p>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );

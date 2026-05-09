@@ -1,9 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../api';
 import { formatRupiah } from '../data';
+import { 
+  ShoppingBag, Truck, Plus, Search, 
+  Printer, CheckCircle2, XCircle, Clock,
+  MoreHorizontal, ChevronRight, Filter,
+  Calendar, FileText, User, MapPin,
+  Trash2, Edit3, Save, X, ArrowUpRight,
+  Download, History
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { cn } from "../lib/utils";
 
 export default function PembelianPage() {
   const [activeTab, setActiveTab] = useState('PO'); // 'PO' or 'SUPPLIER'
+  const [loading, setLoading] = useState(true);
   
   // Data State
   const [suppliers, setSuppliers] = useState([]);
@@ -18,8 +31,9 @@ export default function PembelianPage() {
   
   // Form States
   const [supplierForm, setSupplierForm] = useState({ id: null, name: '', contact: '', address: '' });
-  const [poForm, setPoForm] = useState({ supplierId: '', location: '', items: [] }); // items: { bahanId, qty, price }
+  const [poForm, setPoForm] = useState({ supplierId: '', location: '', items: [] });
   const [receiveForm, setReceiveForm] = useState(null);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -27,18 +41,19 @@ export default function PembelianPage() {
 
   const fetchData = async () => {
     try {
+      setLoading(true);
       const [suppData, poData, bahanData, locData] = await Promise.all([
-        api.getSuppliers(),
-        api.getPO(),
-        api.getBahan(),
-        api.getLocations()
+        api.getSuppliers().catch(() => []),
+        api.getPO().catch(() => []),
+        api.getBahan().catch(() => []),
+        api.getLocations().catch(() => [])
       ]);
       setSuppliers(suppData);
-      setPos(poData.reverse());
+      setPos(Array.isArray(poData) ? [...poData].reverse() : []);
       setBahanList(bahanData);
       setLocations(locData);
-    } catch (err) {
-      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,21 +78,6 @@ export default function PembelianPage() {
   };
 
   // --- PO ACTIONS ---
-  const [showQuickBahan, setShowQuickBahan] = useState(false);
-  const [quickBahanForm, setQuickBahanForm] = useState({ name: '', category: '', unit: '', minStock: 10, price: 0 });
-
-  const handleQuickSaveBahan = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await api.addBahan(quickBahanForm);
-      setBahanList([...bahanList, res]);
-      setShowQuickBahan(false);
-      alert('Bahan baku baru berhasil ditambahkan!');
-    } catch (err) {
-      alert('Gagal menambah bahan baku');
-    }
-  };
-
   const handleAddPoItem = () => {
     setPoForm({ ...poForm, items: [...poForm.items, { bahanId: '', qty: 1, price: 0 }] });
   };
@@ -85,13 +85,10 @@ export default function PembelianPage() {
   const updatePoItem = (index, field, value) => {
     const newItems = [...poForm.items];
     newItems[index][field] = value;
-    
-    // Auto fill price if bahan is selected
     if (field === 'bahanId') {
       const bahan = bahanList.find(b => b.id === Number(value));
       if (bahan) newItems[index].price = bahan.price || 0;
     }
-    
     setPoForm({ ...poForm, items: newItems });
   };
 
@@ -103,11 +100,8 @@ export default function PembelianPage() {
   const handleSavePO = async (e) => {
     e.preventDefault();
     if (!poForm.supplierId) return alert('Pilih supplier!');
-    if (poForm.items.length === 0) return alert('Pilih minimal 1 bahan baku!');
-    
-    // Clean up empty items
     const validItems = poForm.items.filter(i => i.bahanId && i.qty > 0);
-    if (validItems.length === 0) return alert('Data item tidak valid!');
+    if (validItems.length === 0) return alert('Pilih minimal 1 bahan baku!');
     
     await api.savePO({ ...poForm, items: validItems });
     setShowPOModal(false);
@@ -118,7 +112,7 @@ export default function PembelianPage() {
     setReceiveForm({
       id: po.id,
       poNumber: po.poNumber,
-      items: po.items.map(i => ({ ...i, receivedQty: i.qty })) // default received is ordered qty
+      items: po.items.map(i => ({ ...i, receivedQty: i.qty }))
     });
     setShowReceiveModal(true);
   };
@@ -134,7 +128,6 @@ export default function PembelianPage() {
     await api.updatePOStatus(receiveForm.id, 'Diterima', receiveForm.items);
     setShowReceiveModal(false);
     fetchData();
-    alert('PO berhasil diterima dan stok bahan baku telah diupdate!');
   };
 
   const cancelPO = async (id) => {
@@ -144,7 +137,6 @@ export default function PembelianPage() {
     }
   };
 
-  // --- PRINT PO ---
   const printPO = (po) => {
     const supplier = suppliers.find(s => s.id === Number(po.supplierId));
     let printContent = `
@@ -152,36 +144,47 @@ export default function PembelianPage() {
         <head>
           <title>Cetak PO - ${po.poNumber}</title>
           <style>
-            body { font-family: 'Courier New', Courier, monospace; padding: 20px; font-size: 14px; }
-            h2 { text-align: center; margin-bottom: 5px; }
-            .header { border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 20px; }
-            .info { margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-            th { background-color: #f0f0f0; }
-            .total { font-weight: bold; text-align: right; }
+            body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
+            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+            .brand { font-size: 24px; font-weight: 900; }
+            .brand span { color: #f59e0b; }
+            h1 { font-size: 20px; margin: 0; color: #64748b; }
+            .info-grid { display: grid; grid-template-cols: 1fr 1fr; gap: 40px; margin-bottom: 40px; }
+            .info-box h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin-bottom: 8px; }
+            .info-box p { font-weight: 700; margin: 0; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+            th { background: #f8fafc; text-align: left; padding: 12px; font-size: 11px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; }
+            td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+            .total-row { background: #f8fafc; font-weight: 900; font-size: 16px; }
+            .footer { margin-top: 60px; display: grid; grid-template-cols: 1fr 1fr; gap: 40px; }
+            .signature { border-top: 1px solid #e2e8f0; padding-top: 10px; text-align: center; font-size: 12px; color: #94a3b8; }
           </style>
         </head>
         <body>
-          <h2>PURCHASE ORDER</h2>
           <div class="header">
-            <center><strong>BrewMaster Coffee Shop</strong></center>
-            <center>Jl. Kopi Arabica No. 1, Jakarta</center>
+            <div class="brand">BrewMaster<span>.</span></div>
+            <h1>PURCHASE ORDER</h1>
           </div>
-          <div class="info">
-            <p><strong>No PO:</strong> ${po.poNumber}</p>
-            <p><strong>Tanggal:</strong> ${new Date(po.createdAt).toLocaleDateString('id-ID')}</p>
-            <p><strong>Kepada:</strong> ${supplier ? supplier.name : 'Unknown'}<br/>
-            ${supplier ? supplier.address : ''} (${supplier ? supplier.contact : ''})</p>
+          <div class="info-grid">
+            <div class="info-box">
+              <h3>Supplier</h3>
+              <p>${supplier ? supplier.name : 'Unknown'}</p>
+              <span style="font-size: 12px; color: #64748b;">${supplier ? supplier.address : ''}<br/>${supplier ? supplier.contact : ''}</span>
+            </div>
+            <div class="info-box" style="text-align: right;">
+              <h3>Detail Pesanan</h3>
+              <p>${po.poNumber}</p>
+              <span style="font-size: 12px; color: #64748b;">Tanggal: ${new Date(po.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            </div>
           </div>
           <table>
             <thead>
               <tr>
-                <th>Bahan Baku</th>
-                <th>Jumlah</th>
+                <th>Item / Bahan Baku</th>
+                <th style="text-align: center;">Qty</th>
                 <th>Satuan</th>
-                <th>Harga Satuan</th>
-                <th>Subtotal</th>
+                <th style="text-align: right;">Harga Satuan</th>
+                <th style="text-align: right;">Subtotal</th>
               </tr>
             </thead>
             <tbody>
@@ -189,25 +192,24 @@ export default function PembelianPage() {
                 const b = bahanList.find(x => x.id === Number(item.bahanId));
                 return `
                 <tr>
-                  <td>${b ? b.name : '-'}</td>
-                  <td>${item.qty}</td>
-                  <td>${b ? b.unit : '-'}</td>
-                  <td>${formatRupiah(item.price)}</td>
-                  <td>${formatRupiah(item.price * item.qty)}</td>
+                  <td style="font-weight: 600;">${b ? b.name : '-'}</td>
+                  <td style="text-align: center;">${item.qty}</td>
+                  <td style="color: #64748b;">${b ? b.unit : '-'}</td>
+                  <td style="text-align: right;">${formatRupiah(item.price)}</td>
+                  <td style="text-align: right; font-weight: 700;">${formatRupiah(item.price * item.qty)}</td>
                 </tr>
                 `;
               }).join('')}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="4" class="total">Total Estimasi:</td>
-                <td class="total">${formatRupiah(po.items.reduce((sum, i) => sum + (i.price * i.qty), 0))}</td>
+              <tr class="total-row">
+                <td colspan="4" style="text-align: right; padding-right: 20px;">Total Estimasi</td>
+                <td style="text-align: right; color: #f59e0b;">${formatRupiah(po.items.reduce((sum, i) => sum + (i.price * i.qty), 0))}</td>
               </tr>
-            </tfoot>
+            </tbody>
           </table>
-          <p style="margin-top:40px;">Tanda Tangan,</p>
-          <br/><br/>
-          <p>___________________</p>
+          <div class="footer">
+            <div class="signature">Dipesan Oleh,</div>
+            <div class="signature">Disetujui Oleh,</div>
+          </div>
           <script>window.onload = function() { window.print(); window.close(); }</script>
         </body>
       </html>
@@ -217,294 +219,318 @@ export default function PembelianPage() {
     printWin.document.close();
   };
 
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+      <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+      <p className="text-muted-foreground animate-pulse font-medium">Memuat data pembelian...</p>
+    </div>
+  );
+
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
+    <div className="space-y-8 pb-10 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--primary-dark)', fontSize: '1.8rem', marginBottom: '8px' }}>
-            🛒 Manajemen Pembelian & PO
-          </h2>
-          <p style={{ color: 'var(--text-muted)' }}>Kelola data supplier dan riwayat pesanan barang.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Manajemen Pembelian</h2>
+          <p className="text-muted-foreground mt-1">Kelola pengadaan bahan baku, supplier, dan pelacakan PO.</p>
+        </div>
+        <div className="flex gap-3">
+          <Button variant="outline" className="h-12 font-bold gap-2" onClick={() => { setSupplierForm({ id: null, name: '', contact: '', address: '' }); setShowSupplierModal(true); }}>
+            <Truck size={18} /> + Supplier
+          </Button>
+          <Button size="lg" className="h-12 px-8 font-bold gap-2 shadow-xl shadow-accent/20" onClick={() => { setPoForm({ supplierId: '', location: locations[0]?.name || '', items: [] }); setShowPOModal(true); }}>
+            <Plus size={20} strokeWidth={3} /> Buat PO Baru
+          </Button>
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1.5px solid var(--border-light)', paddingBottom: '12px' }}>
-        <button 
+      {/* Tabs */}
+      <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-2xl border w-fit">
+        <Button 
+          variant={activeTab === 'PO' ? "secondary" : "ghost"} 
+          className={cn("h-10 px-6 font-bold rounded-xl", activeTab === 'PO' && "bg-background shadow-sm")}
           onClick={() => setActiveTab('PO')}
-          style={{ padding: '10px 24px', borderRadius: '99px', border: 'none', fontWeight: 600, cursor: 'pointer',
-            background: activeTab === 'PO' ? 'var(--primary)' : 'var(--bg)', 
-            color: activeTab === 'PO' ? '#fff' : 'var(--text-secondary)'
-          }}>
-          📋 Data Purchase Order
-        </button>
-        <button 
+        >
+          <FileText size={16} className="mr-2" /> Purchase Orders
+        </Button>
+        <Button 
+          variant={activeTab === 'SUPPLIER' ? "secondary" : "ghost"} 
+          className={cn("h-10 px-6 font-bold rounded-xl", activeTab === 'SUPPLIER' && "bg-background shadow-sm")}
           onClick={() => setActiveTab('SUPPLIER')}
-          style={{ padding: '10px 24px', borderRadius: '99px', border: 'none', fontWeight: 600, cursor: 'pointer',
-            background: activeTab === 'SUPPLIER' ? 'var(--primary)' : 'var(--bg)', 
-            color: activeTab === 'SUPPLIER' ? '#fff' : 'var(--text-secondary)'
-          }}>
-          🏢 Data Supplier
-        </button>
+        >
+          <Truck size={16} className="mr-2" /> Daftar Supplier
+        </Button>
       </div>
 
-      {activeTab === 'SUPPLIER' && (
-        <div style={{ background: '#fff', padding: '20px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3>Daftar Supplier</h3>
-            <button onClick={() => { setSupplierForm({ id: null, name: '', contact: '', address: '' }); setShowSupplierModal(true); }} className="btn-primary">
-              + Tambah Supplier
-            </button>
-          </div>
-          <table className="table" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th>Nama Supplier</th>
-                <th>Kontak</th>
-                <th>Alamat</th>
-                <th style={{ width: '120px' }}>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {suppliers.map(s => (
-                <tr key={s.id}>
-                  <td style={{ fontWeight: 600 }}>{s.name}</td>
-                  <td>{s.contact}</td>
-                  <td>{s.address}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button onClick={() => openEditSupplier(s)} style={{ padding: '6px', background: 'var(--info-light)', color: '#0369a1', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✏️</button>
-                      <button onClick={() => handleDeleteSupplier(s.id)} style={{ padding: '6px', background: '#ffe4e6', color: '#be123c', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {suppliers.length === 0 && <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>Belum ada data supplier.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {activeTab === 'PO' && (
-        <div style={{ background: '#fff', padding: '20px', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-sm)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-            <h3>Riwayat Purchase Order</h3>
-            <button onClick={() => { setPoForm({ supplierId: '', location: locations[0]?.name || '', items: [] }); setShowPOModal(true); }} className="btn-primary">
-              + Buat PO Baru
-            </button>
-          </div>
-          <table className="table" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th>No PO</th>
-                <th>Tanggal</th>
-                <th>Supplier</th>
-                <th>Total Item</th>
-                <th>Status</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pos.map(po => {
-                const supp = suppliers.find(s => s.id === Number(po.supplierId));
-                return (
-                  <tr key={po.id}>
-                    <td style={{ fontWeight: 700 }}>{po.poNumber}</td>
-                    <td>{new Date(po.createdAt).toLocaleDateString('id-ID')}</td>
-                    <td>{supp ? supp.name : 'Unknown'}</td>
-                    <td>{po.items.length} Macam</td>
-                    <td>
-                      <span style={{ 
-                        padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600,
-                        background: po.status === 'Pending' ? '#fef9c3' : po.status === 'Diterima' ? '#dcfce7' : 'var(--danger-light)',
-                        color: po.status === 'Pending' ? '#854d0e' : po.status === 'Diterima' ? '#166534' : '#991b1b'
-                      }}>
-                        {po.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button onClick={() => printPO(po)} title="Cetak PO" style={{ padding: '6px 12px', background: '#f1f5f9', color: '#334155', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>🖨️ Cetak</button>
-                        {po.status === 'Pending' && (
-                          <>
-                            <button onClick={() => openReceiveModal(po)} title="Terima Barang" style={{ padding: '6px 12px', background: '#dcfce7', color: '#166534', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>📥 Terima</button>
-                            <button onClick={() => cancelPO(po.id)} title="Batalkan PO" style={{ padding: '6px 12px', background: 'var(--danger-light)', color: '#991b1b', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}>❌ Batal</button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {pos.length === 0 && <tr><td colSpan="6" style={{ textAlign: 'center', padding: '20px' }}>Belum ada riwayat PO.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* --- MODAL SUPPLIER --- */}
-      {showSupplierModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', padding: '24px', borderRadius: 'var(--radius-lg)', width: '400px' }}>
-            <h3 style={{ marginBottom: '16px' }}>{supplierForm.id ? 'Edit Supplier' : 'Tambah Supplier'}</h3>
-            <form onSubmit={handleSaveSupplier}>
-              <div className="form-group">
-                <label className="form-label">Nama Supplier</label>
-                <input className="form-control" required value={supplierForm.name} onChange={e => setSupplierForm({...supplierForm, name: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Kontak (HP/Telp)</label>
-                <input className="form-control" required value={supplierForm.contact} onChange={e => setSupplierForm({...supplierForm, contact: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Alamat</label>
-                <textarea className="form-control" rows="3" value={supplierForm.address} onChange={e => setSupplierForm({...supplierForm, address: e.target.value})} />
-              </div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowSupplierModal(false)}>Batal</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Simpan</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL BUAT PO --- */}
-      {showPOModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', padding: '24px', borderRadius: 'var(--radius-lg)', width: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '16px' }}>Buat Purchase Order Baru</h3>
-            <form onSubmit={handleSavePO}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Pilih Supplier</label>
-                  <select className="form-control" required value={poForm.supplierId} onChange={e => setPoForm({...poForm, supplierId: e.target.value})}>
-                    <option value="">-- Pilih Supplier --</option>
-                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Lokasi Penerimaan</label>
-                  <select className="form-control" required value={poForm.location} onChange={e => setPoForm({...poForm, location: e.target.value})}>
-                    <option value="">-- Pilih Gudang/Lokasi --</option>
-                    {locations.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px', marginTop: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <label className="form-label" style={{ margin: 0 }}>Daftar Barang (Item)</label>
-                  <button type="button" onClick={handleAddPoItem} style={{ padding: '4px 8px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>+ Tambah Item</button>
-                </div>
-                
-                {poForm.items.map((item, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'flex-start' }}>
-                    <div style={{ flex: 2 }}>
-                      <select className="form-control" required value={item.bahanId} onChange={e => {
-                        if (e.target.value === 'NEW') {
-                          setShowQuickBahan(true);
-                        } else {
-                          updatePoItem(i, 'bahanId', e.target.value);
-                        }
-                      }}>
-                        <option value="">- Bahan Baku -</option>
-                        {bahanList.map(b => <option key={b.id} value={b.id}>{b.name} ({b.unit})</option>)}
-                        <option value="NEW" style={{ fontWeight: 800, color: 'var(--primary)' }}>✨ + Tambah Barang Baru</option>
-                      </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <input type="number" min="1" placeholder="Qty" className="form-control" required value={item.qty} onChange={e => updatePoItem(i, 'qty', e.target.value)} />
-                    </div>
-                    <div style={{ flex: 1.5 }}>
-                      <input type="number" min="0" placeholder="Harga Satuan" className="form-control" required value={item.price} onChange={e => updatePoItem(i, 'price', e.target.value)} />
-                    </div>
-                    <button type="button" onClick={() => removePoItem(i)} style={{ padding: '10px', background: '#ffe4e6', color: '#be123c', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✖</button>
-                  </div>
-                ))}
-                {poForm.items.length === 0 && <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Belum ada item. Silakan tambah item.</p>}
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', marginTop: '24px' }}>
-                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowPOModal(false)}>Batal</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Simpan PO</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- MODAL TERIMA PO --- */}
-      {showReceiveModal && receiveForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', padding: '24px', borderRadius: 'var(--radius-lg)', width: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <h3 style={{ marginBottom: '16px' }}>Terima Barang - {receiveForm.poNumber}</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-              Sesuaikan kuantitas aktual yang diterima. Stok bahan baku akan otomatis bertambah sesuai jumlah di bawah ini.
-            </p>
-            <form onSubmit={submitReceivePO}>
-              <table className="table" style={{ width: '100%', marginBottom: '24px' }}>
+      {activeTab === 'PO' ? (
+        <div className="space-y-6">
+          {/* PO List */}
+          <Card className="border-none shadow-xl overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr>
-                    <th>Bahan Baku</th>
-                    <th>Qty Pesan</th>
-                    <th style={{ width: '120px' }}>Qty Diterima</th>
+                  <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
+                    <th className="px-6 py-4">No PO / Tanggal</th>
+                    <th className="px-6 py-4">Supplier</th>
+                    <th className="px-6 py-4">Item</th>
+                    <th className="px-6 py-4">Total Estimasi</th>
+                    <th className="px-6 py-4">Status</th>
+                    <th className="px-6 py-4 text-right">Aksi</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {receiveForm.items.map((item, i) => {
-                    const b = bahanList.find(x => x.id === Number(item.bahanId));
+                <tbody className="divide-y">
+                  {pos.map(po => {
+                    const supp = suppliers.find(s => s.id === Number(po.supplierId));
+                    const totalEst = po.items.reduce((s, i) => s + (i.price * i.qty), 0);
                     return (
-                      <tr key={i}>
-                        <td>{b ? b.name : 'Unknown'} ({b ? b.unit : '-'})</td>
-                        <td style={{ textAlign: 'center' }}>{item.qty}</td>
-                        <td>
-                          <input type="number" min="0" required className="form-control" value={item.receivedQty} onChange={e => handleReceiveUpdateQty(i, e.target.value)} />
+                      <tr key={po.id} className="hover:bg-muted/20 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:text-accent transition-colors">
+                              <FileText size={20} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold">{po.poNumber}</p>
+                              <p className="text-[10px] text-muted-foreground font-medium">{new Date(po.createdAt).toLocaleDateString('id-ID')}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-bold">{supp ? supp.name : 'Unknown'}</p>
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[150px]">{supp?.contact}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-xs font-bold bg-muted px-2 py-1 rounded-md">{po.items.length} Macam</span>
+                        </td>
+                        <td className="px-6 py-4 font-black text-sm">{formatRupiah(totalEst)}</td>
+                        <td className="px-6 py-4">
+                          <span className={cn(
+                            "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                            po.status === 'Pending' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
+                            po.status === 'Diterima' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
+                            "bg-destructive/10 text-destructive border-destructive/20"
+                          )}>
+                            {po.status === 'Pending' ? '🟠 Pending' : po.status === 'Diterima' ? '🟢 Diterima' : '🔴 Batal'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => printPO(po)} title="Cetak PO"><Printer size={14} /></Button>
+                            {po.status === 'Pending' && (
+                              <>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-emerald-600" onClick={() => openReceiveModal(po)} title="Terima Barang"><ArrowUpRight size={14} /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => cancelPO(po.id)} title="Batalkan PO"><XCircle size={14} /></Button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
                   })}
+                  {pos.length === 0 && (
+                    <tr>
+                      <td colSpan="6" className="px-6 py-20 text-center opacity-40">
+                        <History size={48} className="mx-auto mb-4" />
+                        <p className="font-bold">Belum ada riwayat PO</p>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowReceiveModal(false)}>Batal</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1, background: '#166534' }}>✅ Konfirmasi Diterima</button>
-              </div>
-            </form>
-          </div>
+            </div>
+          </Card>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {suppliers.map(s => (
+            <Card key={s.id} className="group hover:border-accent/40 hover:shadow-lg transition-all">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <div className="h-12 w-12 bg-muted rounded-xl flex items-center justify-center text-muted-foreground group-hover:text-accent transition-colors">
+                    <Truck size={24} />
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditSupplier(s)}><Edit3 size={14} /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteSupplier(s.id)}><Trash2 size={14} /></Button>
+                  </div>
+                </div>
+                <CardTitle className="mt-4">{s.name}</CardTitle>
+                <CardDescription className="flex items-center gap-1"><User size={12} /> {s.contact}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]"><MapPin size={12} className="inline mr-1" /> {s.address || 'Alamat tidak tersedia'}</p>
+              </CardContent>
+              <CardFooter className="pt-0">
+                <div className="w-full h-px bg-muted mb-4" />
+                <div className="flex justify-between items-center w-full text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  <span>Total PO</span>
+                  <span className="text-primary">{pos.filter(p => p.supplierId == s.id).length} Transaksi</span>
+                </div>
+              </CardFooter>
+            </Card>
+          ))}
+          <button 
+            className="h-full min-h-[200px] rounded-2xl border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center p-6 text-center hover:bg-muted/10 hover:border-accent/40 transition-all group"
+            onClick={() => { setSupplierForm({ id: null, name: '', contact: '', address: '' }); setShowSupplierModal(true); }}
+          >
+            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-white transition-all mb-4 shadow-sm">
+              <Plus size={24} strokeWidth={3} />
+            </div>
+            <p className="font-bold text-muted-foreground group-hover:text-primary transition-colors">Tambah Supplier Baru</p>
+          </button>
         </div>
       )}
 
-      {/* --- MODAL QUICK ADD BAHAN --- */}
-      {showQuickBahan && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', padding: '24px', borderRadius: 'var(--radius-lg)', width: '400px', boxShadow: 'var(--shadow-xl)' }}>
-            <h3 style={{ marginBottom: '4px' }}>✨ Tambah Barang Baru</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '16px' }}>Buat master data barang baru secara cepat.</p>
-            <form onSubmit={handleQuickSaveBahan}>
-              <div className="form-group">
-                <label className="form-label">Nama Barang</label>
-                <input className="form-control" required value={quickBahanForm.name} onChange={e => setQuickBahanForm({...quickBahanForm, name: e.target.value})} />
+      {/* Modals */}
+      {showSupplierModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+            <CardHeader className="border-b pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle>{supplierForm.id ? 'Edit Supplier' : 'Tambah Supplier'}</CardTitle>
+                <Button variant="ghost" size="icon" onClick={() => setShowSupplierModal(false)}><X size={20} /></Button>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Kategori</label>
-                  <input className="form-control" required placeholder="cth: Sirup" value={quickBahanForm.category} onChange={e => setQuickBahanForm({...quickBahanForm, category: e.target.value})} />
+            </CardHeader>
+            <form onSubmit={handleSaveSupplier}>
+              <CardContent className="pt-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Nama Perusahaan / Supplier</label>
+                  <Input required value={supplierForm.name} onChange={e => setSupplierForm({...supplierForm, name: e.target.value})} placeholder="cth: CV. Kopi Nusantara" />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Satuan</label>
-                  <input className="form-control" required placeholder="cth: Liter" value={quickBahanForm.unit} onChange={e => setQuickBahanForm({...quickBahanForm, unit: e.target.value})} />
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Kontak (HP/Telp/Email)</label>
+                  <Input required value={supplierForm.contact} onChange={e => setSupplierForm({...supplierForm, contact: e.target.value})} placeholder="cth: 0812xxxx atau email@supp.com" />
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-                <button type="button" className="btn-secondary" style={{ flex: 1 }} onClick={() => setShowQuickBahan(false)}>Batal</button>
-                <button type="submit" className="btn-primary" style={{ flex: 1 }}>Simpan Barang</button>
-              </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Alamat Kantor</label>
+                  <textarea className="w-full min-h-[100px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={supplierForm.address} onChange={e => setSupplierForm({...supplierForm, address: e.target.value})} placeholder="Alamat lengkap supplier..." />
+                </div>
+              </CardContent>
+              <CardFooter className="border-t pt-6 gap-3">
+                <Button type="button" variant="outline" className="flex-1 h-12" onClick={() => setShowSupplierModal(false)}>Batal</Button>
+                <Button type="submit" className="flex-[2] h-12 font-bold bg-accent hover:bg-accent/90 shadow-lg shadow-accent/20">Simpan Supplier</Button>
+              </CardFooter>
             </form>
-          </div>
+          </Card>
         </div>
       )}
 
+      {showPOModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <Card className="w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+            <CardHeader className="border-b pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Buat Purchase Order</CardTitle>
+                  <CardDescription>Dokumen pesanan resmi untuk supplier.</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setShowPOModal(false)}><X size={20} /></Button>
+              </div>
+            </CardHeader>
+            <form onSubmit={handleSavePO}>
+              <CardContent className="pt-6 space-y-6 max-h-[65vh] overflow-y-auto pr-2 custom-scrollbar">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Pilih Supplier</label>
+                    <select className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" required value={poForm.supplierId} onChange={e => setPoForm({...poForm, supplierId: e.target.value})}>
+                      <option value="">-- Pilih Supplier --</option>
+                      {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Lokasi Penerimaan</label>
+                    <select className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" required value={poForm.location} onChange={e => setPoForm({...poForm, location: e.target.value})}>
+                      {locations.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Daftar Barang (Item)</label>
+                    <Button type="button" variant="outline" size="sm" onClick={handleAddPoItem}>+ Tambah Item</Button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {poForm.items.map((item, i) => (
+                      <div key={i} className="flex gap-2 items-start animate-in slide-in-from-left-2 duration-200">
+                        <div className="flex-[3]">
+                          <select className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" required value={item.bahanId} onChange={e => updatePoItem(i, 'bahanId', e.target.value)}>
+                            <option value="">- Bahan Baku -</option>
+                            {bahanList.map(b => <option key={b.id} value={b.id}>{b.name} ({b.unit})</option>)}
+                          </select>
+                        </div>
+                        <div className="flex-1">
+                          <Input type="number" min="1" placeholder="Qty" required value={item.qty} onChange={e => updatePoItem(i, 'qty', e.target.value)} />
+                        </div>
+                        <div className="flex-[1.5]">
+                          <Input type="number" min="0" placeholder="Harga" required value={item.price} onChange={e => updatePoItem(i, 'price', e.target.value)} />
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" className="text-destructive h-10 w-10 shrink-0" onClick={() => removePoItem(i)}><Trash2 size={14} /></Button>
+                      </div>
+                    ))}
+                    {poForm.items.length === 0 && <p className="text-center py-6 text-xs text-muted-foreground italic border rounded-xl border-dashed">Belum ada item ditambahkan.</p>}
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="border-t pt-6 gap-3">
+                <Button type="button" variant="outline" className="flex-1 h-12" onClick={() => setShowPOModal(false)}>Batal</Button>
+                <Button type="submit" className="flex-[2] h-12 font-bold bg-accent hover:bg-accent/90 shadow-lg shadow-accent/20">Simpan & Kirim PO</Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {showReceiveModal && receiveForm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <Card className="w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+            <CardHeader className="border-b pb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Terima Barang</CardTitle>
+                  <CardDescription>{receiveForm.poNumber} · Verifikasi jumlah aktual.</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setShowReceiveModal(false)}><X size={20} /></Button>
+              </div>
+            </CardHeader>
+            <form onSubmit={submitReceivePO}>
+              <CardContent className="pt-6 space-y-6">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b pb-2">
+                      <th className="pb-3">Bahan Baku</th>
+                      <th className="pb-3 text-center">Qty Pesan</th>
+                      <th className="pb-3 text-right" style={{ width: '120px' }}>Qty Diterima</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {receiveForm.items.map((item, i) => {
+                      const b = bahanList.find(x => x.id === Number(item.bahanId));
+                      return (
+                        <tr key={i}>
+                          <td className="py-3">
+                            <p className="text-sm font-bold">{b ? b.name : 'Unknown'}</p>
+                            <p className="text-[10px] text-muted-foreground uppercase">{b ? b.unit : '-'}</p>
+                          </td>
+                          <td className="py-3 text-center font-bold">{item.qty}</td>
+                          <td className="py-3">
+                            <Input type="number" min="0" required className="h-9 text-right font-black" value={item.receivedQty} onChange={e => handleReceiveUpdateQty(i, e.target.value)} />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </CardContent>
+              <CardFooter className="border-t pt-6 gap-3">
+                <Button type="button" variant="outline" className="flex-1 h-12" onClick={() => setShowReceiveModal(false)}>Batal</Button>
+                <Button type="submit" className="flex-[2] h-12 font-bold bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200">Konfirmasi Penerimaan</Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

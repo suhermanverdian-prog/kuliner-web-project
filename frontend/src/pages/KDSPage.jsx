@@ -1,10 +1,21 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import { 
+  ChefHat, Clock, CheckCircle2, Flame, 
+  Utensils, ClipboardList, AlertCircle, 
+  Search, Filter, MoreHorizontal, Timer,
+  User, CreditCard, Ticket, ArrowRight,
+  Bell, Check
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { cn } from "../lib/utils";
 
 const STATUS_CONFIG = {
-  new:     { label: 'Pesanan Baru', headerCls: 'new', btnLabel: '🔥 Mulai Masak', btnCls: 'start', next: 'cooking' },
-  cooking: { label: 'Sedang Dimasak', headerCls: 'cooking', btnLabel: '✅ Tandai Siap', btnCls: 'ready', next: 'ready' },
-  ready:   { label: 'Siap Disajikan', headerCls: 'ready', btnLabel: '🍽️ Sudah Disajikan', btnCls: 'done', next: 'served' },
+  new:     { label: 'Pesanan Baru', color: 'text-blue-600', bg: 'bg-blue-600/10', border: 'border-blue-600/20', icon: Bell, btnLabel: 'Mulai Masak', btnIcon: Flame, next: 'cooking' },
+  cooking: { label: 'Sedang Dimasak', color: 'text-amber-600', bg: 'bg-amber-600/10', border: 'border-amber-600/20', icon: Flame, btnLabel: 'Selesaikan', btnIcon: CheckCircle2, next: 'ready' },
+  ready:   { label: 'Siap Saji', color: 'text-emerald-600', bg: 'bg-emerald-600/10', border: 'border-emerald-600/20', icon: CheckCircle2, btnLabel: 'Sudah Disajikan', btnIcon: Utensils, next: 'served' },
 };
 
 function WaitTime({ since }) {
@@ -15,11 +26,14 @@ function WaitTime({ since }) {
     const t = setInterval(calc, 30000);
     return () => clearInterval(t);
   }, [since]);
-  const color = mins < 5 ? 'var(--success)' : mins < 10 ? 'var(--warning)' : 'var(--danger)';
+  
+  const color = mins < 5 ? "text-emerald-500" : mins < 10 ? "text-amber-500" : "text-destructive";
+  
   return (
-    <span style={{ fontSize: '0.72rem', fontWeight: 700, color, background: `${color}18`, borderRadius: '4px', padding: '2px 6px' }}>
-      ⏱ {mins}m
-    </span>
+    <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-background/50 border backdrop-blur-sm", color)}>
+      <Timer size={12} className="animate-pulse" />
+      <span className="text-[10px] font-black uppercase tracking-widest">{mins}m</span>
+    </div>
   );
 }
 
@@ -35,24 +49,29 @@ export default function KDSPage() {
   }, []);
 
   const fetchOrders = async () => {
-    const tx = await api.getTransactions();
-    // Only show paid orders that are in KDS (not served), FIFO by paidAt
-    const activeOrders = tx
-      .filter(t => t.kdsStatus && t.kdsStatus !== 'served' && t.items && t.items.length > 0)
-      .sort((a, b) => new Date(a.paidAt || a.createdAt) - new Date(b.paidAt || b.createdAt));
-    setOrders(activeOrders);
-    setLoading(false);
+    try {
+      const tx = await api.getTransactions();
+      const activeOrders = tx
+        .filter(t => t.kdsStatus && t.kdsStatus !== 'served' && t.items && t.items.length > 0)
+        .sort((a, b) => new Date(a.paidAt || a.createdAt) - new Date(b.paidAt || b.createdAt));
+      setOrders(activeOrders);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const advance = async (id) => {
     const order = orders.find(o => o.id === id);
     if (!order) return;
     const next = STATUS_CONFIG[order.kdsStatus]?.next;
+    
+    // Optimistic UI
     setOrders(prev => prev.map(o => {
       if (o.id !== id) return o;
       if (next === 'served') return null;
       return { ...o, kdsStatus: next };
     }).filter(Boolean));
+    
     await api.updateKdsStatus(id, next);
   };
 
@@ -63,110 +82,139 @@ export default function KDSPage() {
     ready:   orders.filter(o => o.kdsStatus === 'ready').length
   };
 
+  if (loading && orders.length === 0) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+      <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+      <p className="text-muted-foreground animate-pulse font-medium">Sinkronisasi pesanan dapur...</p>
+    </div>
+  );
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4" style={{ flexWrap: 'wrap', gap: '12px' }}>
+    <div className="space-y-8 pb-10 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
         <div>
-          <h1 className="page-title" style={{ color: 'var(--text-primary)' }}>👨‍🍳 Kitchen Display System</h1>
-          <p className="page-subtitle">Monitor dan proses semua pesanan dapur · FIFO (pertama masuk pertama dilayani)</p>
+          <h2 className="text-3xl font-bold tracking-tight">Kitchen Display System</h2>
+          <p className="text-muted-foreground mt-1">Monitor antrian pesanan & efisiensi penyajian · FIFO.</p>
         </div>
-        <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
+        
+        <div className="flex flex-wrap items-center gap-2 bg-muted/20 p-1 rounded-2xl border w-fit">
           {[
-            { key: 'all',     label: `Semua (${orders.length})` },
-            { key: 'new',     label: `🆕 Baru (${counts.new})` },
-            { key: 'cooking', label: `🔥 Masak (${counts.cooking})` },
-            { key: 'ready',   label: `✅ Siap (${counts.ready})` },
+            { key: 'all', label: `Semua`, count: orders.length },
+            { key: 'new', label: `🆕 Baru`, count: counts.new, color: 'text-blue-600' },
+            { key: 'cooking', label: `🔥 Masak`, count: counts.cooking, color: 'text-amber-600' },
+            { key: 'ready', label: `✅ Siap`, count: counts.ready, color: 'text-emerald-600' },
           ].map(f => (
-            <button key={f.key} className={`cat-tab ${filter === f.key ? 'active' : ''}`} onClick={() => setFilter(f.key)}>
-              {f.label}
-            </button>
+            <Button 
+              key={f.key} variant={filter === f.key ? "secondary" : "ghost"} 
+              className={cn("h-10 px-4 font-bold rounded-xl", filter === f.key && "bg-background shadow-sm")}
+              onClick={() => setFilter(f.key)}
+            >
+              {f.label} <span className={cn("ml-2 px-2 py-0.5 rounded-full bg-muted text-[10px]", f.color)}>{f.count}</span>
+            </Button>
           ))}
         </div>
       </div>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>⏳ Memuat pesanan...</div>
-      ) : filtered.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)' }}>
-          <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🎉</div>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Semua Pesanan Selesai!</h3>
-          <p className="text-sm mt-1">Tidak ada pesanan yang perlu diproses saat ini.</p>
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 text-center space-y-6 opacity-40">
+           <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center text-4xl">🎉</div>
+           <div>
+              <p className="text-2xl font-black">Antrian Bersih!</p>
+              <p className="text-sm font-medium">Semua pesanan telah disajikan kepada pelanggan.</p>
+           </div>
         </div>
       ) : (
-        <div className="kds-grid">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
           {filtered.map(order => {
             const cfg = STATUS_CONFIG[order.kdsStatus];
             if (!cfg) return null;
-            const timeStr = new Date(order.paidAt || order.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-            const isMember = order.type !== 'Self Order' ? false : !!order.customerPhone;
-            const customerTypeLabel = order.customerName && order.customerPhone ? 'Member' : 'Guest';
-            const customerTypeBadge = customerTypeLabel === 'Member'
-              ? { bg: 'var(--success-light)', color: '#166534', border: '#86EFAC' }
-              : { bg: '#F3F4F6', color: '#6B7280', border: '#D1D5DB' };
-
+            const Icon = cfg.icon;
+            const BtnIcon = cfg.btnIcon;
+            
             return (
-              <div key={order.id} className="kds-card">
-                <div className={`kds-card-header ${cfg.headerCls}`}>
-                  <div>
-                    <div className="kds-order-num">{order.id}</div>
-                    <div className="kds-table">{order.tableType || 'Take Away'}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span className={`badge badge-${cfg.headerCls === 'new' ? 'info' : cfg.headerCls === 'cooking' ? 'warning' : 'success'}`}>
-                      {cfg.label}
-                    </span>
-                    <div className="kds-time mt-1" style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                      <span>{timeStr}</span>
-                      <WaitTime since={order.paidAt || order.createdAt} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Customer info row */}
-                <div style={{ padding: '8px 14px', background: 'var(--bg)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
-                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {order.customerName || 'Pelanggan'}
-                  </div>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <span style={{ padding: '2px 8px', borderRadius: '99px', fontSize: '0.7rem', fontWeight: 700, background: customerTypeBadge.bg, color: customerTypeBadge.color, border: `1px solid ${customerTypeBadge.border}` }}>
-                      {customerTypeLabel === 'Member' ? '⭐ Member' : '👤 Guest'}
-                    </span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{order.paymentMethod}</span>
-                  </div>
-                </div>
-
-                <div className="kds-items">
-                  {order.items.map((item, i) => (
-                    <div key={i} className="kds-item">
-                      <div className="flex items-center gap-2">
-                        <span className="kds-item-qty">{item.qty}</span>
-                        <div>
-                          <div style={{ fontWeight: 600 }}>{item.name}</div>
-                          {item.note && (
-                            <div style={{ fontSize: '0.75rem', color: 'var(--warning)', marginTop: '2px', fontStyle: 'italic' }}>
-                              📝 {item.note}
-                            </div>
-                          )}
-                        </div>
+              <Card key={order.id} className={cn(
+                "border-none shadow-xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02]",
+                order.kdsStatus === 'new' ? "bg-card ring-2 ring-blue-500/20" : "bg-card"
+              )}>
+                {/* Status Header */}
+                <div className={cn("p-4 flex items-center justify-between border-b", cfg.bg)}>
+                   <div className="flex items-center gap-2">
+                      <div className={cn("p-1.5 rounded-lg bg-background/80 shadow-sm", cfg.color)}>
+                         <Icon size={16} />
                       </div>
-                    </div>
-                  ))}
-                  {/* Global order note */}
-                  {order.note && (
-                    <div style={{ padding: '8px 12px', background: 'var(--warning-light)', borderRadius: '6px', margin: '8px 0', fontSize: '0.78rem', color: '#92400E', border: '1px solid #FDE68A' }}>
-                      📋 Catatan: {order.note}
-                    </div>
-                  )}
+                      <span className={cn("text-[10px] font-black uppercase tracking-widest", cfg.color)}>{cfg.label}</span>
+                   </div>
+                   <WaitTime since={order.paidAt || order.createdAt} />
                 </div>
 
-                <div className="kds-card-footer">
-                  {order.kdsStatus !== 'served' && (
-                    <button className={`kds-action-btn ${cfg.btnCls}`} onClick={() => advance(order.id)}>
-                      {cfg.btnLabel}
-                    </button>
-                  )}
+                {/* Order Meta */}
+                <div className="p-4 border-b bg-muted/5 space-y-3">
+                   <div className="flex justify-between items-start">
+                      <div>
+                         <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-none">Order ID</p>
+                         <h4 className="text-lg font-black mt-1">#{order.id.toString().slice(-4)}</h4>
+                      </div>
+                      <div className="text-right">
+                         <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-none">Lokasi</p>
+                         <h4 className="text-lg font-black mt-1 text-accent">{order.tableType || 'T. Away'}</h4>
+                      </div>
+                   </div>
+                   
+                   <div className="flex items-center justify-between p-2 rounded-xl bg-background border shadow-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                         <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0">
+                            <User size={12} className="text-muted-foreground" />
+                         </div>
+                         <p className="text-xs font-bold truncate">{order.customerName || 'Pelanggan'}</p>
+                      </div>
+                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-muted uppercase text-muted-foreground tracking-tighter shrink-0">
+                         {order.type === 'Self Order' ? 'Ditempat' : 'Kasir'}
+                      </span>
+                   </div>
                 </div>
-              </div>
+
+                {/* Items List */}
+                <CardContent className="p-4 flex-1 space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                   {order.items.map((item, i) => (
+                     <div key={i} className="flex gap-3 items-start animate-in slide-in-from-left-2 duration-200" style={{ animationDelay: `${i * 50}ms` }}>
+                        <div className="w-6 h-6 rounded-lg bg-accent text-white flex items-center justify-center text-xs font-black shrink-0">
+                           {item.qty}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                           <p className="text-sm font-black leading-tight text-primary">{item.name}</p>
+                           {item.note && (
+                             <p className="text-[10px] text-amber-600 font-bold italic mt-1 flex items-center gap-1 bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10">
+                                <ClipboardList size={10} /> {item.note}
+                             </p>
+                           )}
+                        </div>
+                     </div>
+                   ))}
+
+                   {order.note && (
+                      <div className="mt-4 p-3 rounded-2xl bg-muted/40 border border-dashed border-muted-foreground/20">
+                         <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Catatan Pesanan</p>
+                         <p className="text-[11px] font-bold italic text-primary leading-relaxed">{order.note}</p>
+                      </div>
+                   )}
+                </CardContent>
+
+                {/* Action Footer */}
+                <CardFooter className="p-4 border-t bg-muted/5">
+                   <Button 
+                    className={cn(
+                      "w-full h-11 font-black shadow-lg transition-all active:scale-95 gap-2",
+                      order.kdsStatus === 'new' ? "bg-blue-600 hover:bg-blue-700 shadow-blue-500/20" :
+                      order.kdsStatus === 'cooking' ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20 text-white" :
+                      "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
+                    )}
+                    onClick={() => advance(order.id)}
+                   >
+                     <BtnIcon size={18} /> {cfg.btnLabel}
+                   </Button>
+                </CardFooter>
+              </Card>
             );
           })}
         </div>

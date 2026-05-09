@@ -1,7 +1,24 @@
 import { useState, useEffect } from 'react';
 import { MENU_CATEGORIES, formatRupiah } from '../data';
 import { api } from '../api';
+import { 
+  ShoppingCart, Search, Info, CheckCircle2, 
+  Wallet, CreditCard, Banknote, Landmark, 
+  Trash2, Plus, Minus, X, ChevronRight, 
+  ArrowLeft, Clock, Bike, Coffee, Star,
+  ShoppingBag, Filter, Layers, Receipt, Lock,
+  Zap, ArrowRight, User, MapPin, 
+  ChevronDown, History, AlertCircle,
+  Smartphone, Monitor, Package,
+  Sparkles, Check, MoreVertical, SearchX
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../components/ui/Sheet";
+import { cn } from "../lib/utils";
 
+// Modal Konfirmasi Pembayaran
 function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
   const [cashReceived, setCashReceived] = useState('');
   const [confirmed, setConfirmed] = useState(false);
@@ -29,315 +46,336 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
     }
   };
 
-  const METHOD_INFO = {
-    'QRIS':          { icon: '📱', instruction: 'Minta pelanggan scan QR Code di mesin kasir/display QRIS. Pastikan notifikasi pembayaran sudah diterima sebelum konfirmasi.' },
-    'Transfer Bank': { icon: '🏦', instruction: 'Minta pelanggan menunjukkan bukti transfer. Periksa mutasi rekening BCA 1234-5678-90 a/n BrewMaster untuk memastikan dana sudah masuk.' },
-    'Kartu Debit':   { icon: '💳', instruction: 'Proses kartu debit/kredit pelanggan di mesin EDC. Tunggu hingga slip pembayaran tercetak.' },
-    'E-Wallet':      { icon: '📲', instruction: 'Minta pelanggan scan QR OVO/GoPay/Dana yang tersedia. Pastikan notifikasi pembayaran berhasil muncul.' },
-  };
-  const methodInfo = METHOD_INFO[tx.paymentMethod];
-
-  const cashButtons = [total];
-  for (const d of [20000, 50000, 100000, 200000]) {
-    if (d > total && cashButtons.length < 4) cashButtons.push(d);
-  }
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div>
-            <span className="modal-title">💳 Konfirmasi Pembayaran</span>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-              {tx.id} · {tx.customerName || 'Pelanggan'}
-            </div>
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
+      <Card className="w-full max-w-lg shadow-[0_32px_128px_-32px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 border-none rounded-[2.5rem] overflow-hidden">
+        <CardHeader className="p-8 bg-muted/20 border-b flex flex-row items-center justify-between">
+          <div className="flex items-center gap-4">
+             <div className="w-12 h-12 bg-accent rounded-2xl flex items-center justify-center text-white shadow-lg shadow-accent/20">
+                <Receipt size={24} />
+             </div>
+             <div>
+                <CardTitle className="text-xl font-black">Konfirmasi Bayar</CardTitle>
+                <CardDescription className="text-[10px] font-bold uppercase tracking-widest">{tx.id.slice(-8).toUpperCase()} · {tx.customerName || 'Tamu'}</CardDescription>
+             </div>
           </div>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          {/* Ringkasan pesanan */}
-          <div style={{ background: 'var(--bg)', padding: '12px 16px', borderRadius: 'var(--radius-sm)', marginBottom: '16px', fontSize: '0.85rem' }}>
-            <div style={{ fontWeight: 700, marginBottom: '8px', color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rincian Pesanan</div>
+          <Button variant="ghost" size="icon" className="rounded-full h-10 w-10" onClick={onClose}><X size={20} /></Button>
+        </CardHeader>
+        <CardContent className="p-8 space-y-8">
+          <div className="bg-muted/30 rounded-[2rem] p-6 space-y-4 border border-dashed border-muted-foreground/20">
             {tx.items?.map((item, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px solid var(--border-light)' }}>
-                <span>{item.qty}× {item.name}</span>
-                <span style={{ fontWeight: 600 }}>{formatRupiah(item.price * item.qty)}</span>
+              <div key={i} className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground font-medium">{item.qty}x <span className="text-primary font-bold">{item.name}</span></span>
+                <span className="font-black text-primary">{formatRupiah(item.price * item.qty)}</span>
               </div>
             ))}
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontWeight: 800, fontSize: '1.15rem', color: 'var(--primary)', borderTop: '1.5px dashed var(--border)', paddingTop: '8px' }}>
-              <span>Total Tagihan</span>
-              <span>{formatRupiah(total)}</span>
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              {tx.tableType} · Metode: <strong>{tx.paymentMethod}</strong>
+            <div className="pt-4 border-t border-muted flex justify-between items-center">
+              <span className="font-black text-sm uppercase tracking-widest text-muted-foreground">Total Tagihan</span>
+              <span className="font-black text-3xl text-accent">{formatRupiah(total)}</span>
             </div>
           </div>
 
-          {/* TUNAI */}
-          {isCash && (
-            <>
-              <div className="form-group">
-                <label className="form-label">💵 Uang Diterima dari Pelanggan</label>
-                <input
-                  type="text" className="form-control"
-                  style={{ fontSize: '1.4rem', fontWeight: 800, textAlign: 'center' }}
-                  value={cashNum > 0 ? formatRupiah(cashNum) : ''}
-                  onChange={e => setCashReceived(e.target.value.replace(/[^0-9]/g, ''))}
-                  placeholder="Ketik nominal uang..."
-                  autoFocus
-                />
-                <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
-                  {cashButtons.map(amt => (
-                    <button key={amt} type="button"
-                      onClick={() => setCashReceived(String(amt))}
-                      style={{
-                        flex: 1, minWidth: '80px', padding: '8px 4px', borderRadius: 'var(--radius-sm)',
-                        border: cashNum === amt ? '2px solid var(--primary)' : '1px solid var(--border)',
-                        background: cashNum === amt ? 'var(--bg-card)' : '#fff',
-                        cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600
-                      }}>
-                      {amt === total ? 'Uang Pas' : formatRupiah(amt)}
-                    </button>
-                  ))}
+          {isCash ? (
+            <div className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] text-center block">Masukkan Uang Diterima</label>
+                <div className="relative group">
+                   <span className="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-muted-foreground/30 group-focus-within:text-accent transition-colors">Rp</span>
+                   <input
+                     type="text"
+                     className="w-full h-20 bg-muted/20 border-2 border-transparent focus:border-accent focus:bg-background rounded-[2rem] text-4xl font-black text-center focus:ring-0 placeholder:text-muted/50 transition-all shadow-inner pl-16"
+                     value={cashNum > 0 ? cashNum.toLocaleString('id-ID') : ''}
+                     onChange={e => setCashReceived(e.target.value.replace(/[^0-9]/g, ''))}
+                     placeholder="0"
+                     autoFocus
+                   />
                 </div>
               </div>
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '16px 20px', borderRadius: 'var(--radius-md)', marginTop: '4px',
-                background: change >= 0 ? 'var(--success-light)' : 'var(--danger-light)',
-                color: change >= 0 ? '#1A4A2E' : 'var(--danger)',
-                border: `2px solid ${change >= 0 ? '#86EFAC' : '#FCA5A5'}`
-              }}>
+              <div className="grid grid-cols-4 gap-3">
+                {[total, 50000, 100000, 200000].map(amt => (
+                  <Button 
+                    key={amt} variant={cashNum === amt ? "default" : "outline"} 
+                    className={cn(
+                      "h-12 font-black rounded-xl border-2 transition-all",
+                      cashNum === amt ? "bg-accent border-accent text-white shadow-lg shadow-accent/20" : "hover:border-accent hover:text-accent"
+                    )}
+                    onClick={() => setCashReceived(String(amt))}
+                  >
+                    {amt === total ? 'PAS' : (amt/1000)+'rb'}
+                  </Button>
+                ))}
+              </div>
+              <div className={cn(
+                "p-6 rounded-3xl flex justify-between items-center transition-all duration-500 border-2 shadow-inner",
+                change >= 0 ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600" : "bg-destructive/5 border-destructive/20 text-destructive"
+              )}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>
-                    {change >= 0 ? '✅ Kembalian ke Pelanggan' : '⚠️ Uang Kurang'}
-                  </div>
-                  {change < 0 && <div style={{ fontSize: '0.75rem', marginTop: '2px' }}>Kurang {formatRupiah(Math.abs(change))}</div>}
+                   <p className="text-[10px] font-black uppercase tracking-widest">{change >= 0 ? 'Uang Kembali' : 'Kurang Bayar'}</p>
+                   <p className="text-3xl font-black mt-1">{formatRupiah(Math.abs(change))}</p>
                 </div>
-                <span style={{ fontSize: '1.6rem', fontWeight: 800 }}>
-                  {change >= 0 ? formatRupiah(change) : '–'}
-                </span>
-              </div>
-            </>
-          )}
-
-          {/* NON-TUNAI: instruksi + checkbox */}
-          {!isCash && methodInfo && (
-            <div>
-              <div style={{ background: 'var(--info-light)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', marginBottom: '12px' }}>
-                <div style={{ fontWeight: 700, marginBottom: '6px' }}>
-                  {methodInfo.icon} Langkah Konfirmasi {tx.paymentMethod}
-                </div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--info)', lineHeight: 1.7 }}>
-                  {methodInfo.instruction}
+                <div className={cn("w-12 h-12 rounded-full flex items-center justify-center", change >= 0 ? "bg-emerald-500/10" : "bg-destructive/10")}>
+                   {change >= 0 ? <CheckCircle2 /> : <AlertCircle />}
                 </div>
               </div>
-              <label style={{
-                display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer',
-                padding: '14px', borderRadius: 'var(--radius-sm)',
-                background: confirmed ? 'var(--success-light)' : 'var(--bg)',
-                border: `2px solid ${confirmed ? '#86EFAC' : 'var(--border)'}`
-              }}>
-                <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)}
-                  style={{ width: '18px', height: '18px', marginTop: '2px', accentColor: 'var(--primary)', cursor: 'pointer' }}
-                />
-                <span style={{ fontWeight: 600, fontSize: '0.9rem', color: confirmed ? '#1A4A2E' : 'var(--text-primary)' }}>
-                  {confirmed ? '✅ Pembayaran sudah dikonfirmasi diterima' : 'Centang jika pembayaran sudah diterima & valid'}
-                </span>
-              </label>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="p-6 bg-accent/5 border-2 border-accent/20 border-dashed rounded-3xl flex gap-4 items-start">
+                 <div className="w-10 h-10 bg-accent rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-accent/20">
+                    <Smartphone size={20} />
+                 </div>
+                 <p className="text-sm text-accent leading-relaxed font-bold">
+                   Pembayaran via {tx.paymentMethod}. Harap verifikasi status transaksi pada terminal EDC atau aplikasi m-banking sebelum memproses lebih lanjut.
+                 </p>
+              </div>
+              <Button 
+                variant={confirmed ? "default" : "outline"} 
+                className={cn(
+                  "w-full h-20 text-xl font-black gap-4 rounded-3xl border-2 transition-all",
+                  confirmed ? "bg-emerald-600 border-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-200 text-white" : "hover:border-accent hover:text-accent"
+                )}
+                onClick={() => setConfirmed(!confirmed)}
+              >
+                {confirmed ? <CheckCircle2 size={32} /> : <div className="w-8 h-8 border-4 border-muted rounded-xl" />}
+                Pembayaran Terverifikasi
+              </Button>
             </div>
           )}
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-outline" onClick={onClose}>Batal</button>
-          <button className="btn btn-primary" style={{ flex: 1, opacity: isReadyToPay ? 1 : 0.5 }}
-            onClick={handleConfirm} disabled={loading || !isReadyToPay}>
-            {loading
-              ? '⏳ Memproses...'
-              : isCash
-                ? `✅ Lunas · Kembalikan ${formatRupiah(change >= 0 ? change : 0)}`
-                : '✅ Konfirmasi Pembayaran Lunas'
-            }
-          </button>
-        </div>
-      </div>
+        </CardContent>
+        <CardFooter className="p-8 border-t bg-muted/5 gap-4">
+           <Button variant="ghost" className="h-14 flex-1 font-bold rounded-2xl" onClick={onClose}>Batalkan</Button>
+           <Button 
+             className={cn(
+               "h-14 flex-[2] text-lg font-black rounded-2xl shadow-2xl transition-all active:scale-95",
+               !isReadyToPay ? "opacity-30" : "bg-accent hover:bg-accent/90 shadow-accent/20"
+             )}
+             disabled={!isReadyToPay || loading}
+             onClick={handleConfirm}
+           >
+             {loading ? 'Menyelesaikan...' : 'Selesaikan Transaksi'}
+           </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
 
-
-
+// Modal Checkout
 function CheckoutModal({ cart, onClose, onSuccess, user }) {
   const [payMethod, setPayMethod] = useState('Tunai');
   const [discount, setDiscount] = useState(0);
   const [tableNum, setTableNum] = useState('');
   const [orderType, setOrderType] = useState('Dine-in');
-  const [splitCount, setSplitCount] = useState(1);
   const [loading, setLoading] = useState(false);
-
-  // Feature Lock: Cek JSONB features dari tenant
-  const tenantFeatures = user?.tenant?.features || {};
-  const isAllowed = (method) => {
-    if (method === 'Tunai') return true;
-    if (method === 'QRIS') return tenantFeatures.allow_qris === true;
-    if (method === 'Kartu Debit') return tenantFeatures.allow_debit === true;
-    if (method === 'Transfer') return tenantFeatures.allow_transfer === true;
-    if (method === 'Hutang') return tenantFeatures.allow_hutang === true;
-    return false;
-  };
+  const [cashReceived, setCashReceived] = useState('');
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const taxAmount = Math.round(subtotal * 0.1);
-  const discountAmount = discount ? Math.round(subtotal * (discount / 100)) : 0;
+  const discountAmount = Math.round(subtotal * (discount / 100));
   const total = subtotal + taxAmount - discountAmount;
-  const splitTotal = splitCount > 1 ? Math.round(total / splitCount) : total;
+  const changeAmount = Number(cashReceived) - total;
 
   const handlePay = async () => {
+    if (payMethod === 'Tunai' && Number(cashReceived) < total) {
+      alert('Uang tunai kurang!');
+      return;
+    }
+
     setLoading(true);
     try {
-      const tableType = orderType === 'Dine-in' && tableNum ? `Meja ${tableNum}` : orderType;
-      const transactionData = {
-        tableType,
+      const res = await api.checkout({
+        tableType: orderType === 'Dine-in' ? `Meja ${tableNum}` : orderType,
         paymentMethod: payMethod,
-        cashierName: 'Kasir',
-        subtotal,
-        taxAmount,
-        discountAmount,
-        total,
-        type: orderType,
+        cashierName: user.name,
+        subtotal, taxAmount, discountAmount, total,
+        cashReceived: Number(cashReceived),
+        changeAmount: changeAmount > 0 ? changeAmount : 0,
         items: cart.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price }))
-      };
-      const res = await api.checkout(transactionData);
+      });
       onSuccess(res);
     } catch (e) {
-      console.error('Gagal memproses pembayaran', e);
-      alert('Gagal memproses pembayaran');
+      alert('Gagal memproses pembayaran: ' + e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title">💳 Proses Pembayaran</span>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Tipe Pesanan</label>
-              <select className="form-control" value={orderType} onChange={e => setOrderType(e.target.value)}>
-                <option>Dine-in</option>
-                <option>Take Away</option>
-                <option>Delivery</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Nomor Meja</label>
-              <input className="form-control" placeholder="cth: Meja 3" value={tableNum} onChange={e => setTableNum(e.target.value)} />
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Metode Pembayaran</label>
-            <div className="flex gap-2" style={{flexWrap:'wrap'}}>
-              {['Tunai','QRIS','Kartu Debit','Transfer','Hutang'].map(m => {
-                const isLocked = !isAllowed(m);
-                return (
-                  <button key={m} type="button"
-                    className={`cat-tab ${payMethod === m ? 'active' : ''}`}
-                    onClick={() => {
-                      if (isLocked) return alert('Fitur ini hanya tersedia untuk Paket Pro. Silakan upgrade!');
-                      setPayMethod(m);
-                    }}
-                    style={{ opacity: isLocked ? 0.5 : 1, position: 'relative' }}
-                  >
-                    {m} {isLocked && <span style={{fontSize:'0.7rem', marginLeft:'4px'}}>🔒</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Diskon (%)</label>
-              <input type="number" className="form-control" min="0" max="100" value={discount} onChange={e => setDiscount(Number(e.target.value))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Split Bill (Orang)</label>
-              <input type="number" className="form-control" min="1" max="20" value={splitCount} onChange={e => setSplitCount(Number(e.target.value))} />
-            </div>
-          </div>
-          <div style={{background:'var(--bg)', borderRadius:'var(--radius-sm)', padding:'16px', marginTop:'8px'}}>
-            <div className="cart-summary-row"><span>Subtotal</span><span>{formatRupiah(subtotal)}</span></div>
-            <div className="cart-summary-row"><span>Pajak (10%)</span><span>{formatRupiah(taxAmount)}</span></div>
-            {discount > 0 && <div className="cart-summary-row" style={{color:'var(--success)'}}><span>Diskon {discount}%</span><span>-{formatRupiah(discountAmount)}</span></div>}
-            <div className="cart-total-row"><span>Total</span><span style={{color:'var(--primary)'}}>{formatRupiah(total)}</span></div>
-            {splitCount > 1 && (
-              <div className="cart-summary-row" style={{marginTop:'8px', paddingTop:'8px', borderTop:'1px dashed var(--border-light)', color:'var(--accent)', fontWeight:800}}>
-                <span>Tagihan per orang ({splitCount}x)</span>
-                <span>{formatRupiah(splitTotal)}</span>
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-outline" onClick={onClose}>Batal</button>
-          <button id="btn-bayar-modal" className="btn btn-primary" disabled={loading} onClick={handlePay} style={{flex: 1, padding: '12px'}}>
-            {loading ? '⏳ Memproses...' : `💵 Bayar ${formatRupiah(total)}`}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+  const methods = [
+    { id: 'Tunai', icon: Banknote, color: 'bg-emerald-500' },
+    { id: 'QRIS', icon: Wallet, color: 'bg-blue-500' },
+    { id: 'Kartu Debit', icon: CreditCard, color: 'bg-purple-500' },
+    { id: 'Transfer', icon: Landmark, color: 'bg-amber-500' }
+  ];
 
-function SuccessModal({ tx, onClose }) {
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{maxWidth:'400px'}} onClick={e => e.stopPropagation()}>
-        <div className="modal-body" style={{textAlign:'center', padding:'40px 28px'}}>
-          <div style={{fontSize:'4rem', marginBottom:'12px', animation:'bounceIn 0.4s ease'}}>✅</div>
-          <h2 style={{fontFamily:'var(--font-display)', fontSize:'1.5rem', marginBottom:'4px'}}>Pembayaran Berhasil!</h2>
-          {tx && (
-            <div style={{background:'var(--bg)', borderRadius:'var(--radius-md)', padding:'16px', margin:'16px 0', textAlign:'left'}}>
-              <div style={{display:'flex', justifyContent:'space-between', fontSize:'0.85rem', marginBottom:'6px'}}>
-                <span style={{color:'var(--text-muted)'}}>ID Transaksi</span>
-                <span style={{fontWeight:700, color:'var(--primary)', fontFamily:'monospace'}}>{tx.id}</span>
-              </div>
-              <div style={{display:'flex', justifyContent:'space-between', fontSize:'0.85rem', marginBottom:'6px'}}>
-                <span style={{color:'var(--text-muted)'}}>Total Bayar</span>
-                <span style={{fontWeight:800, color:'var(--primary)'}}>{tx.total?.toLocaleString('id-ID', {style:'currency', currency:'IDR', minimumFractionDigits:0})}</span>
-              </div>
-              <div style={{display:'flex', justifyContent:'space-between', fontSize:'0.85rem'}}>
-                <span style={{color:'var(--text-muted)'}}>Metode</span>
-                <span style={{fontWeight:600}}>{tx.paymentMethod}</span>
-              </div>
-              {tx.cashReceived > 0 && (
-                <>
-                  <div style={{display:'flex', justifyContent:'space-between', fontSize:'0.85rem', marginTop:'6px'}}>
-                    <span style={{color:'var(--text-muted)'}}>Tunai Diterima</span>
-                    <span>{formatRupiah(tx.cashReceived)}</span>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+      <Card className="w-full max-w-5xl shadow-[0_32px_128px_-32px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 border-none rounded-[3rem] overflow-hidden">
+        <div className="flex flex-col md:flex-row h-[600px]">
+          {/* Summary Panel */}
+          <div className="w-full md:w-[380px] p-10 bg-muted/20 border-r border-muted flex flex-col h-full">
+            <div className="mb-8">
+               <h3 className="text-2xl font-black">Detail Tagihan</h3>
+               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">Konfirmasi Pesanan</p>
+            </div>
+            
+            <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+              {cart.map((item, i) => (
+                <div key={i} className="flex justify-between items-start gap-4 animate-in slide-in-from-left-4 duration-300" style={{ animationDelay: `${i * 50}ms` }}>
+                  <div className="flex-1">
+                    <p className="text-sm font-black truncate">{item.name}</p>
+                    <p className="text-[10px] text-muted-foreground font-bold">{item.qty}x {formatRupiah(item.price)}</p>
                   </div>
-                  <div style={{display:'flex', justifyContent:'space-between', fontSize:'0.85rem', marginTop:'6px', fontWeight:700, color:'var(--success)'}}>
-                    <span>Kembalian</span>
-                    <span>{formatRupiah(tx.change)}</span>
-                  </div>
-                </>
+                  <p className="text-sm font-black">{formatRupiah(item.price * item.qty)}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-8 mt-4 border-t-2 border-dashed border-muted-foreground/20 space-y-4">
+              <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                <span>Subtotal</span>
+                <span>{formatRupiah(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                <span>Pajak (10%)</span>
+                <span>{formatRupiah(taxAmount)}</span>
+              </div>
+              <div className="flex justify-between items-end pt-2">
+                <span className="text-lg font-black uppercase tracking-tighter">Total</span>
+                <span className="text-4xl font-black text-accent">{formatRupiah(total)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Settings Panel */}
+          <div className="flex-1 p-10 space-y-10 overflow-y-auto">
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 bg-muted rounded-xl flex items-center justify-center"><MapPin size={16} className="text-muted-foreground" /></div>
+                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Tipe Pelayanan</h4>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {[
+                  { id: 'Dine-in', label: 'Makan Sini', icon: Coffee },
+                  { id: 'Take Away', label: 'Bawa Pulang', icon: ShoppingBag }
+                ].map(type => {
+                  const Icon = type.icon;
+                  return (
+                    <button 
+                      key={type.id} 
+                      onClick={() => setOrderType(type.id)}
+                      className={cn(
+                        "h-16 rounded-2xl border-2 transition-all flex items-center justify-center gap-3 font-black text-sm",
+                        orderType === type.id ? "bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.02]" : "bg-background border-muted hover:border-accent/40"
+                      )}
+                    >
+                      <Icon size={20} /> {type.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {orderType === 'Dine-in' && (
+                <div className="animate-in slide-in-from-top-4 duration-300">
+                   <Input 
+                     placeholder="Nomor Meja" 
+                     value={tableNum} onChange={e => setTableNum(e.target.value)}
+                     className="h-16 text-center text-3xl font-black rounded-2xl border-2 focus:ring-accent bg-muted/20 shadow-inner"
+                     autoFocus
+                   />
+                </div>
               )}
             </div>
-          )}
-          <button id="btn-transaksi-baru" className="btn btn-primary btn-lg w-full" onClick={onClose} style={{justifyContent:'center'}}>
-            🧾 Transaksi Baru
-          </button>
+
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 bg-muted rounded-xl flex items-center justify-center"><Wallet size={16} className="text-muted-foreground" /></div>
+                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Metode Pembayaran</h4>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {methods.map(m => {
+                  const Icon = m.icon;
+                  const isActive = payMethod === m.id;
+                  return (
+                    <button 
+                      key={m.id}
+                      onClick={() => {
+                        setPayMethod(m.id);
+                        if (m.id !== 'Tunai') setCashReceived('');
+                      }}
+                      className={cn(
+                        "h-24 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all group",
+                        isActive ? "bg-accent border-accent text-white shadow-xl shadow-accent/30 scale-105 z-10" : "bg-muted/10 border-transparent hover:bg-muted/30"
+                      )}
+                    >
+                      <div className={cn("p-2 rounded-xl transition-colors", isActive ? "bg-white/20" : "bg-background shadow-sm")}>
+                        <Icon size={24} className={isActive ? "text-white" : "text-muted-foreground group-hover:text-accent"} />
+                      </div>
+                      <span className="text-[9px] font-black uppercase tracking-widest">{m.id}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {payMethod === 'Tunai' && (
+              <div className="p-6 bg-emerald-500/5 border-2 border-emerald-500/20 rounded-[2rem] space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 px-2">Uang Diterima</label>
+                    <div className="relative">
+                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-lg font-black text-emerald-500/40">Rp</span>
+                      <Input 
+                        type="number"
+                        value={cashReceived}
+                        onChange={e => setCashReceived(e.target.value)}
+                        placeholder="0"
+                        className="h-16 text-3xl font-black pl-14 rounded-2xl border-2 border-emerald-500/30 focus:ring-emerald-500 bg-white"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {[50000, 100000, 200000].map(amt => (
+                        <button key={amt} onClick={() => setCashReceived(String(amt))} className="px-3 py-1 bg-white border border-emerald-500/20 rounded-lg text-[9px] font-black text-emerald-700 hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
+                          {amt/1000}rb
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 px-2 text-right block">Uang Kembalian</label>
+                    <div className="h-16 flex items-center justify-end px-6 bg-white rounded-2xl border-2 border-emerald-500/30">
+                       <span className={cn("text-3xl font-black", changeAmount >= 0 ? "text-emerald-600" : "text-muted-foreground/30")}>
+                         {changeAmount >= 0 ? formatRupiah(changeAmount) : 'Rp 0'}
+                       </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="pt-6 flex gap-4">
+              <Button variant="ghost" className="flex-1 h-16 font-bold rounded-2xl" onClick={onClose}>Kembali</Button>
+              <Button 
+                className={cn(
+                  "flex-[2] h-16 text-lg font-black shadow-2xl rounded-2xl group transition-all",
+                  (payMethod === 'Tunai' && (Number(cashReceived) < total || !cashReceived)) ? "opacity-30" : "bg-accent hover:bg-accent/90 shadow-accent/20 active:scale-95"
+                )} 
+                onClick={handlePay} 
+                disabled={loading || (payMethod === 'Tunai' && (Number(cashReceived) < total || !cashReceived))}
+              >
+                 <span className="flex items-center gap-2">
+                   {loading ? 'Memproses...' : 'Selesaikan Pembayaran'}
+                   {!loading && <ArrowRight className="group-hover:translate-x-1 transition-transform" />}
+                 </span>
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
 
-export default function KasirPage({ user }) {
+// Page Utama
+export default function KasirPage({ user, onNavigate }) {
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeShift, setActiveShift] = useState(null);
@@ -347,18 +385,17 @@ export default function KasirPage({ user }) {
   const [showCheckout, setShowCheckout] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastTx, setLastTx] = useState(null);
-
   const [pendingOrders, setPendingOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState('menu'); // 'menu' | 'pending'
+  const [activeTab, setActiveTab] = useState('menu');
   const [selectedPendingTx, setSelectedPendingTx] = useState(null);
 
   const fetchMenuAndOrders = async (isInitial = false) => {
     try {
       if (isInitial) setLoading(true);
       const [menuData, txData, shiftData] = await Promise.all([
-        api.getMenu(), 
-        api.getTransactions(),
-        api.getActiveShift()
+        api.getMenu().catch(() => []), 
+        api.getTransactions().catch(() => []),
+        api.getActiveShift().catch(() => null)
       ]);
       setMenus(menuData);
       setActiveShift(shiftData);
@@ -366,8 +403,6 @@ export default function KasirPage({ user }) {
         (t.paymentStatus === 'pending_payment' && t.paymentMethod === 'Tunai') || 
         t.paymentStatus === 'pending_acceptance'
       ));
-    } catch (e) {
-      console.error(e);
     } finally {
       if (isInitial) setLoading(false);
     }
@@ -375,15 +410,9 @@ export default function KasirPage({ user }) {
 
   useEffect(() => {
     fetchMenuAndOrders(true);
-    const interval = setInterval(() => fetchMenuAndOrders(false), 5000);
+    const interval = setInterval(() => fetchMenuAndOrders(false), 8000);
     return () => clearInterval(interval);
   }, []);
-
-  const filtered = menus.filter(m => {
-    const matchCat = category === 'Semua' || m.category === category;
-    const matchSearch = m.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
 
   const addToCart = (item) => {
     setCart(prev => {
@@ -400,200 +429,246 @@ export default function KasirPage({ user }) {
     });
   };
 
+  const filtered = menus.filter(m => (category === 'Semua' || m.category === category) && m.name.toLowerCase().includes(search.toLowerCase()));
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const totalItems = cart.reduce((s, i) => s + i.qty, 0);
 
-  const handleSuccess = (txData) => {
-    setLastTx(txData);
-    setShowCheckout(false);
-    setShowSuccess(true);
-    setCart([]);
-  };
-
-  // BR-001: Block UI if no active shift
   if (!loading && !activeShift) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '40px', background: 'var(--bg)' }}>
-        <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🔒</div>
-        <h2 style={{ fontFamily: 'var(--font-display)', marginBottom: '8px', color: 'var(--text-primary)' }}>Kasir Terkunci</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '24px', textAlign: 'center', maxWidth: '400px' }}>
-          Shift kasir belum dimulai. Berdasarkan aturan BR-001, pesanan hanya bisa dibuat jika ada shift yang aktif.
-        </p>
-        <button className="btn btn-primary btn-lg" onClick={() => window.location.hash = '#/shift'}>
-          Buka Shift Sekarang
-        </button>
+      <div className="flex flex-col items-center justify-center h-[70vh] max-w-md mx-auto text-center space-y-8 animate-in zoom-in-95 duration-500">
+        <div className="w-32 h-32 bg-accent/10 rounded-[3rem] flex items-center justify-center shadow-inner relative group">
+          <div className="absolute inset-0 bg-accent/20 rounded-[3rem] animate-ping opacity-20" />
+          <Lock size={56} className="text-accent group-hover:scale-110 transition-transform" />
+        </div>
+        <div>
+          <h2 className="text-3xl font-black tracking-tight">Shift Terkunci</h2>
+          <p className="text-muted-foreground mt-3 font-medium leading-relaxed">
+            Sesi kasir belum aktif atau sudah ditutup. Harap buka shift baru dari dashboard manajemen untuk mulai melayani pelanggan.
+          </p>
+        </div>
+        <Button size="lg" className="h-14 px-10 font-black text-lg bg-accent shadow-xl shadow-accent/20 gap-3" onClick={() => onNavigate?.('shift')}>
+          <Clock size={24} /> Buka Manajemen Shift
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="pos-layout">
-      {/* Kiri: Menu atau Pending Orders */}
-      <div className="pos-menu" style={{ display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '16px 24px 0' }}>
-          <button onClick={() => setActiveTab('menu')} style={{
-            padding: '12px 20px', background: 'none', border: 'none', cursor: 'pointer',
-            borderBottom: activeTab === 'menu' ? '3px solid var(--primary)' : '3px solid transparent',
-            fontWeight: activeTab === 'menu' ? 700 : 500, color: activeTab === 'menu' ? 'var(--primary)' : 'var(--text-muted)',
-            fontSize: '1rem'
-          }}>
-            🍔 Pesanan Baru
-          </button>
-          <button onClick={() => setActiveTab('pending')} style={{
-            padding: '12px 20px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-            borderBottom: activeTab === 'pending' ? '3px solid var(--primary)' : '3px solid transparent',
-            fontWeight: activeTab === 'pending' ? 700 : 500, color: activeTab === 'pending' ? 'var(--primary)' : 'var(--text-muted)',
-            fontSize: '1rem'
-          }}>
-            ⏳ Menunggu Pembayaran
-            {pendingOrders.length > 0 && (
-              <span style={{ background: 'var(--accent)', color: '#fff', borderRadius: '99px', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 800 }}>
-                {pendingOrders.length}
-              </span>
-            )}
-          </button>
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-8 animate-in fade-in duration-700">
+      
+      {/* Product List Section */}
+      <div className="flex-1 flex flex-col min-w-0 space-y-6 overflow-hidden">
+        
+        {/* Toolbar */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 shrink-0 bg-card p-4 rounded-[2rem] shadow-sm border border-muted/20">
+          <div className="relative flex-1 group">
+             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={20} />
+             <Input 
+               className="pl-12 h-14 rounded-2xl border-none bg-muted/20 focus:bg-background focus:ring-2 focus:ring-accent/20 text-md font-bold transition-all shadow-inner" 
+               placeholder="Cari menu terbaik Anda..." 
+               value={search} onChange={e => setSearch(e.target.value)}
+             />
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            {MENU_CATEGORIES.map(c => (
+              <button 
+                key={c}
+                onClick={() => setCategory(c)}
+                className={cn(
+                  "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shadow-sm border",
+                  category === c 
+                    ? "bg-accent border-accent text-white shadow-lg shadow-accent/20 scale-105" 
+                    : "bg-background border-muted text-muted-foreground hover:bg-muted/50"
+                )}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {activeTab === 'menu' ? (
-          <>
-            <div className="menu-search-bar" style={{ margin: '16px 24px 0' }}>
-              <span className="search-icon">🔍</span>
-              <input id="search-menu" placeholder="Cari menu..." value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
-        <div className="category-tabs">
-          {MENU_CATEGORIES.map(c => (
-            <button key={c} className={`cat-tab ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>{c}</button>
-          ))}
-        </div>
-        <div className="menu-grid">
+        {/* Grid Menu */}
+        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 content-start auto-rows-max pb-10">
           {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Memuat menu...</div>
-          ) : filtered.length === 0 ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>Menu tidak ditemukan.</div>
-          ) : (
-            filtered.map(item => (
-              <div key={item.id} className="card" style={{ cursor: 'pointer', overflow: 'hidden', transition: 'var(--transition)' }} onClick={() => addToCart(item)}>
-                <div style={{ height: '120px', background: 'linear-gradient(135deg, var(--bg-card), var(--border-light))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', position: 'relative' }}>
-                  {item.image ? (
-                    <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    item.icon
-                  )}
+            Array(10).fill(0).map((_, i) => (
+              <div key={i} className="aspect-[4/5] bg-muted/40 rounded-3xl animate-pulse" />
+            ))
+          ) : filtered.map(item => (
+            <div 
+              key={item.id} 
+              className="group cursor-pointer bg-card rounded-2xl overflow-hidden border border-border/50 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300 flex flex-col h-full"
+              onClick={() => addToCart(item)}
+            >
+              <div className="aspect-square w-full bg-muted relative shrink-0 overflow-hidden">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-5xl opacity-40 group-hover:scale-110 transition-transform duration-500">{item.icon || '☕'}</div>
+                )}
+                {/* Subtle overlay on hover */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+              </div>
+              
+              <div className="p-4 flex flex-col justify-between bg-card shrink-0">
+                <div>
+                  <h3 className="font-bold text-base text-foreground leading-tight">{item.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{item.category}</p>
                 </div>
-                <div style={{ padding: '14px' }}>
-                  <div style={{ fontWeight: 700, marginBottom: '2px' }}>{item.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>{item.category}</div>
-                  <div style={{ fontWeight: 800, color: 'var(--accent)' }}>{formatRupiah(item.price)}</div>
+                <div className="mt-4">
+                   <p className="text-lg font-black text-foreground">{formatRupiah(item.price)}</p>
                 </div>
               </div>
-            ))
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div className="col-span-full py-20 text-center opacity-20 space-y-4">
+               <SearchX size={80} className="mx-auto" strokeWidth={1} />
+               <p className="text-2xl font-black uppercase tracking-[0.2em]">Menu Tidak Ditemukan</p>
+            </div>
           )}
         </div>
-          </>
-        ) : (
-          <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: 'var(--bg)' }}>
-            {pendingOrders.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: '40px' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '16px' }}>✨</div>
-                <div style={{ fontWeight: 600 }}>Tidak ada pesanan tertunda</div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {pendingOrders.map(tx => {
-                  const isOjol = tx.paymentStatus === 'pending_acceptance';
-                  const ojolPlatform = tx.tableType || 'Ojol';
-                  return (
-                  <div key={tx.id} style={{ background: '#fff', borderRadius: 'var(--radius-md)', padding: '16px', border: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {tx.id} - {tx.customerName || 'Pelanggan'}
-                        {isOjol && <span className={`badge ${ojolPlatform.includes('Go') ? 'badge-danger' : ojolPlatform.includes('Grab') ? 'badge-success' : 'badge-warning'}`}>{ojolPlatform}</span>}
-                      </div>
-                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{tx.items.map(i => `${i.qty}x ${i.name}`).join(', ')}</div>
-                      <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px' }}>Metode: {tx.paymentMethod}</div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--primary)', marginBottom: '8px' }}>{formatRupiah(tx.total)}</div>
-                      {isOjol ? (
-                        <button onClick={async () => {
-                          try {
-                            await api.confirmPayment(tx.id, { paymentMethod: tx.paymentMethod, cashierName: 'Kasir', cashReceived: tx.total, change: 0 });
-                            fetchMenuAndOrders(true);
-                          } catch(e) { alert('Gagal menerima order ojol'); }
-                        }} className="btn btn-accent" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                          🛵 Terima Order
-                        </button>
-                      ) : (
-                        <button onClick={() => setSelectedPendingTx(tx)} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                          💳 Proses Bayar
-                        </button>
-                      )}
-                    </div>
+      </div>
+
+      {/* Cart Sidebar Section */}
+      <div className="w-full lg:w-[350px] flex flex-col shrink-0 gap-4">
+         
+         {/* Pending Orders Tab Button (if any) */}
+         {pendingOrders.length > 0 && (
+            <Button 
+              variant="outline" 
+              className="h-12 rounded-2xl border-2 border-accent text-accent font-bold gap-3 animate-pulse hover:animate-none shadow-sm"
+              onClick={() => setActiveTab(activeTab === 'pending' ? 'menu' : 'pending')}
+            >
+               <Zap className="fill-accent" size={16} />
+               ADA {pendingOrders.length} MENUNGGU
+               <ChevronDown className={cn("transition-transform", activeTab === 'pending' ? "rotate-180" : "")} />
+            </Button>
+         )}
+
+         <Card className="flex-1 flex flex-col overflow-hidden border-border/50 shadow-xl bg-card rounded-2xl">
+            <CardHeader className="p-4 border-b bg-muted/30 flex flex-row items-center justify-between">
+               <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent">
+                     <ShoppingCart size={20} />
                   </div>
-                )})}
-              </div>
+                  <div>
+                     <CardTitle className="text-lg font-bold leading-none">Keranjang</CardTitle>
+                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1 flex items-center gap-1">
+                        <User size={10} /> {user.name.split(' ')[0]}
+                     </p>
+                  </div>
+               </div>
+               <div className="text-right">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block">Item</span>
+                  <span className="text-xl font-black text-accent">{cart.reduce((s, i) => s + i.qty, 0)}</span>
+               </div>
+            </CardHeader>
+
+            <CardContent className="flex-1 overflow-y-auto p-0 scroll-smooth custom-scrollbar">
+               {activeTab === 'pending' ? (
+                  <div className="divide-y divide-border/50">
+                     {pendingOrders.map(tx => (
+                        <div key={tx.id} className="p-4 space-y-3 hover:bg-muted/30 transition-colors group">
+                           <div className="flex justify-between items-start">
+                              <div>
+                                 <p className="text-sm font-bold flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                                    {tx.customerName || 'Tamu'}
+                                 </p>
+                                 <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-1">{tx.tableType} · {tx.paymentMethod}</p>
+                              </div>
+                              <p className="font-bold text-accent">{formatRupiah(tx.total)}</p>
+                           </div>
+                           <Button className="w-full h-10 font-bold bg-accent rounded-xl text-xs gap-2" onClick={() => setSelectedPendingTx(tx)}>
+                              <Banknote size={14} /> Bayar
+                           </Button>
+                        </div>
+                     ))}
+                  </div>
+               ) : cart.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-4 opacity-40">
+                     <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center rotate-6">
+                        <ShoppingBag size={32} strokeWidth={1.5} />
+                     </div>
+                     <div>
+                        <p className="text-base font-bold uppercase tracking-widest">Kosong</p>
+                        <p className="text-xs font-medium mt-1">Pilih menu untuk melayani.</p>
+                     </div>
+                  </div>
+               ) : (
+                  <div className="divide-y divide-border/50">
+                     {cart.map(item => (
+                        <div key={item.id} className="p-4 flex items-center gap-3 animate-in slide-in-from-right-4 duration-300">
+                           <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center text-2xl shrink-0">
+                              {item.icon || '☕'}
+                           </div>
+                           <div className="flex-1 min-w-0">
+                              <p className="text-sm font-bold text-foreground truncate">{item.name}</p>
+                              <p className="text-xs font-bold text-accent mt-0.5">{formatRupiah(item.price)}</p>
+                           </div>
+                           <div className="flex items-center bg-muted/50 rounded-lg p-0.5 border shadow-sm">
+                              <button onClick={() => changeQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground"><Minus size={12} /></button>
+                              <span className="w-8 text-center text-xs font-bold">{item.qty}</span>
+                              <button onClick={() => changeQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors text-primary"><Plus size={12} /></button>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               )}
+            </CardContent>
+
+            {cart.length > 0 && activeTab === 'menu' && (
+               <CardFooter className="flex-col gap-4 p-4 bg-muted/20 border-t border-border/50">
+                  <div className="w-full space-y-2">
+                     <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
+                        <span>Pajak (10%)</span>
+                        <span>{formatRupiah(Math.round(subtotal * 0.1))}</span>
+                     </div>
+                     <div className="flex justify-between items-center bg-background rounded-2xl p-4 border border-border shadow-sm">
+                        <div className="space-y-0.5">
+                           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Total</p>
+                           <p className="text-2xl font-black text-primary">{formatRupiah(subtotal + Math.round(subtotal * 0.1))}</p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:bg-destructive/10 rounded-xl shrink-0" onClick={() => setCart([])}>
+                           <Trash2 size={20} />
+                        </Button>
+                     </div>
+                  </div>
+                  <Button 
+                    className="w-full h-14 text-base font-bold rounded-2xl shadow-lg bg-accent hover:bg-accent/90 group relative overflow-hidden transition-all"
+                    onClick={() => setShowCheckout(true)}
+                  >
+                     <span className="relative z-10 flex items-center gap-2">
+                        <Zap size={18} className="fill-white" />
+                        BUAT PESANAN
+                     </span>
+                  </Button>
+               </CardFooter>
             )}
-          </div>
-        )}
+         </Card>
       </div>
 
-      {/* Cart Panel */}
-      <div className="pos-cart">
-        <div className="cart-header">
-          <div className="flex justify-between items-center">
-            <span className="cart-title">🛒 Keranjang</span>
-            {totalItems > 0 && (
-              <span className="badge badge-brown">{totalItems} item</span>
-            )}
-          </div>
-        </div>
-        <div className="cart-items">
-          {cart.length === 0 ? (
-            <div className="cart-empty">
-              <div className="cart-empty-icon">🛒</div>
-              <p style={{fontWeight:600}}>Keranjang Kosong</p>
-              <p className="text-sm mt-1">Klik menu untuk menambahkan pesanan</p>
+      {/* Modals & Popups */}
+      {showCheckout && <CheckoutModal cart={cart} onClose={() => setShowCheckout(false)} onSuccess={(tx) => { setLastTx(tx); setShowCheckout(false); setShowSuccess(true); setCart([]); fetchMenuAndOrders(); }} user={user} />}
+      
+      {showSuccess && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-primary/20 backdrop-blur-xl animate-in fade-in duration-500">
+          <Card className="w-full max-w-sm text-center p-12 space-y-8 shadow-[0_32px_128px_-32px_rgba(0,0,0,0.5)] bg-background border-none rounded-[3rem] relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-emerald-500" />
+            <div className="w-24 h-24 bg-emerald-500 rounded-[2.5rem] mx-auto flex items-center justify-center shadow-2xl shadow-emerald-200 animate-bounce">
+               <Check size={48} strokeWidth={4} className="text-white" />
             </div>
-          ) : (
-            cart.map(item => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', borderBottom: '1px solid var(--border-light)' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '8px', overflow: 'hidden', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>
-                  {item.image ? <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : item.icon}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div className="cart-item-name">{item.name}</div>
-                  <div className="cart-item-price">{formatRupiah(item.price * item.qty)}</div>
-                </div>
-                <div className="qty-control">
-                  <button className="qty-btn" onClick={() => changeQty(item.id, -1)}>−</button>
-                  <span className="qty-val">{item.qty}</span>
-                  <button className="qty-btn" onClick={() => changeQty(item.id, 1)}>+</button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-        {cart.length > 0 && (
-          <div className="cart-footer">
-            <div className="cart-summary-row"><span>Subtotal</span><span>{formatRupiah(subtotal)}</span></div>
-            <div className="cart-summary-row"><span>Pajak (10%)</span><span>{formatRupiah(Math.round(subtotal * 0.1))}</span></div>
-            <div className="cart-total-row">
-              <span>Total</span>
-              <span style={{color:'var(--primary)'}}>{formatRupiah(subtotal + Math.round(subtotal * 0.1))}</span>
+            <div className="space-y-2">
+               <h2 className="text-3xl font-black tracking-tight">Sukses!</h2>
+               <p className="text-muted-foreground font-medium">Pesanan <span className="text-primary font-black">#{lastTx?.id?.slice(-6).toUpperCase()}</span> telah berhasil didaftarkan.</p>
             </div>
-            <button id="btn-checkout" className="checkout-btn" onClick={() => setShowCheckout(true)}>
-              💳 Bayar Sekarang
-            </button>
-            <button className="btn btn-outline w-full mt-2" style={{justifyContent:'center'}} onClick={() => setCart([])}>
-              🗑️ Hapus Semua
-            </button>
-          </div>
-        )}
-      </div>
-
-      {showCheckout && <CheckoutModal cart={cart} onClose={() => setShowCheckout(false)} onSuccess={handleSuccess} user={user} />}
-      {showSuccess && <SuccessModal tx={lastTx} onClose={() => setShowSuccess(false)} />}
-      {selectedPendingTx && <ConfirmPaymentModal tx={selectedPendingTx} onClose={() => setSelectedPendingTx(null)} onSuccess={(tx) => { setSelectedPendingTx(null); handleSuccess(tx); fetchMenuAndOrders(); }} />}
+            <Button className="w-full h-14 text-lg font-black bg-primary rounded-2xl shadow-xl hover:scale-105 transition-transform" onClick={() => setShowSuccess(false)}>
+               Transaksi Baru
+            </Button>
+          </Card>
+        </div>
+      )}
+      
+      {selectedPendingTx && <ConfirmPaymentModal tx={selectedPendingTx} onClose={() => setSelectedPendingTx(null)} onSuccess={() => { setSelectedPendingTx(null); fetchMenuAndOrders(); }} />}
     </div>
   );
 }

@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
-import { Armchair, Users, Bookmark, Map, ClipboardList, Plus, CheckCircle2, Trash2, X } from 'lucide-react';
+import { 
+  Armchair, Users, Bookmark, Map, 
+  ClipboardList, Plus, CheckCircle2, 
+  Trash2, X, AlertCircle, Layout,
+  Coffee, UserPlus, LogOut, MoreHorizontal
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { cn } from "../lib/utils";
 
 const STATUS_STYLE = {
-  available: { bg: 'var(--success-light)', border: 'var(--success)', color: 'var(--success)', label: 'Kosong' },
-  occupied:  { bg: 'var(--danger-light)',  border: 'var(--danger)',  color: 'var(--danger)',  label: 'Terisi' },
-  reserved:  { bg: 'var(--warning-light)', border: 'var(--warning)', color: 'var(--warning)', label: 'Reservasi' },
+  available: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', color: 'text-emerald-600', label: 'Kosong', icon: Armchair },
+  occupied:  { bg: 'bg-destructive/10',  border: 'border-destructive/20',  color: 'text-destructive',  label: 'Terisi', icon: Users },
+  reserved:  { bg: 'bg-amber-500/10', border: 'border-amber-500/20', color: 'text-amber-600', label: 'Reservasi', icon: Bookmark },
 };
 
 export default function MejaPage() {
@@ -18,9 +27,13 @@ export default function MejaPage() {
   }, []);
 
   const fetchTables = async () => {
-    const data = await api.getTables();
-    setTables(data);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const data = await api.getTables();
+      setTables(data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddTable = async () => {
@@ -31,145 +44,200 @@ export default function MejaPage() {
     }
   };
 
+  const changeStatus = async (id, newStatus) => {
+    await api.saveTable({ id, status: newStatus });
+    if (selected?.id === id) setSelected({ ...selected, status: newStatus });
+    fetchTables();
+  };
+
   const counts = {
     available: tables.filter(t=>t.status==='available').length,
     occupied: tables.filter(t=>t.status==='occupied').length,
     reserved: tables.filter(t=>t.status==='reserved').length,
   };
 
-  const handleClick = (table) => setSelected(table);
-
-  const changeStatus = async (id, newStatus) => {
-    await api.saveTable({ id, status: newStatus });
-    setSelected(prev => ({ ...prev, status: newStatus }));
-    fetchTables();
-  };
-
-  if (loading) return <div style={{padding:'40px', textAlign:'center'}}>Memuat data meja...</div>;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+      <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+      <p className="text-muted-foreground animate-pulse font-medium">Memuat tata letak meja...</p>
+    </div>
+  );
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4" style={{flexWrap:'wrap'}}>
+    <div className="space-y-10 pb-10 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Armchair size={28} className="text-primary" /> Manajemen Meja
-          </h1>
-          <p className="page-subtitle">Pantau status semua meja secara real-time</p>
+          <h2 className="text-3xl font-bold tracking-tight">Manajemen Meja</h2>
+          <p className="text-muted-foreground mt-1">Pantau hunian dan status ketersediaan meja secara real-time.</p>
         </div>
-        <button className="btn btn-primary" onClick={handleAddTable}>
-          <Plus size={16} /> Tambah Meja
-        </button>
+        <Button size="lg" className="h-12 px-8 font-bold gap-2 shadow-xl shadow-accent/20" onClick={handleAddTable}>
+          <Plus size={20} strokeWidth={3} /> Tambah Meja
+        </Button>
       </div>
 
-      <div className="flex gap-3 mb-4" style={{flexWrap:'wrap'}}>
+      {/* Stats Summary */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
-          { key:'available', label:'Kosong', count: counts.available, color:'var(--success)' },
-          { key:'occupied',  label:'Terisi',   count: counts.occupied,  color:'var(--danger)' },
-          { key:'reserved',  label:'Reservasi',count: counts.reserved,  color:'var(--warning)' },
+          { key:'available', label:'Meja Kosong', count: counts.available, color:'text-emerald-500', bg:'bg-emerald-500/10' },
+          { key:'occupied',  label:'Meja Terisi',   count: counts.occupied,  color:'text-destructive', bg:'bg-destructive/10' },
+          { key:'reserved',  label:'Reservasi',count: counts.reserved,  color:'text-amber-500', bg:'bg-amber-500/10' },
         ].map(s => (
-          <div key={s.key} className="stat-card" style={{flex:'1', minWidth:'120px', padding:'16px'}}>
-            <div className="stat-value" style={{fontSize:'1.5rem', color: s.color}}>{s.count}</div>
-            <div className="stat-label">{s.label}</div>
-          </div>
+          <Card key={s.key} className="border-none shadow-md bg-card group transition-all hover:scale-[1.02]">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{s.label}</p>
+                <h3 className={cn("text-3xl font-black mt-1", s.color)}>{s.count}</h3>
+              </div>
+              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner", s.bg)}>
+                {s.key === 'available' ? <Armchair className={s.color} /> : s.key === 'occupied' ? <Users className={s.color} /> : <Bookmark className={s.color} />}
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
 
-      <div className="flex gap-4" style={{alignItems:'flex-start', flexWrap:'wrap'}}>
-        <div className="card" style={{flex:'1', minWidth:'300px'}}>
-          <div className="card-header">
-            <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Map size={18} /> Peta Meja
-            </span>
-          </div>
-          <div className="card-body">
-            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(130px, 1fr))', gap:'12px'}}>
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        {/* Floor Map */}
+        <Card className="flex-1 border-none shadow-xl bg-card overflow-hidden">
+          <CardHeader className="border-b bg-muted/10 pb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl">Denah Meja (Floor Plan)</CardTitle>
+                <CardDescription>Klik meja untuk melihat detail atau mengubah status.</CardDescription>
+              </div>
+              <Layout className="text-accent" />
+            </div>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-6">
               {tables.map(t => {
                 const st = STATUS_STYLE[t.status];
+                const Icon = st.icon;
+                const isSelected = selected?.id === t.id;
+
                 return (
-                  <div
-                    key={t.id}
-                    id={`table-${t.id}`}
-                    onClick={() => handleClick(t)}
-                    style={{
-                      background: st.bg,
-                      border: `2px solid ${st.border}`,
-                      borderRadius: 'var(--radius-md)',
-                      padding: '16px 12px',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      transition: 'var(--transition)',
-                      outline: selected?.id === t.id ? `3px solid ${st.border}` : 'none',
-                      outlineOffset: '2px',
-                    }}
+                  <button 
+                    key={t.id} 
+                    onClick={() => setSelected(t)}
+                    className={cn(
+                      "flex flex-col items-center justify-center p-6 rounded-3xl border-2 transition-all duration-300 group",
+                      isSelected ? cn(st.border, st.bg, "shadow-xl scale-105") : "bg-muted/10 border-transparent hover:bg-muted/20 hover:scale-105 shadow-sm"
+                    )}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom:'6px', color: st.color }}>
-                      {t.status === 'available' ? <Armchair size={24} /> : t.status === 'occupied' ? <Users size={24} /> : <Bookmark size={24} />}
+                    <div className={cn(
+                      "w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-all duration-500",
+                      isSelected ? "bg-background shadow-lg" : "bg-muted/50 group-hover:bg-background group-hover:shadow-md"
+                    )}>
+                      <Icon className={cn("transition-colors", isSelected ? st.color : "text-muted-foreground group-hover:text-primary")} size={24} />
                     </div>
-                    <div style={{fontWeight:800, fontSize:'0.9rem', color: 'var(--text-primary)'}}>{t.name}</div>
-                    <div style={{fontSize:'0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginTop: '2px'}}>
-                      <Users size={12} /> {t.capacity} kursi
+                    <p className="text-sm font-black truncate max-w-full">{t.name}</p>
+                    <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-muted-foreground uppercase">
+                      <Users size={10} /> {t.capacity}
                     </div>
-                    <div style={{marginTop:'6px'}}>
-                      <span style={{background: st.border, color:'#fff', fontSize:'0.65rem', fontWeight:700, padding:'2px 8px', borderRadius:'99px'}}>
-                        {st.label}
-                      </span>
+                    <div className={cn(
+                      "mt-4 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest transition-all",
+                      isSelected ? "bg-white text-primary" : cn("bg-muted/40", st.color)
+                    )}>
+                      {st.label}
                     </div>
-                    {t.order && <div style={{fontSize:'0.65rem', marginTop:'4px', color: st.color, opacity:0.8}}>{t.order}</div>}
-                  </div>
+                  </button>
                 );
               })}
-            </div>
-          </div>
-        </div>
-
-        {selected && (
-          <div className="card" style={{width:'260px', flexShrink:0}}>
-            <div className="card-header">
-              <span className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ClipboardList size={18} /> Detail Meja
-              </span>
-            </div>
-            <div className="card-body">
-              <div style={{textAlign:'center', marginBottom:'20px'}}>
-                <div style={{ display: 'flex', justifyContent: 'center', color: STATUS_STYLE[selected.status].color }}>
-                  {selected.status === 'available' ? <Armchair size={48} /> : selected.status === 'occupied' ? <Users size={48} /> : <Bookmark size={48} />}
+              <button 
+                className="flex flex-col items-center justify-center p-6 rounded-3xl border-2 border-dashed border-muted-foreground/20 bg-transparent hover:bg-muted/10 hover:border-accent/40 transition-all group"
+                onClick={handleAddTable}
+              >
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-muted/20 text-muted-foreground group-hover:bg-accent group-hover:text-white transition-all shadow-sm">
+                  <Plus size={24} />
                 </div>
-                <h3 style={{fontWeight:800, marginTop:'8px'}}>{selected.name}</h3>
-                <span className={`badge ${selected.status === 'available' ? 'badge-success' : selected.status === 'occupied' ? 'badge-danger' : 'badge-warning'}`}>
-                  {STATUS_STYLE[selected.status].label}
-                </span>
-              </div>
-              <div className="text-sm" style={{lineHeight:'2'}}>
-                <div className="flex justify-between"><span className="text-muted">Kapasitas</span><strong>{selected.capacity} kursi</strong></div>
-                {selected.order && <div className="flex justify-between"><span className="text-muted">Order</span><strong>{selected.order}</strong></div>}
-              </div>
-              <div style={{display:'flex', flexDirection:'column', gap:'8px', marginTop:'20px'}}>
-                {selected.status === 'available' && (
-                  <button className="btn btn-primary" onClick={() => changeStatus(selected.id, 'occupied')}>
-                    <Armchair size={16} /> Buka Meja
-                  </button>
+                <p className="text-xs font-black text-muted-foreground group-hover:text-primary transition-colors">Tambah Meja</p>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Action Panel */}
+        <Card className={cn(
+          "w-full lg:w-[350px] border-none shadow-xl bg-card shrink-0 transition-all duration-500",
+          !selected && "opacity-50 grayscale"
+        )}>
+          {selected ? (
+            <div className="animate-in slide-in-from-right-4 duration-500">
+              <CardHeader className="border-b bg-muted/10">
+                <div className="flex justify-between items-start">
+                  <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg text-2xl", STATUS_STYLE[selected.status].bg, STATUS_STYLE[selected.status].color)}>
+                    {selected.status === 'available' ? <Armchair size={32} /> : selected.status === 'occupied' ? <Users size={32} /> : <Bookmark size={32} />}
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => {
+                    if(confirm('Hapus meja ini?')) {
+                      await api.deleteTable(selected.id);
+                      setSelected(null);
+                      fetchTables();
+                    }
+                  }}>
+                    <Trash2 size={18} />
+                  </Button>
+                </div>
+                <CardTitle className="mt-6 text-2xl font-black">{selected.name}</CardTitle>
+                <CardDescription className="flex items-center gap-1"><Users size={14} /> Maks. {selected.capacity} Tamu</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                <div className="space-y-4">
+                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Status Meja</p>
+                   <div className="grid grid-cols-1 gap-3">
+                      {Object.keys(STATUS_STYLE).map(key => {
+                        const s = STATUS_STYLE[key];
+                        const isActive = selected.status === key;
+                        const Icon = s.icon;
+                        return (
+                          <button 
+                            key={key} 
+                            onClick={() => changeStatus(selected.id, key)}
+                            className={cn(
+                              "flex items-center gap-4 p-4 rounded-2xl border-2 transition-all text-left",
+                              isActive ? cn(s.bg, s.border, s.color) : "bg-muted/10 border-transparent opacity-60 hover:opacity-100"
+                            )}
+                          >
+                            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", isActive ? "bg-white/50" : "bg-muted")}>
+                              <Icon size={20} />
+                            </div>
+                            <div>
+                               <p className="text-sm font-black">{s.label}</p>
+                               <p className="text-[10px] font-bold uppercase opacity-60">{key}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                   </div>
+                </div>
+
+                {selected.order && (
+                  <div className="p-4 bg-accent/5 border border-accent/10 rounded-2xl space-y-2">
+                    <div className="flex items-center gap-2 text-accent">
+                      <Coffee size={16} />
+                      <p className="text-xs font-black uppercase tracking-widest">Pesanan Aktif</p>
+                    </div>
+                    <p className="text-lg font-black text-primary">{selected.order}</p>
+                  </div>
                 )}
-                {selected.status === 'occupied' && (
-                  <button className="btn btn-outline" style={{borderColor:'var(--success)', color:'var(--success)'}} onClick={() => changeStatus(selected.id, 'available')}>
-                    <CheckCircle2 size={16} /> Tutup Meja
-                  </button>
-                )}
-                <button className="btn btn-outline" style={{borderColor:'var(--danger)', color:'var(--danger)'}} onClick={async () => {
-                  if(confirm('Yakin hapus meja ini?')) {
-                    await api.deleteTable(selected.id);
-                    setSelected(null);
-                    fetchTables();
-                  }
-                }}>
-                  <Trash2 size={16} /> Hapus Meja
-                </button>
-                <button className="btn btn-outline" onClick={() => setSelected(null)}>
-                  <X size={16} /> Tutup
-                </button>
+              </CardContent>
+              <CardFooter className="border-t bg-muted/5 p-6">
+                <Button variant="outline" className="w-full h-12 font-bold" onClick={() => setSelected(null)}>
+                  Tutup Panel
+                </Button>
+              </CardFooter>
+            </div>
+          ) : (
+            <div className="p-20 text-center space-y-6 opacity-30">
+              <Map size={80} strokeWidth={1} />
+              <div>
+                <p className="text-lg font-black">Pilih Meja</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest">Untuk Mengelola Status</p>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </Card>
       </div>
     </div>
   );

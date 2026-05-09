@@ -54,6 +54,8 @@ const readDB = () => {
     const data = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'));
     if (!data.suppliers) data.suppliers = [];
     if (!data.purchase_orders) data.purchase_orders = [];
+    if (!data.shifts) data.shifts = [];
+    if (!data.transactions) data.transactions = [];
     if (!data.inventory_meta) data.inventory_meta = { categories: [], packageUnits: [], itemUnits: [] };
     return data;
   }
@@ -280,113 +282,99 @@ app.delete('/api/bahan/:id', async (req, res) => {
 });
 
 // ---- TRANSAKSI ----
-app.get('/api/transactions', async (req, res) => {
-  const { data, error } = await supabase.from('transactions').select('*').order('created_at', { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data || []);
+app.get('/api/transactions', (req, res) => {
+  try {
+    const db = readDB();
+    const txs = db.transactions || [];
+    // Ensure consistent structure
+    const formatted = txs.map(t => ({
+      ...t,
+      id: t.id || `TRX-${Date.now()}`,
+      kdsStatus: t.kdsStatus || t.kds_status || 'new',
+      customerName: t.customerName || t.customer_name || 'Tamu',
+      items: t.items || []
+    }));
+    res.json(formatted);
+  } catch (err) {
+    console.error('Error fetching transactions:', err);
+    res.status(500).json({ error: 'Gagal mengambil data transaksi' });
+  }
 });
 
 app.post('/api/transactions', async (req, res) => {
-  const body = req.body;
-  const isSelfOrder = body.cashierName === 'Self Service';
-  const paymentStatus = isSelfOrder ? 'pending_payment' : 'paid';
+  try {
+    const body = req.body;
+    const db = readDB();
+    
+    // Generate ID unik
+    const trxId = 'TRX-' + String((db.transactions?.length || 0) + 1).padStart(4, '0') + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
 
-  // Ambil count untuk generate ID
-  const { count } = await supabase.from('transactions').select('*', { count: 'exact', head: true });
-  const trxId = 'TRX-' + String((count || 0) + 1).padStart(4, '0');
+    const isSelfOrder = body.cashierName === 'Self Service';
+    const paymentStatus = isSelfOrder ? 'pending_payment' : 'paid';
 
-  const trxData = {
-    id: trxId,
-    total: body.total,
-    subtotal: body.subtotal,
-    tax_amount: body.taxAmount || 0,
-    payment_method: body.paymentMethod,
-    payment_status: paymentStatus,
-    cashier_name: body.cashierName,
-    customer_name: body.customerName || 'Tamu',
-  };
+    const trxData = {
+      id: trxId,
+      createdAt: new Date().toISOString(),
+      total: Number(body.total || 0),
+      subtotal: Number(body.subtotal || 0),
+      taxAmount: Number(body.taxAmount || 0),
+      discountAmount: Number(body.discountAmount || 0),
+      paymentMethod: body.paymentMethod || 'Tunai',
+      paymentStatus: paymentStatus,
+      cashierName: body.cashierName || 'System',
+      customerName: body.customerName || 'Tamu',
+      tableType: body.tableType || 'Take Away',
+      kdsStatus: 'new',
+      items: body.items || []
+    };
 
-  // Simpan Header Transaksi
-  const { error: trxError } = await supabase.from('transactions').insert([trxData]);
-  if (trxError) return res.status(500).json({ error: trxError.message });
+    // Simpan ke JSON DB (Utama)
+    db.transactions = db.transactions || [];
+    db.transactions.push(trxData);
+    writeDB(db);
 
-  // Simpan Detail Item
-  if (body.items && body.items.length > 0) {
-    const itemsToInsert = body.items.map(item => ({
-      transaction_id: trxId,
-      menu_id: item.id,
-      qty: item.qty,
-      price: item.price
-    }));
-    await supabase.from('transaction_items').insert(itemsToInsert);
-
-    // --- LOGIKA POTONG STOK (HANYA DARI BAR/KITCHEN) ---
-    if (!isSelfOrder) {
-      for (const cartItem of body.items) {
-        // 1. Cari resep (BOM) untuk menu ini
-        const { data: boms } = await supabase.from('menu_bom').select('bahan_id, qty').eq('menu_id', cartItem.id);
-
-        if (boms && boms.length > 0) {
-          for (const bom of boms) {
-            // 2. Cari info bahan asli (untuk ambil namanya)
-            const { data: masterBahan } = await supabase.from('bahan').select('name, unit').eq('id', bom.bahan_id).single();
-            if (!masterBahan) continue;
-
-            // 3. CARI STOK DI BAR/KITCHEN (Lokasi Produksi)
-            // Kita asumsikan minuman dari 'Bar' dan makanan dari 'Kitchen'
-            const targetLocation = cartItem.category === 'Makanan' ? 'Kitchen' : 'Bar';
-
-            const { data: prodBahan } = await supabase.from('bahan')
-              .select('id, stock, unit')
-              .eq('name', masterBahan.name)
-              .eq('location', targetLocation)
-              .single();
-
-            if (prodBahan) {
-              let ratio = 1;
-              const u = (prodBahan.unit || '').toLowerCase();
-              if (['kg', 'kilogram', 'liter', 'l'].includes(u)) ratio = 1000;
-
-              const deduction = (Number(bom.qty) / ratio) * cartItem.qty;
-              const newStock = Number(prodBahan.stock) - deduction;
-
-              // 4. Update hanya stok di lokasi produksi (Bar/Kitchen)
-              await supabase.from('bahan').update({ stock: newStock }).eq('id', prodBahan.id);
-
-              // 5. FASE 3: Event-Based Movement
-              await supabase.from('stock_movements').insert([{
-                product_id: prodBahan.id,
-                type: 'out',
-                qty: deduction,
-                reference_type: 'sales',
-                reference_id: trxId
-              }]);
-            }
+    // --- LOGIKA POTONG STOK (Local) ---
+    if (!isSelfOrder && body.items) {
+      for (const item of body.items) {
+        const menuIdx = db.menu?.findIndex(m => m.id == item.id);
+        if (menuIdx > -1) {
+          const m = db.menu[menuIdx];
+          if (m.bom) {
+            m.bom.forEach(b => {
+              const bIdx = db.bahan?.findIndex(bh => bh.id == b.bahanId);
+              if (bIdx > -1) db.bahan[bIdx].stock -= (Number(b.qty) * item.qty);
+            });
           }
         }
       }
+      writeDB(db);
     }
+
+    // Sync ke Supabase (Optional/Background)
+    supabase.from('transactions').insert([{
+      id: trxId,
+      total: trxData.total,
+      subtotal: trxData.subtotal,
+      payment_method: trxData.paymentMethod,
+      customer_name: trxData.customerName
+    }]).then(() => {
+      if (trxData.items.length > 0) {
+        const itemsToInsert = trxData.items.map(i => ({
+          transaction_id: trxId,
+          menu_id: i.id,
+          qty: i.qty,
+          price: i.price
+        })).filter(i => i.menu_id); // Safety filter
+        
+        supabase.from('transaction_items').insert(itemsToInsert).catch(e => console.error('Supabase Sync Items Error:', e));
+      }
+    }).catch(e => console.error('Supabase Sync Header Error:', e));
+
+    res.json(trxData);
+  } catch (err) {
+    console.error('Checkout Error:', err);
+    res.status(500).json({ error: 'Gagal memproses transaksi' });
   }
-
-  // FASE 3: Auto-Journaling (Jika langsung lunas)
-  if (paymentStatus === 'paid') {
-    const { data: journal } = await supabase.from('journals').insert([{
-      reference: trxId,
-      description: `Penjualan POS via ${body.paymentMethod || 'Tunai'}`
-    }]).select('id').single();
-
-    if (journal) {
-      const isTunai = body.paymentMethod === 'Tunai';
-      const debitAccount = isTunai ? 'Kas' : `${body.paymentMethod} Clearing`;
-      
-      await supabase.from('journal_lines').insert([
-        { journal_id: journal.id, account_name: debitAccount, debit: body.total, credit: 0 },
-        { journal_id: journal.id, account_name: 'Sales', debit: 0, credit: body.total }
-      ]);
-    }
-  }
-
-  res.json({ ...trxData, items: body.items });
 });
 
 // ---- KONFIRMASI PEMBAYARAN (Kasir) ----
@@ -599,37 +587,17 @@ app.post('/api/transactions/:id/approve-void', async (req, res) => {
   await supabase.from('transactions').update({ payment_status: 'void' }).eq('id', id);
   res.json({ ok: true });
 });
-app.put('/api/transactions/:id/kds', (req, res) => {
-  const db = readDB();
-  const trx = db.transactions.find(t => t.id === req.params.id);
-  if (!trx) return res.status(404).json({ error: 'Transaction not found' });
-
-  const prevStatus = trx.kdsStatus;
-  trx.kdsStatus = req.body.status;
-
-  // Saat status menjadi 'served' → tambah poin member (jika ada)
-  if (req.body.status === 'served' && prevStatus !== 'served') {
-    const settings = db.settings || {};
-    const pointsPerRp = settings.pointsPerRp || 10000; // default: 1 poin per Rp 10.000
-    const rewardEnabled = settings.rewardEnabled !== false;
-
-    if (rewardEnabled && trx.customerPhone) {
-      const customer = (db.customers || []).find(
-        c => c.phone === trx.customerPhone || c.email === trx.customerPhone
-      );
-      if (customer) {
-        const earnedPoints = Math.floor((trx.total || 0) / pointsPerRp);
-        customer.points = (customer.points || 0) + earnedPoints;
-        customer.totalSpend = (customer.totalSpend || 0) + (trx.total || 0);
-        customer.visits = (customer.visits || 0) + 1;
-        trx.pointsEarned = earnedPoints;
-      }
-    }
-    trx.servedAt = new Date().toISOString();
-  }
-
-  writeDB(db);
-  res.json(trx);
+app.put('/api/transactions/:id/kds', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  
+  const { error } = await supabase
+    .from('transactions')
+    .update({ kds_status: status })
+    .eq('id', id);
+    
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
 });
 
 // ---- TABLES ----
@@ -1688,18 +1656,22 @@ app.get('/api/report/excel', async (req, res) => {
 });
 
 // --- SUPERADMIN: TENANT MANAGEMENT ---
-app.get('/api/tenants', async (req, res) => {
-  // Idealnya cek is_superadmin di sini, tapi untuk demo kita buka dulu
-  const { data, error } = await supabase.from('tenants').select('*').order('created_at', { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data || []);
+app.get('/api/tenants', (req, res) => {
+  const db = readDB();
+  res.json(db.tenants || []);
 });
 
-app.post('/api/updatetenant', async (req, res) => {
+app.post('/api/updatetenant', (req, res) => {
   const { id, ...updateData } = req.body;
-  const { error } = await supabase.from('tenants').update(updateData).eq('id', id);
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ ok: true });
+  const db = readDB();
+  const index = (db.tenants || []).findIndex(t => t.id === id);
+  if (index >= 0) {
+    db.tenants[index] = { ...db.tenants[index], ...updateData };
+    writeDB(db);
+    res.json({ ok: true });
+  } else {
+    res.status(404).json({ error: 'Tenant not found' });
+  }
 });
 
 // Health check

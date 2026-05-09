@@ -1,5 +1,6 @@
-const API_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:3001/api'
+const hostname = window.location.hostname;
+const API_URL = (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.'))
+  ? `http://${hostname}:3001/api`
   : 'https://kuliner-web-project.vercel.app/api';
 
 const apiBase = {
@@ -22,6 +23,7 @@ const apiBase = {
       headers: { 'Content-Type': 'application/json', 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' },
       body: JSON.stringify(data)
     });
+    if (!res.ok) throw new Error('Gagal checkout');
     return res.json();
   },
 
@@ -31,6 +33,28 @@ const apiBase = {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' },
       body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error('Gagal konfirmasi pembayaran');
+    return res.json();
+  },
+
+  async updateKdsStatus(id, status) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const res = await fetch(`${API_URL}/transactions/${id}/kds`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' },
+      body: JSON.stringify({ status })
+    });
+    if (!res.ok) throw new Error('Gagal update status KDS');
+    return res.json();
+  },
+
+  async updateKdsStatus(id, status) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const res = await fetch(`${API_URL}/transactions/${id}/kds`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' },
+      body: JSON.stringify({ status })
     });
     return res.json();
   },
@@ -91,7 +115,9 @@ export const api = new Proxy(apiBase, {
 
     // Jika fungsi yang dipanggil berawalan 'get' (contoh: getTransactions)
     if (prop.startsWith('get')) {
-      const resource = prop.replace('get', '').toLowerCase();
+      let resource = prop.replace('get', '').toLowerCase();
+      if (resource === 'shift') resource = 'shifts';
+      if (resource === 'transaction') resource = 'transactions';
       return () => fetch(`${API_URL}/${resource}`, { headers: getHeaders() }).then(res => res.json());
     }
     
@@ -99,7 +125,9 @@ export const api = new Proxy(apiBase, {
     if (prop.startsWith('add') || prop.startsWith('update') || prop.startsWith('save')) {
       return (data) => {
         const isUpdate = prop.startsWith('update') && data.id;
-        const resource = prop.replace('add', '').replace('update', '').replace('save', '').toLowerCase();
+        let resource = prop.replace('add', '').replace('update', '').replace('save', '').toLowerCase();
+        if (resource === 'shift') resource = 'shifts';
+        if (resource === 'transaction') resource = 'transactions';
         const url = isUpdate ? `${API_URL}/${resource}/${data.id}` : `${API_URL}/${resource}`;
         return fetch(url, {
           method: isUpdate ? 'PUT' : 'POST',

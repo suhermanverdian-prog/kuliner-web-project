@@ -1,5 +1,16 @@
 import { useState } from 'react';
 import { api } from '../api';
+import { 
+  Coffee, Lock, User, Phone, 
+  ShieldCheck, ArrowRight, Sparkles,
+  ChevronLeft, Smartphone, Mail, 
+  CheckCircle2, Star, Zap, Gift,
+  Shield, Trophy, Heart
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { cn } from "../lib/utils";
 
 export default function RegisterPage({ onSuccess, onGoLogin }) {
   const [form, setForm] = useState({ name: '', phone: '', email: '', password: '', confirmPassword: '' });
@@ -26,122 +37,131 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
         role: 'customer',
         avatar: form.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2),
       });
-      // Auto-login setelah registrasi
       onSuccess({ ...newCustomer, role: 'customer' });
     } catch (err) {
-      setError('Gagal mendaftar. Coba lagi.');
+      setError('Gagal mendaftar. Data mungkin sudah terdaftar.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #2C1810 0%, #4A3728 50%, #6F4E37 100%)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '24px', position: 'relative', overflow: 'hidden'
-    }}>
-      {/* Decorative circles */}
-      <div style={{ position: 'absolute', top: '-80px', right: '-80px', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(200,146,58,0.1)' }} />
-      <div style={{ position: 'absolute', bottom: '-60px', left: '-60px', width: '240px', height: '240px', borderRadius: '50%', background: 'rgba(200,146,58,0.08)' }} />
+    <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden font-sans">
+      {/* Background Decor */}
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent blur-[120px] rounded-full animate-pulse" />
+         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary blur-[120px] rounded-full" />
+      </div>
 
-      <div style={{
-        background: 'rgba(255,255,255,0.97)', borderRadius: '28px',
-        padding: '44px 40px', width: '100%', maxWidth: '440px',
-        boxShadow: '0 24px 64px rgba(0,0,0,0.35)', position: 'relative',
-        animation: 'slideUp 0.4s ease'
-      }}>
-        <style>{`@keyframes slideUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }`}</style>
+      <div className="w-full max-w-[1000px] flex flex-col lg:flex-row gap-0 lg:gap-12 p-4 relative z-10 items-center justify-center">
+        
+        {/* Left Side: Benefits (Desktop) */}
+        <div className="hidden lg:flex flex-col flex-1 space-y-10 animate-in fade-in slide-in-from-left-12 duration-1000">
+           <div className="space-y-4">
+              <Button variant="ghost" className="p-0 h-auto hover:bg-transparent text-accent font-black tracking-widest flex items-center gap-2 group" onClick={onGoLogin}>
+                 <ChevronLeft className="group-hover:-translate-x-1 transition-transform" /> KEMBALI KE LOGIN
+              </Button>
+              <h1 className="text-5xl font-black text-primary leading-tight">Bergabunglah dengan <span className="text-accent">Elite Club</span> Kami.</h1>
+              <p className="text-lg text-muted-foreground font-medium">Dapatkan akses eksklusif ke promo, reward, dan fitur self-order tercepat.</p>
+           </div>
 
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            width: '72px', height: '72px', margin: '0 auto 16px',
-            background: 'linear-gradient(135deg, #6F4E37, #C8923A)',
-            borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '2rem', boxShadow: '0 8px 24px rgba(111,78,55,0.35)'
-          }}>☕</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', color: '#4A3728', marginBottom: '6px' }}>
-            Daftar Member
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-            Nikmati reward & keuntungan eksklusif member BrewMaster
-          </p>
+           <div className="space-y-6">
+              {[
+                { icon: Trophy, title: 'Reward Loyalty', desc: 'Kumpulkan poin tiap pembelian dan tukar dengan menu favorit.' },
+                { icon: Gift, title: 'Voucher Ulang Tahun', desc: 'Hadiah spesial khusus untuk Anda setiap tahunnya.' },
+                { icon: Zap, title: 'Antrian Prioritas', desc: 'Pesan via QR & lewati antrian panjang di kasir.' }
+              ].map((item, i) => (
+                <div key={i} className="flex gap-4 p-5 rounded-3xl bg-white/50 backdrop-blur-sm border shadow-sm transition-all hover:translate-x-2">
+                   <div className="w-12 h-12 bg-accent rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-accent/20">
+                      <item.icon size={24} />
+                   </div>
+                   <div>
+                      <p className="font-black text-sm uppercase tracking-wider">{item.title}</p>
+                      <p className="text-xs text-muted-foreground font-medium mt-1 leading-relaxed">{item.desc}</p>
+                   </div>
+                </div>
+              ))}
+           </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="form-label">👤 Nama Lengkap *</label>
-            <input className="form-control" placeholder="cth: Rina Amelia"
-              value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">📱 Nomor WhatsApp *</label>
-            <input className="form-control" placeholder="cth: 081234567890" type="tel"
-              value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} required />
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Nomor ini digunakan untuk login dan notifikasi pesanan
-            </p>
-          </div>
-          <div className="form-group">
-            <label className="form-label">📧 Email (opsional)</label>
-            <input className="form-control" placeholder="cth: rina@gmail.com" type="email"
-              value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">🔒 Password *</label>
-              <input className="form-control" type="password" placeholder="Min. 6 karakter"
-                value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
-            </div>
-            <div className="form-group">
-              <label className="form-label">🔒 Konfirmasi *</label>
-              <input className="form-control" type="password" placeholder="Ulangi password"
-                value={form.confirmPassword} onChange={e => setForm({ ...form, confirmPassword: e.target.value })} required />
-            </div>
-          </div>
+        {/* Right Side: Form Card */}
+        <Card className="w-full max-w-[480px] border-none shadow-[0_32px_128px_-32px_rgba(0,0,0,0.2)] bg-background/80 backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-12 duration-1000 rounded-[3rem] overflow-hidden">
+           <CardHeader className="text-center pt-12 pb-8 space-y-2">
+              <div className="w-16 h-16 bg-accent mx-auto rounded-2xl flex items-center justify-center shadow-lg shadow-accent/20 mb-4 lg:hidden">
+                 <Coffee className="text-white" size={32} />
+              </div>
+              <CardTitle className="text-3xl font-black tracking-tight">Daftar Member</CardTitle>
+              <CardDescription className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Mulai Perjalanan Anda</CardDescription>
+           </CardHeader>
 
-          {error && (
-            <div style={{
-              background: 'var(--danger-light)', color: 'var(--danger)', padding: '10px 14px',
-              borderRadius: '8px', fontSize: '0.8rem', marginBottom: '16px'
-            }}>
-              ⚠️ {error}
-            </div>
-          )}
+           <CardContent className="px-10 pb-10">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Nama Lengkap *</label>
+                    <div className="relative group">
+                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={18} />
+                       <Input className="pl-12 h-12 bg-muted/20 border-transparent focus:bg-background rounded-2xl font-bold" placeholder="cth: Rina Amelia" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+                    </div>
+                 </div>
 
-          <button type="submit" disabled={loading} className="btn btn-primary w-full btn-lg"
-            style={{ justifyContent: 'center', marginBottom: '12px' }}>
-            {loading ? '⏳ Mendaftar...' : '🎉 Daftar Sekarang'}
-          </button>
-        </form>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Nomor WhatsApp *</label>
+                    <div className="relative group">
+                       <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={18} />
+                       <Input className="pl-12 h-12 bg-muted/20 border-transparent focus:bg-background rounded-2xl font-bold" placeholder="cth: 08123456789" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+                    </div>
+                    <p className="text-[9px] text-muted-foreground px-2 italic">Digunakan untuk konfirmasi pesanan & login.</p>
+                 </div>
 
-        <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-            Sudah punya akun?{' '}
-            <button onClick={onGoLogin} style={{
-              background: 'none', border: 'none', color: 'var(--primary)',
-              fontWeight: 700, cursor: 'pointer', fontSize: '0.875rem', textDecoration: 'underline'
-            }}>
-              Login di sini
-            </button>
-          </p>
-        </div>
+                 <div className="space-y-2">
+                    <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Email (Opsional)</label>
+                    <div className="relative group">
+                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={18} />
+                       <Input className="pl-12 h-12 bg-muted/20 border-transparent focus:bg-background rounded-2xl font-bold" placeholder="rina@example.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
+                    </div>
+                 </div>
 
-        <div style={{
-          marginTop: '20px', padding: '12px', background: 'var(--bg-card)',
-          borderRadius: '10px', border: '1px solid var(--border-light)'
-        }}>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '6px' }}>
-            ✨ Keuntungan Member:
-          </div>
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', lineHeight: 1.7 }}>
-            ⭐ Kumpulkan poin reward setiap pembelian<br />
-            🎁 Voucher diskon eksklusif member<br />
-            📜 Riwayat pesanan lengkap<br />
-            🔔 Notifikasi status pesanan real-time
-          </div>
-        </div>
+                 <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Password</label>
+                       <Input type="password" className="h-12 bg-muted/20 border-transparent focus:bg-background rounded-2xl font-bold" placeholder="••••••" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Konfirmasi</label>
+                       <Input type="password" className="h-12 bg-muted/20 border-transparent focus:bg-background rounded-2xl font-bold" placeholder="••••••" value={form.confirmPassword} onChange={e => setForm({...form, confirmPassword: e.target.value})} />
+                    </div>
+                 </div>
+
+                 {error && (
+                   <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/10 text-destructive text-[11px] font-black flex items-center gap-3 animate-in fade-in zoom-in-95">
+                      <Shield size={14} /> {error}
+                   </div>
+                 )}
+
+                 <Button type="submit" disabled={loading} className="w-full h-14 text-md font-black shadow-xl shadow-accent/20 bg-accent hover:bg-accent/90 rounded-2xl group overflow-hidden relative">
+                    <span className="relative z-10 flex items-center gap-2">
+                       {loading ? 'Sedang Memproses...' : 'Daftar Sekarang'}
+                       {!loading && <Sparkles size={18} className="group-hover:rotate-12 transition-transform" />}
+                    </span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-accent to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                 </Button>
+
+                 <div className="text-center pt-2">
+                    <p className="text-xs font-medium text-muted-foreground">
+                       Sudah punya akun? 
+                       <button type="button" onClick={onGoLogin} className="text-accent font-black ml-1 hover:underline uppercase tracking-widest">Login Disini</button>
+                    </p>
+                 </div>
+              </form>
+           </CardContent>
+
+           <CardFooter className="bg-muted/10 p-8 flex flex-col items-center gap-4 border-t border-muted">
+              <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all cursor-default">
+                 <Heart className="text-destructive fill-destructive" size={14} />
+                 <span className="text-[9px] font-black uppercase tracking-widest">Bergabung dengan 2,400+ member aktif lainnya</span>
+              </div>
+           </CardFooter>
+        </Card>
       </div>
     </div>
   );

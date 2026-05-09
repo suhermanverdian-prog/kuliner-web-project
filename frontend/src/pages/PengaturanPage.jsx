@@ -1,5 +1,17 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import { 
+  Users, Settings, Palette, Shield, 
+  Trash2, Plus, Save, Download, 
+  RefreshCw, CheckCircle2, AlertCircle,
+  User, ShieldCheck, Mail, Lock,
+  Store, Percent, CreditCard, Layout,
+  Image as ImageIcon, Upload, LogOut
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { cn } from "../lib/utils";
 
 const PERMISSIONS = [
   { key: 'akses_kasir', label: 'Akses Menu Kasir', icon: '💰' },
@@ -13,59 +25,49 @@ const PERMISSIONS = [
 ];
 
 const ROLE_LABELS = { admin:'Admin', owner:'Owner', kasir:'Kasir', koki:'Koki/Barista', gudang:'Gudang', akuntan:'Akuntan' };
-const ROLE_ICONS = { admin:'⚙️', owner:'👑', kasir:'💰', koki:'👨‍🍳', gudang:'📦', akuntan:'📊' };
+const ROLE_COLORS = { admin:'bg-blue-500', owner:'bg-purple-500', kasir:'bg-amber-500', koki:'bg-emerald-500', gudang:'bg-slate-500', akuntan:'bg-indigo-500' };
 
 function AddUserModal({ onClose, onSave, loading }) {
   const [form, setForm] = useState({ name: '', username: '', password: '', role: 'kasir' });
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{maxWidth:'400px'}} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title">👤 Tambah Pengguna Baru</span>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          <div className="form-group">
-            <label className="form-label">Nama Lengkap</label>
-            <input className="form-control" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="cth: Ahmad Fauzi" />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+      <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
+        <CardHeader className="border-b pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Plus className="text-accent" /> Tambah Pengguna
+            </CardTitle>
+            <Button variant="ghost" size="icon" onClick={onClose}><X /></Button>
           </div>
-          <div className="form-group">
-            <label className="form-label">Username</label>
-            <input className="form-control" value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="cth: ahmad_kasir" />
+          <CardDescription>Daftarkan anggota tim baru ke sistem.</CardDescription>
+        </CardHeader>
+        <CardContent className="pt-6 space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Nama Lengkap</label>
+            <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="cth: Ahmad Fauzi" />
           </div>
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <input className="form-control" type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Minimal 6 karakter" />
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Username</label>
+            <Input value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="cth: ahmad_kasir" />
           </div>
-          <div className="form-group">
-            <label className="form-label">Role</label>
-            <select className="form-control" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Password</label>
+            <Input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Minimal 6 karakter" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Role / Jabatan</label>
+            <select className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
               {Object.keys(ROLE_LABELS).map(k => <option key={k} value={k}>{ROLE_LABELS[k]}</option>)}
             </select>
           </div>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-outline" onClick={onClose} disabled={loading}>Batal</button>
-          <button className="btn btn-primary" onClick={() => onSave(form)} disabled={loading}>
-            {loading ? '⏳ Memproses...' : '💾 Simpan Pengguna'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Toast({ msg, type }) {
-  if (!msg) return null;
-  return (
-    <div style={{
-      position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
-      background: type === 'success' ? 'var(--success)' : 'var(--danger)',
-      color: '#fff', padding: '12px 20px',
-      borderRadius: 'var(--radius-md)', fontWeight: 600, fontSize: '0.875rem',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.2)', animation: 'slideUp 0.3s ease'
-    }}>
-      {type === 'success' ? '✅' : '❌'} {msg}
+        </CardContent>
+        <CardFooter className="border-t pt-6 gap-3">
+          <Button variant="outline" className="flex-1" onClick={onClose} disabled={loading}>Batal</Button>
+          <Button className="flex-[2] font-bold bg-accent hover:bg-accent/90" onClick={() => onSave(form)} disabled={loading}>
+            {loading ? 'Memproses...' : 'Simpan Pengguna'}
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
@@ -93,7 +95,8 @@ export default function PengaturanPage() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      setUsers(await api.getUsers());
+      const data = await api.getUsers();
+      setUsers(data);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
@@ -171,249 +174,343 @@ export default function PengaturanPage() {
   };
 
   return (
-    <div>
-      <h1 className="page-title">⚙️ Pengaturan Sistem</h1>
-      <p className="page-subtitle">Kelola pengguna, hak akses, dan konfigurasi aplikasi</p>
+    <div className="space-y-8 pb-10 animate-in fade-in duration-500">
+      {/* Header */}
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Pengaturan Sistem</h2>
+        <p className="text-muted-foreground mt-1">Konfigurasi operasional, hak akses pengguna, dan personalisasi brand.</p>
+      </div>
 
-      <div className="category-tabs mb-4">
+      {/* Tabs */}
+      <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-2xl border w-fit">
         {[
-          { key: 'users',   label: '👥 Pengguna & Akses' },
-          { key: 'system',  label: '🔧 Pajak & Sistem' },
-          { key: 'branding',label: '🎨 Branding' },
+          { key: 'users', label: 'Pengguna & Akses', icon: Users },
+          { key: 'system', label: 'Pajak & Sistem', icon: Settings },
+          { key: 'branding', label: 'Branding', icon: Palette },
         ].map(t => (
-          <button key={t.key} className={`cat-tab ${activeTab === t.key ? 'active' : ''}`} onClick={() => setActiveTab(t.key)}>
-            {t.label}
-          </button>
+          <Button 
+            key={t.key}
+            variant={activeTab === t.key ? "secondary" : "ghost"} 
+            className={cn("h-10 px-6 font-bold rounded-xl", activeTab === t.key && "bg-background shadow-sm")}
+            onClick={() => setActiveTab(t.key)}
+          >
+            <t.icon size={16} className="mr-2" /> {t.label}
+          </Button>
         ))}
       </div>
 
-      {/* ── Pengguna ── */}
       {activeTab === 'users' && (
-        <div className="flex gap-4" style={{alignItems:'flex-start', flexWrap:'wrap'}}>
-          <div className="card" style={{flex:'1', minWidth:'280px'}}>
-            <div className="card-header">
-              <span className="card-title">👥 Daftar Pengguna ({users.length})</span>
-              <button className="btn btn-primary btn-sm" onClick={() => setShowAddModal(true)}>+ Tambah</button>
-            </div>
-            <div className="card-body" style={{padding:'8px'}}>
-              {loading ? <div style={{padding:'20px', textAlign:'center', color:'var(--text-muted)'}}>Memuat...</div> :
-                users.map(u => (
-                <div key={u.id} onClick={() => setSelected({...u})}
-                  style={{
-                    display:'flex', alignItems:'center', gap:'12px', padding:'12px',
-                    borderRadius:'var(--radius-sm)', cursor:'pointer', transition:'var(--transition)',
-                    background: selected?.id === u.id ? 'var(--bg)' : 'transparent',
-                    border: selected?.id === u.id ? '1.5px solid var(--primary)' : '1.5px solid transparent',
-                  }}>
-                  <div className="user-avatar">{u.avatar}</div>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:600, fontSize:'0.875rem'}}>{u.name}</div>
-                    <div style={{fontSize:'0.75rem', color:'var(--text-muted)'}}>{ROLE_ICONS[u.role]} {ROLE_LABELS[u.role]}</div>
-                  </div>
-                  <span className="badge badge-brown">{u.username}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {selected && (
-            <div className="card" style={{width:'320px', flexShrink:0}}>
-              <div className="card-header">
-                <span className="card-title">🔐 Akses: {selected.name.split(' ')[0]}</span>
-                <button className="btn btn-danger btn-sm" onClick={() => handleDeleteUser(selected.id)}>🗑️ Hapus</button>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* User List */}
+          <Card className="lg:col-span-1 border-none shadow-xl overflow-hidden bg-card">
+            <CardHeader className="border-b bg-muted/10">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Daftar Pengguna</CardTitle>
+                <Button size="sm" variant="outline" className="h-8 font-bold border-accent text-accent" onClick={() => setShowAddModal(true)}>
+                  <Plus size={14} className="mr-1" /> Tambah
+                </Button>
               </div>
-              <div className="card-body">
-                <div className="flex items-center gap-3 mb-4"
-                  style={{padding:'12px', background:'var(--bg)', borderRadius:'var(--radius-sm)'}}>
-                  <div className="user-avatar">{selected.avatar}</div>
-                  <div>
-                    <div style={{fontWeight:700}}>{selected.name}</div>
-                    <div className="text-xs text-muted">{ROLE_ICONS[selected.role]} {ROLE_LABELS[selected.role]} · @{selected.username}</div>
-                  </div>
-                </div>
-                {selected.permissions?.all && (
-                  <div style={{background:'var(--success-light)', border:'1px solid var(--success)', borderRadius:'var(--radius-sm)', padding:'10px 14px', marginBottom:'12px', fontSize:'0.8rem', color:'var(--success)', fontWeight:600}}>
-                    ✅ Admin memiliki semua hak akses penuh
-                  </div>
-                )}
-                {PERMISSIONS.map(perm => (
-                  <div key={perm.key} style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid var(--border-light)'}}>
-                    <span style={{fontSize:'0.875rem'}}>{perm.icon} {perm.label}</span>
-                    <input type="checkbox"
-                      checked={selected.permissions?.all || !!selected.permissions?.[perm.key]}
-                      disabled={!!selected.permissions?.all}
-                      onChange={() => { if (!selected.permissions?.all) togglePerm(selected.id, perm.key); }}
-                      style={{width:'18px', height:'18px', accentColor:'var(--primary)', cursor:'pointer'}}
-                    />
-                  </div>
+            </CardHeader>
+            <CardContent className="p-2">
+              <div className="space-y-1">
+                {users.map(u => (
+                  <button 
+                    key={u.id} 
+                    onClick={() => setSelected({...u})}
+                    className={cn(
+                      "w-full flex items-center gap-4 p-3 rounded-xl transition-all text-left group",
+                      selected?.id === u.id ? "bg-accent/10 border-accent/20 border shadow-sm" : "hover:bg-muted/50 border border-transparent"
+                    )}
+                  >
+                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-sm", ROLE_COLORS[u.role] || "bg-slate-400")}>
+                      {u.avatar || u.name[0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold truncate group-hover:text-accent transition-colors">{u.name}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-black">{ROLE_LABELS[u.role]}</p>
+                    </div>
+                    <div className="text-[10px] font-bold bg-muted px-2 py-0.5 rounded text-muted-foreground group-hover:bg-background transition-colors">
+                      @{u.username}
+                    </div>
+                  </button>
                 ))}
-                <button className="btn btn-primary w-full mt-4" style={{justifyContent:'center'}}
-                  onClick={handleSaveUser} disabled={loading}>
-                  {loading ? 'Menyimpan...' : '💾 Simpan Perubahan'}
-                </button>
               </div>
-            </div>
-          )}
+            </CardContent>
+          </Card>
+
+          {/* Permissions Editor */}
+          <Card className="lg:col-span-2 border-none shadow-xl bg-card">
+            {selected ? (
+              <>
+                <CardHeader className="border-b bg-muted/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg", ROLE_COLORS[selected.role] || "bg-slate-400")}>
+                        {selected.avatar || selected.name[0]}
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl">{selected.name}</CardTitle>
+                        <CardDescription>Hak Akses & Otoritas Sistem</CardDescription>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => handleDeleteUser(selected.id)}>
+                      <Trash2 size={18} />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-8">
+                  {selected.permissions?.all && (
+                    <div className="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl mb-8 text-blue-600">
+                      <ShieldCheck className="shrink-0" />
+                      <p className="text-sm font-bold leading-relaxed">
+                        Administrator memiliki hak akses penuh ke seluruh fitur sistem tanpa pengecualian.
+                      </p>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {PERMISSIONS.map(perm => (
+                      <div 
+                        key={perm.key} 
+                        className={cn(
+                          "flex items-center justify-between p-4 rounded-xl border transition-all",
+                          (selected.permissions?.all || !!selected.permissions?.[perm.key]) ? "bg-accent/5 border-accent/20 shadow-sm" : "bg-muted/20 opacity-60"
+                        )}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl grayscale-[0.5]">{perm.icon}</span>
+                          <span className="text-sm font-bold">{perm.label}</span>
+                        </div>
+                        <input 
+                          type="checkbox"
+                          className="w-5 h-5 rounded-md border-muted text-accent focus:ring-accent accent-accent cursor-pointer"
+                          checked={selected.permissions?.all || !!selected.permissions?.[perm.key]}
+                          disabled={!!selected.permissions?.all}
+                          onChange={() => togglePerm(selected.id, perm.key)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+                <CardFooter className="border-t bg-muted/5 p-6 gap-4">
+                  <Button className="w-full h-12 font-black shadow-lg shadow-accent/20" onClick={handleSaveUser} disabled={loading}>
+                    <Save size={18} className="mr-2" /> Simpan Hak Akses
+                  </Button>
+                </CardFooter>
+              </>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center p-20 text-center space-y-6 opacity-30">
+                <Shield size={80} strokeWidth={1} />
+                <div>
+                  <p className="text-xl font-black">Pilih Pengguna</p>
+                  <p className="text-sm">Klik pada daftar pengguna untuk mengelola hak akses mereka.</p>
+                </div>
+              </div>
+            )}
+          </Card>
         </div>
       )}
 
-      {/* ── Sistem ── */}
       {activeTab === 'system' && (
-        <div className="grid-2">
-          <div className="card">
-            <div className="card-header"><span className="card-title">💰 Pajak & Konfigurasi</span></div>
-            <div className="card-body">
-              <div className="form-group">
-                <label className="form-label">Nama Toko</label>
-                <input className="form-control" value={settings.storeName}
-                  onChange={e => setSettings({...settings, storeName: e.target.value})} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="border-none shadow-xl bg-card">
+            <CardHeader className="border-b bg-muted/10">
+              <CardTitle className="flex items-center gap-2">
+                <Store className="text-accent" /> Profil & Biaya Operasional
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Nama Bisnis</label>
+                <Input value={settings.storeName} onChange={e => setSettings({...settings, storeName: e.target.value})} className="h-12 font-bold" />
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">PPN / Pajak (%)</label>
-                  <input type="number" className="form-control" min="0" max="100"
-                    value={settings.tax}
-                    onChange={e => setSettings({...settings, tax: Number(e.target.value)})} />
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1 flex items-center gap-1"><Percent size={12}/> Pajak PPN (%)</label>
+                  <Input type="number" value={settings.tax} onChange={e => setSettings({...settings, tax: Number(e.target.value)})} className="h-12 font-bold" />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Service Charge (%)</label>
-                  <input type="number" className="form-control" min="0" max="100"
-                    value={settings.serviceCharge}
-                    onChange={e => setSettings({...settings, serviceCharge: Number(e.target.value)})} />
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1 flex items-center gap-1"><Percent size={12}/> Service Charge (%)</label>
+                  <Input type="number" value={settings.serviceCharge} onChange={e => setSettings({...settings, serviceCharge: Number(e.target.value)})} className="h-12 font-bold" />
                 </div>
               </div>
 
-              {/* ── Loyalty / Reward ── */}
-              <div style={{borderTop:'1px solid var(--border)', paddingTop:'16px', marginBottom:'16px'}}>
-                <div style={{fontWeight:700, marginBottom:'12px'}}>⭐ Program Loyalty Member</div>
-                <label style={{display:'flex', alignItems:'center', gap:'10px', cursor:'pointer', marginBottom:'12px'}}>
-                  <input type="checkbox" checked={settings.rewardEnabled ?? true}
-                    onChange={e => setSettings({...settings, rewardEnabled: e.target.checked})}
-                    style={{width:'18px', height:'18px', accentColor:'var(--primary)'}} />
-                  <span className="form-label" style={{margin:0}}>Aktifkan Program Loyalty / Reward Point</span>
-                </label>
+              <div className="pt-6 border-t space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold">Program Loyalty Member</h4>
+                    <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Akumulasi poin belanja</p>
+                  </div>
+                  <input type="checkbox" className="w-10 h-5 accent-accent" checked={settings.rewardEnabled ?? true} onChange={e => setSettings({...settings, rewardEnabled: e.target.checked})} />
+                </div>
                 {(settings.rewardEnabled ?? true) && (
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Nilai Transaksi per 1 Poin (Rp)</label>
-                      <input type="number" className="form-control" min="1000" step="1000"
-                        value={settings.pointsPerRp || 10000}
-                        onChange={e => setSettings({...settings, pointsPerRp: Number(e.target.value)})} />
-                      <div style={{fontSize:'0.72rem', color:'var(--text-muted)', marginTop:'4px'}}>
-                        Contoh: 10.000 = setiap Rp 10.000 pembelian mendapat 1 poin
-                      </div>
+                  <div className="grid grid-cols-2 gap-6 animate-in slide-in-from-top-2 duration-300">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase">Setiap Belanja (Rp)</label>
+                      <Input type="number" value={settings.pointsPerRp || 10000} onChange={e => setSettings({...settings, pointsPerRp: Number(e.target.value)})} className="h-10 text-sm font-bold" />
+                      <p className="text-[9px] text-muted-foreground italic">Dapat 1 Poin</p>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Nilai 1 Poin = Diskon (Rp)</label>
-                      <input type="number" className="form-control" min="0" step="100"
-                        value={settings.pointValue || 100}
-                        onChange={e => setSettings({...settings, pointValue: Number(e.target.value)})} />
-                      <div style={{fontSize:'0.72rem', color:'var(--text-muted)', marginTop:'4px'}}>
-                        Contoh: 100 = 1 poin senilai Rp 100 diskon
-                      </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase">Nilai 1 Poin (Rp)</label>
+                      <Input type="number" value={settings.pointValue || 100} onChange={e => setSettings({...settings, pointValue: Number(e.target.value)})} className="h-10 text-sm font-bold" />
+                      <p className="text-[9px] text-muted-foreground italic">Potongan diskon</p>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* ── Payment Gateway ── */}
-              <div style={{borderTop:'1px solid var(--border)', paddingTop:'16px', marginBottom:'16px'}}>
-                <div style={{fontWeight:700, marginBottom:'4px'}}>💳 Payment Gateway</div>
-                <div style={{fontSize:'0.8rem', color:'var(--text-muted)', marginBottom:'12px'}}>
-                  Integrasi otomatis untuk pembayaran QRIS / E-Wallet. Segera hadir.
+              <div className="pt-6 border-t">
+                <div className="flex items-center gap-2 mb-4">
+                  <CreditCard size={18} className="text-muted-foreground" />
+                  <h4 className="font-bold">Integrasi Pembayaran</h4>
                 </div>
-                <div style={{background:'var(--bg)', borderRadius:'var(--radius-sm)', padding:'12px 16px', display:'flex', gap:'12px', flexWrap:'wrap'}}>
+                <div className="grid grid-cols-3 gap-3">
                   {['Midtrans', 'Xendit', 'Doku'].map(gw => (
-                    <div key={gw} style={{padding:'8px 16px', borderRadius:'var(--radius-sm)', border:'1.5px dashed var(--border)', fontSize:'0.8rem', color:'var(--text-muted)', fontWeight:600}}>
-                      {gw} <span style={{fontSize:'0.7rem', marginLeft:'4px', background:'var(--warning-light)', color:'#92400E', borderRadius:'4px', padding:'1px 6px'}}>Segera</span>
+                    <div key={gw} className="p-4 rounded-xl border border-dashed flex flex-col items-center justify-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all cursor-not-allowed group">
+                      <p className="text-xs font-black uppercase tracking-tighter">{gw}</p>
+                      <span className="text-[8px] font-black bg-amber-500/20 text-amber-600 px-1.5 py-0.5 rounded-full uppercase group-hover:bg-amber-500 group-hover:text-white transition-colors">Segera</span>
                     </div>
                   ))}
                 </div>
               </div>
+            </CardContent>
+            <CardFooter className="border-t bg-muted/5 p-6">
+              <Button className="w-full h-12 font-black shadow-lg shadow-accent/20" onClick={handleSaveSettings} disabled={savingSettings}>
+                {savingSettings ? 'Menyimpan...' : 'Simpan Konfigurasi'}
+              </Button>
+            </CardFooter>
+          </Card>
 
-              <button className="btn btn-primary" onClick={handleSaveSettings} disabled={savingSettings}>
-                {savingSettings ? '⏳ Menyimpan...' : '💾 Simpan Pengaturan'}
-              </button>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-header"><span className="card-title">🔧 Backup & Data</span></div>
-            <div className="card-body">
-              <p className="text-sm text-muted mb-4">
-                Download backup seluruh data sistem dalam format JSON. Mencakup menu, bahan baku, transaksi, pelanggan, dan data lainnya.
-              </p>
-              <div style={{display:'flex', flexDirection:'column', gap:'12px'}}>
-                <button className="btn btn-accent" onClick={handleBackup}>⬇️ Download Backup JSON</button>
-                <button className="btn btn-outline" onClick={() => showToast('Restore akan tersedia di versi berikutnya.', 'error')}>
-                  ⬆️ Restore dari File
-                </button>
-                <div style={{borderTop:'1px solid var(--border)', paddingTop:'16px', marginTop:'4px'}}>
-                  <p className="text-xs text-muted mb-3">
-                    ⚠️ Reset akan menghapus <strong>semua data permanen</strong>. Backup terlebih dahulu!
-                  </p>
-                  <button className="btn btn-danger btn-sm" onClick={() => {
-                    if (window.confirm('PERINGATAN: Ini akan menghapus SEMUA data. Lanjutkan?'))
-                      showToast('Reset tidak diimplementasikan di mode demo.', 'error');
-                  }}>
-                    ⚠️ Reset Semua Data
-                  </button>
+          <Card className="border-none shadow-xl bg-card h-fit">
+            <CardHeader className="border-b bg-muted/10">
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw size={18} className="text-accent" /> Pemeliharaan & Data
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 space-y-6">
+              <div className="flex gap-4 items-start p-4 bg-muted/40 rounded-2xl border border-dashed">
+                <div className="h-10 w-10 bg-background rounded-xl flex items-center justify-center shrink-0 border">
+                  <Download size={20} className="text-accent" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-bold">Ekspor Seluruh Data Bisnis</h4>
+                  <p className="text-xs text-muted-foreground mt-1">Unduh semua master data dan riwayat transaksi dalam format JSON untuk cadangan keamanan.</p>
+                  <Button variant="outline" className="mt-4 w-full h-10 font-bold border-accent text-accent hover:bg-accent hover:text-white" onClick={handleBackup}>
+                    Unduh Backup Sekarang
+                  </Button>
                 </div>
               </div>
-            </div>
-          </div>
+
+              <div className="pt-6 border-t">
+                <h4 className="text-sm font-bold text-destructive">Zona Bahaya</h4>
+                <p className="text-xs text-muted-foreground mt-1">Tindakan di bawah ini tidak dapat dibatalkan. Mohon berhati-hati.</p>
+                <Button variant="ghost" className="mt-4 w-full h-10 font-bold text-destructive hover:bg-destructive/10" onClick={() => {
+                  if (window.confirm('PERINGATAN: Ini akan menghapus SEMUA data. Lanjutkan?'))
+                    showToast('Reset tidak diimplementasikan di mode demo.', 'error');
+                }}>
+                  Hapus Seluruh Data & Reset Sistem
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
-      {/* ── Branding ── */}
       {activeTab === 'branding' && (
-        <div className="grid-2">
-          <div className="card">
-            <div className="card-header"><span className="card-title">🎨 Tema & Warna</span></div>
-            <div className="card-body">
-              <div className="form-group">
-                <label className="form-label">Warna Utama Tema</label>
-                <div className="flex gap-3 items-center">
-                  <input type="color" defaultValue="#6F4E37"
-                    style={{width:'48px', height:'38px', border:'1px solid var(--border)', borderRadius:'8px', cursor:'pointer'}} />
-                  <span className="text-sm text-muted">Default: Coklat Kopi (#6F4E37)</span>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="border-none shadow-xl bg-card">
+            <CardHeader className="border-b bg-muted/10">
+              <CardTitle className="flex items-center gap-2">
+                <Palette size={18} className="text-accent" /> Identitas Visual
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+              <div className="space-y-4">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Warna Utama (Brand Color)</label>
+                <div className="flex gap-4 items-center p-4 bg-muted/20 rounded-2xl border">
+                  <input type="color" defaultValue="#D97706" className="w-12 h-12 rounded-lg cursor-pointer bg-transparent border-none" />
+                  <div>
+                    <p className="text-sm font-bold">Aksen Amber (Default)</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest">HSL(35 92% 43%)</p>
+                  </div>
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Style Tampilan Menu Pelanggan</label>
-                <select className="form-control">
-                  <option>Style 1 - Grid Gambar Besar</option>
-                  <option>Style 2 - Daftar Teks</option>
-                </select>
+
+              <div className="space-y-4">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Layout Menu Pelanggan (Self-Order)</label>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { id: 'grid', label: 'Grid Visual', desc: 'Kartu gambar besar' },
+                    { id: 'list', label: 'List Minimal', desc: 'Daftar teks bersih' }
+                  ].map(l => (
+                    <button key={l.id} className="p-4 rounded-xl border-2 border-transparent bg-muted/30 hover:border-accent/40 text-left transition-all group active:scale-95">
+                      <Layout size={24} className="text-muted-foreground group-hover:text-accent mb-3" />
+                      <p className="text-sm font-black">{l.label}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1 uppercase font-bold">{l.desc}</p>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Teks Footer Struk</label>
-                <textarea className="form-control" rows="3"
-                  defaultValue={'Terima kasih sudah berkunjung!\nFollow IG: @brewmaster_coffee'} />
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Teks Penutup Struk</label>
+                <textarea className="w-full min-h-[100px] rounded-2xl border border-input bg-transparent px-4 py-3 text-sm shadow-sm focus:ring-accent" defaultValue={'Terima kasih sudah berkunjung!\nFollow IG: @brewmaster_coffee\nNikmati harimu!'} />
               </div>
-              <button className="btn btn-primary">💾 Simpan Tampilan</button>
-            </div>
-          </div>
-          <div className="card">
-            <div className="card-header"><span className="card-title">🖼️ Logo & Aset</span></div>
-            <div className="card-body">
-              <div style={{border:'2px dashed var(--border)', borderRadius:'var(--radius-md)', padding:'40px', textAlign:'center', marginBottom:'16px', cursor:'pointer'}}>
-                <div style={{fontSize:'3rem', marginBottom:'8px'}}>☕</div>
-                <div style={{fontWeight:600}}>Upload Logo Toko</div>
-                <div className="text-sm text-muted mt-1">PNG, JPG, SVG (maks. 2MB)</div>
-                <button className="btn btn-outline btn-sm mt-2">Pilih File</button>
-              </div>
-              <div style={{background:'var(--bg)', borderRadius:'var(--radius-md)', padding:'16px'}}>
-                <div style={{fontWeight:700, fontSize:'0.875rem', marginBottom:'4px'}}>☕ BrewMaster Coffee</div>
-                <div style={{fontSize:'0.75rem', color:'var(--text-muted)'}}>Preview logo pada tampilan depan</div>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+            <CardFooter className="border-t bg-muted/5 p-6">
+              <Button className="w-full h-12 font-black shadow-lg shadow-accent/20">
+                Simpan Visual & Tema
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card className="border-none shadow-xl bg-card">
+            <CardHeader className="border-b bg-muted/10">
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon size={18} className="text-accent" /> Aset Media
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8">
+               <div className="aspect-video rounded-3xl border-2 border-dashed border-muted flex flex-col items-center justify-center p-10 text-center hover:bg-muted/20 hover:border-accent/40 transition-all group cursor-pointer overflow-hidden relative">
+                  <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center text-muted-foreground mb-4 group-hover:bg-accent group-hover:text-white transition-all shadow-sm">
+                    <Upload size={32} />
+                  </div>
+                  <div>
+                    <p className="text-lg font-black">Upload Logo Bisnis</p>
+                    <p className="text-xs text-muted-foreground mt-1">Rekomendasi format PNG transparan (maks 2MB)</p>
+                  </div>
+                  <Button variant="outline" className="mt-6 font-bold">Pilih File Logo</Button>
+               </div>
+               
+               <div className="mt-8 p-6 bg-muted/20 rounded-2xl border border-dashed flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center text-white text-xl font-black">B</div>
+                    <div>
+                      <p className="text-sm font-black">BrewMaster Coffee</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Logo Default Sistem</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full uppercase tracking-widest">Aktif</span>
+               </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
       {showAddModal && <AddUserModal onClose={() => setShowAddModal(false)} onSave={handleAddUser} loading={loading} />}
-      <Toast msg={toast.msg} type={toast.type} />
+      
+      {/* Toast Notification */}
+      {toast.msg && (
+        <div className="fixed bottom-10 right-10 z-[200] animate-in slide-in-from-bottom-10 duration-300">
+          <Card className={cn(
+            "border-none shadow-2xl px-6 py-4 flex items-center gap-3",
+            toast.type === 'success' ? "bg-emerald-600 text-white" : "bg-destructive text-white"
+          )}>
+            {toast.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+            <p className="font-bold text-sm">{toast.msg}</p>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

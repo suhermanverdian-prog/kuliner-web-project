@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { MENU_CATEGORIES, formatRupiah } from '../data';
 import { api } from '../api';
+import { 
+  Plus, Search, Edit3, Trash2, 
+  Grid, List, Image as ImageIcon, 
+  FlaskConical, ArrowUpRight, DollarSign,
+  ChevronRight, X, Upload, MoreHorizontal
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { cn } from "../lib/utils";
 
 const emptyForm = {
   name: '', category: 'Kopi', price: 0, cost: 0, icon: '☕', image: '', unit: 'Cup', bom: []
 };
-
-// Helper for image fallback
-function ProductImage({ src, alt, icon }) {
-  if (src) return <img src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />;
-  return <div style={{ fontSize: '2.5rem' }}>{icon || '☕'}</div>;
-}
 
 function getConversion(bahan) {
   if (!bahan) return { ratio: 1, unit: '' };
@@ -18,7 +22,6 @@ function getConversion(bahan) {
     const itemsCount = Number(bahan.packageItemsCount) || 1;
     const vol = Number(bahan.packageItemVolume) || 1;
     const volUnit = (bahan.packageItemVolumeUnit || '').toLowerCase();
-    
     if (volUnit === 'ml' || volUnit === 'gr' || volUnit === 'gram') {
       return { ratio: itemsCount * vol, unit: volUnit === 'gr' ? 'Gram' : 'ml' };
     } else {
@@ -32,80 +35,10 @@ function getConversion(bahan) {
   }
 }
 
-
-function BOMEditor({ bom, onChange, bahanList }) {
-  const addRow = () => onChange([...bom, { bahanId: '', qty: 0 }]);
-  const updateRow = (i, field, val) => {
-    const next = bom.map((r, idx) => idx === i ? { ...r, [field]: val } : r);
-    onChange(next);
-  };
-  const removeRow = (i) => onChange(bom.filter((_, idx) => idx !== i));
-
-  const totalHPP = bom.reduce((sum, row) => {
-    const bahan = bahanList?.find(b => b.id === Number(row.bahanId));
-    if (!bahan) return sum;
-    const conv = getConversion(bahan);
-    const pricePerSmallestUnit = bahan.price / conv.ratio;
-    return sum + (pricePerSmallestUnit * Number(row.qty));
-  }, 0);
-
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-2">
-        <label className="form-label" style={{ marginBottom: 0 }}>🧪 Resep / Bill of Materials</label>
-        <button type="button" className="btn btn-outline btn-sm" onClick={addRow}>+ Tambah Bahan</button>
-      </div>
-      {bom.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '20px', background: 'var(--bg)', borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-          Belum ada resep. Klik "+ Tambah Bahan" untuk mulai.
-        </div>
-      )}
-      {bom.map((row, i) => {
-        const bahan = bahanList?.find(b => b.id === Number(row.bahanId));
-        return (
-          <div key={i} className="flex gap-2 items-center mb-2">
-            <select
-              className="form-control"
-              value={row.bahanId}
-              onChange={e => updateRow(i, 'bahanId', e.target.value)}
-              style={{ flex: 2 }}
-            >
-              <option value="">-- Pilih Bahan --</option>
-              {bahanList?.map(b => {
-                const conv = getConversion(b);
-                return <option key={b.id} value={b.id}>{b.name} ({conv.unit})</option>;
-              })}
-            </select>
-            <input
-              type="number"
-              className="form-control"
-              placeholder="Jumlah"
-              value={row.qty}
-              onChange={e => updateRow(i, 'qty', e.target.value)}
-              style={{ flex: 1 }}
-            />
-            <span className="text-xs text-muted" style={{ whiteSpace: 'nowrap', minWidth: '40px' }}>
-              {bahan ? getConversion(bahan).unit : ''}
-            </span>
-            <button type="button" className="btn btn-danger btn-sm" onClick={() => removeRow(i)}>✕</button>
-          </div>
-        );
-      })}
-      {bom.length > 0 && (
-        <div style={{ padding: '10px 14px', background: 'var(--bg)', borderRadius: 'var(--radius-sm)', marginTop: '8px', fontSize: '0.85rem' }}>
-          <span className="text-muted">HPP Otomatis: </span>
-          <strong style={{ color: 'var(--accent)' }}>{formatRupiah(totalHPP)}</strong>
-          <span className="text-muted"> per porsi</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function MenuFormModal({ item, onClose, onSave, bahanList }) {
   const [form, setForm] = useState(item || { ...emptyForm });
   const [uploading, setUploading] = useState(false);
-  const ICONS = ['☕', '🥛', '🍵', '🧊', '🍮', '🍫', '🥐', '🍳', '🥪', '🍩', '🍪', '🧃', '🍹', '🫖'];
+  const ICONS = ['☕', '🥛', '🍵', '🧊', '🍮', '🍫', '🥐', '🍩', '🍪', '🧃', '🍹'];
 
   const handleUpload = async (e) => {
     const file = e.target.files[0];
@@ -114,8 +47,6 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
     try {
       const res = await api.uploadImage(file);
       setForm({ ...form, image: res.url });
-    } catch (err) {
-      alert('Gagal mengunggah gambar');
     } finally {
       setUploading(false);
     }
@@ -130,97 +61,131 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
 
   const hppOtomatis = calcHPP(form.bom || []);
 
-  const handleSave = () => {
-    if (!form.name.trim()) return alert('Nama menu wajib diisi!');
-    const cost = hppOtomatis > 0 ? hppOtomatis : Number(form.cost) || 0;
-    const dataToSave = { ...form, price: Number(form.price) || 0, cost };
-    delete dataToSave.stock;
-    if (item?.id) dataToSave.id = item.id;
-    onSave(dataToSave);
-  };
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <span className="modal-title">{item ? '✏️ Edit Menu' : '➕ Tambah Menu Baru'}</span>
-          <button className="modal-close" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          <div className="form-group">
-            <label className="form-label">Nama Menu</label>
-            <input className="form-control" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="cth: Caramel Latte" />
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
+      <Card className="w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200">
+        <CardHeader className="border-b pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{item ? 'Edit Produk' : 'Tambah Produk Baru'}</CardTitle>
+              <CardDescription>Detail produk dan manajemen resep bahan baku.</CardDescription>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onClose}><X size={20} /></Button>
           </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Kategori</label>
-              <select className="form-control" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                {MENU_CATEGORIES.filter(c => c !== 'Semua').map(c => <option key={c}>{c}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Satuan</label>
-              <select className="form-control" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}>
-                {['Cup', 'Pcs', 'Porsi', 'Botol', 'Mangkok'].map(u => <option key={u}>{u}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Harga Jual (Rp)</label>
-              <input type="number" className="form-control" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">HPP Otomatis (dari Resep)</label>
-              <input type="text" className="form-control" readOnly value={hppOtomatis > 0 ? formatRupiah(hppOtomatis) : 'Belum ada resep'}
-                style={{ background: 'var(--bg)', color: hppOtomatis > 0 ? 'var(--success)' : 'var(--text-muted)', fontWeight: 700, cursor: 'not-allowed' }} />
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Foto Produk (Opsional)</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                width: '80px', height: '80px', borderRadius: '12px', overflow: 'hidden',
-                background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '2px solid var(--border)'
-              }}>
-                <ProductImage src={form.image} alt="Preview" icon={form.icon} />
+        </CardHeader>
+        <CardContent className="pt-6 space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Nama Produk</label>
+                <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="cth: Caramel Macchiato" />
               </div>
-              <div style={{ flex: 1 }}>
-                <input type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }} id="upload-image" />
-                <label htmlFor="upload-image" className="btn btn-outline btn-sm" style={{ cursor: 'pointer', display: 'inline-block' }}>
-                  {uploading ? '⏳ Mengunggah...' : '📁 Pilih File dari Komputer'}
-                </label>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Disarankan rasio 1:1, maks 2MB</div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Kategori</label>
+                  <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                    {MENU_CATEGORIES.filter(c => c !== 'Semua').map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Satuan Jual</label>
+                  <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}>
+                    {['Cup', 'Pcs', 'Porsi', 'Botol'].map(u => <option key={u}>{u}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Harga Jual</label>
+                  <Input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Estimasi HPP</label>
+                  <div className="h-9 flex items-center px-3 rounded-md bg-muted/50 border font-bold text-emerald-600">
+                    {formatRupiah(hppOtomatis)}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Atau Pilih Ikon (jika tidak ada foto)</label>
-            <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
-              {ICONS.map(ic => (
-                <button key={ic} type="button"
-                  onClick={() => setForm({ ...form, icon: ic, image: '' })}
-                  style={{
-                    width: '40px', height: '40px', fontSize: '1.4rem', borderRadius: '8px',
-                    border: form.icon === ic ? '2px solid var(--primary)' : '1.5px solid var(--border)',
-                    background: form.icon === ic ? 'var(--bg)' : 'transparent',
-                    cursor: 'pointer'
-                  }}>
-                  {ic}
-                </button>
-              ))}
+
+            <div className="space-y-4">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Media Produk</label>
+              <div className="aspect-square bg-muted/30 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center p-4 text-center group relative overflow-hidden transition-all hover:bg-muted/50 hover:border-accent/40">
+                {form.image ? (
+                  <>
+                    <img src={form.image} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button variant="secondary" size="sm" onClick={() => document.getElementById('upload-input').click()}>Ubah Foto</Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="w-12 h-12 bg-background rounded-xl mx-auto flex items-center justify-center shadow-sm">
+                      <Upload size={20} className="text-muted-foreground" />
+                    </div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Klik untuk unggah gambar produk</p>
+                    <input id="upload-input" type="file" className="hidden" onChange={handleUpload} />
+                    <Button variant="outline" size="sm" onClick={() => document.getElementById('upload-input').click()} disabled={uploading}>
+                      {uploading ? 'Mengunggah...' : 'Pilih File'}
+                    </Button>
+                  </div>
+                )}
+              </div>
+              {!form.image && (
+                <div className="flex justify-center gap-2">
+                  {ICONS.map(ic => (
+                    <button key={ic} onClick={() => setForm({ ...form, icon: ic })} className={cn("w-8 h-8 rounded-lg border transition-all hover:bg-accent hover:text-white", form.icon === ic ? "bg-accent text-white border-accent" : "bg-background text-muted-foreground")}>{ic}</button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-          <div className="form-group">
-            <BOMEditor bom={form.bom || []} onChange={bom => setForm({ ...form, bom })} bahanList={bahanList} />
+
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                <FlaskConical size={14} /> Resep / BOM
+              </label>
+              <Button variant="outline" size="sm" onClick={() => setForm({ ...form, bom: [...form.bom, { bahanId: '', qty: 0 }] })}>+ Tambah Bahan</Button>
+            </div>
+            <div className="space-y-2">
+              {form.bom.map((row, i) => {
+                const b = bahanList.find(x => x.id === Number(row.bahanId));
+                const conv = getConversion(b);
+                return (
+                  <div key={i} className="flex gap-2 animate-in slide-in-from-left-2 duration-200">
+                    <select 
+                      className="flex-3 h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+                      value={row.bahanId}
+                      onChange={e => {
+                        const next = [...form.bom]; next[i].bahanId = e.target.value; setForm({ ...form, bom: next });
+                      }}
+                    >
+                      <option value="">Pilih Bahan Baku</option>
+                      {bahanList.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                    </select>
+                    <Input 
+                      className="flex-1 h-9 text-right font-bold" 
+                      type="number" value={row.qty} 
+                      onChange={e => {
+                        const next = [...form.bom]; next[i].qty = e.target.value; setForm({ ...form, bom: next });
+                      }}
+                    />
+                    <div className="flex-1 flex items-center justify-center text-[10px] font-bold text-muted-foreground bg-muted/30 rounded-md uppercase">{conv.unit || '–'}</div>
+                    <Button variant="ghost" size="icon" className="text-destructive h-9 w-9 shrink-0" onClick={() => {
+                      const next = form.bom.filter((_, idx) => idx !== i); setForm({ ...form, bom: next });
+                    }}><Trash2 size={14} /></Button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-outline" onClick={onClose}>Batal</button>
-          <button id="btn-simpan-menu" className="btn btn-primary" onClick={handleSave}>💾 Simpan Menu</button>
-        </div>
-      </div>
+        </CardContent>
+        <CardFooter className="border-t pt-6 gap-3">
+          <Button variant="outline" className="flex-1 h-12" onClick={onClose}>Batal</Button>
+          <Button className="flex-[2] h-12 font-bold bg-accent hover:bg-accent/90 shadow-lg shadow-accent/20" onClick={() => onSave(form)}>Simpan Produk</Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
@@ -237,163 +202,150 @@ export default function MenuPage() {
 
   const loadData = async () => {
     try {
-      setLoading(true);
-      const [menuData, bahanData] = await Promise.all([
-        api.getMenu().catch(() => []),
-        api.getBahan().catch(() => [])
-      ]);
-      setMenus(Array.isArray(menuData) ? menuData : []);
-      setBahanList(Array.isArray(bahanData) ? bahanData : []);
-    } catch (e) {
-      console.error(e);
-      setMenus([]);
-      setBahanList([]);
-    } finally {
-      setLoading(false);
-    }
+      const [m, b] = await Promise.all([api.getMenu().catch(() => []), api.getBahan().catch(() => [])]);
+      setMenus(m); setBahanList(b);
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { loadData(); }, []);
 
-  const filtered = menus.filter(m => {
-    const matchCat = category === 'Semua' || m.category === category;
-    const matchSearch = m.name.toLowerCase().includes(search.toLowerCase());
-    return matchCat && matchSearch;
-  });
+  const filtered = menus.filter(m => (category === 'Semua' || m.category === category) && m.name.toLowerCase().includes(search.toLowerCase()));
 
-  const openAdd = () => { setEditItem(null); setShowModal(true); };
-  const openEdit = (item) => { setEditItem(item); setShowModal(true); };
-  const handleDelete = async (id) => { 
-    if (window.confirm('Hapus menu ini?')) {
-      await api.deleteMenu(id);
-      loadData();
-    }
-  };
-  const handleSave = async (data) => {
-    await api.saveMenu(data);
-    loadData();
-    setShowModal(false);
-  };
-
-  const margin = (item) => item.price > 0 ? Math.round(((item.price - item.cost) / item.price) * 100) : 0;
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
+      <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+      <p className="text-muted-foreground animate-pulse font-medium">Memuat katalog...</p>
+    </div>
+  );
 
   return (
-    <div>
-      <h1 className="page-title">☕ Menu & Produk</h1>
-      <p className="page-subtitle">Kelola daftar menu, harga, dan resep Bill of Materials</p>
+    <div className="space-y-8 pb-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Katalog Menu</h2>
+          <p className="text-muted-foreground mt-1">Kelola produk, harga, dan resep bahan baku.</p>
+        </div>
+        <Button size="lg" className="h-14 px-8 font-bold gap-2 shadow-xl shadow-accent/20" onClick={() => { setEditItem(null); setShowModal(true); }}>
+          <Plus size={20} strokeWidth={3} />
+          Tambah Produk
+        </Button>
+      </div>
 
-      <div className="flex justify-between items-center mb-4" style={{ flexWrap: 'wrap', gap: '12px' }}>
-        <div className="flex gap-2 items-center" style={{ flex: 1, flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', minWidth: '240px' }}>
-            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>🔍</span>
-            <input className="form-control" style={{ paddingLeft: '36px' }} placeholder="Cari menu..." value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-muted/20 p-2 rounded-2xl border">
+        <div className="flex items-center bg-background rounded-xl px-4 h-10 flex-1 max-w-md border shadow-sm">
+          <Search size={18} className="text-muted-foreground" />
+          <input 
+            placeholder="Cari di katalog..." 
+            className="bg-transparent border-none outline-none px-3 w-full text-sm font-medium"
+            value={search} onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-1 overflow-x-auto no-scrollbar">
           {MENU_CATEGORIES.map(c => (
-            <button key={c} className={`cat-tab ${category === c ? 'active' : ''}`} onClick={() => setCategory(c)}>{c}</button>
+            <Button key={c} variant={category === c ? "default" : "ghost"} size="sm" className="h-8 text-[11px] font-bold uppercase tracking-wider" onClick={() => setCategory(c)}>{c}</Button>
           ))}
         </div>
-        <div className="flex gap-2">
-          <button className={`icon-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')} style={{ background: viewMode === 'grid' ? 'var(--primary)' : '', color: viewMode === 'grid' ? '#fff' : '' }}>▦</button>
-          <button className={`icon-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')} style={{ background: viewMode === 'list' ? 'var(--primary)' : '', color: viewMode === 'list' ? '#fff' : '' }}>☰</button>
-          <button id="btn-tambah-menu" className="btn btn-primary" onClick={openAdd}>+ Tambah Menu</button>
+        <div className="flex border rounded-xl p-1 bg-background shrink-0 shadow-sm">
+          <Button variant={viewMode === 'grid' ? "secondary" : "ghost"} size="icon" className="h-8 w-8" onClick={() => setViewMode('grid')}><Grid size={16} /></Button>
+          <Button variant={viewMode === 'list' ? "secondary" : "ghost"} size="icon" className="h-8 w-8" onClick={() => setViewMode('list')}><List size={16} /></Button>
         </div>
       </div>
 
       {viewMode === 'grid' ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 auto-rows-max">
           {filtered.map(item => (
-            <div key={item.id} className="card" style={{ overflow: 'hidden', transition: 'var(--transition)' }}>
-              <div style={{ height: '120px', background: 'linear-gradient(135deg, var(--bg-card), var(--border-light))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', position: 'relative' }}>
-                <ProductImage src={item.image} alt={item.name} icon={item.icon} />
-              </div>
-              <div style={{ padding: '14px' }}>
-                <div style={{ fontWeight: 700, marginBottom: '2px' }}>{item.name}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                  <span className="badge badge-brown" style={{ marginRight: '4px' }}>{item.category}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{formatRupiah(item.price)}</span>
-                  <span className={`badge ${margin(item) > 50 ? 'badge-success' : 'badge-warning'}`}>{margin(item)}% margin</span>
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '10px' }}>
-                  HPP: <strong style={{color:'var(--success)'}}>{formatRupiah(item.cost)}</strong>
-                </div>
-                {item.bom?.length > 0 && (
-                  <div style={{ fontSize: '0.7rem', color: 'var(--success)', marginBottom: '8px' }}>
-                    🧪 {item.bom.length} bahan dalam resep
-                  </div>
+            <Card key={item.id} className="group overflow-hidden border-none shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+              <div className="aspect-square relative overflow-hidden bg-muted">
+                {item.image ? (
+                  <img src={item.image} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-500 opacity-40">{item.icon || '☕'}</div>
                 )}
-                <div className="flex gap-2">
-                  <button className="btn btn-outline btn-sm" style={{ flex: 1 }} onClick={() => openEdit(item)}>✏️ Edit</button>
-                  <button className="btn btn-danger btn-sm" onClick={() => handleDelete(item.id)}>🗑️</button>
+                {/* Subtle overlay on hover */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+                <div className="absolute top-3 right-3 flex flex-col gap-2 translate-x-12 group-hover:translate-x-0 transition-transform duration-300">
+                  <Button size="icon" className="h-8 w-8 bg-background/80 backdrop-blur shadow-lg text-primary hover:bg-background" onClick={() => { setEditItem(item); setShowModal(true); }}>
+                    <Edit3 size={14} />
+                  </Button>
                 </div>
               </div>
-            </div>
+              <CardContent className="p-4 flex flex-col shrink-0">
+                <div>
+                  <h3 className="font-bold text-base text-foreground leading-tight truncate group-hover:text-accent transition-colors">{item.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1">{item.category}</p>
+                </div>
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-lg font-black text-foreground">{formatRupiah(item.price)}</p>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">HPP</p>
+                    <p className="text-sm font-bold text-emerald-500">{formatRupiah(item.cost)}</p>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="px-5 pb-5 pt-0 border-none justify-between">
+                 <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-1 rounded-full border border-dashed">
+                    <FlaskConical size={12} className="text-muted-foreground" />
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase">{item.bom?.length || 0} Bahan baku</span>
+                 </div>
+                 <div className="flex items-center gap-1.5 bg-emerald-500/10 px-3 py-1 rounded-full text-emerald-600 font-bold text-[10px]">
+                    {item.price > 0 ? Math.round(((item.price - item.cost) / item.price) * 100) : 0}% Margin
+                 </div>
+              </CardFooter>
+            </Card>
           ))}
-          <div
-            className="card"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '200px', border: '2px dashed var(--border)', cursor: 'pointer', background: 'transparent' }}
-            onClick={openAdd}
+          <button 
+            className="aspect-[4/5] rounded-xl border-2 border-dashed border-muted-foreground/20 flex flex-col items-center justify-center p-6 text-center hover:bg-muted/10 hover:border-accent/40 transition-all group"
+            onClick={() => { setEditItem(null); setShowModal(true); }}
           >
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '8px' }}>➕</div>
-              <div style={{ fontWeight: 600 }}>Tambah Menu</div>
+            <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-white transition-all mb-4 shadow-sm">
+              <Plus size={24} strokeWidth={3} />
             </div>
-          </div>
+            <p className="font-bold text-muted-foreground group-hover:text-primary transition-colors">Tambah Produk Baru</p>
+          </button>
         </div>
       ) : (
-        <div className="card">
-          <div className="table-wrap">
-            <table>
+        <Card className="border-none shadow-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
               <thead>
-                <tr>
-                  <th>Menu</th>
-                  <th>Kategori</th>
-                  <th>Harga Jual</th>
-                  <th>HPP (auto)</th>
-                  <th>Margin</th>
-                  <th>Resep BOM</th>
-                  <th>Aksi</th>
+                <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
+                  <th className="px-6 py-4">Produk</th>
+                  <th className="px-6 py-4 text-center">Kategori</th>
+                  <th className="px-6 py-4 text-right">Harga Jual</th>
+                  <th className="px-6 py-4 text-right">HPP</th>
+                  <th className="px-6 py-4 text-center">Margin</th>
+                  <th className="px-6 py-4 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y">
                 {filtered.map(item => (
-                  <tr key={item.id}>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <div style={{ width: '32px', height: '32px', borderRadius: '4px', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', overflow: 'hidden' }}>
-                          <ProductImage src={item.image} alt={item.name} icon={item.icon} />
+                  <tr key={item.id} className="hover:bg-muted/20 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-xl shrink-0 overflow-hidden border">
+                          {item.image ? <img src={item.image} className="w-full h-full object-cover" /> : (item.icon || '☕')}
                         </div>
-                        <strong>{item.name}</strong>
+                        <div>
+                          <p className="text-sm font-bold">{item.name}</p>
+                          <p className="text-[10px] text-muted-foreground uppercase font-bold">{item.unit}</p>
+                        </div>
                       </div>
                     </td>
-                    <td><span className="badge badge-brown">{item.category}</span></td>
-                    <td><strong>{formatRupiah(item.price)}</strong></td>
-                    <td><span style={{color:'var(--success)', fontWeight:600}}>{formatRupiah(item.cost)}</span></td>
-                    <td>
-                      <span className={`badge ${margin(item) > 50 ? 'badge-success' : 'badge-warning'}`}>
-                        {margin(item)}%
-                      </span>
+                    <td className="px-6 py-4 text-center">
+                      <span className="bg-muted px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border border-transparent group-hover:border-border transition-all">{item.category}</span>
                     </td>
-                    <td>
-                      {item.bom?.length > 0 ? (
-                        <div style={{display:'flex', flexDirection:'column', gap:'2px'}}>
-                          <span className="badge badge-info" style={{marginBottom:'4px', alignSelf: 'flex-start'}}>🧪 {item.bom.length} bahan</span>
-                          {item.bom.slice(0, 2).map((bRow, idx) => {
-                            const b = bahanList.find(x => x.id === Number(bRow.bahanId));
-                            const conv = getConversion(b);
-                            return <div key={idx} className="text-xs text-muted" style={{whiteSpace:'nowrap'}}>• {b ? b.name : 'Data terhapus'} ({bRow.qty} {conv.unit})</div>;
-                          })}
-                          {item.bom.length > 2 && <div className="text-xs text-muted" style={{fontStyle:'italic'}}>+{item.bom.length - 2} lainnya</div>}
-                        </div>
-                      ) : (
-                        <span className="badge" style={{ background: 'var(--bg)', color: 'var(--text-muted)' }}>Belum ada</span>
-                      )}
+                    <td className="px-6 py-4 text-right font-black text-sm">{formatRupiah(item.price)}</td>
+                    <td className="px-6 py-4 text-right font-bold text-emerald-500 text-sm">{formatRupiah(item.cost)}</td>
+                    <td className="px-6 py-4 text-center">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-black">
+                        <ArrowUpRight size={10} />
+                        {item.price > 0 ? Math.round(((item.price - item.cost) / item.price) * 100) : 0}%
+                      </div>
                     </td>
-                    <td>
-                      <div className="flex gap-2">
-                        <button className="btn btn-outline btn-sm" onClick={() => openEdit(item)}>✏️</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(item.id)}>🗑️</button>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setEditItem(item); setShowModal(true); }}><Edit3 size={14} /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => { if(confirm('Hapus produk ini?')){ await api.deleteMenu(item.id); loadData(); } }}><Trash2 size={14} /></Button>
                       </div>
                     </td>
                   </tr>
@@ -401,16 +353,17 @@ export default function MenuPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Card>
       )}
 
       {showModal && (
         <MenuFormModal
-          key={editItem?.id || 'new'}
           item={editItem}
           bahanList={bahanList}
           onClose={() => setShowModal(false)}
-          onSave={handleSave}
+          onSave={async (data) => {
+            await api.saveMenu(data); loadData(); setShowModal(false);
+          }}
         />
       )}
     </div>

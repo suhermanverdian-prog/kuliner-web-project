@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
+import MainLayout from './components/MainLayout';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import KasirPage from './pages/KasirPage';
@@ -13,16 +13,13 @@ import TablePage from './pages/MejaPage';
 import ShiftPage from './pages/ShiftPage';
 import SuperAdminPage from './pages/SuperAdminPage';
 import PembelianPage from './pages/PembelianPage';
-
-import { api } from './api';
-import { Menu, Moon, Sun, Bell } from 'lucide-react';
+import CustomerPortalPage from './pages/CustomerPortalPage';
+import GuestMenuPage from './pages/GuestMenuPage';
 
 function App() {
   const [user, setUser] = useState(null);
   const [activePage, setActivePage] = useState('dashboard');
   const [loading, setLoading] = useState(true);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
   useEffect(() => {
@@ -35,6 +32,7 @@ function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
@@ -51,13 +49,20 @@ function App() {
 
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 
+  const isGuestUrl = window.location.hash.includes('/guest');
+
   if (loading) return null;
+  if (isGuestUrl) return <GuestMenuPage />;
   if (!user) return <LoginPage onLogin={handleLogin} />;
+
+  if (user && user.role === 'customer') {
+    return <CustomerPortalPage user={user} onLogout={handleLogout} />;
+  }
 
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard':  return <Dashboard user={user} />;
-      case 'kasir':      return <KasirPage user={user} />;
+      case 'kasir':      return <KasirPage user={user} onNavigate={setActivePage} />;
       case 'menu':       return <MenuPage user={user} />;
       case 'inventori':  return <InventoriPage user={user} />;
       case 'laporan':    return <LaporanPage user={user} />;
@@ -65,7 +70,7 @@ function App() {
       case 'kds':        return <KdsPage user={user} />;
       case 'pelanggan':  return <PelangganPage user={user} />;
       case 'meja':       return <TablePage user={user} />;
-      case 'shift':      return <ShiftPage user={user} />;
+      case 'shift':      return <ShiftPage user={user} onNavigate={setActivePage} />;
       case 'superadmin': return <SuperAdminPage user={user} />;
       case 'pembelian':  return <PembelianPage user={user} />;
       default:           return <Dashboard user={user} />;
@@ -73,44 +78,16 @@ function App() {
   };
 
   return (
-    <div className={`app-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <Sidebar 
-        user={user} 
-        activePage={activePage} 
-        onNavigate={(p) => { setActivePage(p); setIsMobileOpen(false); }}
-        onLogout={handleLogout}
-        isOpen={isMobileOpen}
-        onClose={() => setIsMobileOpen(false)}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-      />
-
-      <div className="main-wrapper">
-        <header className="top-nav">
-          <div className="flex items-center gap-2">
-            <button className="btn-new-ghost md:hidden" onClick={() => setIsMobileOpen(true)}>
-              <Menu size={20} />
-            </button>
-            <h2 className="text-sm font-bold" style={{ textTransform: 'capitalize' }}>
-              {activePage.replace('_', ' ')}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button className="btn-new-ghost" title="Notifikasi">
-              <Bell size={18} />
-            </button>
-            <button className="btn-new-ghost" onClick={toggleTheme} title="Ganti Tema">
-              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-            </button>
-          </div>
-        </header>
-
-        <main className="content-area">
-          {renderPage()}
-        </main>
-      </div>
-    </div>
+    <MainLayout 
+      user={user} 
+      activePage={activePage} 
+      onNavigate={setActivePage}
+      onLogout={handleLogout}
+      theme={theme}
+      onToggleTheme={toggleTheme}
+    >
+      {renderPage()}
+    </MainLayout>
   );
 }
 
