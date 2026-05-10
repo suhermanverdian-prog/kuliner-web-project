@@ -63,8 +63,12 @@ const readDB = () => {
 };
 
 const writeDB = (data) => {
-  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+  try {
+    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.warn('⚠️ Gagal menyimpan ke data.json (Vercel bersifat read-only). Mengabaikan perubahan.');
+  }
 };
 
 const initDB = () => {
