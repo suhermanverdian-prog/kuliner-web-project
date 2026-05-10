@@ -25,7 +25,7 @@ export default function ShiftPage({ user, onNavigate }) {
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await api.getShifts();
+      const data = await api.getShifts().catch(() => []);
       const shiftsArray = Array.isArray(data) ? data : [];
       setShifts(shiftsArray);
       const active = shiftsArray.find(s => s?.status === 'open');
@@ -294,7 +294,7 @@ export default function ShiftPage({ user, onNavigate }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-muted/30">
-                {shifts.filter(s => s?.status !== 'open').map((s) => (
+                {Array.isArray(shifts) && shifts.filter(s => s?.status !== 'open').map((s) => (
                   <tr key={s?.id || Math.random()} className="hover:bg-muted/10 transition-all duration-300 group">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-4">
@@ -303,7 +303,7 @@ export default function ShiftPage({ user, onNavigate }) {
                         </div>
                         <div>
                           <span className="font-black text-sm text-primary block">{getKasirName(s)}</span>
-                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">ID: {String(s.id).slice(-6)}</span>
+                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">ID: {String(s?.id || '').slice(-6)}</span>
                         </div>
                       </div>
                     </td>
@@ -339,7 +339,7 @@ export default function ShiftPage({ user, onNavigate }) {
                     </td>
                   </tr>
                 ))}
-                {shifts.filter(s => s?.status !== 'open').length === 0 && (
+                {(!Array.isArray(shifts) || shifts.filter(s => s?.status !== 'open').length === 0) && (
                   <tr>
                     <td colSpan="5" className="px-8 py-20 text-center text-muted-foreground/50 italic font-medium">
                       Belum ada rekaman riwayat shift tersimpan di database.

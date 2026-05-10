@@ -50,9 +50,10 @@ export default function KDSPage() {
 
   const fetchOrders = async () => {
     try {
-      const tx = await api.getTransactions();
+      const txData = await api.getTransactions().catch(() => []);
+      const tx = Array.isArray(txData) ? txData : [];
       const activeOrders = tx
-        .filter(t => t.kdsStatus && t.kdsStatus !== 'served' && t.items && t.items.length > 0)
+        .filter(t => t && t.kdsStatus && t.kdsStatus !== 'served' && t.items && t.items.length > 0)
         .sort((a, b) => new Date(a.paidAt || a.createdAt) - new Date(b.paidAt || b.createdAt));
       setOrders(activeOrders);
     } finally {
@@ -66,8 +67,8 @@ export default function KDSPage() {
     const next = STATUS_CONFIG[order.kdsStatus]?.next;
     
     // Optimistic UI
-    setOrders(prev => prev.map(o => {
-      if (o.id !== id) return o;
+    setOrders(prev => (Array.isArray(prev) ? prev : []).map(o => {
+      if (o?.id !== id) return o;
       if (next === 'served') return null;
       return { ...o, kdsStatus: next };
     }).filter(Boolean));
@@ -75,14 +76,15 @@ export default function KDSPage() {
     await api.updateKdsStatus(id, next);
   };
 
-  const filtered = filter === 'all' ? orders : orders.filter(o => o.kdsStatus === filter);
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const filtered = filter === 'all' ? safeOrders : safeOrders.filter(o => o?.kdsStatus === filter);
   const counts = {
-    new:     orders.filter(o => o.kdsStatus === 'new').length,
-    cooking: orders.filter(o => o.kdsStatus === 'cooking').length,
-    ready:   orders.filter(o => o.kdsStatus === 'ready').length
+    new:     safeOrders.filter(o => o?.kdsStatus === 'new').length,
+    cooking: safeOrders.filter(o => o?.kdsStatus === 'cooking').length,
+    ready:   safeOrders.filter(o => o?.kdsStatus === 'ready').length
   };
 
-  if (loading && orders.length === 0) return (
+  if (loading && safeOrders.length === 0) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
       <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
       <p className="text-muted-foreground animate-pulse font-medium">Sinkronisasi pesanan dapur...</p>

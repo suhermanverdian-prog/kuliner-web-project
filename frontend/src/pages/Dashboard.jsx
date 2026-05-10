@@ -77,14 +77,16 @@ export default function Dashboard({ user }) {
 
   useEffect(() => {
     Promise.all([
-      api.getTransactions(), api.getMenu(), api.getTables(),
+      api.getTransactions().catch(() => []), 
+      api.getMenu().catch(() => []), 
+      api.getTables().catch(() => []),
       api.getAnalyticsSales('month').catch(() => null),
       api.getAnalyticsFinancial('month').catch(() => null),
       api.getAnalyticsInventory('month').catch(() => null)
     ]).then(([txData, menuData, tblData, salesData, finData, invData]) => {
-      setTransactions(txData);
-      setMenu(menuData);
-      setTables(tblData);
+      setTransactions(Array.isArray(txData) ? txData : []);
+      setMenu(Array.isArray(menuData) ? menuData : []);
+      setTables(Array.isArray(tblData) ? tblData : []);
       if (salesData) setSalesAnalytics(salesData);
       if (finData) setFinancialAnalytics(finData);
       if (invData) setInventoryAnalytics(invData);
@@ -92,16 +94,20 @@ export default function Dashboard({ user }) {
     }).catch(() => setLoading(false));
   }, []);
 
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+  const safeTables = Array.isArray(tables) ? tables : [];
+  const safeMenu = Array.isArray(menu) ? menu : [];
+
   const today = new Date().toISOString().split('T')[0];
-  const todayTx = transactions.filter(t => t.createdAt?.startsWith(today));
-  const todayRevenue = todayTx.reduce((s, t) => s + (t.total || 0), 0);
-  const totalTx = transactions.length;
-  const activeTables = tables.filter(t => t.status === 'occupied').length;
+  const todayTx = safeTransactions.filter(t => t?.createdAt?.startsWith(today));
+  const todayRevenue = todayTx.reduce((s, t) => s + (t?.total || 0), 0);
+  const totalTx = safeTransactions.length;
+  const activeTables = safeTables.filter(t => t?.status === 'occupied').length;
 
   const stats = [
     { label: 'Pendapatan Hari Ini', value: formatRupiah(todayRevenue), icon: DollarSign, trend: '+12.5%', isUp: true, description: 'vs kemarin' },
     { label: 'Total Transaksi', value: todayTx.length.toString(), icon: ReceiptText, trend: '+4', isUp: true, description: 'pesanan baru' },
-    { label: 'Okupansi Meja', value: `${activeTables}/${tables.length}`, icon: Armchair, trend: 'Sibuk', isUp: true, description: 'sesi aktif' },
+    { label: 'Okupansi Meja', value: `${activeTables}/${safeTables.length}`, icon: Armchair, trend: 'Sibuk', isUp: true, description: 'sesi aktif' },
     { label: 'Perputaran Stok', value: `${inventoryAnalytics?.turnover_ratio || 0}x`, icon: Package, trend: '-2%', isUp: false, description: 'bulan ini' },
   ];
 
@@ -119,7 +125,7 @@ export default function Dashboard({ user }) {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">
-            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })} · Selamat datang kembali, {user.name.split(' ')[0]}
+            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })} · Selamat datang kembali, {user?.name?.split(' ')[0] || 'User'}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -164,7 +170,7 @@ export default function Dashboard({ user }) {
             <BarChart data={Array.from({ length: 7 }, (_, i) => {
               const d = new Date(); d.setDate(d.getDate() - (6 - i));
               const key = d.toISOString().split('T')[0];
-              const rev = transactions.filter(t => t.createdAt?.startsWith(key)).reduce((s, t) => s + (t.total || 0), 0);
+              const rev = safeTransactions.filter(t => t?.createdAt?.startsWith(key)).reduce((s, t) => s + (t?.total || 0), 0);
               return { label: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][d.getDay()], value: rev };
             })} />
           </CardContent>
@@ -177,18 +183,18 @@ export default function Dashboard({ user }) {
             <CardDescription>Pesanan terbaru dan pembaruan status.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {transactions.slice(-5).reverse().map((tx, i) => (
+            {safeTransactions.slice(-5).reverse().map((tx, i) => (
               <div key={i} className="flex items-center gap-4 group">
                 <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 group-hover:bg-accent/10 transition-colors">
                   <Clock className="h-5 w-5 text-muted-foreground group-hover:text-accent transition-colors" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">Pesanan #{tx.id.slice(-6).toUpperCase()}</p>
-                  <p className="text-xs text-muted-foreground">{tx.tableType} · {tx.items?.length} item</p>
+                  <p className="text-sm font-bold truncate">Pesanan #{tx?.id?.slice(-6).toUpperCase() || '????'}</p>
+                  <p className="text-xs text-muted-foreground">{tx?.tableType} · {tx?.items?.length || 0} item</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold">{formatRupiah(tx.total)}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase">{new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="text-sm font-bold">{formatRupiah(tx?.total || 0)}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase">{tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</p>
                 </div>
               </div>
             ))}
@@ -220,16 +226,16 @@ export default function Dashboard({ user }) {
               </div>
             </div>
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-6">
-              {tables.slice(0, 12).map((t, i) => (
+              {safeTables.slice(0, 12).map((t, i) => (
                 <div 
                   key={i} 
                   className={cn(
                     "aspect-square rounded-lg flex flex-col items-center justify-center gap-1 border transition-all",
-                    t.status === 'occupied' ? "bg-accent/5 border-accent/20 text-accent" : "bg-muted/30 border-transparent text-muted-foreground"
+                    t?.status === 'occupied' ? "bg-accent/5 border-accent/20 text-accent" : "bg-muted/30 border-transparent text-muted-foreground"
                   )}
                 >
                   <Armchair size={14} />
-                  <span className="text-[10px] font-bold">{t.name.split(' ')[1]}</span>
+                  <span className="text-[10px] font-bold">{t?.name?.split(' ')[1] || '??'}</span>
                 </div>
               ))}
             </div>
@@ -243,14 +249,14 @@ export default function Dashboard({ user }) {
             <CardDescription>Item paling populer minggu ini.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            {menu.slice(0, 4).map((item, i) => (
+            {safeMenu.slice(0, 4).map((item, i) => (
               <div key={i} className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-xl shrink-0">
-                  {item.icon || '☕'}
+                  {item?.icon || '☕'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-bold truncate">{item.name}</p>
+                    <p className="text-sm font-bold truncate">{item?.name || 'Item'}</p>
                     <p className="text-xs text-muted-foreground font-medium">Terjual {42 - i * 5}</p>
                   </div>
                   <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
