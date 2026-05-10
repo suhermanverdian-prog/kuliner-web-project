@@ -636,6 +636,11 @@ app.delete('/api/tables/:id', async (req, res) => {
 
 // ---- SHIFTS ----
 app.get('/api/shifts', (req, res) => res.json(readDB().shifts));
+app.get('/api/activeshift', (req, res) => {
+  const db = readDB();
+  const active = db.shifts.find(s => s.status === 'open');
+  res.json(active || null);
+});
 app.post('/api/shifts', (req, res) => {
   const db = readDB();
   const shift = { ...req.body, id: Date.now(), status: 'open', startTime: new Date().toISOString() };
