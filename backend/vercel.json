@@ -2,17 +2,17 @@
   "version": 2,
   "builds": [
     {
-      "src": "src/server.js",
+      "src": "backend/src/server.js",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["db/data.json"]
+        "includeFiles": "backend/db/data.json"
       }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "src/server.js",
+      "dest": "backend/src/server.js",
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
@@ -21,7 +21,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "src/server.js"
+      "dest": "backend/src/server.js"
     }
   ]
 }
