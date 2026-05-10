@@ -832,18 +832,19 @@ app.put('/api/po/:id', async (req, res) => {
 
         let targetBahanId = item.bahanId;
         if (existingBahan) {
-          targetBahanId = existingBahan.id;
           // Update stok yang sudah ada
+          const actualQtyToAdd = Number(item.receivedQty) * (Number(item.conversionFactor) || 1);
           await supabase.from('bahan')
-            .update({ stock: Number(existingBahan.stock) + Number(item.receivedQty) })
+            .update({ stock: Number(existingBahan.stock) + actualQtyToAdd })
             .eq('id', existingBahan.id);
         } else {
           // Buat record baru untuk lokasi ini
           const { data: masterFull } = await supabase.from('bahan').select('*').eq('id', item.bahanId).single();
-          const { id, created_at, ...newBahanData } = masterFull;
+          const { id: oldId, created_at, ...newBahanData } = masterFull;
+          const actualQtyToAdd = Number(item.receivedQty) * (Number(item.conversionFactor) || 1);
           const { data: newBahan } = await supabase.from('bahan').insert([{
             ...newBahanData,
-            stock: Number(item.receivedQty),
+            stock: actualQtyToAdd,
             location: targetLoc
           }]).select().single();
           if (newBahan) targetBahanId = newBahan.id;

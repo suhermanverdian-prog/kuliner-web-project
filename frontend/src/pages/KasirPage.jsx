@@ -210,15 +210,15 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
       <Card className="w-full max-w-5xl shadow-[0_32px_128px_-32px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 border-none rounded-[3rem] overflow-hidden">
-        <div className="flex flex-col md:flex-row h-[600px]">
+        <div className="flex flex-col md:flex-row h-full max-h-[85vh]">
           {/* Summary Panel */}
-          <div className="w-full md:w-[380px] p-10 bg-muted/20 border-r border-muted flex flex-col h-full">
-            <div className="mb-8">
-               <h3 className="text-2xl font-black">Detail Tagihan</h3>
-               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">Konfirmasi Pesanan</p>
+          <div className="w-full md:w-[360px] p-8 bg-muted/20 border-r border-muted flex flex-col h-full">
+            <div className="mb-6">
+               <h3 className="text-xl font-black">Detail Tagihan</h3>
+               <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground mt-1">Konfirmasi Pesanan</p>
             </div>
             
-            <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
               {cart.map((item, i) => (
                 <div key={i} className="flex justify-between items-start gap-4 animate-in slide-in-from-left-4 duration-300" style={{ animationDelay: `${i * 50}ms` }}>
                   <div className="flex-1">
@@ -230,28 +230,28 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
               ))}
             </div>
 
-            <div className="pt-8 mt-4 border-t-2 border-dashed border-muted-foreground/20 space-y-4">
-              <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            <div className="pt-6 mt-4 border-t-2 border-dashed border-muted-foreground/20 space-y-3">
+              <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                 <span>Subtotal</span>
                 <span>{formatRupiah(subtotal)}</span>
               </div>
-              <div className="flex justify-between text-xs font-bold text-muted-foreground uppercase tracking-widest">
+              <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                 <span>Pajak (10%)</span>
                 <span>{formatRupiah(taxAmount)}</span>
               </div>
-              <div className="flex justify-between items-end pt-2">
-                <span className="text-lg font-black uppercase tracking-tighter">Total</span>
-                <span className="text-4xl font-black text-accent">{formatRupiah(total)}</span>
+              <div className="flex justify-between items-end pt-1">
+                <span className="text-base font-black uppercase tracking-tighter">Total</span>
+                <span className="text-3xl font-black text-accent">{formatRupiah(total)}</span>
               </div>
             </div>
           </div>
 
           {/* Settings Panel */}
-          <div className="flex-1 p-10 space-y-10 overflow-y-auto">
-            <div className="space-y-6">
+          <div className="flex-1 p-8 space-y-8 overflow-y-auto custom-scrollbar">
+            <div className="space-y-4">
               <div className="flex items-center gap-3">
-                 <div className="w-8 h-8 bg-muted rounded-xl flex items-center justify-center"><MapPin size={16} className="text-muted-foreground" /></div>
-                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Tipe Pelayanan</h4>
+                 <div className="w-6 h-6 bg-muted rounded-lg flex items-center justify-center"><MapPin size={12} className="text-muted-foreground" /></div>
+                 <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Tipe Pelayanan</h4>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[
@@ -264,11 +264,11 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                       key={type.id} 
                       onClick={() => setOrderType(type.id)}
                       className={cn(
-                        "h-16 rounded-2xl border-2 transition-all flex items-center justify-center gap-3 font-black text-sm",
+                        "h-14 rounded-2xl border-2 transition-all flex items-center justify-center gap-3 font-black text-sm",
                         orderType === type.id ? "bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.02]" : "bg-background border-muted hover:border-accent/40"
                       )}
                     >
-                      <Icon size={20} /> {type.label}
+                      <Icon size={18} /> {type.label}
                     </button>
                   );
                 })}
@@ -278,19 +278,19 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                    <Input 
                      placeholder="Nomor Meja" 
                      value={tableNum} onChange={e => setTableNum(e.target.value)}
-                     className="h-16 text-center text-3xl font-black rounded-2xl border-2 focus:ring-accent bg-muted/20 shadow-inner"
+                     className="h-14 text-center text-2xl font-black rounded-2xl border-2 focus:ring-accent bg-muted/20 shadow-inner"
                      autoFocus
                    />
                 </div>
               )}
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="flex items-center gap-3">
-                 <div className="w-8 h-8 bg-muted rounded-xl flex items-center justify-center"><Wallet size={16} className="text-muted-foreground" /></div>
-                 <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground">Metode Pembayaran</h4>
+                 <div className="w-6 h-6 bg-muted rounded-lg flex items-center justify-center"><Wallet size={12} className="text-muted-foreground" /></div>
+                 <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Metode Pembayaran</h4>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-4 gap-2">
                 {methods.map(m => {
                   const Icon = m.icon;
                   const isActive = payMethod === m.id;
@@ -302,14 +302,14 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                         if (m.id !== 'Tunai') setCashReceived('');
                       }}
                       className={cn(
-                        "h-24 flex flex-col items-center justify-center gap-2 rounded-2xl border-2 transition-all group",
+                        "h-20 flex flex-col items-center justify-center gap-1 rounded-2xl border-2 transition-all group",
                         isActive ? "bg-accent border-accent text-white shadow-xl shadow-accent/30 scale-105 z-10" : "bg-muted/10 border-transparent hover:bg-muted/30"
                       )}
                     >
-                      <div className={cn("p-2 rounded-xl transition-colors", isActive ? "bg-white/20" : "bg-background shadow-sm")}>
-                        <Icon size={24} className={isActive ? "text-white" : "text-muted-foreground group-hover:text-accent"} />
+                      <div className={cn("p-1.5 rounded-lg transition-colors", isActive ? "bg-white/20" : "bg-background shadow-sm")}>
+                        <Icon size={20} className={isActive ? "text-white" : "text-muted-foreground group-hover:text-accent"} />
                       </div>
-                      <span className="text-[9px] font-black uppercase tracking-widest">{m.id}</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest">{m.id}</span>
                     </button>
                   );
                 })}
@@ -317,32 +317,32 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
             </div>
 
             {payMethod === 'Tunai' && (
-              <div className="p-6 bg-emerald-500/5 border-2 border-emerald-500/20 rounded-[2rem] space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 px-2">Uang Diterima</label>
+              <div className="p-5 bg-emerald-500/5 border-2 border-emerald-500/20 rounded-3xl space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-emerald-700 px-2">Uang Diterima</label>
                     <div className="relative">
-                      <span className="absolute left-6 top-1/2 -translate-y-1/2 text-lg font-black text-emerald-500/40">Rp</span>
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-base font-black text-emerald-500/40">Rp</span>
                       <Input 
                         type="number"
                         value={cashReceived}
                         onChange={e => setCashReceived(e.target.value)}
                         placeholder="0"
-                        className="h-16 text-3xl font-black pl-14 rounded-2xl border-2 border-emerald-500/30 focus:ring-emerald-500 bg-white"
+                        className="h-14 text-2xl font-black pl-11 rounded-2xl border-2 border-emerald-500/30 focus:ring-emerald-500 bg-white"
                       />
                     </div>
                     <div className="flex flex-wrap gap-2 pt-1">
                       {[50000, 100000, 200000].map(amt => (
-                        <button key={amt} onClick={() => setCashReceived(String(amt))} className="px-3 py-1 bg-white border border-emerald-500/20 rounded-lg text-[9px] font-black text-emerald-700 hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
+                        <button key={amt} onClick={() => setCashReceived(String(amt))} className="px-2 py-1 bg-white border border-emerald-500/20 rounded-lg text-[8px] font-black text-emerald-700 hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
                           {amt/1000}rb
                         </button>
                       ))}
                     </div>
                   </div>
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-emerald-700 px-2 text-right block">Uang Kembalian</label>
-                    <div className="h-16 flex items-center justify-end px-6 bg-white rounded-2xl border-2 border-emerald-500/30">
-                       <span className={cn("text-3xl font-black", changeAmount >= 0 ? "text-emerald-600" : "text-muted-foreground/30")}>
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-emerald-700 px-2 text-right block">Kembalian</label>
+                    <div className="h-14 flex items-center justify-end px-5 bg-white rounded-2xl border-2 border-emerald-500/30">
+                       <span className={cn("text-2xl font-black", changeAmount >= 0 ? "text-emerald-600" : "text-muted-foreground/30")}>
                          {changeAmount >= 0 ? formatRupiah(changeAmount) : 'Rp 0'}
                        </span>
                     </div>
@@ -351,11 +351,11 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
               </div>
             )}
 
-            <div className="pt-6 flex gap-4">
-              <Button variant="ghost" className="flex-1 h-16 font-bold rounded-2xl" onClick={onClose}>Kembali</Button>
+            <div className="pt-4 flex gap-3">
+              <Button variant="ghost" className="flex-1 h-14 font-bold rounded-2xl" onClick={onClose}>Kembali</Button>
               <Button 
                 className={cn(
-                  "flex-[2] h-16 text-lg font-black shadow-2xl rounded-2xl group transition-all",
+                  "flex-[2] h-14 text-base font-black shadow-xl rounded-2xl group transition-all",
                   (payMethod === 'Tunai' && (Number(cashReceived) < total || !cashReceived)) ? "opacity-30" : "bg-accent hover:bg-accent/90 shadow-accent/20 active:scale-95"
                 )} 
                 onClick={handlePay} 
@@ -363,7 +363,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
               >
                  <span className="flex items-center gap-2">
                    {loading ? 'Memproses...' : 'Selesaikan Pembayaran'}
-                   {!loading && <ArrowRight className="group-hover:translate-x-1 transition-transform" />}
+                   {!loading && <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
                  </span>
               </Button>
             </div>
@@ -458,26 +458,31 @@ export default function KasirPage({ user, onNavigate }) {
       {/* Product List Section */}
       <div className="flex-1 flex flex-col min-w-0 space-y-6 overflow-hidden">
         
-        {/* Toolbar */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 shrink-0 bg-card p-4 rounded-[2rem] shadow-sm border border-muted/20">
-          <div className="relative flex-1 group">
-             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={20} />
+        {/* Toolbar: Search & Categories */}
+        <div className="flex flex-col gap-4 shrink-0">
+          {/* Search Bar Row */}
+          <div className="relative group p-1">
+             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                <Search className="text-muted-foreground group-focus-within:text-accent transition-colors" size={18} />
+             </div>
              <Input 
-               className="pl-12 h-14 rounded-2xl border-none bg-muted/20 focus:bg-background focus:ring-2 focus:ring-accent/20 text-md font-bold transition-all shadow-inner" 
+               className="pl-12 h-12 rounded-2xl border-none bg-card shadow-lg shadow-black/5 focus:bg-background focus:ring-2 focus:ring-accent/40 text-md font-bold transition-all" 
                placeholder="Cari menu terbaik Anda..." 
                value={search} onChange={e => setSearch(e.target.value)}
              />
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+
+          {/* Categories Row */}
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 px-1">
             {MENU_CATEGORIES.map(c => (
               <button 
                 key={c}
                 onClick={() => setCategory(c)}
                 className={cn(
-                  "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shadow-sm border",
+                  "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shadow-sm border",
                   category === c 
-                    ? "bg-accent border-accent text-white shadow-lg shadow-accent/20 scale-105" 
-                    : "bg-background border-muted text-muted-foreground hover:bg-muted/50"
+                    ? "bg-accent border-accent text-white shadow-lg shadow-accent/20" 
+                    : "bg-card border-border/50 text-muted-foreground hover:bg-muted/50"
                 )}
               >
                 {c}
@@ -511,7 +516,6 @@ export default function KasirPage({ user, onNavigate }) {
               <div className="p-4 flex flex-col justify-between bg-card shrink-0">
                 <div>
                   <h3 className="font-bold text-base text-foreground leading-tight">{item.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1">{item.category}</p>
                 </div>
                 <div className="mt-4">
                    <p className="text-lg font-black text-foreground">{formatRupiah(item.price)}</p>
@@ -617,31 +621,31 @@ export default function KasirPage({ user, onNavigate }) {
             </CardContent>
 
             {cart.length > 0 && activeTab === 'menu' && (
-               <CardFooter className="flex-col gap-4 p-4 bg-muted/20 border-t border-border/50">
+               <CardFooter className="flex-col gap-4 p-5 bg-muted/20 border-t border-border/50">
                   <div className="w-full space-y-2">
                      <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
                         <span>Pajak (10%)</span>
                         <span>{formatRupiah(Math.round(subtotal * 0.1))}</span>
                      </div>
-                     <div className="flex justify-between items-center bg-background rounded-2xl p-4 border border-border shadow-sm">
-                        <div className="space-y-0.5">
-                           <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted-foreground">Total</p>
-                           <p className="text-2xl font-black text-primary">{formatRupiah(subtotal + Math.round(subtotal * 0.1))}</p>
-                        </div>
-                        <Button variant="ghost" size="icon" className="h-10 w-10 text-destructive hover:bg-destructive/10 rounded-xl shrink-0" onClick={() => setCart([])}>
-                           <Trash2 size={20} />
-                        </Button>
-                     </div>
-                  </div>
-                  <Button 
-                    className="w-full h-14 text-base font-bold rounded-2xl shadow-lg bg-accent hover:bg-accent/90 group relative overflow-hidden transition-all"
-                    onClick={() => setShowCheckout(true)}
-                  >
-                     <span className="relative z-10 flex items-center gap-2">
-                        <Zap size={18} className="fill-white" />
-                        BUAT PESANAN
-                     </span>
-                  </Button>
+                      <div className="flex justify-between items-center bg-background rounded-2xl p-4 border border-border shadow-sm ring-1 ring-black/5">
+                         <div className="space-y-0.5">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Total Pembayaran</p>
+                            <p className="text-xl font-black text-primary">{formatRupiah(subtotal + Math.round(subtotal * 0.1))}</p>
+                         </div>
+                         <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-xl shrink-0" onClick={() => setCart([])}>
+                            <Trash2 size={18} />
+                         </Button>
+                      </div>
+                   </div>
+                   <Button 
+                     className="w-full h-13 text-sm font-black rounded-2xl shadow-lg shadow-accent/10 bg-accent hover:bg-accent/90 group relative overflow-hidden transition-all active:scale-95"
+                     onClick={() => setShowCheckout(true)}
+                   >
+                      <span className="relative z-10 flex items-center gap-2">
+                         <Zap size={18} className="fill-white" />
+                         BUAT PESANAN
+                      </span>
+                   </Button>
                </CardFooter>
             )}
          </Card>

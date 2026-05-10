@@ -103,7 +103,28 @@ export default function PembelianPage() {
     const validItems = poForm.items.filter(i => i.bahanId && i.qty > 0);
     if (validItems.length === 0) return alert('Pilih minimal 1 bahan baku!');
     
-    await api.savePO({ ...poForm, items: validItems });
+    // Hitung faktor konversi untuk setiap item sebelum dikirim
+    const processedItems = validItems.map(item => {
+      const b = bahanList.find(x => x.id === Number(item.bahanId));
+      let factor = 1;
+      let unitLabel = b?.unit || 'unit';
+
+      if (item.buyUnit === 'Box' && b?.storageType === 'Kemasan') {
+        factor = (Number(b.packageItemsCount) || 1) * (Number(b.packageItemVolume) || 1);
+        unitLabel = b.packageUnit;
+      } else if (item.buyUnit === 'Pouch' && b?.storageType === 'Kemasan') {
+        factor = Number(b.packageItemVolume) || 1;
+        unitLabel = b.packageItemUnit;
+      }
+
+      return {
+        ...item,
+        conversionFactor: factor,
+        buyUnitLabel: unitLabel
+      };
+    });
+    
+    await api.savePO({ ...poForm, items: processedItems });
     setShowPOModal(false);
     fetchData();
   };
@@ -452,24 +473,52 @@ export default function PembelianPage() {
                   </div>
                   
                   <div className="space-y-3">
-                    {poForm.items.map((item, i) => (
-                      <div key={i} className="flex gap-2 items-start animate-in slide-in-from-left-2 duration-200">
-                        <div className="flex-[3]">
-                          <select className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" required value={item.bahanId} onChange={e => updatePoItem(i, 'bahanId', e.target.value)}>
-                            <option value="">- Bahan Baku -</option>
-                            {bahanList.map(b => <option key={b.id} value={b.id}>{b.name} ({b.unit})</option>)}
-                          </select>
+                    {poForm.items.map((item, i) => {
+                      const b = bahanList.find(x => x.id === Number(item.bahanId));
+                      return (
+                        <div key={i} className="flex flex-col sm:flex-row gap-3 p-4 bg-muted/20 rounded-2xl border border-dashed relative group animate-in slide-in-from-left-2">
+                          <div className="flex-[3] space-y-1">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Bahan Baku</label>
+                            <select className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold shadow-sm" required value={item.bahanId} onChange={e => updatePoItem(i, 'bahanId', e.target.value)}>
+                              <option value="">- Pilih Bahan -</option>
+                              {bahanList.map(b => <option key={b.id} value={b.id}>{b.name} ({b.unit})</option>)}
+                            </select>
+                          </div>
+
+                          <div className="flex-[1.5] space-y-1">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Satuan Beli</label>
+                            <select className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm font-bold shadow-sm" value={item.buyUnit || 'Base'} onChange={e => updatePoItem(i, 'buyUnit', e.target.value)}>
+                              <option value="Base">{b?.unit || 'Gram'}</option>
+                              {b?.storageType === 'Kemasan' && (
+                                <>
+                                  <option value="Box">{b.packageUnit || 'Box'}</option>
+                                  <option value="Pouch">{b.packageItemUnit || 'Pouch'}</option>
+                                </>
+                              )}
+                            </select>
+                          </div>
+
+                          <div className="flex-1 space-y-1">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Qty</label>
+                            <Input type="number" min="1" className="h-11 font-black text-center" required value={item.qty} onChange={e => updatePoItem(i, 'qty', e.target.value)} />
+                          </div>
+
+                          <div className="flex-[1.5] space-y-1">
+                            <label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Harga Beli</label>
+                            <Input type="number" min="0" className="h-11 font-bold text-accent" required value={item.price} onChange={e => updatePoItem(i, 'price', e.target.value)} />
+                          </div>
+
+                          <Button type="button" variant="ghost" size="icon" className="text-destructive h-10 w-10 shrink-0 self-end mb-1" onClick={() => removePoItem(i)}><Trash2 size={16} /></Button>
+                          
+                          {b?.storageType === 'Kemasan' && item.buyUnit && item.buyUnit !== 'Base' && (
+                            <div className="absolute -top-2 right-12 px-2 py-0.5 bg-accent text-white text-[9px] font-black uppercase tracking-widest rounded-md shadow-sm">
+                              Konversi: x{item.buyUnit === 'Box' ? (Number(b.packageItemsCount) * Number(b.packageItemVolume)) : Number(b.packageItemVolume)} {b.unit}
+                            </div>
+                          )}
                         </div>
-                        <div className="flex-1">
-                          <Input type="number" min="1" placeholder="Qty" required value={item.qty} onChange={e => updatePoItem(i, 'qty', e.target.value)} />
-                        </div>
-                        <div className="flex-[1.5]">
-                          <Input type="number" min="0" placeholder="Harga" required value={item.price} onChange={e => updatePoItem(i, 'price', e.target.value)} />
-                        </div>
-                        <Button type="button" variant="ghost" size="icon" className="text-destructive h-10 w-10 shrink-0" onClick={() => removePoItem(i)}><Trash2 size={14} /></Button>
-                      </div>
-                    ))}
-                    {poForm.items.length === 0 && <p className="text-center py-6 text-xs text-muted-foreground italic border rounded-xl border-dashed">Belum ada item ditambahkan.</p>}
+                      );
+                    })}
+                    {poForm.items.length === 0 && <p className="text-center py-10 text-xs text-muted-foreground italic border-2 border-dashed rounded-[2rem] bg-muted/5">Klik tombol di atas untuk menambah item pesanan.</p>}
                   </div>
                 </div>
               </CardContent>
