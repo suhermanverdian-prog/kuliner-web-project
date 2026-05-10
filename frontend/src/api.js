@@ -49,16 +49,6 @@ const apiBase = {
     return res.json();
   },
 
-  async updateKdsStatus(id, status) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const res = await fetch(`${API_URL}/transactions/${id}/kds`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' },
-      body: JSON.stringify({ status })
-    });
-    return res.json();
-  },
-
   async syncOfflineQueue() {
     const queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
     if (queue.length === 0) return;
