@@ -12,16 +12,11 @@ import {
   MessageSquare, 
   User, 
   Award, 
-  MapPin, 
-  CheckCircle2, 
-  Coffee,
-  ArrowLeft,
-  X,
-  CreditCard,
   Wallet, 
   QrCode, 
   Banknote, 
-  Map
+  MapPin,
+  Star
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -120,7 +115,7 @@ function OrderTracking({ orderId, onBack }) {
     { key: 'new', label: 'Pesanan Diterima', icon: <ShoppingBag size={20} />, desc: 'Dapur telah menerima pesananmu' },
     { key: 'cooking', label: 'Sedang Dimasak', icon: <Coffee size={20} />, desc: 'Koki sedang menyiapkan hidanganmu' },
     { key: 'ready', label: 'Siap Disajikan', icon: <CheckCircle2 size={20} />, desc: 'Silakan ambil di meja kasir' },
-    { key: 'served', label: 'Selesai', icon: <Award size={20} />, desc: 'Terima kasih! Selamat menikmati' },
+    { key: 'served', label: 'Selesai', icon: <Star size={20} />, desc: 'Terima kasih! Selamat menikmati' },
   ];
 
   const currentIdx = steps.findIndex(s => s.key === (order.kdsStatus || 'new'));
@@ -130,7 +125,7 @@ function OrderTracking({ orderId, onBack }) {
       <div className="max-w-md mx-auto">
         {/* Header Tracking */}
           <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Map size={120} className="rotate-12" />
+            <MapPin size={120} className="rotate-12" />
           </div>
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4 opacity-80">
@@ -206,7 +201,7 @@ function OrderTracking({ orderId, onBack }) {
                   <Printer size={18} /> Struk
                 </Button>
                 <Button onClick={() => sendWA(order)} className="bg-[#25D366] hover:bg-[#128C7E] text-white rounded-2xl gap-2 h-12 font-bold">
-                  <MessageSquare size={18} /> WhatsApp
+                  <Smartphone size={18} /> WhatsApp
                 </Button>
               </div>
             </CardContent>
