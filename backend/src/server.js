@@ -1707,3 +1707,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`📁 Database: ${DB_PATH}`);
   readDB(); // init if not exists
 });
+
+module.exports = app;
