@@ -124,6 +124,7 @@ function OrderTracking({ orderId, onBack }) {
     <div className="min-h-screen bg-background pb-10">
       <div className="max-w-md mx-auto">
         {/* Header Tracking */}
+        <div className="bg-primary text-primary-foreground p-8 rounded-b-[3rem] shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10">
             <MapPin size={120} className="rotate-12" />
           </div>
