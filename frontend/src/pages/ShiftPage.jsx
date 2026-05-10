@@ -4,7 +4,7 @@ import {
   History, Plus, Lock, Unlock, 
   TrendingUp, Download, Printer, User,
   Calendar, CheckCircle2, AlertCircle, RefreshCw,
-  LayoutDashboard, Receipt
+  LayoutDashboard, Receipt, QrCode
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";

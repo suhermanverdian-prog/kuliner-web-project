@@ -397,12 +397,12 @@ export default function KasirPage({ user, onNavigate }) {
         api.getTransactions().catch(() => []),
         api.getActiveShift().catch(() => null)
       ]);
-      setMenus(menuData);
+      setMenus(Array.isArray(menuData) ? menuData : []);
       setActiveShift(shiftData);
-      setPendingOrders(txData.filter(t => 
+      setPendingOrders(Array.isArray(txData) ? txData.filter(t => 
         (t.paymentStatus === 'pending_payment' && t.paymentMethod === 'Tunai') || 
         t.paymentStatus === 'pending_acceptance'
-      ));
+      ) : []);
     } finally {
       if (isInitial) setLoading(false);
     }

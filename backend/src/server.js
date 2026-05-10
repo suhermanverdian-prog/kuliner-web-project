@@ -213,9 +213,14 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 
 // ---- MENU ----
 app.get('/api/menu', async (req, res) => {
-  const { data, error } = await supabase.from('menu').select('*').order('name');
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data || []);
+  try {
+    const { data, error } = await supabase.from('menu').select('*').order('name');
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.warn('⚠️ Supabase menu error, falling back to empty list:', err.message);
+    res.json([]);
+  }
 });
 app.post('/api/menu', async (req, res) => {
   const { bom, ...menuData } = req.body;
