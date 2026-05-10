@@ -77,11 +77,7 @@ function App() {
 
   const isGuestUrl = window.location.hash.includes('/guest');
 
-  if (loading) return (
-    <div style={{ background: 'blue', color: 'white', padding: '20px', position: 'fixed', top: 0, left: 0, zIndex: 9999 }}>
-      REACT IS LOADING... (Theme: {theme})
-    </div>
-  );
+  if (loading) return null;
   if (isGuestUrl) return <GuestMenuPage />;
   if (!user) return <LoginPage onLogin={handleLogin} />;
 

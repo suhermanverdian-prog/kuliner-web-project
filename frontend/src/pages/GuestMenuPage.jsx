@@ -16,7 +16,8 @@ import {
   QrCode, 
   Banknote, 
   MapPin,
-  Star
+  Star,
+  CreditCard
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
