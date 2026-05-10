@@ -18,10 +18,10 @@ import {
   ArrowLeft,
   X,
   CreditCard,
-  Wallet,
-  QrCode,
-  Banknote,
-  Navigation
+  Wallet, 
+  QrCode, 
+  Banknote, 
+  Map
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -129,9 +129,8 @@ function OrderTracking({ orderId, onBack }) {
     <div className="min-h-screen bg-background pb-10">
       <div className="max-w-md mx-auto">
         {/* Header Tracking */}
-        <div className="bg-primary text-primary-foreground p-8 rounded-b-[3rem] shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Navigation size={120} className="rotate-12" />
+            <Map size={120} className="rotate-12" />
           </div>
           <div className="relative z-10">
             <div className="flex items-center gap-2 mb-4 opacity-80">
@@ -139,7 +138,7 @@ function OrderTracking({ orderId, onBack }) {
               <span className="text-xs font-bold uppercase tracking-widest">Live Order Tracking</span>
             </div>
             <h1 className="text-3xl font-black mb-1">Status Pesanan</h1>
-            <p className="opacity-70 text-sm font-medium">#{order.id.slice(-6).toUpperCase()} · {order.customerName}</p>
+            <p className="opacity-70 text-sm font-medium">#{order?.id?.slice(-6).toUpperCase()} · {order?.customerName || 'Pelanggan'}</p>
           </div>
         </div>
 
@@ -527,7 +526,7 @@ export default function GuestMenuPage({ user, tableFromQR }) {
 
   const filtered = menu.filter(m => {
     const matchCat = category === 'Semua' || m.category === category;
-    const matchSearch = m.name.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (m.name || '').toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
 
@@ -612,9 +611,9 @@ export default function GuestMenuPage({ user, tableFromQR }) {
         
         <div className="max-w-3xl mx-auto relative z-10">
           <p className="text-accent font-black uppercase tracking-[0.2em] text-[10px] mb-3">Selamat Datang</p>
-          <h1 className="text-4xl md:text-5xl font-black text-white leading-tight mb-4">
-            {user ? `Siap ngopi lagi, ${user.name.split(' ')[0]}?` : 'Nikmati Kopi Terbaik Hari Ini.'}
-          </h1>
+          <p className="text-4xl md:text-5xl font-black text-white leading-tight mb-4">
+            {user?.name ? `Siap ngopi lagi, ${user.name.split(' ')[0]}?` : 'Nikmati Kopi Terbaik Hari Ini.'}
+          </p>
           <p className="text-white/60 font-medium text-sm md:text-base max-w-sm">
             Temukan racikan kopi autentik dan kudapan lezat favoritmu di BrewMaster.
           </p>
