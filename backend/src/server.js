@@ -588,16 +588,24 @@ app.post('/api/transactions/:id/approve-void', async (req, res) => {
   res.json({ ok: true });
 });
 app.put('/api/transactions/:id/kds', async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-  
-  const { error } = await supabase
-    .from('transactions')
-    .update({ kds_status: status })
-    .eq('id', id);
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    const db = readDB();
     
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ ok: true });
+    const trx = db.transactions?.find(t => t.id === id);
+    if (!trx) return res.status(404).json({ error: 'Transaksi tidak ditemukan di sistem lokal' });
+    
+    trx.kdsStatus = status;
+    writeDB(db);
+    
+    // Optional: Sync to Supabase if you want, but skip kds_status since it doesn't exist
+    
+    res.json({ ok: true, status: trx.kdsStatus });
+  } catch (err) {
+    console.error('Update KDS Error:', err);
+    res.status(500).json({ error: 'Gagal memperbarui status KDS' });
+  }
 });
 
 // ---- TABLES ----
