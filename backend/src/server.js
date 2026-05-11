@@ -282,13 +282,17 @@ app.post('/api/login', async (req, res) => {
     user = data;
   } else {
     if (DB_MODE === 'cloud') {
+      console.log(`🔐 Attempting Cloud Login for: ${username} (Role: ${role})`);
       const { data, error } = await supabase
         .from('users')
         .select('*, tenant:tenants(*)')
         .eq('username', username)
         .eq('password', password)
         .single();
+      
+      if (error) console.error('❌ Supabase Auth Error:', error.message);
       user = data;
+      if (user) console.log('✅ User found:', user.username, 'Tenant:', user.tenant?.name);
     } else {
       // MODE LOKAL
       const db = readDB();
