@@ -2498,6 +2498,7 @@ app.get('/api/system-check', (req, res) => {
     mode: DB_MODE,
     vercel: !!process.env.VERCEL,
     supabase_url: !!process.env.SUPABASE_URL,
+    supabase_key: !!process.env.SUPABASE_KEY, // Check if key exists
     timestamp: new Date().toISOString()
   });
 });
