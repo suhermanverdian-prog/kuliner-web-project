@@ -316,6 +316,7 @@ app.post('/api/login', async (req, res) => {
   // Jika user adalah superadmin, pastikan role-nya diset benar
   if (isSysAdmin) {
     user.role = 'superadmin';
+    user.is_superadmin = true; // Unlock all frontend features
   }
 
   const { password: _, ...safeUser } = user;
