@@ -1402,6 +1402,51 @@ app.get('/api/system-logs', async (req, res) => {
   res.json(data);
 });
 
+// ---- KASIR SHIFTS ----
+app.get('/api/shifts', async (req, res) => {
+  try {
+    const tenantId = req.headers['x-tenant-id'];
+    let query = supabase.from('shifts').select('*').order('created_at', { ascending: false });
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/shifts', async (req, res) => {
+  try {
+    const tenantId = req.headers['x-tenant-id'];
+    const payload = { ...req.body, tenant_id: tenantId };
+    
+    // Auto-close open shifts for this tenant before creating a new one
+    await supabase.from('shifts')
+      .update({ status: 'closed', end_time: new Date().toISOString() })
+      .eq('status', 'open')
+      .eq('tenant_id', tenantId);
+
+    const { data, error } = await supabase.from('shifts').insert([payload]).select();
+    if (error) throw error;
+    res.json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/shifts/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase.from('shifts').update(req.body).eq('id', id).select();
+    if (error) throw error;
+    res.json(data[0] || { ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---- INVENTORY META ----
 app.get('/api/inventory/meta', async (req, res) => {
   const { data, error } = await supabase.from('inventory_meta').select('*').single();
