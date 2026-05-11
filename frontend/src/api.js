@@ -123,29 +123,48 @@ export const api = new Proxy(apiBase, {
     // Jika fungsi yang dipanggil berawalan 'get' (contoh: getTransactions)
     if (prop.startsWith('get')) {
       const resource = getResource(prop);
-      return () => fetch(`${API_URL}/${resource}`, { headers: getHeaders() }).then(res => res.json());
+      return async () => {
+        const res = await fetch(`${API_URL}/${resource}`, { headers: getHeaders() });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || res.statusText || 'Gagal mengambil data');
+        }
+        return res.json();
+      };
     }
     
     // Jika fungsi berawalan 'add', 'update', atau 'save'
     if (prop.startsWith('add') || prop.startsWith('update') || prop.startsWith('save')) {
-      return (data) => {
-        const isUpdate = prop.startsWith('update') && data.id;
-        const resource = getResource(prop);
-        const url = isUpdate ? `${API_URL}/${resource}/${data.id}` : `${API_URL}/${resource}`;
-        return fetch(url, {
-          method: isUpdate ? 'PUT' : 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify(data)
-        }).then(res => res.json());
-      };
+        return async (data) => {
+          const isUpdate = prop.startsWith('update') && data.id;
+          const resource = getResource(prop);
+          const url = isUpdate ? `${API_URL}/${resource}/${data.id}` : `${API_URL}/${resource}`;
+          const res = await fetch(url, {
+            method: isUpdate ? 'PUT' : 'POST',
+            headers: getHeaders(),
+            body: JSON.stringify(data)
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error || res.statusText || 'Gagal menyimpan data');
+          }
+          return res.json();
+        };
     }
 
     // Jika fungsi berawalan 'delete'
     if (prop.startsWith('delete')) {
-      return (id) => fetch(`${API_URL}/${getResource(prop)}/${id}`, {
-        method: 'DELETE',
-        headers: getHeaders()
-      }).then(res => res.json());
+      return async (id) => {
+        const res = await fetch(`${API_URL}/${getResource(prop)}/${id}`, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || res.statusText || 'Gagal menghapus data');
+        }
+        return res.json();
+      };
     }
 
     return target[prop];

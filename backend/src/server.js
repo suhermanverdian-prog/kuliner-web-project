@@ -37,7 +37,16 @@ const resolveFeatures = (tenant) => {
 // ---- FASE 6: RBAC & Tenant Isolation Middleware ----
 const rbacMiddleware = async (req, res, next) => {
   const role = req.headers['x-user-role'] || 'guest';
-  const tenantId = req.headers['x-tenant-id'] || null;
+  let tenantId = req.headers['x-tenant-id'];
+  if (!tenantId || tenantId === '' || tenantId === 't-1' || tenantId === 'undefined' || tenantId === 'null') {
+    tenantId = null;
+    delete req.headers['x-tenant-id'];
+  }
+  
+  let outletId = req.headers['x-outlet-id'];
+  if (!outletId || outletId === '' || outletId === 'o-1' || outletId === 'undefined' || outletId === 'null') {
+    delete req.headers['x-outlet-id'];
+  }
 
   // Bebaskan endpoint public
   if (req.path.includes('/login') || req.path.includes('/uploads') || req.path.includes('/health')) return next();
@@ -1431,11 +1440,11 @@ app.post('/api/shifts', async (req, res) => {
         status: req.body.status || 'open'
       };
       
-      // Auto-close open shifts for this tenant before creating a new one
-      await supabase.from('shifts')
+      let query = supabase.from('shifts')
         .update({ status: 'closed', end_time: new Date().toISOString() })
-        .eq('status', 'open')
-        .eq('tenant_id', tenantId);
+        .eq('status', 'open');
+      if (tenantId) query = query.eq('tenant_id', tenantId);
+      await query;
 
       const { data, error } = await supabase.from('shifts').insert([payload]).select();
       if (error) throw error;
