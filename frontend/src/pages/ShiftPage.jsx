@@ -366,10 +366,12 @@ export default function ShiftPage({ user, onNavigate }) {
             </CardHeader>
             <CardContent className="space-y-8 p-10">
               <div className="space-y-3">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-2">Jumlah Modal Awal (Tunai)</label>
+                <label htmlFor="initialCash" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-2">Jumlah Modal Awal (Tunai)</label>
                 <div className="relative group">
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 font-black text-muted-foreground group-focus-within:text-primary transition-colors text-lg">Rp</span>
                   <Input 
+                    id="initialCash"
+                    name="initialCash"
                     type="number" 
                     value={initialCash} 
                     onChange={e => setInitialCash(e.target.value)}

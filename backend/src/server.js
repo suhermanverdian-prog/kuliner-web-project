@@ -1030,24 +1030,6 @@ app.delete('/api/tables/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
-// ---- SHIFTS ----
-app.get('/api/shifts', (req, res) => res.json(readDB().shifts));
-app.get('/api/activeshift', (req, res) => {
-  const db = readDB();
-  const active = db.shifts.find(s => s.status === 'open');
-  res.json(active || null);
-});
-app.post('/api/shifts', (req, res) => {
-  const db = readDB();
-  const shift = { ...req.body, id: Date.now(), status: 'open', startTime: new Date().toISOString() };
-  db.shifts.push(shift); writeDB(db); res.json(shift);
-});
-app.put('/api/shifts/:id', (req, res) => {
-  const db = readDB();
-  db.shifts = db.shifts.map(s => s.id === Number(req.params.id) ? { ...s, ...req.body, endTime: req.body.status === 'closed' ? new Date().toISOString() : s.endTime } : s);
-  writeDB(db); res.json({ ok: true });
-});
-
 // ---- SETTINGS ----
 app.get('/api/settings', async (req, res) => {
   try {
@@ -1406,12 +1388,31 @@ app.get('/api/system-logs', async (req, res) => {
 app.get('/api/shifts', async (req, res) => {
   try {
     const tenantId = req.headers['x-tenant-id'];
-    let query = supabase.from('shifts').select('*').order('created_at', { ascending: false });
-    if (tenantId) query = query.eq('tenant_id', tenantId);
-    
-    const { data, error } = await query;
-    if (error) throw error;
-    res.json(data || []);
+    if (DB_MODE === 'cloud') {
+      let query = supabase.from('shifts').select('*').order('created_at', { ascending: false });
+      if (tenantId) query = query.eq('tenant_id', tenantId);
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      const formatted = (data || []).map(s => ({
+        ...s,
+        openTime: s.start_time,
+        closeTime: s.end_time,
+        startTime: s.start_time,
+        endTime: s.end_time,
+        openCash: s.open_cash,
+        currentSales: s.current_sales,
+        currentCash: s.current_cash,
+        currentQris: s.current_qris,
+        totalSales: s.total_sales,
+        totalCash: s.total_cash,
+        totalQris: s.total_qris,
+        userName: s.user_name,
+        kasir: s.user_name
+      }));
+      return res.json(formatted);
+    }
+    return res.json(readDB().shifts || []);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1420,17 +1421,35 @@ app.get('/api/shifts', async (req, res) => {
 app.post('/api/shifts', async (req, res) => {
   try {
     const tenantId = req.headers['x-tenant-id'];
-    const payload = { ...req.body, tenant_id: tenantId };
     
-    // Auto-close open shifts for this tenant before creating a new one
-    await supabase.from('shifts')
-      .update({ status: 'closed', end_time: new Date().toISOString() })
-      .eq('status', 'open')
-      .eq('tenant_id', tenantId);
+    if (DB_MODE === 'cloud') {
+      const payload = { 
+        tenant_id: tenantId,
+        user_name: req.body.userName || req.body.kasir || 'Kasir',
+        start_time: req.body.openTime || req.body.startTime || new Date().toISOString(),
+        open_cash: req.body.openCash || 0,
+        status: req.body.status || 'open'
+      };
+      
+      // Auto-close open shifts for this tenant before creating a new one
+      await supabase.from('shifts')
+        .update({ status: 'closed', end_time: new Date().toISOString() })
+        .eq('status', 'open')
+        .eq('tenant_id', tenantId);
 
-    const { data, error } = await supabase.from('shifts').insert([payload]).select();
-    if (error) throw error;
-    res.json(data[0]);
+      const { data, error } = await supabase.from('shifts').insert([payload]).select();
+      if (error) throw error;
+      return res.json(data[0]);
+    }
+    
+    const db = readDB();
+    if (db.shifts) {
+      db.shifts = db.shifts.map(s => s.status === 'open' ? { ...s, status: 'closed', endTime: new Date().toISOString() } : s);
+    } else {
+      db.shifts = [];
+    }
+    const shift = { ...req.body, id: Date.now(), status: 'open', startTime: new Date().toISOString() };
+    db.shifts.push(shift); writeDB(db); res.json(shift);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1439,9 +1458,24 @@ app.post('/api/shifts', async (req, res) => {
 app.put('/api/shifts/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { data, error } = await supabase.from('shifts').update(req.body).eq('id', id).select();
-    if (error) throw error;
-    res.json(data[0] || { ok: true });
+    
+    if (DB_MODE === 'cloud') {
+      const payload = {};
+      if (req.body.status) payload.status = req.body.status;
+      if (req.body.closeTime || req.body.endTime) payload.end_time = req.body.closeTime || req.body.endTime;
+      if (req.body.totalSales !== undefined) payload.total_sales = req.body.totalSales;
+      if (req.body.totalCash !== undefined) payload.total_cash = req.body.totalCash;
+      if (req.body.totalQris !== undefined) payload.total_qris = req.body.totalQris;
+
+      const { data, error } = await supabase.from('shifts').update(payload).eq('id', id).select();
+      if (error) throw error;
+      return res.json(data[0] || { ok: true });
+    }
+    
+    const db = readDB();
+    if (!db.shifts) db.shifts = [];
+    db.shifts = db.shifts.map(s => String(s.id) === String(id) ? { ...s, ...req.body, endTime: req.body.status === 'closed' ? new Date().toISOString() : s.endTime } : s);
+    writeDB(db); res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
