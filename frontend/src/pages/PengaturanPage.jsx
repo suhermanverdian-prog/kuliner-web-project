@@ -155,8 +155,8 @@ export default function PengaturanPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [toast, setToast] = useState({ msg: '', type: 'success' });
-  const [settings, setSettings] = useState({ storeName: 'Kitchen Enterprise Nodes', tax: 10, serviceCharge: 5, rewardEnabled: true });
   const [savingSettings, setSavingSettings] = useState(false);
+  const [loyaltyConfig, setLoyaltyConfig] = useState({ enabled: true, multiplier: 10000 });
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -166,6 +166,7 @@ export default function PengaturanPage() {
   useEffect(() => {
     fetchUsers();
     api.getSettings().then(s => { if (s) setSettings(s); }).catch(() => {});
+    api.getSettingsLoyalty().then(l => { if (l) setLoyaltyConfig(l); }).catch(() => {});
   }, []);
 
   const fetchUsers = async () => {
@@ -228,7 +229,8 @@ export default function PengaturanPage() {
     try {
       setSavingSettings(true);
       await api.saveSettings(settings);
-      showToast('Pengaturan sistem berhasil disimpan!');
+      await api.saveSettingsLoyalty(loyaltyConfig);
+      showToast('Pengaturan sistem & loyalty berhasil disimpan!');
     } catch { showToast('Gagal menyimpan pengaturan.', 'error'); }
     finally { setSavingSettings(false); }
   };
@@ -425,19 +427,29 @@ export default function PengaturanPage() {
                     <h4 className="font-bold">Program Loyalty Member</h4>
                     <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider mt-1">Akumulasi poin belanja</p>
                   </div>
-                  <input type="checkbox" className="w-10 h-5 accent-accent" checked={settings.rewardEnabled ?? true} onChange={e => setSettings({...settings, rewardEnabled: e.target.checked})} />
+                  <input 
+                    type="checkbox" 
+                    className="w-10 h-5 accent-accent cursor-pointer" 
+                    checked={loyaltyConfig.enabled} 
+                    onChange={e => setLoyaltyConfig({...loyaltyConfig, enabled: e.target.checked})} 
+                  />
                 </div>
-                {(settings.rewardEnabled ?? true) && (
+                {loyaltyConfig.enabled && (
                   <div className="grid grid-cols-2 gap-6 animate-in slide-in-from-top-2 duration-300">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-muted-foreground uppercase">Setiap Belanja (Rp)</label>
-                      <Input type="number" value={settings.pointsPerRp || 10000} onChange={e => setSettings({...settings, pointsPerRp: Number(e.target.value)})} className="h-10 text-sm font-bold" />
+                      <Input 
+                        type="number" 
+                        value={loyaltyConfig.multiplier} 
+                        onChange={e => setLoyaltyConfig({...loyaltyConfig, multiplier: Number(e.target.value)})} 
+                        className="h-10 text-sm font-bold" 
+                      />
                       <p className="text-[9px] text-muted-foreground italic">Dapat 1 Poin</p>
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-2 opacity-40">
                       <label className="text-[10px] font-bold text-muted-foreground uppercase">Nilai 1 Poin (Rp)</label>
-                      <Input type="number" value={settings.pointValue || 100} onChange={e => setSettings({...settings, pointValue: Number(e.target.value)})} className="h-10 text-sm font-bold" />
-                      <p className="text-[9px] text-muted-foreground italic">Potongan diskon</p>
+                      <Input type="number" value={100} disabled className="h-10 text-sm font-bold" />
+                      <p className="text-[9px] text-muted-foreground italic">Potongan diskon (Segera)</p>
                     </div>
                   </div>
                 )}

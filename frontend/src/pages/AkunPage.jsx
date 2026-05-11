@@ -102,6 +102,56 @@ function JournalRow({ journal, expanded, onToggle }) {
   );
 }
 
+function AddExpenseModal({ onClose, onSave, loading, accounts }) {
+  const [form, setForm] = useState({ description: '', amount: '', category: 'Beban Operasional', paymentMethod: 'Tunai', date: new Date().toISOString().split('T')[0] });
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
+      <Card className="w-full max-w-lg shadow-2xl animate-in zoom-in-95 border-none rounded-3xl">
+        <CardHeader className="border-b bg-muted/10">
+          <CardTitle className="text-xl flex items-center gap-2"><CreditCard className="text-accent" /> Catat Pengeluaran Baru</CardTitle>
+          <CardDescription>Input biaya operasional (listrik, gaji, sewa, dll)</CardDescription>
+        </CardHeader>
+        <CardContent className="p-8 space-y-5">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Deskripsi Biaya</label>
+            <input className="w-full h-12 bg-muted/20 border-none rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-accent" placeholder="Contoh: Bayar Listrik Bulan Mei" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+             <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Jumlah (Rp)</label>
+                <input type="number" className="w-full h-12 bg-muted/20 border-none rounded-xl px-4 text-sm font-bold focus:ring-2 focus:ring-accent" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} />
+             </div>
+             <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Metode Pembayaran</label>
+                <select className="w-full h-12 bg-muted/20 border-none rounded-xl px-3 text-sm font-bold focus:ring-2 focus:ring-accent" value={form.paymentMethod} onChange={e => setForm({...form, paymentMethod: e.target.value})}>
+                  <option>Tunai</option>
+                  <option>BCA</option>
+                  <option>Mandiri</option>
+                </select>
+             </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Kategori Akun</label>
+            <select className="w-full h-12 bg-muted/20 border-none rounded-xl px-3 text-sm font-bold focus:ring-2 focus:ring-accent" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+              <option value="Beban Operasional">Beban Operasional Umum</option>
+              <option value="Beban Gaji">Beban Gaji Pegawai</option>
+              <option value="Beban Listrik & Air">Beban Listrik & Air</option>
+              <option value="Beban Sewa">Beban Sewa Tempat</option>
+              <option value="Beban Lainnya">Beban Lain-lain</option>
+            </select>
+          </div>
+        </CardContent>
+        <CardFooter className="p-6 border-t bg-muted/5 gap-3">
+           <Button variant="ghost" className="flex-1 font-bold" onClick={onClose}>Batal</Button>
+           <Button className="flex-[2] font-black bg-accent hover:bg-accent/90" onClick={() => onSave(form)} disabled={loading || !form.description || !form.amount}>
+             {loading ? 'Menyimpan...' : 'SIMPAN PENGELUARAN'}
+           </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
 export default function AkunPage({ user }) {
   const [tab, setTab] = useState('summary');
   const [period, setPeriod] = useState('month');
@@ -111,6 +161,8 @@ export default function AkunPage({ user }) {
   const [loading, setLoading] = useState(true);
   const [expandedJournal, setExpandedJournal] = useState(null);
   const [search, setSearch] = useState('');
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [savingExpense, setSavingExpense] = useState(false);
 
   const getHeaders = useCallback(() => {
     const u = JSON.parse(localStorage.getItem('user') || '{}');
@@ -186,7 +238,10 @@ export default function AkunPage({ user }) {
           <Button variant="outline" size="sm" className="gap-2 h-9" onClick={handlePrint}>
             <Printer size={14} /> Print
           </Button>
-          <Button size="sm" className="gap-2 h-9" onClick={loadData}>
+          <Button size="sm" className="gap-2 h-9 bg-accent hover:bg-accent/90" onClick={() => setShowExpenseModal(true)}>
+            <Plus size={14} /> Tambah Biaya
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2 h-9" onClick={loadData}>
             <RefreshCw size={14} /> Refresh
           </Button>
         </div>
@@ -384,6 +439,27 @@ export default function AkunPage({ user }) {
             </div>
           )}
         </>
+      )}
+      {showExpenseModal && (
+        <AddExpenseModal 
+          onClose={() => setShowExpenseModal(false)} 
+          loading={savingExpense}
+          accounts={accounts}
+          onSave={async (formData) => {
+            setSavingExpense(true);
+            try {
+              const res = await fetch(`${API}/expenses`, {
+                method: 'POST',
+                headers: getHeaders(),
+                body: JSON.stringify({...formData, amount: Number(formData.amount), userName: user?.name})
+              });
+              if (!res.ok) throw new Error('Gagal simpan');
+              setShowExpenseModal(false);
+              loadData();
+            } catch (err) { alert(err.message); }
+            finally { setSavingExpense(false); }
+          }}
+        />
       )}
     </div>
   );

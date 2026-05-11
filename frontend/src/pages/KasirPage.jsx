@@ -49,17 +49,25 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
       <Card className="w-full max-w-lg shadow-[0_32px_128px_-32px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 border-none rounded-[2.5rem] overflow-hidden">
-        <CardHeader className="p-8 bg-muted/20 border-b flex flex-row items-center justify-between">
-          <div className="flex items-center gap-4">
-             <div className="w-12 h-12 bg-accent rounded-2xl flex items-center justify-center text-white shadow-lg shadow-accent/20">
-                <Receipt size={24} />
+        <CardHeader className="p-6 border-b bg-muted/10">
+          <div className="flex items-center justify-between">
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center text-accent">
+                   <ShoppingCart size={20} />
+                </div>
+                <div>
+                   <CardTitle className="text-base font-black">Keranjang Pesanan</CardTitle>
+                   <CardDescription className="text-[10px] font-bold uppercase tracking-widest">
+                     {activeShift ? `Shift Aktif: #${activeShift.id.toString().slice(-4)}` : 'Shift Belum Dibuka'}
+                   </CardDescription>
+                </div>
              </div>
-             <div>
-                <CardTitle className="text-xl font-black">Konfirmasi Bayar</CardTitle>
-                <CardDescription className="text-[10px] font-bold uppercase tracking-widest">{tx.id.slice(-8).toUpperCase()} · {tx.customerName || 'Tamu'}</CardDescription>
-             </div>
+             {activeShift && (
+               <Button variant="ghost" size="sm" className="h-8 text-[9px] font-black uppercase text-destructive hover:bg-destructive/10 border border-destructive/20" onClick={handleCloseShift}>
+                 <Lock size={12} className="mr-1" /> Tutup Shift
+               </Button>
+             )}
           </div>
-          <Button variant="ghost" size="icon" className="rounded-full h-10 w-10" onClick={onClose}><X size={20} /></Button>
         </CardHeader>
         <CardContent className="p-8 space-y-8">
           <div className="bg-muted/30 rounded-[2rem] p-6 space-y-4 border border-dashed border-muted-foreground/20">
@@ -406,6 +414,22 @@ export default function KasirPage({ user, onNavigate }) {
     } finally {
       if (isInitial) setLoading(false);
     }
+  };
+
+  const handleCloseShift = async () => {
+    if (!window.confirm('Yakin ingin menutup shift sekarang?')) return;
+    const actualCash = prompt('Masukkan total uang tunai di laci (Cash on Hand):');
+    if (actualCash === null) return;
+    
+    try {
+      await api.updateShift(activeShift.id, { 
+        status: 'closed', 
+        actual_cash: Number(actualCash),
+        endTime: new Date().toISOString()
+      });
+      alert('Shift berhasil ditutup. Sistem akan logout otomatis.');
+      window.location.reload();
+    } catch (e) { alert('Gagal tutup shift'); }
   };
 
   useEffect(() => {

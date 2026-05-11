@@ -4,7 +4,8 @@ import {
   Clock, PackageOpen, ShoppingBag, BarChart3, 
   Users, Settings, LogOut, Armchair, Menu,
   ChevronLeft, ChevronRight, Moon, Sun, Bell,
-  ShieldCheck, Sparkles, Command, MoreVertical
+  ShieldCheck, Sparkles, Command, MoreVertical,
+  BookOpen, Store
 } from 'lucide-react';
 import { cn } from "../lib/utils";
 import { Button } from "./ui/Button";
@@ -22,6 +23,8 @@ const navItems = [
   { id: 'pembelian', icon: ShoppingBag,     label: 'Procurement',  group: 'Pengadaan' },
   { id: 'laporan',   icon: BarChart3,       label: 'Analitik',     group: 'Bisnis' },
   { id: 'pelanggan', icon: Users,           label: 'Loyalty CRM',  group: 'Bisnis' },
+  { id: 'akuntansi', icon: BookOpen,        label: 'Akuntansi',    group: 'Enterprise' },
+  { id: 'outlets',   icon: Store,           label: 'Multi-Outlet', group: 'Enterprise' },
   { id: 'pengaturan', icon: Settings,       label: 'Pengaturan',   group: 'Sistem' },
   { id: 'activity-log', icon: ShieldCheck,  label: 'Monitor Aktivitas', group: 'Sistem', role: 'superadmin' },
   { id: 'superadmin', icon: Command,        label: 'SuperAdmin',   group: 'Sistem', role: 'superadmin' },
@@ -67,7 +70,7 @@ function Sidebar({ user, activePage, onNavigate, onLogout, isCollapsed, setIsCol
       </div>
 
       <div className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
-        {['Utama', 'Gudang', 'Pengadaan', 'Bisnis', 'Sistem'].map(group => {
+        {['Utama', 'Gudang', 'Pengadaan', 'Bisnis', 'Enterprise', 'Sistem'].map(group => {
           const items = visibleNavItems.filter(item => item.group === group);
           if (items.length === 0) return null;
           return (

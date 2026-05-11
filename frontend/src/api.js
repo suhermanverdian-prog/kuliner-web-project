@@ -1,5 +1,14 @@
 const hostname = window.location.hostname;
-const API_URL = (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.'))
+const port = window.location.port;
+const API_URL = (
+  hostname === 'localhost' || 
+  hostname === '127.0.0.1' || 
+  hostname.startsWith('192.168.') || 
+  hostname.startsWith('10.') || 
+  hostname.startsWith('172.') ||
+  hostname.endsWith('.local') ||
+  port === '5173' || port === '5174' || port === '5175'
+)
   ? `http://${hostname}:3001/api`
   : 'https://kuliner-web-project.vercel.app/api';
 
@@ -79,10 +88,23 @@ const apiBase = {
     });
     return res.json();
   },
-  async getAnalyticsInventory(period) {
+  async getSettingsLoyalty() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const res = await fetch(`${API_URL}/v1/analytics/inventory?period=${period || 'month'}`, {
+    const res = await fetch(`${API_URL}/settings/loyalty`, {
       headers: { 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' }
+    });
+    return res.json();
+  },
+  async saveSettingsLoyalty(data) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const res = await fetch(`${API_URL}/settings/loyalty`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-user-role': user.role || 'guest', 
+        'x-tenant-id': user.tenant?.id || '' 
+      },
+      body: JSON.stringify(data)
     });
     return res.json();
   }
@@ -117,6 +139,9 @@ export const api = new Proxy(apiBase, {
       if (r === 'supplier') return 'suppliers';
       if (r === 'outlet') return 'outlets';
       if (r === 'tenant' && p.startsWith('get')) return 'tenants';
+      if (r === 'analyticsinventory') return 'v1/analytics/inventory';
+      if (r === 'analyticssales') return 'v1/analytics/sales';
+      if (r === 'analyticsfinancial') return 'v1/analytics/financial';
       return r;
     };
 

@@ -6,7 +6,7 @@ import {
   TrendingUp, TrendingDown, Package, Activity,
   Star, Puzzle, Carrot, SearchX, BarChart3,
   Trophy, Zap, Users, Bookmark, ArrowUpRight, ArrowDownRight,
-  Clock, CheckCircle2, ChevronRight
+  Clock, CheckCircle2, ChevronRight, AlertTriangle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -79,6 +79,7 @@ export default function Dashboard({ user, onNavigate }) {
   const [invoices, setInvoices] = useState([]);
   const [grns, setGrns] = useState([]);
   const [accountingSummary, setAccountingSummary] = useState(null);
+  const [lowStockItems, setLowStockItems] = useState([]);
 
   const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
     ? 'http://localhost:3001/api' 
@@ -98,13 +99,15 @@ export default function Dashboard({ user, onNavigate }) {
       hasFeature(user, 'procurement') ? api.getGRN().catch(() => []) : Promise.resolve([]),
       hasFeature(user, 'procurement') ? api.getPurchaseInvoices().catch(() => []) : Promise.resolve([]),
       fetch(`${API_URL}/accounting/summary?period=today`, { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
-    ]).then(([txData, menuData, tblData, salesData, finData, invData, poData, grnData, invoiceData, accSum]) => {
+      fetch(`${API_URL}/inventory/low-stock`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+    ]).then(([txData, menuData, tblData, salesData, finData, invData, poData, grnData, invoiceData, accSum, lowStock]) => {
       setTransactions(Array.isArray(txData) ? txData : []);
       setMenu(Array.isArray(menuData) ? menuData : []);
       setTables(Array.isArray(tblData) ? tblData : []);
       setPos(Array.isArray(poData) ? poData : []);
       setGrns(Array.isArray(grnData) ? grnData : []);
       setInvoices(Array.isArray(invoiceData) ? invoiceData : []);
+      setLowStockItems(Array.isArray(lowStock) ? lowStock : []);
       if (salesData) setSalesAnalytics(salesData);
       if (finData) setFinancialAnalytics(finData);
       if (invData) setInventoryAnalytics(invData);
@@ -161,6 +164,29 @@ export default function Dashboard({ user, onNavigate }) {
           <Button size="sm" onClick={() => onNavigate?.('kasir')}>Transaksi Baru</Button>
         </div>
       </div>
+
+      {/* Low Stock Warning Banner */}
+      {lowStockItems.length > 0 && (
+        <Card className="bg-destructive/10 border-destructive/20 border-dashed animate-in slide-in-from-top-4 duration-500">
+          <CardContent className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-destructive/20 rounded-xl flex items-center justify-center text-destructive">
+                <AlertTriangle className="animate-pulse" size={20} />
+              </div>
+              <div>
+                <p className="text-sm font-black text-destructive">PERINGATAN STOK KRITIS!</p>
+                <p className="text-xs text-destructive/80 font-bold">Ada {lowStockItems.length} bahan baku di bawah stok minimum. Segera lakukan restock.</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="bg-background border-destructive text-destructive font-black text-[10px]" onClick={() => onNavigate?.('inventori')}>LIHAT DAFTAR</Button>
+              {hasFeature(user, 'procurement') && (
+                <Button size="sm" className="bg-destructive text-white font-black text-[10px]" onClick={() => onNavigate?.('pembelian')}>BUAT PO</Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

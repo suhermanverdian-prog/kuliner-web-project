@@ -1,3 +1,4 @@
+require('dotenv').config({ path: require('path').join(__dirname, '../.env'), override: true });
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -8,7 +9,7 @@ const { supabase } = require('./supabase');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DB_PATH = path.join(__dirname, 'db', 'data.json');
-const DB_MODE = process.env.DB_MODE || (process.env.VERCEL ? 'cloud' : 'local'); // Auto-cloud on Vercel
+const DB_MODE = 'cloud'; // FORCE CLOUD MODE FOR PRODUCTION STABILITY
 const SUPABASE_SYNC_ENABLED = true;
 
 // Middleware
@@ -656,35 +657,45 @@ app.post('/api/purchase_payments', (req, res) => {
 app.get('/api/transactions', async (req, res) => {
   if (DB_MODE === 'cloud') {
     try {
-      let query = supabase.from('transactions').select('*, items:transaction_items(*, menu(*))').order('created_at', { ascending: false });
+      let query = supabase.from('transactions').select('*, transaction_items(*)').order('created_at', { ascending: false });
       const tenantId = req.headers['x-tenant-id'];
       const outletId = req.headers['x-outlet-id'];
       if (tenantId) query = query.eq('tenant_id', tenantId);
       if (outletId) query = query.eq('outlet_id', outletId);
       
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error fetching transactions:', error);
+        return res.status(500).json({ error: error.message });
+      }
       
-      const formatted = data.map(t => ({
-        ...t,
-        kdsStatus: t.kds_status || 'new',
-        customerName: t.customer_name || 'Tamu',
-        paymentMethod: t.payment_method,
-        paymentStatus: t.payment_status,
-        tableType: t.table_type || t.tableType,
-        cashierName: t.cashier_name || 'System',
-        createdAt: t.created_at,
-        items: (t.items || []).map(i => ({
-          ...i,
-          id: i.menu_id,
-          name: i.menu?.name || 'Item',
-          category: i.menu?.category,
-          qty: i.qty,
-          price: i.price
-        }))
-      }));
+      const formatted = (data || []).map(t => {
+        const meta = (t.items && !Array.isArray(t.items)) ? t.items : {};
+        return {
+          ...t,
+          kdsStatus: meta.kds_status || 'new',
+          customerName: t.customer_name || 'Tamu',
+          paymentMethod: t.payment_method,
+          paymentStatus: t.payment_status,
+          tableType: meta.table_type || 'Take Away',
+          cashierName: meta.cashier_name || 'System',
+          createdAt: t.created_at,
+          subtotal: meta.subtotal || t.total,
+          taxAmount: t.tax || 0,
+          discountAmount: t.discount || 0,
+          items: (t.transaction_items || []).map(i => ({
+            ...i,
+            id: i.menu_id,
+            qty: i.quantity || i.qty,
+            price: i.unit_price || i.price
+          }))
+        };
+      });
       return res.json(formatted);
-    } catch (err) { return res.status(500).json({ error: err.message }); }
+    } catch (err) { 
+      console.error('Unexpected transaction error:', err);
+      return res.status(500).json({ error: err.message }); 
+    }
   }
   try {
     const db = readDB();
@@ -739,15 +750,17 @@ app.post('/api/transactions', async (req, res) => {
         tenant_id: tenantId,
         outlet_id: req.headers['x-outlet-id'] || null,
         total: trxData.total,
-        subtotal: trxData.subtotal,
-        tax_amount: trxData.taxAmount,
-        discount_amount: trxData.discountAmount,
+        tax: trxData.taxAmount,
+        discount: trxData.discountAmount,
         payment_method: trxData.paymentMethod,
         payment_status: trxData.paymentStatus,
         customer_name: trxData.customerName,
-        cashier_name: trxData.cashierName,
-        table_type: trxData.tableType,
-        kds_status: 'new'
+        items: {
+          subtotal: trxData.subtotal,
+          cashier_name: trxData.cashierName,
+          table_type: trxData.tableType,
+          kds_status: 'new'
+        }
       };
 
       const { data, error } = await supabase.from('transactions').insert([payload]).select();
@@ -909,14 +922,20 @@ app.put('/api/transactions/:id/confirm-payment', async (req, res) => {
 
   if (fetchErr || !trx) return res.status(404).json({ error: 'Transaksi tidak ditemukan' });
 
-  const updateData = {
-    payment_status: 'paid',
+  const meta = (trx.items && !Array.isArray(trx.items)) ? trx.items : {};
+  const newMeta = {
+    ...meta,
     kds_status: 'new',
     paid_at: new Date().toISOString(),
     cashier_name: cashierName || 'Kasir',
     cash_received: cashReceived,
-    change: change,
-    payment_method: paymentMethod
+    change: change
+  };
+
+  const updateData = {
+    payment_status: 'paid',
+    payment_method: paymentMethod,
+    items: newMeta
   };
 
   const { error: updateErr } = await supabase.from('transactions').update(updateData).eq('id', id);
@@ -936,14 +955,24 @@ app.put('/api/transactions/:id/confirm-payment', async (req, res) => {
           const { data: masterBahan } = await supabase.from('bahan').select('name, unit').eq('id', bom.bahan_id).single();
           if (!masterBahan) continue;
 
-          // Lokasi Produksi (Bar/Kitchen)
-          const targetLocation = item.menu.category === 'Makanan' ? 'Kitchen' : 'Bar';
+          // Lokasi Produksi (Bar/Kitchen/Gudang)
+          let targetLocation = ['Makanan', 'Snack', 'Food'].includes(item.menu.category) ? 'Kitchen' : 'Bar';
 
-          const { data: prodBahan } = await supabase.from('bahan')
+          let { data: prodBahan } = await supabase.from('bahan')
             .select('id, stock, unit')
             .eq('name', masterBahan.name)
             .eq('location', targetLocation)
             .single();
+
+          // Fallback ke Gudang jika tidak ditemukan di lokasi produksi
+          if (!prodBahan) {
+            const { data: fallbackBahan } = await supabase.from('bahan')
+              .select('id, stock, unit')
+              .eq('name', masterBahan.name)
+              .eq('location', 'Gudang Utama')
+              .single();
+            prodBahan = fallbackBahan;
+          }
 
           if (prodBahan) {
             let ratio = 1;
@@ -953,9 +982,11 @@ app.put('/api/transactions/:id/confirm-payment', async (req, res) => {
             const deduction = (Number(bom.qty) / ratio) * item.qty;
             await supabase.from('bahan').update({ stock: Number(prodBahan.stock) - deduction }).eq('id', prodBahan.id);
 
-            // FASE 3: Event-Based Movement
+            // FASE 3: Event-Based Movement dengan Tenant ID
+            const tenantId = req.headers['x-tenant-id'];
             await supabase.from('stock_movements').insert([{
               product_id: prodBahan.id,
+              tenant_id: tenantId,
               type: 'out',
               qty: deduction,
               reference_type: 'sales',
@@ -968,18 +999,52 @@ app.put('/api/transactions/:id/confirm-payment', async (req, res) => {
   }
 
   // 3. FASE 3: Auto-Journaling saat Konfirmasi Pembayaran
-  const actualPaymentMethod = paymentMethod || trx.payment_method || 'Tunai';
-  const { data: journal } = await supabase.from('journals').insert([{
-    reference: id,
-    description: `Pelunasan Transaksi via ${actualPaymentMethod}`
-  }]).select('id').single();
+  try {
+    const actualPaymentMethod = paymentMethod || trx.payment_method || 'Tunai';
+    const { data: journal } = await supabase.from('journals').insert([{
+      reference: id,
+      description: `Pelunasan Transaksi via ${actualPaymentMethod}`,
+      tenant_id: trx.tenant_id
+    }]).select('id').single();
 
-  if (journal) {
-    const debitAccount = actualPaymentMethod === 'Tunai' ? 'Kas' : `${actualPaymentMethod} Clearing`;
-    await supabase.from('journal_lines').insert([
-      { journal_id: journal.id, account_name: debitAccount, debit: trx.total, credit: 0 },
-      { journal_id: journal.id, account_name: 'Sales', debit: 0, credit: trx.total }
-    ]);
+    if (journal) {
+      const debitAccount = actualPaymentMethod === 'Tunai' ? 'Kas & Bank' : `${actualPaymentMethod} Clearing`;
+      await supabase.from('journal_lines').insert([
+        { journal_id: journal.id, account_name: debitAccount, debit: trx.total, credit: 0 },
+        { journal_id: journal.id, account_name: 'Pendapatan Penjualan', debit: 0, credit: trx.total }
+      ]);
+    }
+  } catch (jErr) {
+    console.error('Journaling err:', jErr);
+  }
+
+  // 4. FASE 3: Loyalty System - Configurable Point Earning
+  try {
+    if (trx.customer_name && trx.customer_name !== 'Tamu') {
+      // Ambil konfigurasi dari Tenant
+      const { data: tenant } = await supabase.from('tenants').select('feature_overrides').eq('id', trx.tenant_id).single();
+      const loyaltyConfig = tenant?.feature_overrides?.loyalty || { enabled: true, multiplier: 10000 };
+
+      if (loyaltyConfig.enabled) {
+        const multiplier = loyaltyConfig.multiplier || 10000;
+        const pointsEarned = Math.floor(trx.total / multiplier);
+        
+        if (pointsEarned > 0) {
+          const { data: userData } = await supabase.from('users').select('id, points').eq('name', trx.customer_name).eq('role', 'customer').single();
+          if (userData) {
+            await supabase.from('users').update({ points: (userData.points || 0) + pointsEarned }).eq('id', userData.id);
+            
+            await supabase.from('audit_logs').insert([{
+              action_type: 'LOYALTY_POINTS',
+              description: `Member ${trx.customer_name} mendapatkan ${pointsEarned} poin (Config: 1pt/${multiplier})`,
+              user_name: 'System'
+            }]);
+          }
+        }
+      }
+    }
+  } catch (lErr) {
+    console.error('Loyalty points err:', lErr);
   }
 
   res.json({ ok: true, ...updateData });
@@ -1042,15 +1107,22 @@ app.put('/api/transactions/:id/kds', async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const db = readDB();
     
+    if (DB_MODE === 'cloud') {
+      const { data: trx } = await supabase.from('transactions').select('items').eq('id', id).single();
+      const meta = (trx && trx.items && !Array.isArray(trx.items)) ? trx.items : {};
+      const newMeta = { ...meta, kds_status: status };
+      const { data, error } = await supabase.from('transactions').update({ items: newMeta }).eq('id', id).select();
+      if (error) throw error;
+      return res.json({ ok: true, status: status });
+    }
+
+    const db = readDB();
     const trx = db.transactions?.find(t => t.id === id);
     if (!trx) return res.status(404).json({ error: 'Transaksi tidak ditemukan di sistem lokal' });
     
     trx.kdsStatus = status;
     writeDB(db);
-    
-    // Optional: Sync to Supabase if you want, but skip kds_status since it doesn't exist
     
     res.json({ ok: true, status: trx.kdsStatus });
   } catch (err) {
@@ -1288,8 +1360,10 @@ app.put('/api/po/:id', async (req, res) => {
         }
 
         // FASE 4: Event-Based Movement (Purchasing IN)
+        const tenantId = req.headers['x-tenant-id'];
         await supabase.from('stock_movements').insert([{
           product_id: targetBahanId,
+          tenant_id: tenantId,
           type: 'in',
           qty: Number(item.receivedQty),
           reference_type: 'purchase',
@@ -1305,8 +1379,8 @@ app.put('/api/po/:id', async (req, res) => {
 
       if (journal) {
         await supabase.from('journal_lines').insert([
-          { journal_id: journal.id, account_name: 'Inventory', debit: po.total_amount, credit: 0 },
-          { journal_id: journal.id, account_name: 'Accounts Payable', debit: 0, credit: po.total_amount }
+          { journal_id: journal.id, account_name: 'Persediaan Barang', debit: po.total_amount, credit: 0 },
+          { journal_id: journal.id, account_name: 'Hutang Usaha', debit: 0, credit: po.total_amount }
         ]);
       }
     }
@@ -1354,59 +1428,155 @@ app.delete('/api/locations/:id', async (req, res) => {
 
 
 // ---- STOCK TRANSFER ----
-app.post('/api/stock-transfer', (req, res) => {
-  const { bahanId, fromLocation, toLocation, qty } = req.body;
-  const db = readDB();
-  const quantity = Number(qty);
+app.post('/api/stock-transfer', async (req, res) => {
+  try {
+    const { bahanId, fromLocation, toLocation, qty } = req.body;
+    const quantity = Number(qty);
+    const tenantId = req.headers['x-tenant-id'];
+    const outletId = req.headers['x-outlet-id'];
 
-  const sourceIdx = db.bahan.findIndex(b => b.id === Number(bahanId));
-  if (sourceIdx === -1) return res.status(404).json({ error: 'Bahan tidak ditemukan' });
+    // 1. Ambil data asal
+    const { data: source, error: sErr } = await supabase.from('bahan').select('*').eq('id', bahanId).single();
+    if (sErr || !source) return res.status(404).json({ error: 'Bahan asal tidak ditemukan' });
 
-  // Kurangi asal
-  db.bahan[sourceIdx].stock -= quantity;
+    // 2. Kurangi stok asal
+    await supabase.from('bahan').update({ stock: Number(source.stock) - quantity }).eq('id', bahanId);
 
-  // Tambah tujuan
-  const targetIdx = db.bahan.findIndex(b => b.name === db.bahan[sourceIdx].name && b.location === toLocation);
-  if (targetIdx !== -1) {
-    db.bahan[targetIdx].stock += quantity;
-  } else {
-    const newItem = { ...db.bahan[sourceIdx], id: Date.now(), location: toLocation, stock: quantity };
-    db.bahan.push(newItem);
+    // 3. Update/Insert stok tujuan
+    const { data: target, error: tErr } = await supabase.from('bahan')
+      .select('id, stock')
+      .eq('name', source.name)
+      .eq('location', toLocation)
+      .eq('tenant_id', source.tenant_id)
+      .single();
+
+    let targetId = target?.id;
+
+    if (target) {
+      await supabase.from('bahan').update({ stock: Number(target.stock) + quantity }).eq('id', target.id);
+    } else {
+      const { id: _, created_at: __, ...newData } = source;
+      const { data: created, error: cErr } = await supabase.from('bahan').insert([{
+        ...newData,
+        location: toLocation,
+        stock: quantity,
+        outlet_id: outletId
+      }]).select().single();
+      if (cErr) throw cErr;
+      targetId = created.id;
+    }
+
+    // 4. Log Movement
+    await supabase.from('stock_movements').insert([
+      { product_id: bahanId, type: 'out', qty: quantity, reference_type: 'transfer', reference_id: `FROM-${fromLocation}`, tenant_id: tenantId },
+      { product_id: targetId, type: 'in', qty: quantity, reference_type: 'transfer', reference_id: `TO-${toLocation}`, tenant_id: tenantId }
+    ]);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Transfer Error:', err);
+    res.status(500).json({ error: err.message });
   }
+});
 
-  writeDB(db);
-  res.json({ ok: true });
+// ---- EXPENSE TRACKING (PROFESSIONAL) ----
+app.post('/api/expenses', async (req, res) => {
+  try {
+    const { description, amount, category, paymentMethod, date, userName } = req.body;
+    const tenantId = req.headers['x-tenant-id'];
+
+    // 1. Catat di Audit Logs
+    await supabase.from('audit_logs').insert([{
+      action_type: 'CREATE_EXPENSE',
+      description: `Biaya: ${description} senilai ${amount} (${category})`,
+      user_name: userName || 'System'
+    }]);
+
+    // 2. Auto-Journaling (P&L Integration)
+    const { data: journal, error: jErr } = await supabase.from('journals').insert([{
+      reference: `EXP-${Date.now()}`,
+      description: `Biaya Operasional: ${description}`,
+      tenant_id: tenantId,
+      created_at: date || new Date().toISOString()
+    }]).select('id').single();
+
+    if (jErr) throw jErr;
+
+    if (journal) {
+      const creditAccount = paymentMethod === 'Tunai' ? 'Kas & Bank' : `${paymentMethod} Clearing`;
+      const expenseAccount = category || 'Beban Operasional';
+
+      await supabase.from('journal_lines').insert([
+        { journal_id: journal.id, account_name: expenseAccount, debit: amount, credit: 0, tenant_id: tenantId },
+        { journal_id: journal.id, account_name: creditAccount, debit: 0, credit: amount, tenant_id: tenantId }
+      ]);
+    }
+
+    res.json({ ok: true, journalId: journal.id });
+  } catch (err) {
+    console.error('Expense Error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- LOW STOCK ALERTS (PROFESSIONAL) ----
+app.get('/api/inventory/low-stock', async (req, res) => {
+  try {
+    const tenantId = req.headers['x-tenant-id'];
+    const outletId = req.headers['x-outlet-id'];
+    
+    let query = supabase.from('bahan').select('*');
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+    if (outletId) query = query.eq('outlet_id', outletId);
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    const lowStock = (data || []).filter(b => Number(b.stock) <= Number(b.min_stock || 0));
+    res.json(lowStock);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ---- INVENTORY AUDIT LOGS ----
-app.post('/api/inventory/adjust', (req, res) => {
-  const { bahanId, changeQty, type, reason, userName, nextStock } = req.body;
-  const db = readDB();
-  const idx = db.bahan.findIndex(b => b.id === Number(bahanId));
-  if (idx === -1) return res.status(404).json({ error: 'Bahan tidak ditemukan' });
+app.post('/api/inventory/adjust', async (req, res) => {
+  try {
+    const { bahanId, changeQty, type, reason, userName, nextStock } = req.body;
+    const tenantId = req.headers['x-tenant-id'];
 
-  const current = db.bahan[idx];
-  const finalStock = nextStock !== undefined ? Number(nextStock) : (Number(current.stock) + Number(changeQty));
-  
-  const prevStock = current.stock;
-  db.bahan[idx].stock = finalStock;
+    const { data: current, error: fErr } = await supabase.from('bahan').select('*').eq('id', bahanId).single();
+    if (fErr || !current) return res.status(404).json({ error: 'Bahan tidak ditemukan' });
 
-  if (!db.inventory_logs) db.inventory_logs = [];
-  db.inventory_logs.push({
-    id: Date.now(),
-    bahan_id: bahanId,
-    bahan_name: current.name,
-    change_qty: finalStock - prevStock,
-    prev_stock: prevStock,
-    next_stock: finalStock,
-    type,
-    reason,
-    user_name: userName || 'System',
-    created_at: new Date().toISOString()
-  });
+    const finalStock = nextStock !== undefined ? Number(nextStock) : (Number(current.stock) + Number(changeQty));
+    const diff = finalStock - Number(current.stock);
 
-  writeDB(db);
-  res.json({ ok: true });
+    // 1. Update Bahan
+    await supabase.from('bahan').update({ stock: finalStock }).eq('id', bahanId);
+
+    // 2. Log Movement
+    await supabase.from('stock_movements').insert([{
+      product_id: bahanId,
+      type: diff > 0 ? 'in' : 'out',
+      qty: Math.abs(diff),
+      reference_type: 'adjustment',
+      reference_id: reason || 'Stock Opname',
+      tenant_id: tenantId
+    }]);
+
+    // 3. Audit Log
+    await supabase.from('audit_logs').insert([{
+      action_type: 'STOCK_ADJUST',
+      table_name: 'bahan',
+      description: `Penyesuaian stok ${current.name} (${current.location}): ${current.stock} -> ${finalStock}. Alasan: ${reason}`,
+      user_name: userName || 'System'
+    }]);
+
+    res.json({ ok: true, nextStock: finalStock });
+  } catch (err) {
+    console.error('Adjust Error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/inventory/logs', async (req, res) => {
@@ -2322,12 +2492,27 @@ app.get('/api/report/excel', async (req, res) => {
 });
 
 // --- SUPERADMIN: TENANT MANAGEMENT ---
-app.get('/api/tenants', (req, res) => {
+app.get('/api/tenants', async (req, res) => {
+  console.log('GET /api/tenants called [Mode:', DB_MODE, ']');
+  if (DB_MODE === 'cloud') {
+    const { data, error } = await supabase.from('tenants').select('*').order('created_at', { ascending: false });
+    if (error) {
+      console.error('Supabase error fetching tenants:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    console.log('Found tenants in cloud:', data?.length || 0);
+    return res.json(data || []);
+  }
   const db = readDB();
   res.json(db.tenants || []);
 });
 
-app.post('/api/tenant', (req, res) => {
+app.post('/api/tenant', async (req, res) => {
+  if (DB_MODE === 'cloud') {
+    const { data, error } = await supabase.from('tenants').insert([{ ...req.body, created_at: new Date().toISOString() }]).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json(data);
+  }
   const db = readDB();
   if (!db.tenants) db.tenants = [];
   const newTenant = { id: Date.now(), created_at: new Date().toISOString(), ...req.body };
@@ -2339,6 +2524,13 @@ app.post('/api/tenant', (req, res) => {
 app.put('/api/tenant/:id', async (req, res) => {
   const { id } = req.params;
   const updateData = req.body;
+
+  if (DB_MODE === 'cloud') {
+    const { data, error } = await supabase.from('tenants').update(updateData).eq('id', id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json(data);
+  }
+
   const db = readDB();
   if (!db.tenants) db.tenants = [];
   const index = db.tenants.findIndex(t => String(t.id) === String(id));
@@ -2357,6 +2549,40 @@ app.put('/api/tenant/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// --- SETTINGS: LOYALTY CONFIG ---
+app.get('/api/settings/loyalty', async (req, res) => {
+  try {
+    const tenantId = req.headers['x-tenant-id'];
+    const { data: tenant } = await supabase.from('tenants').select('feature_overrides').eq('id', tenantId).single();
+    res.json(tenant?.feature_overrides?.loyalty || { enabled: true, multiplier: 10000 });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/settings/loyalty', async (req, res) => {
+  try {
+    const { enabled, multiplier } = req.body;
+    const tenantId = req.headers['x-tenant-id'];
+    const role = req.headers['x-user-role'];
+
+    if (role !== 'admin' && role !== 'manager' && role !== 'owner' && role !== 'superadmin') {
+      return res.status(403).json({ error: 'Hanya Admin/Manager/Owner yang bisa mengubah pengaturan poin' });
+    }
+
+    const { data: tenant } = await supabase.from('tenants').select('feature_overrides').eq('id', tenantId).single();
+    const currentOverrides = tenant?.feature_overrides || {};
+    
+    const newOverrides = {
+      ...currentOverrides,
+      loyalty: { enabled, multiplier: Number(multiplier) }
+    };
+
+    const { data, error } = await supabase.from('tenants').update({ feature_overrides: newOverrides }).eq('id', tenantId).select();
+    if (error) throw error;
+
+    res.json({ ok: true, config: newOverrides.loyalty });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 

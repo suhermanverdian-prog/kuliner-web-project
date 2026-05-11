@@ -110,7 +110,7 @@ export default function SuperAdminPage() {
          {[
            { label: 'Total Client', val: tenants.length, icon: Globe, color: 'text-blue-500', bg: 'bg-blue-500/10' },
            { label: 'Active Subscription', val: tenants.filter(t=>t.is_active).length, icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-           { label: 'Premium Tier', val: tenants.filter(t=>t.tier==='pro' || t.tier==='franchise').length, icon: ShieldCheck, color: 'text-accent', bg: 'bg-accent/10' },
+           { label: 'Premium Tier', val: tenants.filter(t=>t.tier==='pro' || t.tier==='enterprise').length, icon: ShieldCheck, color: 'text-accent', bg: 'bg-accent/10' },
            { label: 'System Health', val: '99.9%', icon: Activity, color: 'text-purple-600', bg: 'bg-purple-600/10' },
          ].map((s, i) => (
            <Card key={i} className="border-none shadow-md bg-card group hover:scale-[1.02] transition-all">
@@ -183,7 +183,7 @@ export default function SuperAdminPage() {
                           >
                              <option value="lite">LITE</option>
                              <option value="pro">PRO</option>
-                             <option value="franchise">FRANCHISE</option>
+                             <option value="enterprise">ENTERPRISE</option>
                           </select>
                        </td>
                        <td className="px-8 py-6">
