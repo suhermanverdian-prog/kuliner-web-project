@@ -151,7 +151,7 @@ export default function Dashboard({ user, onNavigate }) {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard (Production V4)</h2>
           <p className="text-muted-foreground">
             {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })} · Selamat datang kembali, {user?.name?.split(' ')[0] || 'User'} · <span className="text-accent font-bold">KEN</span>
           </p>
