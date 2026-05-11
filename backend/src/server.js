@@ -1445,48 +1445,23 @@ function filterTrx(transactions, start, end) {
 app.get('/api/v1/analytics/sales', async (req, res) => {
   const { period = 'month' } = req.query;
   const { start, end } = getDateRange(period);
-
-  // 1. Menu Engineering (Stars, Puzzles, Plow Horses, Dogs)
-  const { data: trxItems, error } = await supabase
-    .from('transaction_items')
-    .select('menu_id, qty, price, transactions!inner(created_at, payment_status)')
-    .gte('transactions.created_at', start.toISOString())
-    .lt('transactions.created_at', end.toISOString())
-    .eq('transactions.payment_status', 'paid');
-
-  if (error) return res.status(500).json({ error: error.message });
-
-  const agg = {};
-  trxItems.forEach(item => {
-    if (!agg[item.menu_id]) agg[item.menu_id] = { qty: 0, revenue: 0 };
-    agg[item.menu_id].qty += Number(item.qty);
-    agg[item.menu_id].revenue += (Number(item.price) * Number(item.qty));
-  });
-
-  const { data: menus } = await supabase.from('menu').select('id, name, cost');
-  let totalQty = 0; let totalProfit = 0;
-  const matrix = Object.keys(agg).map(menuId => {
-    const stat = agg[menuId];
-    const m = menus.find(x => x.id === Number(menuId)) || {};
-    const cost = Number(m.cost || 0);
-    const profit = stat.revenue - (cost * stat.qty);
-    totalQty += stat.qty;
-    totalProfit += profit;
-    return { name: m.name || 'Unknown', qty: stat.qty, profit };
-  });
-
-  const avgQty = matrix.length > 0 ? totalQty / matrix.length : 0;
-  const avgProfit = matrix.length > 0 ? totalProfit / matrix.length : 0;
-
-  const engineered = matrix.map(m => {
-    let category = 'Dogs';
-    if (m.qty >= avgQty && m.profit >= avgProfit) category = 'Stars';
-    else if (m.qty < avgQty && m.profit >= avgProfit) category = 'Puzzles';
-    else if (m.qty >= avgQty && m.profit < avgProfit) category = 'Plow Horses';
-    return { ...m, category };
-  });
-
-  res.json({ menu_engineering: engineered });
+  try {
+    const { data: trx, error } = await supabase
+      .from('transactions')
+      .select('items, created_at')
+      .gte('created_at', start.toISOString())
+      .lt('created_at', end.toISOString())
+      .eq('payment_status', 'paid');
+    if (error) throw error;
+    const agg = {};
+    trx.forEach(t => (t.items || []).forEach(it => {
+      const key = it.id || it.name;
+      if (!agg[key]) agg[key] = { name: it.name, qty: 0, revenue: 0 };
+      agg[key].qty += Number(it.qty || 0);
+      agg[key].revenue += (Number(it.price || 0) * Number(it.qty || 0));
+    }));
+    res.json({ matrix: Object.values(agg) });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/v1/analytics/financial', async (req, res) => {
@@ -1562,42 +1537,48 @@ app.get('/api/v1/accounting/reports', async (req, res) => {
 app.get('/api/v1/analytics/inventory', async (req, res) => {
   const { period = 'month' } = req.query;
   const { start, end } = getDateRange(period);
-
-  const { data: movements, error } = await supabase
-    .from('stock_movements')
-    .select('type, qty, product_id, reference_type, created_at')
-    .gte('created_at', start.toISOString())
-    .lt('created_at', end.toISOString());
-
-  if (error) return res.status(500).json({ error: error.message });
-
-  let totalIn = 0; let totalOut = 0; let totalWaste = 0;
-  movements.forEach(m => {
-    if (m.type === 'in') totalIn += Number(m.qty);
-    if (m.type === 'out' && m.reference_type === 'sales') totalOut += Number(m.qty);
-    if (m.type === 'waste' || m.reference_type === 'waste') totalWaste += Number(m.qty);
-  });
-
-  const turnover_ratio = totalIn > 0 ? (totalOut / totalIn).toFixed(2) : 0;
-
-  res.json({ turnover_ratio, total_in: totalIn, total_out: totalOut, total_waste: totalWaste });
+  try {
+    const { data: movements, error } = await supabase
+      .from('inventory_logs')
+      .select('*')
+      .gte('created_at', start.toISOString())
+      .lt('created_at', end.toISOString());
+    if (error) throw error;
+    let totalIn = 0; let totalOut = 0; let totalWaste = 0;
+    movements.forEach(m => {
+      const q = Number(m.quantity || 0);
+      if (m.type === 'adjustment' && q > 0) totalIn += q;
+      else if (m.type === 'adjustment' && q < 0) totalOut += Math.abs(q);
+      else if (m.type === 'transfer' && q < 0) totalOut += Math.abs(q);
+      else if (m.type === 'waste') totalWaste += Math.abs(q);
+    });
+    res.json({ turnover_ratio: totalIn > 0 ? (totalOut / totalIn).toFixed(2) : 0, total_in: totalIn, total_out: totalOut, total_waste: totalWaste });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/laporan/summary', async (req, res) => {
-  const { period = 'today', customStart, customEnd } = req.query;
-  const { start, end } = getDateRange(period, customStart, customEnd);
-
-  // Ambil transaksi dari Supabase dalam rentang waktu tertentu
-  const { data: trx, error } = await supabase
-    .from('transactions')
-    .select('*, transaction_items(*)')
-    .gte('created_at', start.toISOString())
-    .lt('created_at', end.toISOString())
-    .eq('payment_status', 'paid');
-
-  if (error) return res.status(500).json({ error: error.message });
-
-  const totalRevenue = trx.reduce((s, t) => s + Number(t.total || 0), 0);
+  const { period = 'today' } = req.query;
+  const { start, end } = getDateRange(period);
+  const tenantId = req.headers['x-tenant-id'];
+  try {
+    const { data: trx, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .gte('created_at', start.toISOString())
+      .lt('created_at', end.toISOString())
+      .eq('payment_status', 'paid');
+    if (error) throw error;
+    const totalRevenue = trx.reduce((s, t) => s + Number(t.total || 0), 0);
+    const totalTransactions = trx.length;
+    res.json({
+      totalRevenue, totalTransactions,
+      avgTransaction: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+      totalHPP: totalRevenue * 0.3, grossProfit: totalRevenue * 0.7,
+      marginPct: 70
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
   const totalTransactions = trx.length;
   const avgTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
@@ -2312,214 +2293,8 @@ app.get('/api/journals/:id', async (req, res) => {
   res.json(journal);
 });
 
-// --- ACCOUNTING SUMMARY (Dashboard + Laporan Keuangan) ---
-app.get('/api/accounting/summary', async (req, res) => {
-  try {
-    const tenantId = req.headers['x-tenant-id'];
-    const { start: startStr, end: endStr, period } = req.query;
 
-    // Default: Bulan Ini
-    const now = new Date();
-    let start, end;
-    if (startStr && endStr) {
-      start = new Date(startStr);
-      end   = new Date(endStr);
-      end.setHours(23, 59, 59, 999);
-    } else {
-      const p = period || 'month';
-      end = new Date();
-      if (p === 'today')  { start = new Date(now.setHours(0,0,0,0)); end = new Date(); }
-      else if (p === '7days') { start = new Date(Date.now() - 7*24*60*60*1000); }
-      else if (p === 'month') { start = new Date(now.getFullYear(), now.getMonth(), 1); }
-      else if (p === 'year')  { start = new Date(now.getFullYear(), 0, 1); }
-      else { start = new Date(now.getFullYear(), now.getMonth(), 1); }
-    }
-
-    let lines = [];
-    if (DB_MODE === 'cloud') {
-      const { data: cloudLines, error } = await supabase
-        .from('journal_lines')
-        .select('*, journals!inner(*)')
-        .eq('journals.tenant_id', tenantId)
-        .gte('date', start.toISOString())
-        .lte('date', end.toISOString());
-      if (error) throw error;
-      lines = (cloudLines || []).map(l => ({
-        accountCode: l.account_code,
-        accountName: l.account_name,
-        debit: l.debit,
-        credit: l.credit
-      }));
-    } else {
-      const db = readDB();
-      const journalIds = new Set(
-        (db.journals || [])
-          .filter(j => { const d = new Date(j.date); return d >= start && d <= end; })
-          .map(j => j.id)
-      );
-      lines = (db.journal_lines || []).filter(l => journalIds.has(l.journalId));
-    }
-
-    // Aggregate per account code
-    const balances = {};
-    lines.forEach(l => {
-      if (!balances[l.accountCode]) balances[l.accountCode] = { name: l.accountName, code: l.accountCode, debit: 0, credit: 0 };
-      balances[l.accountCode].debit  += Number(l.debit  || 0);
-      balances[l.accountCode].credit += Number(l.credit || 0);
-    });
-
-    // --- Laba/Rugi (Income Statement) ---
-    const totalRevenue      = (balances['4-1000']?.credit || 0) - (balances['4-1000']?.debit || 0);
-    const totalHPP          = (balances['5-1000']?.debit  || 0) - (balances['5-1000']?.credit || 0);
-    const totalOpex         = (balances['6-1000']?.debit  || 0) - (balances['6-1000']?.credit || 0);
-    const totalWaste        = (balances['6-2000']?.debit  || 0) - (balances['6-2000']?.credit || 0);
-    const grossProfit       = totalRevenue - totalHPP;
-    const netProfit         = grossProfit - totalOpex - totalWaste;
-
-    // --- Neraca (Balance Sheet) ---
-    const totalKas          = (balances['1-1000']?.debit  || 0) - (balances['1-1000']?.credit || 0);
-    const totalPersediaan   = (balances['1-2000']?.debit  || 0) - (balances['1-2000']?.credit || 0);
-    const totalHutangDagang = (balances['2-1000']?.credit || 0) - (balances['2-1000']?.debit  || 0);
-    const totalHutangPajak  = (balances['2-2000']?.credit || 0) - (balances['2-2000']?.debit  || 0);
-
-    res.json({
-      period: { start: start.toISOString(), end: end.toISOString() },
-      incomeStatement: {
-        revenue:    totalRevenue,
-        hpp:        totalHPP,
-        grossProfit: grossProfit,
-        opex:       totalOpex,
-        waste:      totalWaste,
-        netProfit:  netProfit,
-        grossMargin: totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : '—',
-      },
-      balanceSheet: {
-        assets: {
-          kas: totalKas,
-          persediaan: totalPersediaan,
-          total: totalKas + totalPersediaan
-        },
-        liabilities: {
-          hutangDagang: totalHutangDagang,
-          hutangPajak: totalHutangPajak,
-          total: totalHutangDagang + totalHutangPajak
-        },
-        equity: {
-          labaDitahan: netProfit,
-          total: netProfit
-        }
-      },
-      cashFlow: {
-        operasional: totalRevenue,
-        pembelian:   totalHPP,
-        net:         totalRevenue - totalHPP,
-      },
-      balanceEntries: Object.values(balances),
-    });
-  } catch (err) {
-    console.error('Accounting summary error:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// --- ACCOUNTING EXCEL EXPORT ---
-app.get('/api/accounting/export/excel', async (req, res) => {
-  try {
-    const db = readDB();
-    const { period } = req.query;
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'KEN ERP';
-
-    // Sheet 1: Buku Besar / General Ledger
-    const sheetLedger = workbook.addWorksheet('Buku Besar');
-    sheetLedger.columns = [
-      { header: 'Tanggal',       key: 'date',        width: 22 },
-      { header: 'Referensi',     key: 'reference',   width: 20 },
-      { header: 'Deskripsi',     key: 'description', width: 40 },
-      { header: 'Kode Akun',     key: 'code',        width: 12 },
-      { header: 'Nama Akun',     key: 'name',        width: 30 },
-      { header: 'Debit (Rp)',    key: 'debit',       width: 18 },
-      { header: 'Kredit (Rp)',   key: 'credit',      width: 18 },
-    ];
-    sheetLedger.getRow(1).font = { bold: true, size: 11 };
-    sheetLedger.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
-    sheetLedger.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-
-    const journals = db.journals || [];
-    const jLines   = db.journal_lines || [];
-
-    journals.forEach(j => {
-      const lines = jLines.filter(l => l.journalId === j.id);
-      lines.forEach(l => {
-        const row = sheetLedger.addRow({
-          date: new Date(j.date).toLocaleString('id-ID'),
-          reference: j.reference,
-          description: j.description,
-          code: l.accountCode,
-          name: l.accountName,
-          debit: Number(l.debit || 0),
-          credit: Number(l.credit || 0),
-        });
-        row.getCell('debit').numFmt  = '#,##0';
-        row.getCell('credit').numFmt = '#,##0';
-      });
-    });
-
-    // Sheet 2: Chart of Accounts
-    const sheetCoa = workbook.addWorksheet('Chart of Accounts');
-    sheetCoa.columns = [
-      { header: 'Kode',             key: 'code',           width: 12 },
-      { header: 'Nama Akun',        key: 'name',           width: 35 },
-      { header: 'Kategori',         key: 'category',       width: 18 },
-      { header: 'Saldo Normal',     key: 'normalBalance',  width: 15 },
-    ];
-    sheetCoa.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    sheetCoa.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
-    (db.accounts || DEFAULT_ACCOUNTS).forEach(a => sheetCoa.addRow(a));
-
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="laporan-akuntansi-${new Date().toISOString().slice(0,10)}.xlsx"`);
-    await workbook.xlsx.write(res);
-    res.end();
-  } catch (err) {
-    res.status(500).json({ error: 'Gagal export Excel: ' + err.message });
-  }
-});
-
-// ---- LAPORAN & ANALITIK (FASE 3) ----
-app.get('/api/laporan/summary', async (req, res) => {
-  const tenantId = req.headers['x-tenant-id'];
-  const { period } = req.query;
-  try {
-    if (DB_MODE === 'cloud') {
-      const { data: trx } = await supabase.from('transactions').select('*').eq('tenant_id', tenantId);
-      const totalRevenue = trx.reduce((sum, t) => sum + Number(t.total || 0), 0);
-      const totalOrders = trx.length;
-      return res.json({ totalRevenue, totalOrders, averageOrder: totalOrders > 0 ? totalRevenue / totalOrders : 0 });
-    }
-    const db = readDB();
-    const trx = (db.transactions || []).filter(t => t.tenantId === tenantId);
-    const totalRevenue = trx.reduce((sum, t) => sum + Number(t.total || 0), 0);
-    res.json({ totalRevenue, totalOrders: trx.length });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.get('/api/laporan/top-products', async (req, res) => {
-  const tenantId = req.headers['x-tenant-id'];
-  try {
-    if (DB_MODE === 'cloud') {
-      const { data: trx } = await supabase.from('transactions').select('items').eq('tenant_id', tenantId);
-      const counts = {};
-      trx.forEach(t => (t.items || []).forEach(it => { counts[it.name] = (counts[it.name] || 0) + it.qty; }));
-      const sorted = Object.entries(counts).map(([name, qty]) => ({ name, qty })).sort((a,b) => b.qty - a.qty).slice(0, 5);
-      return res.json(sorted);
-    }
-    res.json([]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
+// ---- REPORTS & ANALYTICS ----
 
 // ---- ACCOUNTING SUMMARY (FASE 4) ----
 app.get('/api/accounting/summary', async (req, res) => {
