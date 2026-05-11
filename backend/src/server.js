@@ -2503,10 +2503,72 @@ if (fs.existsSync(frontendDistPath)) {
   console.log('⚠️ Folder frontend/dist tidak ditemukan. Pastikan Anda telah menjalankan build frontend.');
 }
 
+// ---- SYSTEM CHECK (DEBUG) ----
+app.get('/api/system-check', (req, res) => {
+  res.json({
+    mode: DB_MODE,
+    vercel: !!process.env.VERCEL,
+    supabase_url: !!process.env.SUPABASE_URL,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ---- ACCOUNTING ENGINE (FASE 2/3) ----
+app.get('/api/accounting/summary', async (req, res) => {
+  const tenantId = req.headers['x-tenant-id'];
+  const outletId = req.headers['x-outlet-id'];
+  const period = req.query.period || 'this_month';
+
+  try {
+    let journals = [];
+    if (DB_MODE === 'cloud') {
+      let query = supabase.from('journals').select('*, journal_lines(*)').eq('tenant_id', tenantId);
+      if (outletId) query = query.eq('outlet_id', outletId);
+      const { data, error } = await query;
+      if (error) throw error;
+      journals = data;
+    } else {
+      const db = readDB();
+      journals = (db.journals || []).map(j => ({
+        ...j,
+        journal_lines: (db.journal_lines || []).filter(l => l.journalId === j.id)
+      })).filter(j => j.tenantId === tenantId);
+    }
+
+    // Aggregation Logic
+    const balances = {};
+    journals.forEach(j => {
+      if (j.journal_lines) {
+        j.journal_lines.forEach(l => {
+          if (!balances[l.account_code]) balances[l.account_code] = 0;
+          balances[l.account_code] += (Number(l.debit || 0) - Number(l.credit || 0));
+        });
+      }
+    });
+
+    // P&L Calculation (simplified)
+    const pendapatan = Math.abs(balances['4-1000'] || 0);
+    const hpp = Math.abs(balances['5-1000'] || 0);
+    const biaya = Math.abs(balances['6-1000'] || 0) + Math.abs(balances['6-2000'] || 0);
+    const labaKotor = pendapatan - hpp;
+    const labaBersih = labaKotor - biaya;
+
+    res.json({
+      kpi: {
+        totalRevenue: pendapatan,
+        netProfit: labaBersih,
+        cashBalance: balances['1-1000'] || 0,
+        unpaidHutang: Math.abs(balances['2-1000'] || 0)
+      },
+      pnl: { pendapatan, hpp, biaya, labaKotor, labaBersih },
+      balances
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ BrewMaster Backend berjalan di port ${PORT}`);
-  console.log(`📁 Database: ${DB_PATH}`);
-  readDB(); // init if not exists
+  console.log(`🚀 KEN Server running on port ${PORT} [Mode: ${DB_MODE}]`);
+  readDB(); 
 });
 
 module.exports = app;
