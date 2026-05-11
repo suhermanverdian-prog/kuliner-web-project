@@ -11,6 +11,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { cn } from "../lib/utils";
+import { hasFeature } from '../lib/featureFlags';
 
 /* ── Komponen Grafik Bar SVG ─────────────────────────────── */
 function BarChart({ data }) {
@@ -66,7 +67,7 @@ function DonutMini({ pct, color }) {
   );
 }
 
-export default function Dashboard({ user }) {
+export default function Dashboard({ user, onNavigate }) {
   const [transactions, setTransactions] = useState([]);
   const [menu, setMenu] = useState([]);
   const [tables, setTables] = useState([]);
@@ -74,22 +75,38 @@ export default function Dashboard({ user }) {
   const [salesAnalytics, setSalesAnalytics] = useState(null);
   const [financialAnalytics, setFinancialAnalytics] = useState(null);
   const [inventoryAnalytics, setInventoryAnalytics] = useState(null);
+  const [pos, setPos] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [grns, setGrns] = useState([]);
+  const [accountingSummary, setAccountingSummary] = useState(null);
+
+  const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
 
   useEffect(() => {
+    const u = user || {};
+    const headers = { 'x-user-role': u.role || 'guest', 'x-tenant-id': u.tenant?.id || '' };
     Promise.all([
       api.getTransactions().catch(() => []), 
       api.getMenu().catch(() => []), 
       api.getTables().catch(() => []),
-      api.getAnalyticsSales('month').catch(() => null),
-      api.getAnalyticsFinancial('month').catch(() => null),
-      api.getAnalyticsInventory('month').catch(() => null)
-    ]).then(([txData, menuData, tblData, salesData, finData, invData]) => {
+      hasFeature(user, 'reporting_pdf') ? api.getAnalyticsSales('month').catch(() => null) : Promise.resolve(null),
+      hasFeature(user, 'accounting') ? api.getAnalyticsFinancial('month').catch(() => null) : Promise.resolve(null),
+      hasFeature(user, 'inventory') ? api.getAnalyticsInventory('month').catch(() => null) : Promise.resolve(null),
+      hasFeature(user, 'procurement') ? api.getPO().catch(() => []) : Promise.resolve([]),
+      hasFeature(user, 'procurement') ? api.getGRN().catch(() => []) : Promise.resolve([]),
+      hasFeature(user, 'procurement') ? api.getPurchaseInvoices().catch(() => []) : Promise.resolve([]),
+      fetch(`${API_URL}/accounting/summary?period=today`, { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([txData, menuData, tblData, salesData, finData, invData, poData, grnData, invoiceData, accSum]) => {
       setTransactions(Array.isArray(txData) ? txData : []);
       setMenu(Array.isArray(menuData) ? menuData : []);
       setTables(Array.isArray(tblData) ? tblData : []);
+      setPos(Array.isArray(poData) ? poData : []);
+      setGrns(Array.isArray(grnData) ? grnData : []);
+      setInvoices(Array.isArray(invoiceData) ? invoiceData : []);
       if (salesData) setSalesAnalytics(salesData);
       if (finData) setFinancialAnalytics(finData);
       if (invData) setInventoryAnalytics(invData);
+      if (accSum) setAccountingSummary(accSum);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -104,12 +121,21 @@ export default function Dashboard({ user }) {
   const totalTx = safeTransactions.length;
   const activeTables = safeTables.filter(t => t?.status === 'occupied').length;
 
+  const totalUnpaid = invoices.filter(inv => inv.status === 'unpaid').reduce((s, inv) => s + (inv.amount || 0), 0);
+  const totalSpendMonth = invoices.reduce((s, inv) => s + (inv.amount || 0), 0);
+  const pendingPOs = pos.filter(p => p.status === 'Pending').length;
+
+  const is = accountingSummary?.incomeStatement || {};
+
   const stats = [
     { label: 'Pendapatan Hari Ini', value: formatRupiah(todayRevenue), icon: DollarSign, trend: '+12.5%', isUp: true, description: 'vs kemarin' },
-    { label: 'Total Transaksi', value: todayTx.length.toString(), icon: ReceiptText, trend: '+4', isUp: true, description: 'pesanan baru' },
-    { label: 'Okupansi Meja', value: `${activeTables}/${safeTables.length}`, icon: Armchair, trend: 'Sibuk', isUp: true, description: 'sesi aktif' },
-    { label: 'Perputaran Stok', value: `${inventoryAnalytics?.turnover_ratio || 0}x`, icon: Package, trend: '-2%', isUp: false, description: 'bulan ini' },
-  ];
+    accountingSummary && { label: 'Laba Bersih (Hari Ini)', value: formatRupiah(is.netProfit || todayRevenue), icon: TrendingUp, trend: `Margin ${is.grossMargin || '—'}%`, isUp: (is.netProfit||0) >= 0, description: 'net income' },
+    hasFeature(user, 'procurement') && { label: 'Hutang Supplier', value: formatRupiah(totalUnpaid), icon: TrendingDown, trend: `${invoices.filter(i => i.status === 'unpaid').length} Tagihan`, isUp: false, description: 'belum dibayar' },
+    hasFeature(user, 'procurement') && { label: 'Belanja Bulan Ini', value: formatRupiah(totalSpendMonth), icon: Package, trend: 'Aktif', isUp: true, description: 'total pengadaan' },
+    hasFeature(user, 'procurement') && { label: 'PO Pending', value: pendingPOs.toString(), icon: Clock, trend: 'Draft/Open', isUp: true, description: 'pesanan aktif' },
+    !hasFeature(user, 'procurement') && { label: 'Total Transaksi', value: totalTx.toString(), icon: ReceiptText, trend: 'Bulan ini', isUp: true, description: 'semua pesanan' },
+    !hasFeature(user, 'procurement') && { label: 'Meja Terisi', value: activeTables.toString(), icon: Armchair, trend: 'Live', isUp: true, description: 'dari ' + tables.length + ' meja' },
+  ].filter(Boolean);
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
@@ -125,12 +151,12 @@ export default function Dashboard({ user }) {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">
-            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })} · Selamat datang kembali, {user?.name?.split(' ')[0] || 'User'}
+            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })} · Selamat datang kembali, {user?.name?.split(' ')[0] || 'User'} · <span className="text-accent font-bold">KEN</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">Unduh Laporan</Button>
-          <Button size="sm">Transaksi Baru</Button>
+          <Button variant="outline" size="sm" onClick={() => onNavigate?.('laporan')}>Unduh Laporan</Button>
+          <Button size="sm" onClick={() => onNavigate?.('kasir')}>Transaksi Baru</Button>
         </div>
       </div>
 

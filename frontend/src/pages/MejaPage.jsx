@@ -50,10 +50,12 @@ export default function MejaPage() {
     fetchTables();
   };
 
+  const safeTables = Array.isArray(tables) ? tables : [];
+
   const counts = {
-    available: tables.filter(t=>t.status==='available').length,
-    occupied: tables.filter(t=>t.status==='occupied').length,
-    reserved: tables.filter(t=>t.status==='reserved').length,
+    available: safeTables.filter(t=>t.status==='available').length,
+    occupied: safeTables.filter(t=>t.status==='occupied').length,
+    reserved: safeTables.filter(t=>t.status==='reserved').length,
   };
 
   if (loading) return (
@@ -111,7 +113,7 @@ export default function MejaPage() {
           </CardHeader>
           <CardContent className="p-8">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-6">
-              {tables.map(t => {
+              {safeTables.map(t => {
                 const st = STATUS_STYLE[t.status];
                 const Icon = st.icon;
                 const isSelected = selected?.id === t.id;

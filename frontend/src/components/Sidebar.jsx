@@ -2,8 +2,9 @@ import {
   LayoutDashboard, ShoppingCart, Coffee, ChefHat, 
   Clock, PackageOpen, ShoppingBag, BarChart3, 
   Users, Settings, ShieldCheck, LogOut, Armchair,
-  ChevronLeft, ChevronRight, Menu
+  ChevronLeft, ChevronRight, BookOpen, Store
 } from 'lucide-react';
+import { hasFeature, PAGE_FEATURE_MAP } from '../lib/featureFlags';
 
 export default function Sidebar({ 
   user, activePage, onNavigate, onLogout, isOpen, onClose, 
@@ -13,34 +14,40 @@ export default function Sidebar({
 
   const allNav = [
     { group: 'Utama', items: [
-      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard',      roles: ['admin','owner','akuntan'], perm: 'akses_keuangan', minTier: 'lite' },
-      { id: 'kasir',     icon: ShoppingCart,    label: 'Kasir / POS',    roles: ['admin','kasir'],           perm: 'akses_kasir',    minTier: 'lite' },
-      { id: 'meja',      icon: Armchair,        label: 'Manajemen Meja', roles: ['admin','kasir','koki'],    perm: 'akses_kasir',    minTier: 'lite' },
-      { id: 'kds',       icon: ChefHat,         label: 'Dapur (KDS)',    roles: ['admin','koki','kasir'],    perm: 'akses_dapur',    minTier: 'lite' },
-      { id: 'shift',     icon: Clock,           label: 'Shift Kasir',    roles: ['admin','kasir','owner'],   perm: 'akses_kasir',    minTier: 'lite' },
+      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard',      roles: ['admin','owner','akuntan'], perm: 'akses_keuangan' },
+      { id: 'kasir',     icon: ShoppingCart,    label: 'Kasir / POS',    roles: ['admin','kasir'],           perm: 'akses_kasir' },
+      { id: 'meja',      icon: Armchair,        label: 'Manajemen Meja', roles: ['admin','kasir','koki'],    perm: 'akses_kasir' },
+      { id: 'kds',       icon: ChefHat,         label: 'Dapur (KDS)',    roles: ['admin','koki','kasir'],    perm: 'akses_dapur' },
+      { id: 'shift',     icon: Clock,           label: 'Shift Kasir',    roles: ['admin','kasir','owner'],   perm: 'akses_kasir' },
     ]},
     { group: 'Produk & Stok', items: [
-      { id: 'inventori', icon: PackageOpen,     label: 'Bahan Baku',     roles: ['admin','gudang','owner'],  perm: 'akses_gudang',   minTier: 'lite' },
-      { id: 'pembelian', icon: ShoppingBag,     label: 'Pembelian (PO)', roles: ['admin','gudang','owner'],  perm: 'akses_gudang',   minTier: 'pro' },
-      { id: 'menu',      icon: Coffee,          label: 'Menu & Produk',  roles: ['admin','owner'],           perm: 'akses_gudang',   minTier: 'pro' },
+      { id: 'inventori', icon: PackageOpen,     label: 'Bahan Baku',     roles: ['admin','gudang','owner'],  perm: 'akses_gudang' },
+      { id: 'pembelian', icon: ShoppingBag,     label: 'Pengadaan (PO)', roles: ['admin','gudang','owner'],  perm: 'akses_gudang' },
+      { id: 'menu',      icon: Coffee,          label: 'Menu & Produk',  roles: ['admin','owner'],           perm: 'akses_gudang' },
     ]},
     { group: 'Bisnis', items: [
-      { id: 'laporan',   icon: BarChart3,       label: 'Laporan',        roles: ['admin','owner','akuntan'], perm: 'lihat_laba',     minTier: 'pro' },
-      { id: 'pelanggan', icon: Users,           label: 'Pelanggan',      roles: ['admin','owner'],           perm: 'atur_user',      minTier: 'pro' },
+      { id: 'laporan',    icon: BarChart3,  label: 'Laporan',       roles: ['admin','owner','akuntan'], perm: 'lihat_laba' },
+      { id: 'akuntansi',  icon: BookOpen,   label: 'Akuntansi',     roles: ['admin','owner','akuntan'], perm: 'lihat_laba',  feature: 'accounting' },
+      { id: 'outlets',    icon: Store,      label: 'Multi-Outlet',  roles: ['admin','owner'],           perm: 'atur_user',   feature: 'multi_outlet' },
+      { id: 'pelanggan',  icon: Users,      label: 'Pelanggan',     roles: ['admin','owner'],           perm: 'atur_user' },
     ]},
     { group: 'Sistem', items: [
-      { id: 'pengaturan', icon: Settings,       label: 'Pengaturan',     roles: ['admin','owner'],           perm: 'atur_user',      minTier: 'pro' },
-      { id: 'superadmin', icon: ShieldCheck,    label: 'SuperAdmin',     roles: [],                          perm: 'superadmin',     minTier: 'franchise' },
+      { id: 'pengaturan', icon: Settings,       label: 'Pengaturan',     roles: ['admin','owner'],           perm: 'atur_user' },
+      { id: 'superadmin', icon: ShieldCheck,    label: 'SuperAdmin',     roles: [],                          perm: 'superadmin' },
     ]},
   ];
 
   const hasAccess = (item) => {
+    // SuperAdmin check
     if (item.perm === 'superadmin') return user.is_superadmin === true;
     if (user.is_superadmin) return true;
-    const tenantFeatures = user.tenant?.features || {};
-    if (item.id === 'laporan' && tenantFeatures.accounting !== true) return false;
-    if (item.id === 'pelanggan' && tenantFeatures.crm !== true) return false;
-    if (user.permissions && user.permissions.all) return true; 
+
+    // Layer 1: Feature Flag check
+    const requiredFlag = PAGE_FEATURE_MAP[item.id];
+    if (requiredFlag && !hasFeature(user, requiredFlag)) return false;
+
+    // Layer 2: Role-based access check
+    if (user.permissions && user.permissions.all) return true;
     if (item.roles.includes(user.role)) return true;
     if (user.permissions && user.permissions[item.perm]) return true;
     return false;
@@ -57,8 +64,8 @@ export default function Sidebar({
       <aside className={`sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-brand">
           <div className="brand-logo">
-            <Coffee size={24} />
-            {!isCollapsed && <span>BrewMaster<span>.</span></span>}
+            <div style={{width:'28px',height:'28px',background:'white',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'900',fontSize:'14px',color:'#6366f1',flexShrink:0}}>K</div>
+            {!isCollapsed && <span>KEN<span style={{color:'#6366f1'}}>.</span></span>}
           </div>
           <button className="toggle-sidebar-btn" onClick={onToggleCollapse}>
             {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}

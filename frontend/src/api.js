@@ -96,18 +96,33 @@ export const api = new Proxy(apiBase, {
     // Helper untuk headers otentikasi
     const getHeaders = () => {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const currentOutletId = localStorage.getItem('currentOutletId') || '';
       return {
         'Content-Type': 'application/json',
         'x-user-role': user.role || 'guest',
-        'x-tenant-id': user.tenant?.id || ''
+        'x-tenant-id': user.tenant?.id || '',
+        'x-outlet-id': currentOutletId
       };
+    };
+
+    // Helper untuk normalisasi resource
+    const getResource = (p) => {
+      let r = p.replace('get', '').replace('add', '').replace('update', '').replace('save', '').replace('delete', '').toLowerCase();
+      if (r === 'shift') return 'shifts';
+      if (r === 'transaction') return 'transactions';
+      if (r === 'purchaseorders' || r === 'po') return 'po';
+      if (r === 'purchaseinvoices') return 'purchase_invoices';
+      if (r === 'purchasepayments') return 'purchase_payments';
+      if (r === 'grn') return 'grns';
+      if (r === 'supplier') return 'suppliers';
+      if (r === 'outlet') return 'outlets';
+      if (r === 'tenant' && p.startsWith('get')) return 'tenants';
+      return r;
     };
 
     // Jika fungsi yang dipanggil berawalan 'get' (contoh: getTransactions)
     if (prop.startsWith('get')) {
-      let resource = prop.replace('get', '').toLowerCase();
-      if (resource === 'shift') resource = 'shifts';
-      if (resource === 'transaction') resource = 'transactions';
+      const resource = getResource(prop);
       return () => fetch(`${API_URL}/${resource}`, { headers: getHeaders() }).then(res => res.json());
     }
     
@@ -115,9 +130,7 @@ export const api = new Proxy(apiBase, {
     if (prop.startsWith('add') || prop.startsWith('update') || prop.startsWith('save')) {
       return (data) => {
         const isUpdate = prop.startsWith('update') && data.id;
-        let resource = prop.replace('add', '').replace('update', '').replace('save', '').toLowerCase();
-        if (resource === 'shift') resource = 'shifts';
-        if (resource === 'transaction') resource = 'transactions';
+        const resource = getResource(prop);
         const url = isUpdate ? `${API_URL}/${resource}/${data.id}` : `${API_URL}/${resource}`;
         return fetch(url, {
           method: isUpdate ? 'PUT' : 'POST',
@@ -129,7 +142,7 @@ export const api = new Proxy(apiBase, {
 
     // Jika fungsi berawalan 'delete'
     if (prop.startsWith('delete')) {
-      return (id) => fetch(`${API_URL}/${prop.replace('delete', '').toLowerCase()}/${id}`, {
+      return (id) => fetch(`${API_URL}/${getResource(prop)}/${id}`, {
         method: 'DELETE',
         headers: getHeaders()
       }).then(res => res.json());

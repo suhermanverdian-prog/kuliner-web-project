@@ -146,10 +146,10 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
               <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                 <FlaskConical size={14} /> Resep / BOM
               </label>
-              <Button variant="outline" size="sm" onClick={() => setForm({ ...form, bom: [...form.bom, { bahanId: '', qty: 0 }] })}>+ Tambah Bahan</Button>
+              <Button variant="outline" size="sm" onClick={() => setForm({ ...form, bom: [...(form.bom || []), { bahanId: '', qty: 0 }] })}>+ Tambah Bahan</Button>
             </div>
             <div className="space-y-2">
-              {form.bom.map((row, i) => {
+              {(form.bom || []).map((row, i) => {
                 const b = bahanList.find(x => x.id === Number(row.bahanId));
                 const conv = getConversion(b);
                 return (
@@ -162,7 +162,7 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
                       }}
                     >
                       <option value="">Pilih Bahan Baku</option>
-                      {bahanList.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      {(bahanList || []).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
                     <Input 
                       className="flex-1 h-9 text-right font-bold" 
@@ -190,7 +190,7 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
   );
 }
 
-export default function MenuPage() {
+export default function MenuPage({ user }) {
   const [menus, setMenus] = useState([]);
   const [bahanList, setBahanList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -362,6 +362,21 @@ export default function MenuPage() {
           bahanList={bahanList}
           onClose={() => setShowModal(false)}
           onSave={async (data) => {
+            // Check for price change
+            const old = menus.find(m => m.id === data.id);
+            if (old && Number(old.price) !== Number(data.price)) {
+               const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+               fetch(`${API_BASE}/system-logs`, {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({
+                   userName: user?.name || 'System',
+                   role: user?.role,
+                   activityType: 'PRICE_CHANGE',
+                   description: `Mengubah harga ${data.name} dari ${formatRupiah(old.price)} menjadi ${formatRupiah(data.price)}`
+                 })
+               }).catch(e => console.error(e));
+            }
             await api.saveMenu(data); loadData(); setShowModal(false);
           }}
         />

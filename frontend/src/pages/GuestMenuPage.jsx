@@ -36,7 +36,7 @@ const printReceipt = (order) => {
     <html>
       <body style="font-family:monospace; width:300px; padding:10px;">
         <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:10px; margin-bottom:10px;">
-          <h2 style="margin:0;">BrewMaster Coffee</h2>
+          <h2 style="margin:0;">Kitchen Enterprise Nodes</h2>
           <p style="font-size:10px; margin:2px;">Jl. Kopi Nikmat No. 123</p>
           <p style="font-size:10px; margin:2px;">WA: 0812-3456-7890</p>
         </div>
@@ -65,7 +65,7 @@ const printReceipt = (order) => {
 };
 
 const sendWA = (order) => {
-  const text = `Halo ${order.customerName}! Terima kasih sudah memesan di BrewMaster Coffee. %0A%0AOrder ID: ${order.id}%0ATotal: ${formatRupiah(order.total)}%0AStatus: ${order.kdsStatus}%0A%0ACek status pesanan kamu secara real-time di sini: ${window.location.origin}/#/guest`;
+  const text = `Halo ${order.customerName}! Terima kasih sudah memesan. %0A%0AOrder ID: ${order.id}%0ATotal: ${formatRupiah(order.total)}%0AStatus: ${order.kdsStatus}%0A%0ACek status pesanan kamu secara real-time di sini: ${window.location.origin}/#/guest`;
   window.open(`https://wa.me/${order.customerPhone}?text=${text}`, '_blank');
 };
 
@@ -568,7 +568,7 @@ export default function GuestMenuPage({ user, tableFromQR }) {
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-xs">BM</div>
-            <span className="font-black text-xl tracking-tight text-primary">BrewMaster</span>
+            <span className="font-black text-xl tracking-tight text-primary">KEN</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -612,7 +612,7 @@ export default function GuestMenuPage({ user, tableFromQR }) {
             {user?.name ? `Siap ngopi lagi, ${user.name.split(' ')[0]}?` : 'Nikmati Kopi Terbaik Hari Ini.'}
           </p>
           <p className="text-white/60 font-medium text-sm md:text-base max-w-sm">
-            Temukan racikan kopi autentik dan kudapan lezat favoritmu di BrewMaster.
+            Temukan menu terbaik dan rasakan pengalaman memesan yang mudah dan cepat.
           </p>
         </div>
       </div>

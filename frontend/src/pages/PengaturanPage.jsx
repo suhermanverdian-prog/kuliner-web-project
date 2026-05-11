@@ -6,7 +6,7 @@ import {
   RefreshCw, CheckCircle2, AlertCircle,
   User, ShieldCheck, Mail, Lock,
   Store, Percent, CreditCard, Layout,
-  Image as ImageIcon, Upload, LogOut
+  Image as ImageIcon, Upload, LogOut, X
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -28,49 +28,125 @@ const ROLE_LABELS = { admin:'Admin', owner:'Owner', kasir:'Kasir', koki:'Koki/Ba
 const ROLE_COLORS = { admin:'bg-blue-500', owner:'bg-purple-500', kasir:'bg-amber-500', koki:'bg-emerald-500', gudang:'bg-slate-500', akuntan:'bg-indigo-500' };
 
 function AddUserModal({ onClose, onSave, loading }) {
-  const [form, setForm] = useState({ name: '', username: '', password: '', role: 'kasir' });
+  const [form, setForm] = useState({ name: '', username: '', password: '', role: 'kasir', avatar_url: '' });
+  const [uploading, setUploading] = useState(false);
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
-      <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-        <CardHeader className="border-b pb-4">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
+      <Card className="w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-200 border-none">
+        <CardHeader className="border-b pb-6">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Plus className="text-accent" /> Tambah Pengguna
-            </CardTitle>
-            <Button variant="ghost" size="icon" onClick={onClose}><X /></Button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent">
+                <Plus size={24} strokeWidth={3} />
+              </div>
+              <div>
+                <CardTitle className="text-xl">Tambah Anggota Tim</CardTitle>
+                <CardDescription>Daftarkan anggota tim baru untuk mengelola operasional.</CardDescription>
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" className="rounded-full" onClick={onClose}><X size={20} /></Button>
           </div>
-          <CardDescription>Daftarkan anggota tim baru ke sistem.</CardDescription>
         </CardHeader>
-        <CardContent className="pt-6 space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Nama Lengkap</label>
-            <Input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="cth: Ahmad Fauzi" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Username</label>
-            <Input value={form.username} onChange={e => setForm({...form, username: e.target.value})} placeholder="cth: ahmad_kasir" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Password</label>
-            <Input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} placeholder="Minimal 6 karakter" />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Role / Jabatan</label>
-            <select className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" value={form.role} onChange={e => setForm({...form, role: e.target.value})}>
-              {Object.keys(ROLE_LABELS).map(k => <option key={k} value={k}>{ROLE_LABELS[k]}</option>)}
-            </select>
+        <CardContent className="pt-8 pb-8">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+            {/* Kolom Foto - 4 grid */}
+            <div className="md:col-span-4 flex flex-col items-center gap-4">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground w-full text-center">Foto Profil</label>
+              <div className="relative group">
+                <div className="w-32 h-32 rounded-full bg-muted border-4 border-background shadow-xl flex items-center justify-center overflow-hidden transition-all group-hover:scale-105">
+                  {form.avatar_url ? (
+                    <img src={form.avatar_url} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <User size={48} className="text-muted-foreground/40" />
+                  )}
+                </div>
+                <button 
+                  onClick={() => document.getElementById('avatar-upload').click()}
+                  className="absolute bottom-0 right-0 w-10 h-10 bg-accent text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-all border-4 border-background"
+                >
+                  <Upload size={16} />
+                </button>
+              </div>
+              <p className="text-[9px] text-muted-foreground text-center px-4 leading-relaxed uppercase font-bold tracking-widest opacity-60">Format JPG/PNG, Maks 2MB. Foto akan tampil di struk dan dashboard.</p>
+              <input 
+                id="avatar-upload"
+                type="file" 
+                accept="image/*" 
+                className="hidden" 
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  setUploading(true);
+                  const formData = new FormData();
+                  formData.append('image', file);
+                  try {
+                    const res = await fetch(`${api.url}/upload`, { method: 'POST', body: formData }).then(r => r.json());
+                    if (res.url) setForm({...form, avatar_url: res.url});
+                  } catch (err) { console.error('Upload failed', err); }
+                  finally { setUploading(false); }
+                }} 
+              />
+            </div>
+
+            {/* Kolom Form - 8 grid */}
+            <div className="md:col-span-8 space-y-5">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Nama Lengkap</label>
+                <Input 
+                  className="h-12 bg-muted/20 border-none focus:ring-2 focus:ring-accent rounded-xl font-medium" 
+                  value={form.name} onChange={e => setForm({...form, name: e.target.value})} 
+                  placeholder="Masukkan nama asli pegawai..." 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Username</label>
+                  <Input 
+                    className="h-12 bg-muted/20 border-none focus:ring-2 focus:ring-accent rounded-xl font-medium" 
+                    value={form.username} onChange={e => setForm({...form, username: e.target.value})} 
+                    placeholder="id_pegawai" 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Role / Jabatan</label>
+                  <select 
+                    className="flex h-12 w-full rounded-xl border-none bg-muted/20 px-3 py-1 text-sm font-bold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" 
+                    value={form.role} onChange={e => setForm({...form, role: e.target.value})}
+                  >
+                    {Object.keys(ROLE_LABELS).map(k => <option key={k} value={k}>{ROLE_LABELS[k]}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground px-1">Kata Sandi (Password)</label>
+                <div className="relative">
+                  <Input 
+                    type="password" 
+                    className="h-12 bg-muted/20 border-none focus:ring-2 focus:ring-accent rounded-xl font-medium pr-10" 
+                    value={form.password} onChange={e => setForm({...form, password: e.target.value})} 
+                    placeholder="Minimal 6 karakter" 
+                  />
+                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/30" size={18} />
+                </div>
+              </div>
+            </div>
           </div>
         </CardContent>
-        <CardFooter className="border-t pt-6 gap-3">
-          <Button variant="outline" className="flex-1" onClick={onClose} disabled={loading}>Batal</Button>
-          <Button className="flex-[2] font-bold bg-accent hover:bg-accent/90" onClick={() => onSave(form)} disabled={loading}>
-            {loading ? 'Memproses...' : 'Simpan Pengguna'}
+        <CardFooter className="border-t bg-muted/5 p-6 gap-3">
+          <Button variant="ghost" className="flex-1 h-12 rounded-xl font-bold" onClick={onClose} disabled={loading || uploading}>Batal</Button>
+          <Button className="flex-[2] h-12 rounded-xl font-black bg-accent hover:bg-accent/90 shadow-lg shadow-accent/20" onClick={() => onSave(form)} disabled={loading || uploading}>
+            {loading ? <RefreshCw className="animate-spin mr-2" /> : null}
+            {loading ? 'MENYIMPAN...' : 'DAFTARKAN ANGGOTA'}
           </Button>
         </CardFooter>
       </Card>
     </div>
   );
 }
+
 
 export default function PengaturanPage() {
   const [users, setUsers] = useState([]);
@@ -79,7 +155,7 @@ export default function PengaturanPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [toast, setToast] = useState({ msg: '', type: 'success' });
-  const [settings, setSettings] = useState({ storeName: 'BrewMaster Coffee', tax: 10, serviceCharge: 5, rewardEnabled: true });
+  const [settings, setSettings] = useState({ storeName: 'Kitchen Enterprise Nodes', tax: 10, serviceCharge: 5, rewardEnabled: true });
   const [savingSettings, setSavingSettings] = useState(false);
 
   const showToast = (msg, type = 'success') => {
@@ -222,8 +298,12 @@ export default function PengaturanPage() {
                       selected?.id === u.id ? "bg-accent/10 border-accent/20 border shadow-sm" : "hover:bg-muted/50 border border-transparent"
                     )}
                   >
-                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-sm", ROLE_COLORS[u.role] || "bg-slate-400")}>
-                      {u.avatar || u.name[0]}
+                    <div className={cn("w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0 shadow-sm overflow-hidden", !u.avatar_url && (ROLE_COLORS[u.role] || "bg-slate-400"))}>
+                      {u.avatar_url ? (
+                        <img src={u.avatar_url} alt={u.name} className="w-full h-full object-cover" />
+                      ) : (
+                        u.avatar || u.name[0]
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold truncate group-hover:text-accent transition-colors">{u.name}</p>
@@ -245,8 +325,12 @@ export default function PengaturanPage() {
                 <CardHeader className="border-b bg-muted/10">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg", ROLE_COLORS[selected.role] || "bg-slate-400")}>
-                        {selected.avatar || selected.name[0]}
+                      <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg overflow-hidden", !selected.avatar_url && (ROLE_COLORS[selected.role] || "bg-slate-400"))}>
+                        {selected.avatar_url ? (
+                          <img src={selected.avatar_url} alt={selected.name} className="w-full h-full object-cover" />
+                        ) : (
+                          selected.avatar || selected.name[0]
+                        )}
                       </div>
                       <div>
                         <CardTitle className="text-xl">{selected.name}</CardTitle>
@@ -486,7 +570,7 @@ export default function PengaturanPage() {
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-accent rounded-xl flex items-center justify-center text-white text-xl font-black">B</div>
                     <div>
-                      <p className="text-sm font-black">BrewMaster Coffee</p>
+                      <p className="text-sm font-black">Kitchen Enterprise Nodes</p>
                       <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Logo Default Sistem</p>
                     </div>
                   </div>

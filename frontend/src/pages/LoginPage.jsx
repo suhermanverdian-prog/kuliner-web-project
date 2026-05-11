@@ -62,7 +62,7 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
               <Coffee className="text-white" size={42} />
            </div>
            <div className="space-y-4">
-              <h1 className="text-7xl font-black tracking-tighter text-primary leading-none">BrewMaster <span className="text-accent">2.0</span></h1>
+              <h1 className="text-7xl font-black tracking-tighter text-primary leading-none">KEN <span className="text-accent">ERP</span></h1>
               <p className="text-xl font-medium text-muted-foreground max-w-md leading-relaxed">Antarmuka ERP premium untuk operasional coffee shop yang lebih cerdas, cepat, dan modern.</p>
            </div>
            
@@ -224,7 +224,7 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
             <div className="flex gap-4 opacity-30 grayscale hover:grayscale-0 transition-all">
                <LayoutDashboard size={16} /> <Globe size={16} /> <Mail size={16} />
             </div>
-            <p className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/50">BrewMaster v2.0 Enterprise © 2024</p>
+            <p className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/50">Kitchen Enterprise Nodes (KEN) v1.0 &copy; 2025</p>
           </CardFooter>
         </Card>
       </div>

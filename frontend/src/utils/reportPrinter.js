@@ -10,7 +10,7 @@ const BASE_CSS = `
   .page { max-width: 800px; margin: 0 auto; padding: 20px; }
   .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #6366f1; padding-bottom: 16px; margin-bottom: 20px; }
   .header-left { display: flex; align-items: center; gap: 12px; }
-  .logo { width: 48px; height: 48px; background: linear-gradient(135deg,#6366f1,#8b5cf6); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; color:#fff; }
+  .logo { width: 48px; height: 48px; background: linear-gradient(135deg,#6366f1,#8b5cf6); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color:#fff; letter-spacing: -1px; }
   .store-name { font-size: 16px; font-weight: 800; color: #1e293b; }
   .store-info { font-size: 10px; color: #64748b; margin-top: 2px; }
   .report-title { text-align: right; }
@@ -47,9 +47,10 @@ function reportHeader(meta, title) {
   return `
     <div class="header">
       <div class="header-left">
-        <div class="logo">☕</div>
+        <div class="logo">K</div>
         <div>
           <div class="store-name">${meta.storeName}</div>
+          <div class="store-info" style="font-weight:700;color:#6366f1;font-size:9px;text-transform:uppercase;letter-spacing:1px">Kitchen Enterprise Nodes &bull; KEN</div>
           <div class="store-info">${meta.storeAddress}</div>
           <div class="store-info">${meta.storePhone}</div>
         </div>
@@ -209,37 +210,37 @@ function tplLabaRugi(d) {
   return buildHTML(d.meta, d.title, `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
       <div class="section">
-        <div class="section-title">Pendapatan</div>
+        <div class="section-title">Pendapatan & HPP</div>
         <div class="summary-box">
           <div class="summary-row"><span>Penjualan Netto</span><span>${fmt(d.pendapatan.penjualanNetto)}</span></div>
-          <div class="summary-row total"><span>TOTAL PENDAPATAN</span><span>${fmt(d.pendapatan.total)}</span></div>
+          <div class="summary-row"><span>HPP (Bahan Terpakai)</span><span style="color:#dc2626">(${fmt(d.hpp)})</span></div>
+          <div class="summary-row total"><span>LABA KOTOR</span><span style="color:#16a34a">${fmt(d.labaKotor)}</span></div>
         </div>
         <br/>
-        <div class="section-title">Harga Pokok Penjualan (HPP)</div>
-        <div class="summary-box">
-          <div class="summary-row"><span>Total HPP</span><span style="color:#dc2626">(${fmt(d.hpp)})</span></div>
-          <div class="summary-row total"><span>LABA KOTOR</span><span style="color:#16a34a">${fmt(d.labaKotor)}</span></div>
+        <div class="section-title">Pengadaan & Belanja</div>
+        <div class="summary-box" style="background:#f0f9ff;border-color:#bae6fd">
+          <div class="summary-row"><span>Total Belanja Stok</span><span style="color:#dc2626">(${fmt(d.totalPurchasing)})</span></div>
+          <div class="summary-row"><span>Hutang Supplier (Berjalan)</span><span style="color:#dc2626">${fmt(d.totalDebt)}</span></div>
         </div>
       </div>
       <div class="section">
-        <div class="section-title">Biaya Operasional</div>
+        <div class="section-title">Biaya Operasional & Loss</div>
         <div class="summary-box">
           <div class="summary-row"><span>Gaji Karyawan</span><span>${fmt(d.opEx.gaji)}</span></div>
-          <div class="summary-row"><span>Sewa</span><span>${fmt(d.opEx.sewa)}</span></div>
-          <div class="summary-row"><span>Utilitas</span><span>${fmt(d.opEx.utilitas)}</span></div>
+          <div class="summary-row"><span>Sewa & Utilitas</span><span>${fmt(d.opEx.sewa + d.opEx.utilitas)}</span></div>
           <div class="summary-row"><span>Lain-lain</span><span>${fmt(d.opEx.lainnya)}</span></div>
           <div class="summary-row total"><span>TOTAL BIAYA OPERASIONAL</span><span style="color:#dc2626">(${fmt(d.totalOpEx)})</span></div>
         </div>
         <br/>
         <div class="summary-box" style="background:#fff7ed;border-color:#fed7aa">
-          <div class="summary-row"><span>Waste / Loss</span><span style="color:#dc2626">(${fmt(d.waste)})</span></div>
+          <div class="summary-row"><span>Waste / Loss Barang</span><span style="color:#dc2626">(${fmt(d.waste)})</span></div>
         </div>
       </div>
     </div>
     <div class="laba-bersih">
-      <div class="label">LABA BERSIH</div>
+      <div class="label">LABA BERSIH ESTIMASI</div>
       <div class="value">${fmt(d.labaBersih)}</div>
-      <div class="label">Margin ${d.marginPct}%</div>
+      <div class="label">Margin Bersih ${d.marginPct}%</div>
     </div>`);
 }
 
@@ -289,6 +290,47 @@ function tplStokOpname(d) {
     </div>`);
 }
 
+function tplStockMutation(d) {
+  const rows = d.items.map((log, i) => `
+    <tr>
+      <td>${new Date(log.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+      <td><b>${log.bahan_name}</b></td>
+      <td>${log.type}</td>
+      <td style="text-align:right; font-weight:700; color:${log.change_qty < 0 ? '#dc2626' : '#16a34a'}">${log.change_qty > 0 ? '+' : ''}${log.change_qty}</td>
+      <td style="text-align:right">${log.prev_stock} → ${log.next_stock}</td>
+      <td>${log.user_name}</td>
+      <td style="font-style:italic; font-size:9px">${log.reason}</td>
+    </tr>`).join('');
+  return buildHTML(d.meta, d.title, `
+    <div class="section">
+      <div class="section-title">Log Mutasi & Penyesuaian Stok</div>
+      <table>
+        <thead><tr><th>Waktu</th><th>Nama Bahan</th><th>Tipe</th><th>Perubahan</th><th>Saldo</th><th>Pelaku</th><th>Alasan</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`);
+}
+
+function tplActivityLog(d) {
+  const rows = d.items.map((log, i) => `
+    <tr>
+      <td>${new Date(log.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
+      <td><b>${log.user_name}</b> (${log.role})</td>
+      <td>${log.activity_type}</td>
+      <td>${log.description}</td>
+      <td style="font-family:monospace; font-size:9px">${log.ip_address || '127.0.0.1'}</td>
+    </tr>`).join('');
+  return buildHTML(d.meta, d.title, `
+    <div class="section">
+      <div class="section-title">Log Aktivitas & Audit Sistem</div>
+      <table>
+        <thead><tr><th>Waktu</th><th>User</th><th>Aktivitas</th><th>Deskripsi</th><th>Alamat IP</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`);
+}
+
+
 const TEMPLATES = {
   'penjualan-harian': tplPenjualanHarian,
   'penjualan-periode': (d) => buildHTML(d.meta, d.title, `
@@ -311,6 +353,8 @@ const TEMPLATES = {
   'laba-rugi': tplLabaRugi,
   'owner-dashboard': tplOwnerDashboard,
   'stok-opname': tplStokOpname,
+  'stock-mutation': tplStockMutation,
+  'activity-log': tplActivityLog,
 };
 
 export async function downloadPDF(type, period, customStart, customEnd, printedBy = 'admin') {
@@ -423,6 +467,13 @@ export async function downloadCSV(type, period, customStart, customEnd) {
   } else if (type === 'stok-opname') {
     rows.push(['No', 'Nama Bahan', 'Satuan', 'Stok Sistem', 'Stok Fisik', 'Selisih', '% Selisih']);
     data.items.forEach((b, i) => rows.push([i+1, b.name, b.unit, b.sistem, b.fisik, b.selisih, b.selisihPct + '%']));
+    data.items.forEach((b, i) => rows.push([i+1, b.name, b.unit, b.sistem, b.fisik, b.selisih, b.selisihPct + '%']));
+  } else if (type === 'stock-mutation') {
+    rows.push(['Waktu', 'Nama Bahan', 'Tipe', 'Perubahan', 'Saldo', 'Pelaku', 'Alasan']);
+    data.items.forEach(l => rows.push([l.created_at, l.bahan_name, l.type, l.change_qty, `${l.prev_stock}->${l.next_stock}`, l.user_name, l.reason]));
+  } else if (type === 'activity-log') {
+    rows.push(['Waktu', 'User', 'Tipe', 'Deskripsi', 'IP Address']);
+    data.items.forEach(l => rows.push([l.created_at, l.user_name, l.activity_type, l.description, l.ip_address]));
   } else {
     rows.push(['Data tidak tersedia untuk export CSV tipe ini']);
   }

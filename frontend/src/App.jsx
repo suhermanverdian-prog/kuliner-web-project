@@ -15,6 +15,9 @@ import SuperAdminPage from './pages/SuperAdminPage';
 import PembelianPage from './pages/PembelianPage';
 import CustomerPortalPage from './pages/CustomerPortalPage';
 import GuestMenuPage from './pages/GuestMenuPage';
+import ActivityLogPage from './pages/ActivityLogPage';
+import AkunPage from './pages/AkunPage';
+import OutletPage from './pages/OutletPage';
 
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
@@ -57,6 +60,18 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      if (hash === '#/akuntansi') setActivePage('akuntansi');
+      if (hash === '#/outlets') setActivePage('outlets');
+      if (hash === '#/login') setActivePage('dashboard');
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // Run on mount
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
@@ -66,6 +81,18 @@ function App() {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     setActivePage('dashboard');
+    // Log Activity
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+    fetch(`${API_BASE}/system-logs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userName: userData.name,
+        role: userData.role,
+        activityType: 'LOGIN',
+        description: `User ${userData.name} berhasil login ke sistem.`
+      })
+    }).catch(e => console.error('Log failed', e));
   };
 
   const handleLogout = () => {
@@ -87,7 +114,7 @@ function App() {
 
   const renderPage = () => {
     switch (activePage) {
-      case 'dashboard':  return <Dashboard user={user} />;
+      case 'dashboard':  return <Dashboard user={user} onNavigate={setActivePage} />;
       case 'kasir':      return <KasirPage user={user} onNavigate={setActivePage} />;
       case 'menu':       return <MenuPage user={user} />;
       case 'inventori':  return <InventoriPage user={user} />;
@@ -98,7 +125,10 @@ function App() {
       case 'meja':       return <TablePage user={user} />;
       case 'shift':      return <ShiftPage user={user} onNavigate={setActivePage} />;
       case 'superadmin': return <SuperAdminPage user={user} />;
+      case 'activity-log': return <ActivityLogPage />;
       case 'pembelian':  return <PembelianPage user={user} />;
+      case 'akuntansi':  return <AkunPage user={user} />;
+      case 'outlets':    return <OutletPage user={user} />;
       default:           return <Dashboard user={user} />;
     }
   };

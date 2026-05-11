@@ -429,7 +429,8 @@ export default function KasirPage({ user, onNavigate }) {
     });
   };
 
-  const filtered = menus.filter(m => (category === 'Semua' || m.category === category) && m.name.toLowerCase().includes(search.toLowerCase()));
+  const safeMenus = Array.isArray(menus) ? menus : [];
+  const filtered = safeMenus.filter(m => (category === 'Semua' || m.category === category) && (m.name || '').toLowerCase().includes(search.toLowerCase()));
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
 
   if (!loading && !activeShift) {

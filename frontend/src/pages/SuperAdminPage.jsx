@@ -14,11 +14,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
+import { FEATURE_CATALOG, TIER_DEFAULTS, resolveFeatures } from '../lib/featureFlags';
 
 export default function SuperAdminPage() {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [editingFeatures, setEditingFeatures] = useState(null);
 
   useEffect(() => {
     fetchTenants();
@@ -54,14 +56,25 @@ export default function SuperAdminPage() {
     }
   };
 
-  const toggleFeature = async (tenant, featureKey) => {
+  const toggleFeatureOverride = async (tenant, featureKey) => {
     try {
-      const currentFeatures = tenant.features || {};
-      const newFeatures = { ...currentFeatures, [featureKey]: !currentFeatures[featureKey] };
-      await api.updateTenant({ id: tenant.id, features: newFeatures });
+      const overrides = tenant.feature_overrides || {};
+      const newOverrides = { ...overrides, [featureKey]: !resolveFeatures(tenant)[featureKey] };
+      await api.updateTenant({ id: tenant.id, feature_overrides: newOverrides });
       fetchTenants();
+      setEditingFeatures({ ...tenant, feature_overrides: newOverrides }); // update modal state
     } catch (err) {
-      alert('Gagal update fitur');
+      alert('Gagal update fitur override');
+    }
+  };
+
+  const resetFeatureOverrides = async (tenant) => {
+    try {
+      await api.updateTenant({ id: tenant.id, feature_overrides: {} });
+      fetchTenants();
+      setEditingFeatures({ ...tenant, feature_overrides: {} });
+    } catch (err) {
+      alert('Gagal reset override');
     }
   };
 
@@ -84,7 +97,7 @@ export default function SuperAdminPage() {
               <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-500 animate-pulse"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Server Online</span>
            </div>
            <h2 className="text-4xl font-black tracking-tighter text-primary">SuperAdmin Hub</h2>
-           <p className="text-muted-foreground mt-1 font-medium">Panel kendali pusat untuk manajemen platform SaaS BrewMaster.</p>
+           <p className="text-muted-foreground mt-1 font-medium">Panel kendali pusat untuk manajemen platform SaaS <span className="text-accent font-bold">KEN</span> &mdash; Kitchen Enterprise Nodes.</p>
         </div>
         <div className="flex gap-3">
            <Button variant="outline" className="h-12 font-bold" onClick={fetchTenants}><RefreshCw className="mr-2 h-4 w-4" /> Sinkronisasi</Button>
@@ -138,7 +151,7 @@ export default function SuperAdminPage() {
                   <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
                      <th className="px-8 py-4">Client / Bisnis</th>
                      <th className="px-8 py-4">Paket Langganan</th>
-                     <th className="px-8 py-4">Izin Fitur Pembayaran</th>
+                     <th className="px-8 py-4">Kustomisasi Fitur</th>
                      <th className="px-8 py-4">Status & Billing</th>
                      <th className="px-8 py-4 text-right">Aksi</th>
                   </tr>
@@ -174,24 +187,14 @@ export default function SuperAdminPage() {
                           </select>
                        </td>
                        <td className="px-8 py-6">
-                          <div className="flex flex-wrap gap-2 max-w-[200px]">
-                             {['QRIS', 'Debit', 'Transfer', 'Hutang', 'Points'].map(m => {
-                               const key = `allow_${m.toLowerCase()}`;
-                               const isEnabled = t.features?.[key] === true;
-                               return (
-                                 <button 
-                                   key={m}
-                                   onClick={() => toggleFeature(t, key)}
-                                   className={cn(
-                                     "px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-tighter border transition-all",
-                                     isEnabled ? "bg-blue-500/10 border-blue-500/20 text-blue-600" : "bg-muted text-muted-foreground/40 border-transparent hover:bg-muted/80"
-                                   )}
-                                 >
-                                    {m}
-                                 </button>
-                               );
-                             })}
-                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-xs font-bold"
+                            onClick={() => setEditingFeatures(t)}
+                          >
+                            <Settings size={14} className="mr-2" /> Atur Fitur
+                          </Button>
                        </td>
                        <td className="px-8 py-6">
                           <div className={cn(
@@ -243,6 +246,60 @@ export default function SuperAdminPage() {
          </div>
          <Button className="bg-blue-600 hover:bg-blue-700 h-12 px-8 font-black rounded-xl">LIHAT LOG AUDIT</Button>
       </div>
+
+      {/* Feature Flag Modal */}
+      {editingFeatures && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
+          <Card className="w-full max-w-2xl shadow-2xl bg-background border-none overflow-hidden flex flex-col max-h-[90vh]">
+            <CardHeader className="bg-muted/30 border-b flex flex-row items-start justify-between">
+              <div>
+                <CardTitle className="text-2xl font-black">{editingFeatures.name}</CardTitle>
+                <CardDescription className="uppercase font-bold tracking-widest text-xs mt-1">Feature Flags &amp; Overrides</CardDescription>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setEditingFeatures(null)}><X size={20} /></Button>
+            </CardHeader>
+            <CardContent className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+              {['Core', 'Produksi', 'Pengadaan', 'Laporan', 'Keuangan', 'Bisnis', 'Enterprise'].map(group => (
+                <div key={group} className="space-y-3 col-span-1 md:col-span-2">
+                  <h4 className="text-sm font-black uppercase tracking-widest text-accent border-b pb-2">{group}</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {FEATURE_CATALOG.filter(f => f.group === group).map(f => {
+                      const isActive = resolveFeatures(editingFeatures)[f.key];
+                      const isOverride = editingFeatures.feature_overrides && (f.key in editingFeatures.feature_overrides);
+                      
+                      return (
+                        <div key={f.key} className="flex items-center justify-between p-3 rounded-xl border bg-card">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xl">{f.icon}</span>
+                            <div>
+                              <p className="text-sm font-bold leading-none">{f.label}</p>
+                              <p className="text-[10px] text-muted-foreground mt-1">{f.description}</p>
+                            </div>
+                          </div>
+                          <button 
+                            onClick={() => toggleFeatureOverride(editingFeatures, f.key)}
+                            className={cn(
+                              "w-10 h-6 rounded-full transition-colors relative flex items-center",
+                              isActive ? "bg-emerald-500" : "bg-muted-foreground/30",
+                              isOverride ? "ring-2 ring-accent ring-offset-2 ring-offset-background" : ""
+                            )}
+                          >
+                            <span className={cn("w-4 h-4 bg-white rounded-full transition-transform absolute left-1", isActive ? "translate-x-4" : "translate-x-0")} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+            <CardFooter className="bg-muted/10 p-4 border-t flex justify-between">
+              <Button variant="outline" onClick={() => resetFeatureOverrides(editingFeatures)}>Reset ke Default {editingFeatures.tier.toUpperCase()}</Button>
+              <Button onClick={() => setEditingFeatures(null)}>Selesai</Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

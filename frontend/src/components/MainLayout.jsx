@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { cn } from "../lib/utils";
 import { Button } from "./ui/Button";
-import { Sheet, SheetContent, SheetTrigger } from "./ui/Sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "./ui/Sheet";
+import { hasFeature, PAGE_FEATURE_MAP } from '../lib/featureFlags';
 
 const navItems = [
   { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard',    group: 'Utama' },
@@ -16,18 +17,26 @@ const navItems = [
   { id: 'meja',      icon: Armchair,        label: 'Meja',         group: 'Utama' },
   { id: 'kds',       icon: ChefHat,         label: 'Dapur (KDS)',  group: 'Utama' },
   { id: 'shift',     icon: Clock,           label: 'Shift Kasir',  group: 'Utama' },
-  { id: 'inventori', icon: PackageOpen,     label: 'Stok Bahan',   group: 'Gudang' },
-  { id: 'pembelian', icon: ShoppingBag,     label: 'Pembelian',    group: 'Gudang' },
+  { id: 'inventori', icon: PackageOpen,     label: 'Master Stok',  group: 'Gudang' },
   { id: 'menu',      icon: Coffee,          label: 'Menu Kopi',    group: 'Gudang' },
+  { id: 'pembelian', icon: ShoppingBag,     label: 'Procurement',  group: 'Pengadaan' },
   { id: 'laporan',   icon: BarChart3,       label: 'Analitik',     group: 'Bisnis' },
   { id: 'pelanggan', icon: Users,           label: 'Loyalty CRM',  group: 'Bisnis' },
   { id: 'pengaturan', icon: Settings,       label: 'Pengaturan',   group: 'Sistem' },
-  { id: 'superadmin', icon: ShieldCheck,    label: 'SuperAdmin',   group: 'Sistem', role: 'superadmin' },
+  { id: 'activity-log', icon: ShieldCheck,  label: 'Monitor Aktivitas', group: 'Sistem', role: 'superadmin' },
+  { id: 'superadmin', icon: Command,        label: 'SuperAdmin',   group: 'Sistem', role: 'superadmin' },
 ];
 
 // Komponen Sidebar dipisah dari MainLayout agar tidak menyebabkan infinite re-render
 function Sidebar({ user, activePage, onNavigate, onLogout, isCollapsed, setIsCollapsed, isMobile }) {
-  const visibleNavItems = navItems.filter(item => !item.role || item.role === user?.role);
+  const visibleNavItems = navItems.filter(item => {
+    // Role-based check (SuperAdmin only items)
+    if (item.role && item.role !== user?.role && !user?.is_superadmin) return false;
+    // Feature flag check
+    const flag = PAGE_FEATURE_MAP[item.id];
+    if (flag && !hasFeature(user, flag)) return false;
+    return true;
+  });
 
   return (
     <div className="flex flex-col h-full bg-card border-r">
@@ -36,16 +45,14 @@ function Sidebar({ user, activePage, onNavigate, onLogout, isCollapsed, setIsCol
         "h-20 flex items-center px-4 border-b transition-all duration-300",
         isCollapsed && !isMobile ? "justify-center px-2" : "justify-between px-6"
       )}>
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-accent rounded-xl flex items-center justify-center text-white font-black shadow-md shrink-0">
-            <Coffee size={20} />
+        <div className="flex items-center gap-3 px-4 py-6 border-b border-white/5">
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-black/20 shrink-0">
+            <span className="text-xl font-black text-slate-900">K</span>
           </div>
-          {(!isCollapsed || isMobile) && (
-            <div>
-              <p className="font-black text-base tracking-tight leading-none">BrewMaster</p>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-accent leading-none mt-0.5">Enterprise</p>
-            </div>
-          )}
+          <div className={cn("transition-all duration-300", isCollapsed ? "opacity-0 w-0" : "opacity-100")}>
+            <h1 className="text-lg font-black tracking-tighter text-white leading-none">KEN</h1>
+            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">Kitchen Enterprise</p>
+          </div>
         </div>
         {!isMobile && (
           <Button
@@ -59,9 +66,8 @@ function Sidebar({ user, activePage, onNavigate, onLogout, isCollapsed, setIsCol
         )}
       </div>
 
-      {/* Navigation */}
       <div className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
-        {['Utama', 'Gudang', 'Bisnis', 'Sistem'].map(group => {
+        {['Utama', 'Gudang', 'Pengadaan', 'Bisnis', 'Sistem'].map(group => {
           const items = visibleNavItems.filter(item => item.group === group);
           if (items.length === 0) return null;
           return (
@@ -171,6 +177,8 @@ export default function MainLayout({ children, user, activePage, onNavigate, onL
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-64">
+                <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
+                <SheetDescription className="sr-only">Akses cepat ke seluruh modul KEN</SheetDescription>
                 <Sidebar
                   user={user}
                   activePage={activePage}
@@ -218,7 +226,7 @@ export default function MainLayout({ children, user, activePage, onNavigate, onL
 
         {/* Footer */}
         <footer className="px-6 py-3 border-t text-[10px] text-muted-foreground/40 flex items-center justify-between">
-          <span className="flex items-center gap-1.5"><Coffee size={10} /> BrewMaster 2.0</span>
+          <span className="flex items-center gap-1.5"><Coffee size={10} /> KEN v1.0</span>
           <span>Build 2.0.4</span>
         </footer>
       </div>

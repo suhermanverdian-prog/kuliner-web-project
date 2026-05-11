@@ -6,7 +6,7 @@ import {
   Calendar, Download, Printer, Filter,
   AlertTriangle, CheckCircle2, ChevronRight,
   ShoppingBag, Trash2, Lightbulb, ArrowUpRight,
-  ArrowDownRight, RefreshCw, FileText, ChevronDown
+  ArrowDownRight, RefreshCw, FileText, ChevronDown, ClipboardCheck
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -31,27 +31,27 @@ function KPICard({ label, value, sub, icon: Icon, delta, colorClass }) {
   const isUp = delta >= 0;
   return (
     <Card className="border-none shadow-xl bg-card overflow-hidden group">
-      <CardContent className="p-6">
+      <CardContent className="p-5">
         <div className="flex justify-between items-start">
           <div className="space-y-1">
-            <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{label}</p>
-            <h3 className="text-2xl font-black tracking-tight">{value}</h3>
-            {sub && <p className="text-[10px] text-muted-foreground font-bold">{sub}</p>}
+            <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{label}</p>
+            <h3 className="text-xl font-black tracking-tight">{value}</h3>
+            {sub && <p className="text-[9px] text-muted-foreground font-bold">{sub}</p>}
           </div>
-          <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", colorClass)}>
-            <Icon size={24} />
+          <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", colorClass)}>
+            <Icon size={20} />
           </div>
         </div>
         {delta !== undefined && (
-          <div className="mt-4 flex items-center gap-2">
+          <div className="mt-3 flex items-center gap-2">
             <div className={cn(
-              "flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] font-black uppercase",
+              "flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase",
               isUp ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"
             )}>
-              {isUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+              {isUp ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
               {Math.abs(delta)}%
             </div>
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">vs periode lalu</span>
+            <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter">vs periode lalu</span>
           </div>
         )}
       </CardContent>
@@ -118,6 +118,7 @@ export default function LaporanPage() {
   const [criticalStock, setCriticalStock] = useState([]);
   const [waste, setWaste] = useState({});
   const [insights, setInsights] = useState([]);
+  const [inventoryLogs, setInventoryLogs] = useState([]);
   const [showExport, setShowExport] = useState(false);
   const [exporting, setExporting] = useState(false);
 
@@ -126,7 +127,7 @@ export default function LaporanPage() {
     try {
       let q = `period=${period}`;
       if (period === 'custom') q += `&customStart=${customStart}&customEnd=${customEnd}`;
-      const [s, t, p, tp, cs, w, ins] = await Promise.all([
+      const [s, t, p, tp, cs, w, ins, il] = await Promise.all([
         fetch2(`${API_URL}/laporan/summary?${q}`),
         fetch2(`${API_URL}/laporan/trend?${q}`),
         fetch2(`${API_URL}/laporan/payment-methods?${q}`),
@@ -134,9 +135,11 @@ export default function LaporanPage() {
         fetch2(`${API_URL}/laporan/critical-stock`),
         fetch2(`${API_URL}/laporan/waste?${q}`),
         fetch2(`${API_URL}/laporan/insights?${q}`),
+        fetch2(`${API_URL}/inventory/logs`),
       ]);
       setSummary(s); setTrend(t); setPayment(p); setTopProducts(tp);
       setCriticalStock(cs); setWaste(w); setInsights(ins);
+      setInventoryLogs(il);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [period, customStart, customEnd]);
@@ -240,12 +243,13 @@ export default function LaporanPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-        <KPICard label="Total Pendapatan" value={formatCurrency(summary.totalRevenue)} sub={`${summary.totalTransactions || 0} Transaksi`} icon={DollarSign} delta={summary.vsYesterday?.revenue} colorClass="bg-emerald-500" />
-        <KPICard label="HPP (COGS)" value={formatCurrency(summary.totalHPP)} sub={`${summary.foodCostPct || 0}% Food Cost`} icon={Package} delta={summary.vsYesterday?.hpp} colorClass="bg-amber-500" />
-        <KPICard label="Laba Kotor" value={formatCurrency(summary.grossProfit)} sub={`${summary.marginPct || 0}% Margin`} icon={TrendingUp} delta={summary.vsYesterday?.grossProfit} colorClass="bg-blue-600" />
-        <KPICard label="Avg. Tiket" value={formatCurrency(summary.avgTransaction)} sub="Per Transaksi" icon={RefreshCw} delta={summary.vsYesterday?.avg} colorClass="bg-indigo-600" />
-        <KPICard label="Total Order" value={summary.totalTransactions || 0} sub="Pesanan Sukses" icon={ShoppingCart} delta={summary.vsYesterday?.transactions} colorClass="bg-purple-600" />
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KPICard label="Pendapatan" value={formatCurrency(summary.totalRevenue)} sub="Total Sales" icon={DollarSign} delta={summary.vsYesterday?.revenue} colorClass="bg-emerald-500" />
+        <KPICard label="Total Belanja" value={formatCurrency(summary.totalPurchasing)} sub="Procurement" icon={ShoppingBag} colorClass="bg-blue-500" />
+        <KPICard label="Laba Kotor" value={formatCurrency(summary.grossProfit)} sub={`${summary.marginPct || 0}% Margin`} icon={TrendingUp} colorClass="bg-indigo-600" />
+        <KPICard label="Hutang" value={formatCurrency(summary.totalDebt)} sub="Unpaid Invoices" icon={AlertTriangle} colorClass="bg-rose-500" />
+        <KPICard label="HPP (COGS)" value={formatCurrency(summary.totalHPP)} sub="Bahan Terpakai" icon={Package} colorClass="bg-amber-500" />
+        <KPICard label="Transaksi" value={summary.totalTransactions || 0} sub="Closed Orders" icon={ShoppingCart} delta={summary.vsYesterday?.transactions} colorClass="bg-purple-600" />
       </div>
 
       {/* Charts Row */}
@@ -396,6 +400,67 @@ export default function LaporanPage() {
            </Card>
         </div>
       </div>
+
+      <Card className="border-none shadow-xl bg-card overflow-hidden">
+        <CardHeader className="border-b bg-muted/10 flex flex-row items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ClipboardCheck size={20} className="text-accent" /> Log Mutasi & Penyesuaian Stok
+            </CardTitle>
+            <CardDescription>Jejak audit permanen untuk seluruh perubahan stok manual.</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" className="font-bold gap-2 text-muted-foreground" onClick={() => downloadCSV('stock-mutation', period, customStart, customEnd)}>
+              <FileText size={14} /> Excel
+            </Button>
+            <Button variant="ghost" size="sm" className="font-bold gap-2 text-muted-foreground" onClick={() => downloadPDF('stock-mutation', period, customStart, customEnd)}>
+              <Download size={14} /> PDF
+            </Button>
+            <Button variant="ghost" size="sm" className="font-bold gap-2 text-muted-foreground" onClick={() => printReport('stock-mutation', period, customStart, customEnd)}>
+              <Printer size={14} /> Print
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/30 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
+                  <th className="px-6 py-4">Waktu</th>
+                  <th className="px-6 py-4">Nama Bahan</th>
+                  <th className="px-6 py-4">Tipe</th>
+                  <th className="px-6 py-4">Perubahan</th>
+                  <th className="px-6 py-4">Saldo Stok</th>
+                  <th className="px-6 py-4">PIC / Pelaku</th>
+                  <th className="px-6 py-4">Alasan</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {inventoryLogs.map(log => (
+                  <tr key={log.id} className="text-sm hover:bg-muted/5">
+                    <td className="px-6 py-4 text-muted-foreground font-medium">{new Date(log.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                    <td className="px-6 py-4 font-bold">{log.bahan_name}</td>
+                    <td className="px-6 py-4">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter",
+                        log.type === 'Waste' || log.type === 'Adjustment' ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                      )}>
+                        {log.type}
+                      </span>
+                    </td>
+                    <td className={cn("px-6 py-4 font-black", log.change_qty > 0 ? "text-emerald-600" : "text-destructive")}>
+                      {log.change_qty > 0 ? '+' : ''}{log.change_qty}
+                    </td>
+                    <td className="px-6 py-4 text-muted-foreground">{log.prev_stock} → <span className="font-bold text-primary">{log.next_stock}</span></td>
+                    <td className="px-6 py-4 font-bold">{log.user_name}</td>
+                    <td className="px-6 py-4 italic text-xs text-muted-foreground">{log.reason}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Detailed Summary Footer */}
       <Card className="border-none shadow-xl bg-card overflow-hidden border-t-4 border-t-accent">

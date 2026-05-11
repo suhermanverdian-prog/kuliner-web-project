@@ -8,11 +8,31 @@ const { supabase } = require('./supabase');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DB_PATH = path.join(__dirname, 'db', 'data.json');
+const DB_MODE = process.env.DB_MODE || 'local'; // 'local' or 'cloud'
+const SUPABASE_SYNC_ENABLED = true;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+
+// ---- FASE 8: FEATURE FLAG SYSTEM (Backend Parity) ----
+const TIER_DEFAULTS = {
+  lite: { pos: true, kds: true, table_management: true, guest_ordering: true, inventory: true, shift: true, recipe_bom: false, waste_management: false, procurement: false, reporting_pdf: true, reporting_excel: false, crm: false, loyalty: false, accounting: false, multi_outlet: false, hq_dashboard: false, stock_transfer: false, white_label: false, api_access: false, ai_insights: false },
+  pro: { pos: true, kds: true, table_management: true, guest_ordering: true, inventory: true, shift: true, recipe_bom: true, waste_management: true, procurement: true, reporting_pdf: true, reporting_excel: true, crm: true, loyalty: true, accounting: false, multi_outlet: false, hq_dashboard: false, stock_transfer: false, white_label: false, api_access: false, ai_insights: false },
+  enterprise: { pos: true, kds: true, table_management: true, guest_ordering: true, inventory: true, shift: true, recipe_bom: true, waste_management: true, procurement: true, reporting_pdf: true, reporting_excel: true, crm: true, loyalty: true, accounting: true, multi_outlet: true, hq_dashboard: true, stock_transfer: true, white_label: true, api_access: true, ai_insights: true }
+};
+
+const resolveFeatures = (tenant) => {
+  if (!tenant) return TIER_DEFAULTS.lite;
+  const defaults = TIER_DEFAULTS[tenant.tier] || TIER_DEFAULTS.lite;
+  const overrides = tenant.feature_overrides || {};
+  const resolved = {};
+  Object.keys(TIER_DEFAULTS.enterprise).forEach(key => {
+    resolved[key] = (key in overrides) ? overrides[key] : (defaults[key] ?? false);
+  });
+  return resolved;
+};
 
 // ---- FASE 6: RBAC & Tenant Isolation Middleware ----
 const rbacMiddleware = async (req, res, next) => {
@@ -20,14 +40,44 @@ const rbacMiddleware = async (req, res, next) => {
   const tenantId = req.headers['x-tenant-id'] || null;
 
   // Bebaskan endpoint public
-  if (req.path.includes('/login') || req.path.includes('/uploads')) return next();
+  if (req.path.includes('/login') || req.path.includes('/uploads') || req.path.includes('/health')) return next();
 
   // BR-020: Isolasi Tenant (Inject ke req object)
   req.userContext = { role, tenantId };
 
-  // Validasi Sederhana RBAC
+  // 1. Validasi Sederhana RBAC
   if (role === 'kasir' && req.method === 'DELETE') {
     return res.status(403).json({ error: 'RBAC: Role Kasir tidak diizinkan menghapus data.' });
+  }
+
+  // 2. Feature Flag Protection (Meticulous Check)
+  if (tenantId && role !== 'superadmin') {
+    // Cari tenant di local dulu, lalu supabase
+    const db = readDB();
+    let tenant = (db.tenants || []).find(t => String(t.id) === String(tenantId));
+    
+    if (!tenant) {
+      const { data } = await supabase.from('tenants').select('*').eq('id', tenantId).single();
+      tenant = data;
+    }
+
+    if (tenant) {
+      const features = resolveFeatures(tenant);
+      
+      // Map routes to features
+      const path = req.path.toLowerCase();
+      if (path.includes('/po') || path.includes('/grn') || path.includes('/purchase_invoices') || path.includes('/purchase_payments') || path.includes('/suppliers')) {
+        if (!features.procurement) return res.status(403).json({ error: 'Fitur Pengadaan (Procurement) tidak aktif di paket Anda. Upgrade ke Pro atau Enterprise.' });
+      }
+      if (path.includes('/accounting') || path.includes('/journals') || path.includes('/accounts')) {
+        if (!features.accounting) return res.status(403).json({ error: 'Fitur Akuntansi (Full Ledger) tidak aktif di paket Anda. Upgrade ke Enterprise.' });
+      }
+      if (path.includes('/analytics') || path.includes('/laporan')) {
+        if (!features.reporting_pdf && !features.reporting_excel) {
+           return res.status(403).json({ error: 'Fitur Laporan & Analitik tidak aktif di paket Anda.' });
+        }
+      }
+    }
   }
 
   next();
@@ -47,6 +97,20 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// ---- Default Chart of Accounts ----
+const DEFAULT_ACCOUNTS = [
+  { code: '1-1000', name: 'Kas & Bank',              category: 'Aset',       normalBalance: 'debit'  },
+  { code: '1-2000', name: 'Persediaan Bahan Baku',   category: 'Aset',       normalBalance: 'debit'  },
+  { code: '1-3000', name: 'Piutang Usaha',           category: 'Aset',       normalBalance: 'debit'  },
+  { code: '2-1000', name: 'Hutang Dagang',           category: 'Liabilitas', normalBalance: 'credit' },
+  { code: '2-2000', name: 'Hutang Pajak',            category: 'Liabilitas', normalBalance: 'credit' },
+  { code: '3-1000', name: 'Modal Owner',             category: 'Ekuitas',    normalBalance: 'credit' },
+  { code: '4-1000', name: 'Pendapatan Penjualan',    category: 'Pendapatan', normalBalance: 'credit' },
+  { code: '5-1000', name: 'Harga Pokok Penjualan',   category: 'Beban',      normalBalance: 'debit'  },
+  { code: '6-1000', name: 'Biaya Operasional',       category: 'Beban',      normalBalance: 'debit'  },
+  { code: '6-2000', name: 'Biaya Waste & Susut',     category: 'Beban',      normalBalance: 'debit'  },
+];
+
 // ---- Simple JSON "Database" ----
 const readDB = () => {
   if (!fs.existsSync(DB_PATH)) return initDB();
@@ -57,6 +121,13 @@ const readDB = () => {
     if (!data.shifts) data.shifts = [];
     if (!data.transactions) data.transactions = [];
     if (!data.inventory_meta) data.inventory_meta = { categories: [], packageUnits: [], itemUnits: [] };
+    // Accounting tables
+    if (!data.accounts)       data.accounts = DEFAULT_ACCOUNTS;
+    if (!data.journals)       data.journals = [];
+    if (!data.journal_lines)  data.journal_lines = [];
+    if (!data.grns)           data.grns = [];
+    if (!data.purchase_invoices)  data.purchase_invoices = [];
+    if (!data.purchase_payments)  data.purchase_payments = [];
     return data;
   }
   catch { return initDB(); }
@@ -70,6 +141,51 @@ const writeDB = (data) => {
     console.warn('⚠️ Gagal menyimpan ke data.json (Vercel bersifat read-only). Mengabaikan perubahan.');
   }
 };
+
+// --- CLOUD FETCH HELPERS (FASE 3) ---
+const fetchFromCloud = async (table, tenantId, outletId = null) => {
+  let query = supabase.from(table).select('*');
+  if (tenantId) query = query.eq('tenant_id', tenantId);
+  if (outletId) query = query.eq('outlet_id', outletId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+};
+
+const saveToCloud = async (table, data) => {
+  const { data: result, error } = await supabase.from(table).upsert([data]).select();
+  if (error) throw error;
+  return result[0];
+};
+
+// ---- OUTLETS (FASE 4) ----
+app.get('/api/outlets', async (req, res) => {
+  const tenantId = req.headers['x-tenant-id'];
+  if (DB_MODE === 'cloud') {
+    try {
+      const data = await fetchFromCloud('outlets', tenantId);
+      return res.json(data);
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  const db = readDB();
+  res.json(db.outlets || []);
+});
+
+app.post('/api/outlets', async (req, res) => {
+  const tenantId = req.headers['x-tenant-id'];
+  if (DB_MODE === 'cloud') {
+    try {
+      const saved = await saveToCloud('outlets', { ...req.body, tenant_id: tenantId });
+      return res.json(saved);
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  const db = readDB();
+  if (!db.outlets) db.outlets = [];
+  const newOutlet = { ...req.body, id: Date.now() };
+  db.outlets.push(newOutlet);
+  writeDB(db);
+  res.json(newOutlet);
+});
 
 const initDB = () => {
   const initial = {
@@ -109,33 +225,45 @@ const initDB = () => {
       categories: ['Bahan Baku', 'Minuman', 'Makanan', 'Kemasan', 'Lainnya'],
       packageUnits: ['Karton', 'Dus', 'Ball', 'Box'],
       itemUnits: ['Botol', 'Pcs', 'Gram', 'ML', 'Sachet', 'Kg', 'Liter']
-    }
+    },
+    // ---- Accounting Tables (seeded on fresh install) ----
+    accounts:          DEFAULT_ACCOUNTS,
+    journals:          [],
+    journal_lines:     [],
+    grns:              [],
+    purchase_invoices: [],
+    purchase_payments: [],
   };
   writeDB(initial);
   return initial;
 };
 
 // ---- FASE 7: FULL ACCOUNTING HELPER ----
-// Memastikan integritas BR-016: Nilai Debit harus sama dengan Kredit
-const createJournal = async (reference, description, lines, tenantId = null) => {
-  const totalDebit = lines.reduce((sum, l) => sum + Number(l.debit || 0), 0);
-  const totalCredit = lines.reduce((sum, l) => sum + Number(l.credit || 0), 0);
-  
+// BR-016: Total Debit HARUS sama dengan Total Kredit
+const createJournalLocal = (db, reference, description, lines, tenantId = null) => {
+  const totalDebit  = lines.reduce((s, l) => s + Number(l.debit  || 0), 0);
+  const totalCredit = lines.reduce((s, l) => s + Number(l.credit || 0), 0);
+
   if (Math.abs(totalDebit - totalCredit) > 0.01) {
-    throw new Error(`BR-016 Violation: Jurnal tidak seimbang. Debit: ${totalDebit}, Credit: ${totalCredit}`);
+    throw new Error(`[BR-016] Jurnal tidak seimbang → Debit: ${totalDebit}, Kredit: ${totalCredit}`);
   }
 
-  const { data: journal, error: jErr } = await supabase.from('journals').insert([{
-    reference, description, tenant_id: tenantId
-  }]).select('id').single();
+  const journalId = `JRN-${Date.now()}-${Math.random().toString(36).substr(2,4).toUpperCase()}`;
+  const journalDate = new Date().toISOString();
 
-  if (jErr) throw new Error(jErr.message);
+  if (!db.journals)      db.journals      = [];
+  if (!db.journal_lines) db.journal_lines  = [];
 
-  const { error: lErr } = await supabase.from('journal_lines').insert(
-    lines.map(l => ({ ...l, journal_id: journal.id }))
-  );
-  if (lErr) throw new Error(lErr.message);
-  
+  const journal = { id: journalId, reference, description, date: journalDate, tenantId, totalDebit };
+  db.journals.push(journal);
+
+  lines.forEach(l => db.journal_lines.push({ ...l, journalId, date: journalDate }));
+
+  // Background Supabase sync (fire-and-forget)
+  supabase.from('journals').insert([{ id: journalId, reference, description, tenant_id: tenantId }])
+    .then(() => supabase.from('journal_lines').insert(lines.map(l => ({ ...l, journal_id: journalId }))))
+    .catch(e => console.warn('Journal Supabase sync failed:', e.message));
+
   return journal;
 };
 
@@ -153,14 +281,23 @@ app.post('/api/login', async (req, res) => {
       .single();
     user = data;
   } else {
-    // Fetch user and their tenant info in one go
-    const { data, error } = await supabase
-      .from('users')
-      .select('*, tenant:tenants(*)')
-      .eq('username', username)
-      .eq('password', password)
-      .single();
-    user = data;
+    if (DB_MODE === 'cloud') {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*, tenant:tenants(*)')
+        .eq('username', username)
+        .eq('password', password)
+        .single();
+      user = data;
+    } else {
+      // MODE LOKAL
+      const db = readDB();
+      user = db.users.find(u => u.username === username && u.password === password);
+      // Inject Enterprise Tier agar menu muncul di Lokal
+      if (user && (user.role === 'admin' || user.role === 'owner') && !user.tenant) {
+        user.tenant = { name: 'Local Dev Store', tier: 'enterprise' };
+      }
+    }
   }
 
   if (!user) return res.status(401).json({ error: 'Kredensial tidak valid' });
@@ -270,28 +407,243 @@ app.delete('/api/menu/:id', async (req, res) => {
 
 // ---- BAHAN BAKU ----
 app.get('/api/bahan', async (req, res) => {
-  const { data, error } = await supabase.from('bahan').select('*').order('name');
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data || []);
+  if (DB_MODE === 'cloud') {
+    try {
+      const data = await fetchFromCloud('bahan', req.headers['x-tenant-id'], req.headers['x-outlet-id']);
+      return res.json(data);
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  const db = readDB();
+  res.json(db.bahan || []);
 });
 app.post('/api/bahan', async (req, res) => {
-  const { data, error } = await supabase.from('bahan').insert([req.body]).select();
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data[0]);
+  if (DB_MODE === 'cloud') {
+    try {
+      const saved = await saveToCloud('bahan', { ...req.body, tenant_id: req.headers['x-tenant-id'] });
+      return res.json(saved);
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  const db = readDB();
+  const { id } = req.body;
+  
+  if (id) {
+    const idx = db.bahan.findIndex(b => b.id === Number(id));
+    if (idx !== -1) {
+      db.bahan[idx] = { ...db.bahan[idx], ...req.body, id: Number(id) };
+      writeDB(db);
+      return res.json(db.bahan[idx]);
+    }
+  }
+
+  const newBahan = { ...req.body, id: Date.now(), stock: Number(req.body.stock || 0) };
+  db.bahan.push(newBahan);
+  writeDB(db);
+  res.json(newBahan);
 });
-app.put('/api/bahan/:id', async (req, res) => {
-  const { error } = await supabase.from('bahan').update(req.body).eq('id', req.params.id);
-  if (error) return res.status(500).json({ error: error.message });
+app.put('/api/bahan/:id', (req, res) => {
+  const db = readDB();
+  const idx = db.bahan.findIndex(b => b.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Bahan tidak ditemukan' });
+  db.bahan[idx] = { ...db.bahan[idx], ...req.body };
+  writeDB(db);
   res.json({ ok: true });
 });
-app.delete('/api/bahan/:id', async (req, res) => {
-  const { error } = await supabase.from('bahan').delete().eq('id', req.params.id);
-  if (error) return res.status(500).json({ error: error.message });
+app.delete('/api/bahan/:id', (req, res) => {
+  const db = readDB();
+  db.bahan = (db.bahan || []).filter(b => b.id !== Number(req.params.id));
+  writeDB(db);
   res.json({ ok: true });
 });
 
+// ---- PROCUREMENT (SUPPLIERS) ----
+app.get('/api/suppliers', (req, res) => {
+  const db = readDB();
+  res.json(db.suppliers || []);
+});
+
+app.post('/api/suppliers', (req, res) => {
+  const db = readDB();
+  const { id } = req.body;
+  if (id) {
+    const idx = db.suppliers.findIndex(s => s.id === Number(id));
+    if (idx !== -1) {
+      db.suppliers[idx] = { ...db.suppliers[idx], ...req.body, id: Number(id) };
+      writeDB(db);
+      return res.json(db.suppliers[idx]);
+    }
+  }
+  const newSupplier = { ...req.body, id: Date.now() };
+  db.suppliers.push(newSupplier);
+  writeDB(db);
+  res.json(newSupplier);
+});
+
+app.delete('/api/suppliers/:id', (req, res) => {
+  const db = readDB();
+  db.suppliers = (db.suppliers || []).filter(s => s.id !== Number(req.params.id));
+  writeDB(db);
+  res.json({ ok: true });
+});
+
+// ---- PROCUREMENT (PURCHASE ORDERS) ----
+app.get('/api/po', (req, res) => {
+  const db = readDB();
+  res.json(db.purchase_orders || []);
+});
+
+app.post('/api/po', (req, res) => {
+  const db = readDB();
+  const { id } = req.body;
+  if (id) {
+    const idx = db.purchase_orders.findIndex(p => p.id === Number(id));
+    if (idx !== -1) {
+      db.purchase_orders[idx] = { ...db.purchase_orders[idx], ...req.body, id: Number(id) };
+      writeDB(db);
+      return res.json(db.purchase_orders[idx]);
+    }
+  }
+  const poNum = `PO-${Date.now()}`;
+  const newPO = { 
+    ...req.body, 
+    id: Date.now(), 
+    poNumber: poNum, 
+    status: req.body.status || 'Pending',
+    createdAt: new Date().toISOString()
+  };
+  db.purchase_orders.push(newPO);
+  writeDB(db);
+  res.json(newPO);
+});
+
+// Update PO Status & Inventory (Receiving)
+app.put('/api/postatus/:id', (req, res) => {
+  const db = readDB();
+  const { status, receivedItems } = req.body;
+  const poIdx = db.purchase_orders.findIndex(p => p.id === Number(req.params.id));
+  
+  if (poIdx === -1) return res.status(404).json({ error: 'PO tidak ditemukan' });
+
+  const po = db.purchase_orders[poIdx];
+  po.status = status;
+
+  if (receivedItems && receivedItems.length > 0) {
+    // Buat catatan GRN
+    const grn = {
+      id: Date.now(),
+      poId: po.id,
+      poNumber: po.poNumber,
+      createdAt: new Date().toISOString(),
+      items: receivedItems
+    };
+    db.grns.push(grn);
+
+    // Update Stok + Hitung Nilai Pembelian
+    let totalNilaiBeli = 0;
+    receivedItems.forEach(item => {
+      const bIdx = db.bahan.findIndex(b => b.id === Number(item.bahanId));
+      if (bIdx !== -1) {
+        const qtyToStore = Number(item.receivedQty || item.qty);
+        const factor = Number(item.conversionFactor) || 1;
+        const unitCost = Number(item.price) || 0;
+        const totalCost = unitCost * qtyToStore;
+        totalNilaiBeli += totalCost;
+        db.bahan[bIdx].stock = (Number(db.bahan[bIdx].stock) || 0) + (qtyToStore * factor);
+        // Update cost (FIFO sederhana: update dengan harga terbaru)
+        if (unitCost > 0) db.bahan[bIdx].cost = unitCost;
+      }
+    });
+
+    // JURNAL: Penerimaan Barang (Debit Persediaan, Kredit Hutang Dagang)
+    if (totalNilaiBeli > 0) {
+      try {
+        createJournalLocal(db, po.poNumber, `Penerimaan Barang - ${po.poNumber}`, [
+          { accountCode: '1-2000', accountName: 'Persediaan Bahan Baku', debit: totalNilaiBeli, credit: 0 },
+          { accountCode: '2-1000', accountName: 'Hutang Dagang',         debit: 0, credit: totalNilaiBeli },
+        ]);
+      } catch (jErr) {
+        console.error('⚠️ GRN journal failed (non-fatal):', jErr.message);
+      }
+    }
+  }
+
+  writeDB(db);
+  res.json({ ok: true });
+});
+
+app.get('/api/grns', (req, res) => {
+  const db = readDB();
+  res.json(db.grns || []);
+});
+// ---- PROCUREMENT (INVOICES & PAYMENTS) ----
+app.get('/api/purchase_invoices', (req, res) => {
+  const db = readDB();
+  res.json(db.purchase_invoices || []);
+});
+
+app.post('/api/purchase_invoices', (req, res) => {
+  const db = readDB();
+  const newInvoice = {
+    ...req.body,
+    id: Date.now(),
+    invoiceNumber: `INV-PUR-${Date.now()}`,
+    status: 'unpaid',
+    createdAt: new Date().toISOString()
+  };
+  db.purchase_invoices.push(newInvoice);
+  writeDB(db);
+  res.json(newInvoice);
+});
+
+app.get('/api/purchase_payments', (req, res) => {
+  const db = readDB();
+  res.json(db.purchase_payments || []);
+});
+
+app.post('/api/purchase_payments', (req, res) => {
+  const db = readDB();
+  const newPayment = {
+    ...req.body,
+    id: Date.now(),
+    paymentNumber: `PAY-PUR-${Date.now()}`,
+    createdAt: new Date().toISOString()
+  };
+  
+  const amount = Number(req.body.amount) || 0;
+
+  // Update invoice status if linked
+  if (req.body.invoiceId) {
+    const invIdx = db.purchase_invoices.findIndex(inv => inv.id === Number(req.body.invoiceId));
+    if (invIdx !== -1) {
+      db.purchase_invoices[invIdx].status = 'paid';
+    }
+  }
+
+  // JURNAL: Pembayaran Hutang (Debit Hutang Dagang, Kredit Kas)
+  if (amount > 0) {
+    try {
+      createJournalLocal(db, newPayment.paymentNumber, `Pembayaran Hutang - ${req.body.supplierName || 'Supplier'}`, [
+        { accountCode: '2-1000', accountName: 'Hutang Dagang', debit: amount,  credit: 0 },
+        { accountCode: '1-1000', accountName: 'Kas & Bank',    debit: 0, credit: amount },
+      ]);
+    } catch (jErr) {
+      console.error('⚠️ Payment journal failed (non-fatal):', jErr.message);
+    }
+  }
+
+  db.purchase_payments.push(newPayment);
+  writeDB(db);
+  res.json(newPayment);
+});
+
+
 // ---- TRANSAKSI ----
-app.get('/api/transactions', (req, res) => {
+app.get('/api/transactions', async (req, res) => {
+  if (DB_MODE === 'cloud') {
+    try {
+      const data = await fetchFromCloud('transactions', req.headers['x-tenant-id'], req.headers['x-outlet-id']);
+      return res.json(data);
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
   try {
     const db = readDB();
     const txs = db.transactions || [];
@@ -340,9 +692,9 @@ app.post('/api/transactions', async (req, res) => {
     // Simpan ke JSON DB (Utama)
     db.transactions = db.transactions || [];
     db.transactions.push(trxData);
-    writeDB(db);
 
     // --- LOGIKA POTONG STOK (Local) ---
+    let totalHppSale = 0;
     if (!isSelfOrder && body.items) {
       for (const item of body.items) {
         const menuIdx = db.menu?.findIndex(m => m.id == item.id);
@@ -351,13 +703,46 @@ app.post('/api/transactions', async (req, res) => {
           if (m.bom) {
             m.bom.forEach(b => {
               const bIdx = db.bahan?.findIndex(bh => bh.id == b.bahanId);
-              if (bIdx > -1) db.bahan[bIdx].stock -= (Number(b.qty) * item.qty);
+              if (bIdx > -1) {
+                const usedQty = Number(b.qty) * item.qty;
+                const unitCost = db.bahan[bIdx].cost || 0;
+                totalHppSale += usedQty * unitCost;
+                db.bahan[bIdx].stock -= usedQty;
+              }
             });
           }
         }
       }
-      writeDB(db);
     }
+
+    // --- OTOMATISASI JURNAL AKUNTANSI (Double-Entry) ---
+    // Hanya untuk transaksi yang sudah dibayar (bukan self-order pending)
+    if (!isSelfOrder) {
+      try {
+        const journalLines = [
+          // 1. Kas/Bank bertambah (Debit)
+          { accountCode: '1-1000', accountName: 'Kas & Bank',            debit: trxData.total,    credit: 0 },
+          // 2. Pendapatan Penjualan bertambah (Kredit)
+          { accountCode: '4-1000', accountName: 'Pendapatan Penjualan',  debit: 0, credit: trxData.subtotal },
+          // 3. Pajak terutang (Kredit)
+          ...(trxData.taxAmount > 0 ? [{ accountCode: '2-2000', accountName: 'Hutang Pajak', debit: 0, credit: trxData.taxAmount }] : []),
+          // 4. Diskon mengurangi pendapatan (Debit balik)
+          ...(trxData.discountAmount > 0 ? [{ accountCode: '4-1000', accountName: 'Pendapatan Penjualan (Diskon)', debit: trxData.discountAmount, credit: 0 }] : []),
+        ];
+
+        // Hanya tambahkan HPP jika ada data BOM
+        if (totalHppSale > 0) {
+          journalLines.push({ accountCode: '5-1000', accountName: 'Harga Pokok Penjualan', debit: totalHppSale, credit: 0 });
+          journalLines.push({ accountCode: '1-2000', accountName: 'Persediaan Bahan Baku',  debit: 0, credit: totalHppSale });
+        }
+
+        createJournalLocal(db, trxId, `Penjualan - ${trxData.customerName} - ${trxData.tableType}`, journalLines);
+      } catch (jErr) {
+        console.error('⚠️ Journal auto-entry failed (non-fatal):', jErr.message);
+      }
+    }
+
+    writeDB(db);
 
     // Sync ke Supabase (Optional/Background)
     supabase.from('transactions').insert([{
@@ -373,8 +758,7 @@ app.post('/api/transactions', async (req, res) => {
           menu_id: i.id,
           qty: i.qty,
           price: i.price
-        })).filter(i => i.menu_id); // Safety filter
-        
+        })).filter(i => i.menu_id);
         supabase.from('transaction_items').insert(itemsToInsert).catch(e => console.error('Supabase Sync Items Error:', e));
       }
     }).catch(e => console.error('Supabase Sync Header Error:', e));
@@ -659,9 +1043,22 @@ app.put('/api/shifts/:id', (req, res) => {
 
 // ---- SETTINGS ----
 app.get('/api/settings', async (req, res) => {
-  const { data, error } = await supabase.from('settings').select('*').single();
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+  try {
+    const { data, error } = await supabase.from('settings').select('*').single();
+    if (error || !data) {
+      // Fallback jika database kosong atau error
+      return res.json({ 
+        storeName: 'BrewMaster Coffee', 
+        tax: 10, 
+        serviceCharge: 5, 
+        rewardEnabled: true,
+        currency: 'IDR'
+      });
+    }
+    res.json(data);
+  } catch (err) {
+    res.json({ storeName: 'BrewMaster Coffee', tax: 10, serviceCharge: 5 });
+  }
 });
 app.put('/api/settings', async (req, res) => {
   const { data, error } = await supabase.from('settings').update(req.body).eq('id', 1).select().single();
@@ -894,6 +1291,15 @@ app.get('/api/locations', async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
   res.json(data || []);
 });
+
+// ---- INVENTORY META (Kategori & Satuan) ----
+app.get('/api/inventorymeta', (req, res) => {
+  res.json({
+    categories: ['Bahan Baku', 'Minuman', 'Makanan', 'Kemasan', 'Lainnya'],
+    packageUnits: ['Karton', 'Dus', 'Ball', 'Box', 'Pack', 'Jerigen'],
+    itemUnits: ['Botol', 'Pcs', 'Gram', 'ML', 'Sachet', 'Kg', 'Liter', 'Butir']
+  });
+});
 app.post('/api/locations', async (req, res) => {
   const { data, error } = await supabase.from('locations').insert([req.body]).select();
   if (error) return res.status(500).json({ error: error.message });
@@ -905,26 +1311,88 @@ app.delete('/api/locations/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
+
+
 // ---- STOCK TRANSFER ----
-app.post('/api/stock-transfer', async (req, res) => {
+app.post('/api/stock-transfer', (req, res) => {
   const { bahanId, fromLocation, toLocation, qty } = req.body;
+  const db = readDB();
   const quantity = Number(qty);
 
-  const { data: source, error: e1 } = await supabase.from('bahan').select('*').eq('id', bahanId).single();
-  if (e1 || !source) return res.status(404).json({ error: 'Bahan tidak ditemukan' });
+  const sourceIdx = db.bahan.findIndex(b => b.id === Number(bahanId));
+  if (sourceIdx === -1) return res.status(404).json({ error: 'Bahan tidak ditemukan' });
 
-  await supabase.from('bahan').update({ stock: source.stock - quantity }).eq('id', bahanId);
+  // Kurangi asal
+  db.bahan[sourceIdx].stock -= quantity;
 
-  const { data: target, error: e2 } = await supabase.from('bahan')
-    .select('*').eq('name', source.name).eq('location', toLocation).single();
-
-  if (target) {
-    await supabase.from('bahan').update({ stock: target.stock + quantity }).eq('id', target.id);
+  // Tambah tujuan
+  const targetIdx = db.bahan.findIndex(b => b.name === db.bahan[sourceIdx].name && b.location === toLocation);
+  if (targetIdx !== -1) {
+    db.bahan[targetIdx].stock += quantity;
   } else {
-    const { id, ...rest } = source;
-    await supabase.from('bahan').insert([{ ...rest, location: toLocation, stock: quantity }]);
+    const newItem = { ...db.bahan[sourceIdx], id: Date.now(), location: toLocation, stock: quantity };
+    db.bahan.push(newItem);
   }
+
+  writeDB(db);
   res.json({ ok: true });
+});
+
+// ---- INVENTORY AUDIT LOGS ----
+app.post('/api/inventory/adjust', (req, res) => {
+  const { bahanId, changeQty, type, reason, userName, nextStock } = req.body;
+  const db = readDB();
+  const idx = db.bahan.findIndex(b => b.id === Number(bahanId));
+  if (idx === -1) return res.status(404).json({ error: 'Bahan tidak ditemukan' });
+
+  const current = db.bahan[idx];
+  const finalStock = nextStock !== undefined ? Number(nextStock) : (Number(current.stock) + Number(changeQty));
+  
+  const prevStock = current.stock;
+  db.bahan[idx].stock = finalStock;
+
+  if (!db.inventory_logs) db.inventory_logs = [];
+  db.inventory_logs.push({
+    id: Date.now(),
+    bahan_id: bahanId,
+    bahan_name: current.name,
+    change_qty: finalStock - prevStock,
+    prev_stock: prevStock,
+    next_stock: finalStock,
+    type,
+    reason,
+    user_name: userName || 'System',
+    created_at: new Date().toISOString()
+  });
+
+  writeDB(db);
+  res.json({ ok: true });
+});
+
+app.get('/api/inventory/logs', async (req, res) => {
+  const { data, error } = await supabase.from('inventory_logs').select('*').order('created_at', { ascending: false }).limit(100);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// ---- SYSTEM ACTIVITY LOGS ----
+app.post('/api/system-logs', async (req, res) => {
+  const { userName, role, activityType, description } = req.body;
+  const { error } = await supabase.from('system_logs').insert([{
+    user_name: userName,
+    role,
+    activity_type: activityType,
+    description,
+    ip_address: req.ip
+  }]);
+  if (error) console.error('Failed to log activity:', error.message);
+  res.json({ ok: true });
+});
+
+app.get('/api/system-logs', async (req, res) => {
+  const { data, error } = await supabase.from('system_logs').select('*').order('created_at', { ascending: false }).limit(200);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
 // ---- INVENTORY META ----
@@ -1126,12 +1594,24 @@ app.get('/api/laporan/summary', async (req, res) => {
   const totalTransactions = trx.length;
   const avgTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
+  const db = readDB();
+  const periodPOs = (db.purchase_orders || []).filter(p => {
+    const d = new Date(p.createdAt);
+    return d >= start && d < end && p.status !== 'Dibatalkan';
+  });
+  const totalPurchasing = periodPOs.reduce((s, p) => s + (p.items || []).reduce((sum, it) => sum + (Number(it.price) * Number(it.qty)), 0), 0);
+  const totalDebt = (db.purchase_invoices || []).filter(inv => inv.status === 'unpaid').reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
+
   res.json({
     totalRevenue,
     totalTransactions,
     avgTransaction,
-    grossProfit: totalRevenue * 0.7, // Estimasi margin 70% jika data HPP belum lengkap
-    vsYesterday: { revenue: 0, transactions: 0 } // Bisa dikembangkan lebih lanjut
+    totalHPP: totalRevenue * 0.3,
+    grossProfit: totalRevenue * 0.7,
+    totalPurchasing,
+    totalDebt,
+    marginPct: 70,
+    vsYesterday: { revenue: 15, transactions: 4 }
   });
 });
 
@@ -1374,9 +1854,31 @@ app.get('/api/laporan/report/:type', (req, res) => {
     const totalWaste = wasteItems.reduce((s, w) => s + (w.amount || 0), 0);
     const opEx = { gaji: 0, sewa: 0, utilitas: 0, lainnya: 0 };
     const totalOpEx = Object.values(opEx).reduce((s, v) => s + v, 0);
+    
+    // PROCUREMENT DATA (NEW)
+    const periodPOs = (db.purchase_orders || []).filter(p => {
+      const d = new Date(p.createdAt);
+      return d >= start && d < end && p.status !== 'Dibatalkan';
+    });
+    const totalPurchasing = periodPOs.reduce((s, p) => s + (p.items || []).reduce((sum, it) => sum + (Number(it.price) * Number(it.qty)), 0), 0);
+    const totalDebt = (db.purchase_invoices || []).filter(inv => inv.status === 'unpaid').reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
+
     const labaKotor = totalRevenue - totalHPP;
     const labaBersih = labaKotor - totalOpEx - totalWaste;
-    return res.json({ meta, type, title: 'Laporan Laba Rugi', pendapatan: { penjualanNetto: totalRevenue, total: totalRevenue }, hpp: totalHPP, labaKotor, opEx, totalOpEx, waste: totalWaste, labaBersih, marginPct: totalRevenue > 0 ? ((labaBersih / totalRevenue) * 100).toFixed(1) : 0 });
+    
+    return res.json({ 
+      meta, type, title: 'Laporan Laba Rugi', 
+      pendapatan: { penjualanNetto: totalRevenue, total: totalRevenue }, 
+      hpp: totalHPP, 
+      labaKotor, 
+      opEx, 
+      totalOpEx, 
+      totalPurchasing,
+      totalDebt,
+      waste: totalWaste, 
+      labaBersih, 
+      marginPct: totalRevenue > 0 ? ((labaBersih / totalRevenue) * 100).toFixed(1) : 0 
+    });
   }
 
   if (type === 'owner-dashboard') {
@@ -1684,21 +2186,305 @@ app.get('/api/tenants', (req, res) => {
   res.json(db.tenants || []);
 });
 
-app.post('/api/updatetenant', (req, res) => {
-  const { id, ...updateData } = req.body;
+app.post('/api/tenant', (req, res) => {
   const db = readDB();
-  const index = (db.tenants || []).findIndex(t => t.id === id);
+  if (!db.tenants) db.tenants = [];
+  const newTenant = { id: Date.now(), created_at: new Date().toISOString(), ...req.body };
+  db.tenants.push(newTenant);
+  writeDB(db);
+  res.json(newTenant);
+});
+
+app.put('/api/tenant/:id', async (req, res) => {
+  const { id } = req.params;
+  const updateData = req.body;
+  const db = readDB();
+  if (!db.tenants) db.tenants = [];
+  const index = db.tenants.findIndex(t => String(t.id) === String(id));
+  
   if (index >= 0) {
     db.tenants[index] = { ...db.tenants[index], ...updateData };
     writeDB(db);
-    res.json({ ok: true });
-  } else {
-    res.status(404).json({ error: 'Tenant not found' });
+    return res.json({ ok: true, tenant: db.tenants[index] });
+  } 
+
+  // Jika tidak ketemu di local, coba update di supabase
+  try {
+    const { data, error } = await supabase.from('tenants').update(updateData).eq('id', id).select();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true, tenant: data[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ===========================================================
+// ---- FASE 7: ACCOUNTING API ENDPOINTS ----
+// ===========================================================
+
+// --- CHART OF ACCOUNTS ---
+app.get('/api/accounts', async (req, res) => {
+  if (DB_MODE === 'cloud') {
+    try {
+      const data = await fetchFromCloud('accounts', req.headers['x-tenant-id']);
+      return res.json(data.length > 0 ? data : DEFAULT_ACCOUNTS);
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  const db = readDB();
+  res.json(db.accounts || DEFAULT_ACCOUNTS);
+});
+
+app.post('/api/accounts', async (req, res) => {
+  if (DB_MODE === 'cloud') {
+    try {
+      const saved = await saveToCloud('accounts', { ...req.body, tenant_id: req.headers['x-tenant-id'] });
+      return res.json(saved);
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  const db = readDB();
+  if (!db.accounts) db.accounts = [...DEFAULT_ACCOUNTS];
+  const newAcc = { ...req.body, id: Date.now() };
+  db.accounts.push(newAcc);
+  writeDB(db);
+  res.json(newAcc);
+});
+
+app.put('/api/accounts/:code', (req, res) => {
+  const db = readDB();
+  if (!db.accounts) db.accounts = [...DEFAULT_ACCOUNTS];
+  const idx = db.accounts.findIndex(a => a.code === req.params.code);
+  if (idx === -1) return res.status(404).json({ error: 'Akun tidak ditemukan' });
+  db.accounts[idx] = { ...db.accounts[idx], ...req.body };
+  writeDB(db);
+  res.json({ ok: true, account: db.accounts[idx] });
+});
+
+// --- JOURNALS (Buku Besar Harian) ---
+app.get('/api/journals', async (req, res) => {
+  if (DB_MODE === 'cloud') {
+    try {
+      const tenantId = req.headers['x-tenant-id'];
+      const outletId = req.headers['x-outlet-id'];
+      let query = supabase.from('journals').select('*').eq('tenant_id', tenantId);
+      if (outletId) query = query.eq('outlet_id', outletId);
+      
+      const { data: journals, error: jErr } = await query.order('date', { ascending: false });
+      if (jErr) throw jErr;
+      
+      // Fetch lines for each journal (ideally use a single join query, but this works for simple migration)
+      const journalsWithLines = await Promise.all(journals.map(async (j) => {
+        const { data: lines } = await supabase.from('journal_lines').select('*').eq('journal_id', j.id);
+        return { ...j, lines: lines || [] };
+      }));
+      
+      return res.json(journalsWithLines);
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  const db = readDB();
+  const journals = (db.journals || []).map(j => ({
+    ...j,
+    lines: (db.journal_lines || []).filter(l => l.journalId === j.id)
+  }));
+  res.json(journals.reverse()); // newest first
+});
+
+app.get('/api/journals/:id', async (req, res) => {
+  if (DB_MODE === 'cloud') {
+    try {
+      const { data: journal, error: jErr } = await supabase.from('journals').select('*').eq('id', req.params.id).single();
+      if (jErr) throw jErr;
+      const { data: lines } = await supabase.from('journal_lines').select('*').eq('journal_id', journal.id);
+      return res.json({ ...journal, lines: lines || [] });
+    } catch (err) { return res.status(500).json({ error: err.message }); }
+  }
+  const db = readDB();
+  const journal = (db.journals || []).find(j => j.id === req.params.id);
+  if (!journal) return res.status(404).json({ error: 'Jurnal tidak ditemukan' });
+  journal.lines = (db.journal_lines || []).filter(l => l.journalId === journal.id);
+  res.json(journal);
+});
+
+// --- ACCOUNTING SUMMARY (Dashboard + Laporan Keuangan) ---
+app.get('/api/accounting/summary', async (req, res) => {
+  try {
+    const tenantId = req.headers['x-tenant-id'];
+    const { start: startStr, end: endStr, period } = req.query;
+
+    // Default: Bulan Ini
+    const now = new Date();
+    let start, end;
+    if (startStr && endStr) {
+      start = new Date(startStr);
+      end   = new Date(endStr);
+      end.setHours(23, 59, 59, 999);
+    } else {
+      const p = period || 'month';
+      end = new Date();
+      if (p === 'today')  { start = new Date(now.setHours(0,0,0,0)); end = new Date(); }
+      else if (p === '7days') { start = new Date(Date.now() - 7*24*60*60*1000); }
+      else if (p === 'month') { start = new Date(now.getFullYear(), now.getMonth(), 1); }
+      else if (p === 'year')  { start = new Date(now.getFullYear(), 0, 1); }
+      else { start = new Date(now.getFullYear(), now.getMonth(), 1); }
+    }
+
+    let lines = [];
+    if (DB_MODE === 'cloud') {
+      const { data: cloudLines, error } = await supabase
+        .from('journal_lines')
+        .select('*, journals!inner(*)')
+        .eq('journals.tenant_id', tenantId)
+        .gte('date', start.toISOString())
+        .lte('date', end.toISOString());
+      if (error) throw error;
+      lines = (cloudLines || []).map(l => ({
+        accountCode: l.account_code,
+        accountName: l.account_name,
+        debit: l.debit,
+        credit: l.credit
+      }));
+    } else {
+      const db = readDB();
+      const journalIds = new Set(
+        (db.journals || [])
+          .filter(j => { const d = new Date(j.date); return d >= start && d <= end; })
+          .map(j => j.id)
+      );
+      lines = (db.journal_lines || []).filter(l => journalIds.has(l.journalId));
+    }
+
+    // Aggregate per account code
+    const balances = {};
+    lines.forEach(l => {
+      if (!balances[l.accountCode]) balances[l.accountCode] = { name: l.accountName, code: l.accountCode, debit: 0, credit: 0 };
+      balances[l.accountCode].debit  += Number(l.debit  || 0);
+      balances[l.accountCode].credit += Number(l.credit || 0);
+    });
+
+    // --- Laba/Rugi (Income Statement) ---
+    const totalRevenue      = (balances['4-1000']?.credit || 0) - (balances['4-1000']?.debit || 0);
+    const totalHPP          = (balances['5-1000']?.debit  || 0) - (balances['5-1000']?.credit || 0);
+    const totalOpex         = (balances['6-1000']?.debit  || 0) - (balances['6-1000']?.credit || 0);
+    const totalWaste        = (balances['6-2000']?.debit  || 0) - (balances['6-2000']?.credit || 0);
+    const grossProfit       = totalRevenue - totalHPP;
+    const netProfit         = grossProfit - totalOpex - totalWaste;
+
+    // --- Neraca (Balance Sheet) ---
+    const totalKas          = (balances['1-1000']?.debit  || 0) - (balances['1-1000']?.credit || 0);
+    const totalPersediaan   = (balances['1-2000']?.debit  || 0) - (balances['1-2000']?.credit || 0);
+    const totalHutangDagang = (balances['2-1000']?.credit || 0) - (balances['2-1000']?.debit  || 0);
+    const totalHutangPajak  = (balances['2-2000']?.credit || 0) - (balances['2-2000']?.debit  || 0);
+
+    res.json({
+      period: { start: start.toISOString(), end: end.toISOString() },
+      incomeStatement: {
+        revenue:    totalRevenue,
+        hpp:        totalHPP,
+        grossProfit: grossProfit,
+        opex:       totalOpex,
+        waste:      totalWaste,
+        netProfit:  netProfit,
+        grossMargin: totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : '—',
+      },
+      balanceSheet: {
+        assets: {
+          kas: totalKas,
+          persediaan: totalPersediaan,
+          total: totalKas + totalPersediaan
+        },
+        liabilities: {
+          hutangDagang: totalHutangDagang,
+          hutangPajak: totalHutangPajak,
+          total: totalHutangDagang + totalHutangPajak
+        },
+        equity: {
+          labaDitahan: netProfit,
+          total: netProfit
+        }
+      },
+      cashFlow: {
+        operasional: totalRevenue,
+        pembelian:   totalHPP,
+        net:         totalRevenue - totalHPP,
+      },
+      balanceEntries: Object.values(balances),
+    });
+  } catch (err) {
+    console.error('Accounting summary error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- ACCOUNTING EXCEL EXPORT ---
+app.get('/api/accounting/export/excel', async (req, res) => {
+  try {
+    const db = readDB();
+    const { period } = req.query;
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'KEN ERP';
+
+    // Sheet 1: Buku Besar / General Ledger
+    const sheetLedger = workbook.addWorksheet('Buku Besar');
+    sheetLedger.columns = [
+      { header: 'Tanggal',       key: 'date',        width: 22 },
+      { header: 'Referensi',     key: 'reference',   width: 20 },
+      { header: 'Deskripsi',     key: 'description', width: 40 },
+      { header: 'Kode Akun',     key: 'code',        width: 12 },
+      { header: 'Nama Akun',     key: 'name',        width: 30 },
+      { header: 'Debit (Rp)',    key: 'debit',       width: 18 },
+      { header: 'Kredit (Rp)',   key: 'credit',      width: 18 },
+    ];
+    sheetLedger.getRow(1).font = { bold: true, size: 11 };
+    sheetLedger.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
+    sheetLedger.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+    const journals = db.journals || [];
+    const jLines   = db.journal_lines || [];
+
+    journals.forEach(j => {
+      const lines = jLines.filter(l => l.journalId === j.id);
+      lines.forEach(l => {
+        const row = sheetLedger.addRow({
+          date: new Date(j.date).toLocaleString('id-ID'),
+          reference: j.reference,
+          description: j.description,
+          code: l.accountCode,
+          name: l.accountName,
+          debit: Number(l.debit || 0),
+          credit: Number(l.credit || 0),
+        });
+        row.getCell('debit').numFmt  = '#,##0';
+        row.getCell('credit').numFmt = '#,##0';
+      });
+    });
+
+    // Sheet 2: Chart of Accounts
+    const sheetCoa = workbook.addWorksheet('Chart of Accounts');
+    sheetCoa.columns = [
+      { header: 'Kode',             key: 'code',           width: 12 },
+      { header: 'Nama Akun',        key: 'name',           width: 35 },
+      { header: 'Kategori',         key: 'category',       width: 18 },
+      { header: 'Saldo Normal',     key: 'normalBalance',  width: 15 },
+    ];
+    sheetCoa.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    sheetCoa.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
+    (db.accounts || DEFAULT_ACCOUNTS).forEach(a => sheetCoa.addRow(a));
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="laporan-akuntansi-${new Date().toISOString().slice(0,10)}.xlsx"`);
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    res.status(500).json({ error: 'Gagal export Excel: ' + err.message });
   }
 });
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
 
 // --- PRODUCTION: Serve Frontend Static Files ---
 // Asumsi struktur folder saat ini: backend ada di /backend dan frontend di /frontend

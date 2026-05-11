@@ -81,24 +81,24 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
       <Card className="w-full max-w-5xl h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 border-none">
         
         {/* Header */}
-        <div className="p-8 border-b bg-muted/10 flex items-center justify-between">
+        <div className="p-5 border-b bg-muted/10 flex items-center justify-between">
            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-accent rounded-2xl flex items-center justify-center text-white shadow-lg shadow-accent/20">
-                 <Package size={32} />
+              <div className="w-12 h-12 bg-accent rounded-2xl flex items-center justify-center text-white shadow-lg shadow-accent/20">
+                 <Package size={28} />
               </div>
               <div>
-                 <CardTitle className="text-2xl font-black">{initialData ? 'Ubah Master Stok' : 'Input Master Stok'}</CardTitle>
-                 <CardDescription className="text-xs uppercase tracking-widest font-bold">Lengkapi detail barang untuk akurasi HPP & Inventori</CardDescription>
+                 <CardTitle className="text-xl font-black">{initialData ? 'Ubah Master Stok' : 'Input Master Stok'}</CardTitle>
+                 <CardDescription className="text-[10px] uppercase tracking-widest font-bold">Lengkapi detail barang untuk akurasi HPP</CardDescription>
               </div>
            </div>
-           <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full" onClick={onClose}><X size={24} /></Button>
+           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={onClose}><X size={20} /></Button>
         </div>
 
         {/* Scrollable Content */}
         <CardContent className="flex-1 overflow-y-auto p-0 flex flex-col xl:flex-row gap-0">
            
            {/* Form Section */}
-           <div className="flex-1 p-8 space-y-12 pb-24">
+           <div className="flex-1 p-5 space-y-10 pb-10">
               
               {/* Part 1: Identity */}
               <div className="space-y-6">
@@ -109,17 +109,17 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Nama Barang *</label>
-                       <Input className="h-12 text-sm font-bold" placeholder="cth: Biji Kopi Robusta" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
+                       <Input className="h-12 text-sm font-bold border-slate-300 bg-slate-50" placeholder="cth: Biji Kopi Robusta" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Kategori *</label>
-                       <select className="flex h-12 w-full rounded-xl border border-input bg-transparent px-3 text-sm font-bold shadow-sm" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+                       <select className="flex h-12 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm font-bold shadow-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
                           {categories.map(c => <option key={c} value={c}>{c}</option>)}
                        </select>
                     </div>
                     <div className="space-y-2 md:col-span-2">
                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Lokasi Gudang / Kitchen *</label>
-                       <select className="flex h-12 w-full rounded-xl border border-input bg-transparent px-3 text-sm font-bold shadow-sm" value={form.location} onChange={e => setForm({...form, location: e.target.value})}>
+                       <select className="flex h-12 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm font-bold shadow-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none" value={form.location} onChange={e => setForm({...form, location: e.target.value})}>
                           {locations.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
                        </select>
                     </div>
@@ -175,24 +175,24 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                          <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Satuan</label>
-                            <select className="flex h-11 w-full rounded-xl border bg-background px-3 text-sm font-bold shadow-sm" value={form.unit} onChange={e => setForm({...form, unit: e.target.value})}>
+                            <select className="flex h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm font-bold shadow-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none" value={form.unit} onChange={e => setForm({...form, unit: e.target.value})}>
                                {itemUnits.map(u => <option key={u} value={u}>{u}</option>)}
                             </select>
                          </div>
                          <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Stok Awal</label>
-                            <Input type="number" className="h-11 font-black text-center" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} />
+                            <Input type="number" className="h-11 font-black text-center border-slate-300 bg-slate-50" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} />
                          </div>
                          <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Batas Kritis (Min)</label>
-                            <Input type="number" className="h-11 font-black text-center border-amber-500/30 text-amber-600 bg-amber-500/5" value={form.minStock} onChange={e => setForm({...form, minStock: e.target.value})} />
+                            <Input type="number" className="h-11 font-black text-center border-amber-300 text-amber-600 bg-amber-50" value={form.minStock} onChange={e => setForm({...form, minStock: e.target.value})} />
                          </div>
                       </div>
                       <div className="space-y-2 max-w-sm">
                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Harga Beli Per {form.unit}</label>
                          <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-black text-xs">IDR</span>
-                            <Input type="number" className="h-12 pl-12 font-black text-lg text-accent" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
+                            <Input type="number" className="h-12 pl-12 font-black text-lg text-accent border-slate-300 bg-slate-50" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
                          </div>
                       </div>
                    </div>
@@ -202,7 +202,7 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Satuan Kemasan</label>
-                               <select className="flex h-11 w-full rounded-xl border bg-background px-3 text-sm font-bold shadow-sm" value={form.packageUnit} onChange={e => setForm({...form, packageUnit: e.target.value})}>
+                               <select className="flex h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 text-sm font-bold shadow-sm focus:border-accent focus:ring-1 focus:ring-accent outline-none" value={form.packageUnit} onChange={e => setForm({...form, packageUnit: e.target.value})}>
                                   {packageUnits.map(u => <option key={u} value={u}>{u}</option>)}
                                </select>
                             </div>
@@ -212,11 +212,11 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                             </div>
                             <div className="space-y-2">
                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Harga Beli / {form.packageUnit}</label>
-                               <Input type="number" className="h-11 font-black text-accent" value={form.packagePrice} onChange={e => setForm({...form, packagePrice: e.target.value})} />
+                               <Input type="number" className="h-11 font-black text-accent border-slate-300 bg-slate-50" value={form.packagePrice} onChange={e => setForm({...form, packagePrice: e.target.value})} />
                             </div>
                             <div className="space-y-2">
                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Batas Aman ({form.packageUnit})</label>
-                               <Input type="number" className="h-11 font-black text-amber-600 text-center" value={form.packageMinStock} onChange={e => setForm({...form, packageMinStock: e.target.value})} />
+                               <Input type="number" className="h-11 font-black text-amber-600 text-center border-amber-300 bg-amber-50" value={form.packageMinStock} onChange={e => setForm({...form, packageMinStock: e.target.value})} />
                             </div>
                          </div>
                       </div>
@@ -228,7 +228,7 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Isi Per {form.packageUnit}</label>
-                               <Input type="number" className="h-11 font-black text-center" value={form.packageItemsCount} onChange={e => setForm({...form, packageItemsCount: e.target.value})} />
+                               <Input type="number" className="h-12 font-black text-center border-slate-300 bg-slate-50" value={form.packageItemsCount} onChange={e => setForm({...form, packageItemsCount: e.target.value})} />
                             </div>
                             <div className="space-y-2">
                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Satuan Isi</label>
@@ -239,7 +239,7 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                             <div className="space-y-2">
                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Netto / Volume</label>
                                <div className="flex bg-background rounded-xl overflow-hidden border shadow-sm">
-                                  <input type="number" className="w-full h-11 bg-transparent px-3 text-sm font-bold border-none" value={form.packageItemVolume} onChange={e => setForm({...form, packageItemVolume: e.target.value})} />
+                                  <input type="number" className="w-full h-12 bg-slate-50 px-3 text-sm font-bold border-none" value={form.packageItemVolume} onChange={e => setForm({...form, packageItemVolume: e.target.value})} />
                                   <select className="h-11 bg-muted px-2 text-[10px] font-black uppercase" value={form.packageItemVolumeUnit} onChange={e => setForm({...form, packageItemVolumeUnit: e.target.value})}>
                                      <option value="ml">ml</option>
                                      <option value="gr">gr</option>
@@ -261,15 +261,16 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Merek</label>
-                       <Input className="h-11 font-bold" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
+                       <Input className="h-12 font-bold border-slate-300 bg-slate-50" value={form.brand} onChange={e => setForm({...form, brand: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">SKU / Barcode</label>
-                       <Input className="h-11 font-bold" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} />
+                       <Input className="h-12 font-bold border-slate-300 bg-slate-50" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} />
                     </div>
                     <div className="space-y-2">
                        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Tgl Kadaluarsa</label>
-                       <Input type="date" className="h-11 font-bold" value={form.expiryDate} onChange={e => setForm({...form, expiryDate: e.target.value})} />
+                       <Input type="date" className="h-12 font-bold border-slate-300 bg-slate-50" value={form.expiryDate} onChange={e => setForm({...form, expiryDate: e.target.value})} />
+                       <p className="text-[9px] text-muted-foreground mt-1 px-1 italic font-medium">Format: hari/bulan/tahun (Klik ikon kalender untuk memilih)</p>
                     </div>
                  </div>
               </div>
@@ -340,11 +341,10 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
            </div>
         </CardContent>
 
-        {/* Footer */}
-        <div className="p-8 border-t bg-background flex items-center justify-end gap-4">
-           <Button variant="ghost" className="h-12 px-8 font-bold text-muted-foreground" onClick={onClose}>Batalkan</Button>
-           <Button className="h-12 px-12 font-black bg-accent hover:bg-accent/90 shadow-xl shadow-accent/20 gap-2" onClick={handleSave}>
-              <Save size={20} /> {initialData ? 'Perbarui Barang' : 'Daftarkan Barang'}
+        <div className="p-5 border-t bg-background flex items-center justify-end gap-3">
+           <Button variant="ghost" className="h-11 px-6 font-bold text-muted-foreground" onClick={onClose}>Batalkan</Button>
+           <Button className="h-11 px-10 font-black bg-accent hover:bg-accent/90 shadow-xl shadow-accent/20 gap-2" onClick={handleSave}>
+              <Save size={18} /> {initialData ? 'Perbarui Barang' : 'Daftarkan Barang'}
            </Button>
         </div>
       </Card>

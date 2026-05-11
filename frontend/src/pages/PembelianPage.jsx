@@ -15,12 +15,15 @@ import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
 
 export default function PembelianPage() {
-  const [activeTab, setActiveTab] = useState('PO'); // 'PO' or 'SUPPLIER'
+  const [activeTab, setActiveTab] = useState('PO'); // 'PO', 'SUPPLIER', 'GRN', 'INVOICE', 'PAYMENT'
   const [loading, setLoading] = useState(true);
   
   // Data State
   const [suppliers, setSuppliers] = useState([]);
   const [pos, setPos] = useState([]);
+  const [grns, setGrns] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [payments, setPayments] = useState([]);
   const [bahanList, setBahanList] = useState([]);
   const [locations, setLocations] = useState([]);
   
@@ -42,14 +45,20 @@ export default function PembelianPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [suppData, poData, bahanData, locData] = await Promise.all([
+      const [suppData, poData, grnData, invData, payData, bahanData, locData] = await Promise.all([
         api.getSuppliers().catch(() => []),
         api.getPO().catch(() => []),
+        api.getGRN().catch(() => []),
+        api.getPurchaseInvoices().catch(() => []),
+        api.getPurchasePayments().catch(() => []),
         api.getBahan().catch(() => []),
         api.getLocations().catch(() => [])
       ]);
       setSuppliers(suppData);
       setPos(Array.isArray(poData) ? [...poData].reverse() : []);
+      setGrns(Array.isArray(grnData) ? [...grnData].reverse() : []);
+      setInvoices(Array.isArray(invData) ? [...invData].reverse() : []);
+      setPayments(Array.isArray(payData) ? [...payData].reverse() : []);
       setBahanList(bahanData);
       setLocations(locData);
     } finally {
@@ -146,7 +155,12 @@ export default function PembelianPage() {
 
   const submitReceivePO = async (e) => {
     e.preventDefault();
-    await api.updatePOStatus(receiveForm.id, 'Diterima', receiveForm.items);
+    
+    // Cek apakah semua item sudah diterima penuh atau baru sebagian
+    const isFull = receiveForm.items.every(item => Number(item.receivedQty) >= Number(item.qty));
+    const status = isFull ? 'Diterima' : 'Parsial';
+    
+    await api.updatePOStatus(receiveForm.id, status, receiveForm.items);
     setShowReceiveModal(false);
     fetchData();
   };
@@ -154,6 +168,35 @@ export default function PembelianPage() {
   const cancelPO = async (id) => {
     if (confirm('Yakin membatalkan PO ini?')) {
       await api.updatePOStatus(id, 'Dibatalkan', []);
+      fetchData();
+    }
+  };
+
+  const handleCreateInvoice = async (grn) => {
+    const po = pos.find(p => p.id === grn.poId);
+    if (!po) return;
+    
+    const amount = grn.items.reduce((s, i) => s + (Number(i.price) * Number(i.receivedQty || i.qty)), 0);
+    
+    await api.addPurchaseInvoice({
+      poId: po.id,
+      poNumber: po.poNumber,
+      grnId: grn.id,
+      supplierId: po.supplierId,
+      amount: amount
+    });
+    alert('Tagihan berhasil dibuat!');
+    setActiveTab('INVOICE');
+    fetchData();
+  };
+
+  const handlePayInvoice = async (inv) => {
+    if (confirm(`Catat pembayaran untuk ${inv.invoiceNumber} sebesar ${formatRupiah(inv.amount)}?`)) {
+      await api.addPurchasePayment({
+        invoiceId: inv.id,
+        amount: inv.amount,
+        supplierId: inv.supplierId
+      });
       fetchData();
     }
   };
@@ -183,7 +226,7 @@ export default function PembelianPage() {
         </head>
         <body>
           <div class="header">
-            <div class="brand">BrewMaster<span>.</span></div>
+            <div class="brand">KEN<span>.</span></div>
             <h1>PURCHASE ORDER</h1>
           </div>
           <div class="info-grid">
@@ -265,25 +308,45 @@ export default function PembelianPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-2xl border w-fit">
+      <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-2xl border w-fit overflow-x-auto max-w-full no-scrollbar">
         <Button 
           variant={activeTab === 'PO' ? "secondary" : "ghost"} 
-          className={cn("h-10 px-6 font-bold rounded-xl", activeTab === 'PO' && "bg-background shadow-sm")}
+          className={cn("h-10 px-6 font-bold rounded-xl whitespace-nowrap", activeTab === 'PO' && "bg-background shadow-sm")}
           onClick={() => setActiveTab('PO')}
         >
           <FileText size={16} className="mr-2" /> Purchase Orders
         </Button>
         <Button 
+          variant={activeTab === 'GRN' ? "secondary" : "ghost"} 
+          className={cn("h-10 px-6 font-bold rounded-xl whitespace-nowrap", activeTab === 'GRN' && "bg-background shadow-sm")}
+          onClick={() => setActiveTab('GRN')}
+        >
+          <Download size={16} className="mr-2" /> Barang Masuk (GRN)
+        </Button>
+        <Button 
+          variant={activeTab === 'INVOICE' ? "secondary" : "ghost"} 
+          className={cn("h-10 px-6 font-bold rounded-xl whitespace-nowrap", activeTab === 'INVOICE' && "bg-background shadow-sm")}
+          onClick={() => setActiveTab('INVOICE')}
+        >
+          <FileText size={16} className="mr-2" /> Tagihan
+        </Button>
+        <Button 
+          variant={activeTab === 'PAYMENT' ? "secondary" : "ghost"} 
+          className={cn("h-10 px-6 font-bold rounded-xl whitespace-nowrap", activeTab === 'PAYMENT' && "bg-background shadow-sm")}
+          onClick={() => setActiveTab('PAYMENT')}
+        >
+          <CheckCircle2 size={16} className="mr-2" /> Pembayaran
+        </Button>
+        <Button 
           variant={activeTab === 'SUPPLIER' ? "secondary" : "ghost"} 
-          className={cn("h-10 px-6 font-bold rounded-xl", activeTab === 'SUPPLIER' && "bg-background shadow-sm")}
+          className={cn("h-10 px-6 font-bold rounded-xl whitespace-nowrap", activeTab === 'SUPPLIER' && "bg-background shadow-sm")}
           onClick={() => setActiveTab('SUPPLIER')}
         >
           <Truck size={16} className="mr-2" /> Daftar Supplier
         </Button>
       </div>
 
-      {activeTab === 'PO' ? (
+      {activeTab === 'PO' && (
         <div className="space-y-6">
           {/* PO List */}
           <Card className="border-none shadow-xl overflow-hidden">
@@ -329,9 +392,10 @@ export default function PembelianPage() {
                             "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
                             po.status === 'Pending' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
                             po.status === 'Diterima' ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
+                            po.status === 'Parsial' ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
                             "bg-destructive/10 text-destructive border-destructive/20"
                           )}>
-                            {po.status === 'Pending' ? '🟠 Pending' : po.status === 'Diterima' ? '🟢 Diterima' : '🔴 Batal'}
+                            {po.status === 'Pending' ? '🟠 Pending' : po.status === 'Diterima' ? '🟢 Diterima' : po.status === 'Parsial' ? '🔵 Parsial' : '🔴 Batal'}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
@@ -361,7 +425,146 @@ export default function PembelianPage() {
             </div>
           </Card>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'GRN' && (
+        <Card className="border-none shadow-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
+                  <th className="px-6 py-4">Tgl Masuk</th>
+                  <th className="px-6 py-4">No PO</th>
+                  <th className="px-6 py-4">Bahan Baku</th>
+                  <th className="px-6 py-4">Qty Diterima</th>
+                  <th className="px-6 py-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {grns.map(g => (
+                  <tr key={g.id} className="hover:bg-muted/20">
+                    <td className="px-6 py-4 text-sm font-medium">{new Date(g.createdAt).toLocaleString('id-ID')}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-accent">{g.poNumber}</td>
+                    <td className="px-6 py-4">
+                      {g.items.map((it, idx) => {
+                        const b = bahanList.find(x => x.id === Number(it.bahanId));
+                        return <div key={idx} className="text-xs font-bold">{b?.name || 'Unknown'}</div>
+                      })}
+                    </td>
+                    <td className="px-6 py-4">
+                      {g.items.map((it, idx) => (
+                        <div key={idx} className="text-xs font-black text-emerald-600">+{it.receivedQty || it.qty}</div>
+                      ))}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {!invoices.find(inv => inv.grnId === g.id) && (
+                        <Button variant="outline" size="sm" className="h-8 font-bold gap-1" onClick={() => handleCreateInvoice(g)}>
+                          <FileText size={12} /> Buat Tagihan
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {grns.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-20 text-center opacity-40 italic font-bold">Belum ada riwayat penerimaan barang.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {activeTab === 'INVOICE' && (
+        <Card className="border-none shadow-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
+                  <th className="px-6 py-4">No Tagihan / Tgl</th>
+                  <th className="px-6 py-4">Supplier</th>
+                  <th className="px-6 py-4">Total Tagihan</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {invoices.map(inv => {
+                  const s = suppliers.find(x => x.id === Number(inv.supplierId));
+                  return (
+                    <tr key={inv.id} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="text-sm font-bold">{inv.invoiceNumber}</p>
+                        <p className="text-[10px] text-muted-foreground">PO: {inv.poNumber}</p>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-bold">{s?.name || 'Unknown'}</td>
+                      <td className="px-6 py-4 font-black text-sm">{formatRupiah(inv.amount)}</td>
+                      <td className="px-6 py-4">
+                        <span className={cn(
+                          "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                          inv.status === 'unpaid' ? "bg-amber-500/10 text-amber-600 border-amber-500/20" : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        )}>
+                          {inv.status === 'unpaid' ? '🔴 Belum Bayar' : '🟢 Lunas'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {inv.status === 'unpaid' && (
+                          <Button size="sm" className="h-8 font-bold bg-accent hover:bg-accent/90" onClick={() => handlePayInvoice(inv)}>
+                             Bayar Sekarang
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {invoices.length === 0 && (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-20 text-center opacity-40 italic font-bold">Belum ada tagihan masuk.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {activeTab === 'PAYMENT' && (
+        <Card className="border-none shadow-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
+                  <th className="px-6 py-4">Bukti Bayar / Tgl</th>
+                  <th className="px-6 py-4">Supplier</th>
+                  <th className="px-6 py-4">Jumlah Bayar</th>
+                  <th className="px-6 py-4">Metode</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {payments.map(p => {
+                  const s = suppliers.find(x => x.id === Number(p.supplierId));
+                  return (
+                    <tr key={p.id} className="hover:bg-muted/20">
+                      <td className="px-6 py-4 text-sm font-bold text-accent">{p.paymentNumber}</td>
+                      <td className="px-6 py-4 text-sm font-bold">{s?.name || 'Unknown'}</td>
+                      <td className="px-6 py-4 font-black text-sm text-emerald-600">{formatRupiah(p.amount)}</td>
+                      <td className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase">Bank Transfer / Kas</td>
+                    </tr>
+                  );
+                })}
+                {payments.length === 0 && (
+                  <tr>
+                    <td colSpan="4" className="px-6 py-20 text-center opacity-40 italic font-bold">Belum ada riwayat pembayaran.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {activeTab === 'SUPPLIER' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {suppliers.map(s => (
             <Card key={s.id} className="group hover:border-accent/40 hover:shadow-lg transition-all">
@@ -385,7 +588,7 @@ export default function PembelianPage() {
                 <div className="w-full h-px bg-muted mb-4" />
                 <div className="flex justify-between items-center w-full text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   <span>Total PO</span>
-                  <span className="text-primary">{pos.filter(p => p.supplierId == s.id).length} Transaksi</span>
+                  <span className="text-primary">{pos.filter(p => Number(p.supplierId) === Number(s.id)).length} Transaksi</span>
                 </div>
               </CardFooter>
             </Card>
@@ -401,8 +604,6 @@ export default function PembelianPage() {
           </button>
         </div>
       )}
-
-      {/* Modals */}
       {showSupplierModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
           <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
