@@ -286,17 +286,17 @@ app.post('/api/login', async (req, res) => {
       const { data, error } = await supabase
         .from('users')
         .select('*, tenant:tenants(*)')
-        .eq('username', username)
+        .ilike('username', username) // Use ilike for case-insensitive
         .eq('password', password)
         .single();
       
       if (error) console.error('❌ Supabase Auth Error:', error.message);
       user = data;
-      if (user) console.log('✅ User found:', user.username, 'Tenant:', user.tenant?.name);
+      if (user) console.log('✅ User found:', user.username, 'Role:', user.role);
     } else {
       // MODE LOKAL
       const db = readDB();
-      user = db.users.find(u => u.username === username && u.password === password);
+      user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.password === password);
       // Inject Enterprise Tier agar menu muncul di Lokal
       if (user && (user.role === 'admin' || user.role === 'owner') && !user.tenant) {
         user.tenant = { name: 'Local Dev Store', tier: 'enterprise' };
@@ -306,13 +306,15 @@ app.post('/api/login', async (req, res) => {
 
   if (!user) return res.status(401).json({ error: 'Kredensial tidak valid' });
 
+  const isSysAdmin = user.role === 'superadmin';
+
   // Check if tenant is active (if not superadmin)
-  if (!user.is_superadmin && user.tenant && !user.tenant.is_active) {
+  if (!isSysAdmin && user.tenant && !user.tenant.is_active) {
     return res.status(403).json({ error: 'Akun bisnis Anda sedang dinonaktifkan. Silakan hubungi SuperAdmin.' });
   }
 
-  // Jika user adalah superadmin, set role-nya agar frontend menyesuaikan
-  if (user.is_superadmin) {
+  // Jika user adalah superadmin, pastikan role-nya diset benar
+  if (isSysAdmin) {
     user.role = 'superadmin';
   }
 
