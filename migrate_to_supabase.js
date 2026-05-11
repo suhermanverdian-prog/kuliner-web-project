@@ -1,5 +1,5 @@
 /**
- * KEN ERP - Data Migration Tool (v2.4 - Forced SuperAdmin)
+ * KEN ERP - Data Migration Tool (v2.5 - SuperAdmin Role Fix)
  */
 
 const fs = require('fs');
@@ -9,7 +9,7 @@ const { supabase } = require('./backend/src/supabase');
 const DB_PATH = path.join(__dirname, 'backend', 'src', 'db', 'data.json');
 
 async function migrate() {
-    console.log('🚀 Starting migration v2.4 (Forcing SuperAdmin)...');
+    console.log('🚀 Starting migration v2.5 (Fixing SuperAdmin Role)...');
 
     if (!fs.existsSync(DB_PATH)) {
         console.error('❌ data.json not found!');
@@ -28,21 +28,21 @@ async function migrate() {
     if (tErr) { console.error('Tenant Error:', tErr.message); return; }
     const tenantId = tenant.id;
 
-    // 2. Migrate Users + FORCE SUPERADMIN
+    // 2. Migrate Users
     console.log('--- Migrating Users ---');
     const users = db.users || [];
     
-    // Pastikan superadmin ada di daftar
-    if (!users.find(u => u.username === 'superadmin')) {
-        users.push({
-            name: 'Super Admin',
-            username: 'superadmin',
-            password: 'admin123', // Password default
-            role: 'admin',
-            permissions: { all: true }
-        });
-    }
+    // Pastikan superadmin ada dengan role 'superadmin'
+    const superAdminAcc = {
+        tenant_id: tenantId,
+        name: 'Super Admin',
+        username: 'superadmin',
+        password: 'admin123',
+        role: 'superadmin', // SESUAIKAN DENGAN FRONTEND
+        permissions: { all: true }
+    };
 
+    // Upsert All Users
     const userList = users.map(u => ({
         tenant_id: tenantId,
         name: u.name,
@@ -52,10 +52,11 @@ async function migrate() {
         permissions: u.permissions || { all: true }
     }));
 
-    const { error: uErr } = await supabase.from('users').upsert(userList, { onConflict: 'tenant_id,username' });
-    if (uErr) console.error('Users Error:', uErr.message); else console.log(`✅ Migrated ${userList.length} users (including superadmin).`);
+    // Tambahkan/Update SuperAdmin secara spesifik
+    const { error: uErr } = await supabase.from('users').upsert([superAdminAcc, ...userList], { onConflict: 'tenant_id,username' });
+    if (uErr) console.error('Users Error:', uErr.message); else console.log(`✅ Migrated users with correct SuperAdmin role.`);
 
-    console.log('\n✨ Migration Success! Password superadmin: admin123');
+    console.log('\n✨ Migration Success! Username: superadmin | Pass: admin123');
 }
 
 migrate();
