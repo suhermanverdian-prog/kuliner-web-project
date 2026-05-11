@@ -1579,29 +1579,7 @@ app.get('/api/laporan/summary', async (req, res) => {
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
-  const totalTransactions = trx.length;
-  const avgTransaction = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
 
-  const db = readDB();
-  const periodPOs = (db.purchase_orders || []).filter(p => {
-    const d = new Date(p.createdAt);
-    return d >= start && d < end && p.status !== 'Dibatalkan';
-  });
-  const totalPurchasing = periodPOs.reduce((s, p) => s + (p.items || []).reduce((sum, it) => sum + (Number(it.price) * Number(it.qty)), 0), 0);
-  const totalDebt = (db.purchase_invoices || []).filter(inv => inv.status === 'unpaid').reduce((s, inv) => s + (Number(inv.amount) || 0), 0);
-
-  res.json({
-    totalRevenue,
-    totalTransactions,
-    avgTransaction,
-    totalHPP: totalRevenue * 0.3,
-    grossProfit: totalRevenue * 0.7,
-    totalPurchasing,
-    totalDebt,
-    marginPct: 70,
-    vsYesterday: { revenue: 15, transactions: 4 }
-  });
-});
 
 app.get('/api/laporan/trend', (req, res) => {
   const db = readDB();
