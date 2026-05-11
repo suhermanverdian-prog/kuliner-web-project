@@ -2489,6 +2489,80 @@ app.get('/api/accounting/export/excel', async (req, res) => {
   }
 });
 
+// ---- LAPORAN & ANALITIK (FASE 3) ----
+app.get('/api/laporan/summary', async (req, res) => {
+  const tenantId = req.headers['x-tenant-id'];
+  const { period } = req.query;
+  try {
+    if (DB_MODE === 'cloud') {
+      const { data: trx } = await supabase.from('transactions').select('*').eq('tenant_id', tenantId);
+      const totalRevenue = trx.reduce((sum, t) => sum + Number(t.total || 0), 0);
+      const totalOrders = trx.length;
+      return res.json({ totalRevenue, totalOrders, averageOrder: totalOrders > 0 ? totalRevenue / totalOrders : 0 });
+    }
+    const db = readDB();
+    const trx = (db.transactions || []).filter(t => t.tenantId === tenantId);
+    const totalRevenue = trx.reduce((sum, t) => sum + Number(t.total || 0), 0);
+    res.json({ totalRevenue, totalOrders: trx.length });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/laporan/top-products', async (req, res) => {
+  const tenantId = req.headers['x-tenant-id'];
+  try {
+    if (DB_MODE === 'cloud') {
+      const { data: trx } = await supabase.from('transactions').select('items').eq('tenant_id', tenantId);
+      const counts = {};
+      trx.forEach(t => (t.items || []).forEach(it => { counts[it.name] = (counts[it.name] || 0) + it.qty; }));
+      const sorted = Object.entries(counts).map(([name, qty]) => ({ name, qty })).sort((a,b) => b.qty - a.qty).slice(0, 5);
+      return res.json(sorted);
+    }
+    res.json([]);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ---- ACCOUNTING SUMMARY (FASE 4) ----
+app.get('/api/accounting/summary', async (req, res) => {
+  const tenantId = req.headers['x-tenant-id'];
+  const outletId = req.headers['x-outlet-id'];
+  try {
+    let journals = [];
+    if (DB_MODE === 'cloud') {
+      let query = supabase.from('journals').select('*, journal_lines(*)').eq('tenant_id', tenantId);
+      if (outletId) query = query.eq('outlet_id', outletId);
+      const { data, error } = await query;
+      if (error) throw error;
+      journals = data;
+    } else {
+      const db = readDB();
+      journals = (db.journals || []).map(j => ({
+        ...j,
+        journal_lines: (db.journal_lines || []).filter(l => l.journalId === j.id)
+      })).filter(j => j.tenantId === tenantId);
+    }
+
+    const balances = {};
+    journals.forEach(j => {
+      if (j.journal_lines) {
+        j.journal_lines.forEach(l => {
+          if (!balances[l.account_code]) balances[l.account_code] = 0;
+          balances[l.account_code] += (Number(l.debit || 0) - Number(l.credit || 0));
+        });
+      }
+    });
+
+    const pendapatan = Math.abs(balances['4-1000'] || 0);
+    const hpp = Math.abs(balances['5-1000'] || 0);
+    const biaya = (Math.abs(balances['6-1000'] || 0) + Math.abs(balances['6-2000'] || 0));
+    const netProfit = pendapatan - hpp - biaya;
+
+    res.json({
+      incomeStatement: { revenue: pendapatan, hpp, opex: biaya, netProfit },
+      balances
+    });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
