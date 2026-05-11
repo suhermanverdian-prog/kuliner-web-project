@@ -41,8 +41,17 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
   };
 
   const fillDemo = () => {
-    if (selectedRole === 'customer') { setUsername('08123456789'); setPassword('user123'); }
-    else { setUsername(selectedRole); setPassword('password123'); }
+    if (selectedRole === 'customer') { 
+      setUsername('08123456789'); 
+      setPassword('user123'); 
+    } else { 
+      setUsername(selectedRole); 
+      // Password disesuaikan dengan migrasi database
+      if (selectedRole === 'superadmin') setPassword('admin123');
+      else if (selectedRole === 'owner') setPassword('owner123');
+      else if (selectedRole === 'admin') setPassword('admin123');
+      else setPassword(selectedRole + '123'); // fallback: kasir123, koki123, etc
+    }
   };
 
   return (
