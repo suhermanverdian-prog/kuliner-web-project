@@ -657,10 +657,16 @@ app.post('/api/purchase_payments', (req, res) => {
 app.get('/api/transactions', async (req, res) => {
   if (DB_MODE === 'cloud') {
     try {
-      let query = supabase.from('transactions').select('*, transaction_items(*)').order('created_at', { ascending: false });
+      // Fetch without join to avoid relationship errors
       const tenantId = req.headers['x-tenant-id'];
       const outletId = req.headers['x-outlet-id'];
-      if (tenantId) query = query.eq('tenant_id', tenantId);
+      
+      if (!tenantId || tenantId === 'undefined') {
+        console.warn('GET /api/transactions: Missing or invalid tenantId');
+        return res.json([]);
+      }
+
+      let query = supabase.from('transactions').select('*').eq('tenant_id', tenantId);
       if (outletId) query = query.eq('outlet_id', outletId);
       
       const { data, error } = await query;
@@ -683,12 +689,7 @@ app.get('/api/transactions', async (req, res) => {
           subtotal: meta.subtotal || t.total,
           taxAmount: t.tax || 0,
           discountAmount: t.discount || 0,
-          items: (t.transaction_items || []).map(i => ({
-            ...i,
-            id: i.menu_id,
-            qty: i.quantity || i.qty,
-            price: i.unit_price || i.price
-          }))
+          items: [] // Items fetched separately if needed
         };
       });
       return res.json(formatted);
@@ -2633,20 +2634,25 @@ app.get('/api/journals', async (req, res) => {
     try {
       const tenantId = req.headers['x-tenant-id'];
       const outletId = req.headers['x-outlet-id'];
+
+      if (!tenantId || tenantId === 'undefined') {
+        console.warn('GET /api/journals: Missing or invalid tenantId');
+        return res.json([]);
+      }
+
       let query = supabase.from('journals').select('*').eq('tenant_id', tenantId);
       if (outletId) query = query.eq('outlet_id', outletId);
       
-      const { data: journals, error: jErr } = await query.order('date', { ascending: false });
-      if (jErr) throw jErr;
-      
-      // Fetch lines for each journal (ideally use a single join query, but this works for simple migration)
-      const journalsWithLines = await Promise.all(journals.map(async (j) => {
-        const { data: lines } = await supabase.from('journal_lines').select('*').eq('journal_id', j.id);
-        return { ...j, lines: lines || [] };
-      }));
-      
-      return res.json(journalsWithLines);
-    } catch (err) { return res.status(500).json({ error: err.message }); }
+      const { data: journals, error } = await query.order('date', { ascending: false });
+      if (error) {
+        console.error('Supabase journals error:', error);
+        return res.status(500).json({ error: error.message });
+      }
+      return res.json(journals || []);
+    } catch (err) {
+      console.error('Unexpected journals error:', err);
+      return res.status(500).json({ error: err.message });
+    }
   }
   const db = readDB();
   const journals = (db.journals || []).map(j => ({

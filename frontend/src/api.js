@@ -12,188 +12,113 @@ const API_URL = (
   ? `http://${hostname}:3001/api`
   : 'https://kuliner-web-project.vercel.app/api';
 
+const getHeaders = () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const currentOutletId = localStorage.getItem('currentOutletId') || '';
+  return {
+    'Content-Type': 'application/json',
+    'x-user-role': user.role || 'guest',
+    'x-tenant-id': user.tenant?.id || '',
+    'x-outlet-id': currentOutletId
+  };
+};
+
+const getResource = (p) => {
+  let r = p.replace('get', '').replace('add', '').replace('update', '').replace('save', '').replace('delete', '').toLowerCase();
+  let result = r;
+  // Mapping khusus
+  if (r === 'shift') result = 'shifts';
+  else if (r === 'transaction') result = 'transactions';
+  else if (r === 'table') result = 'tables';
+  else if (r === 'outlet') result = 'outlets';
+  else if (r === 'grn') result = 'grns';
+  else if (r === 'purchaseinvoices') result = 'purchase_invoices';
+  else if (r === 'purchasepayments') result = 'purchase_payments';
+  else if (r === 'bahan') result = 'bahan';
+  else if (r === 'settingsloyalty') result = 'settings/loyalty';
+  else if (r === 'inventorymetas' || r === 'inventorymeta') result = 'inventorymeta';
+  else if (r === 'activeshifts' || r === 'activeshift') result = 'activeshift';
+  else if (r === 'analyticsinventory') result = 'v1/analytics/inventory';
+  else if (r === 'analyticssales') result = 'v1/analytics/sales';
+  else if (r === 'analyticsfinancial') result = 'v1/analytics/financial';
+  else if (!r.endsWith('s') && r !== 'po' && r !== 'grn' && r !== 'menu') result = r + 's';
+  
+  console.log(`[API Proxy] ${p} -> /api/${result}`);
+  return result;
+};
+
 const apiBase = {
   url: API_URL,
-  
-  async login(username, password, role) {
-    const res = await fetch(`${API_URL}/login`, {
+  // Fungsi manual jika dibutuhkan
+  async login(credentials) {
+    const res = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, role })
-    });
-    if (!res.ok) throw new Error('Login failed');
-    return res.json();
-  },
-
-  async checkout(data) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const res = await fetch(`${API_URL}/transactions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error('Gagal checkout');
-    return res.json();
-  },
-
-  async confirmPayment(id, data) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const res = await fetch(`${API_URL}/transactions/${id}/confirm-payment`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' },
-      body: JSON.stringify(data)
-    });
-    if (!res.ok) throw new Error('Gagal konfirmasi pembayaran');
-    return res.json();
-  },
-
-  async updateKdsStatus(id, status) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const res = await fetch(`${API_URL}/transactions/${id}/kds`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' },
-      body: JSON.stringify({ status })
-    });
-    if (!res.ok) throw new Error('Gagal update status KDS');
-    return res.json();
-  },
-
-  async syncOfflineQueue() {
-    const queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
-    if (queue.length === 0) return;
-    for (const item of queue) {
-      try {
-        await fetch(`${API_URL}${item.path}`, {
-          method: item.method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item.data)
-        });
-      } catch (err) { console.error('Sync failed', err); }
-    }
-    localStorage.removeItem('offlineQueue');
-  },
-
-  // FASE 5: Analitik
-  async getAnalyticsSales(period) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const res = await fetch(`${API_URL}/v1/analytics/sales?period=${period || 'month'}`, {
-      headers: { 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' }
-    });
-    return res.json();
-  },
-  async getAnalyticsFinancial(period) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const res = await fetch(`${API_URL}/v1/analytics/financial?period=${period || 'month'}`, {
-      headers: { 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' }
-    });
-    return res.json();
-  },
-  async getSettingsLoyalty() {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const res = await fetch(`${API_URL}/settings/loyalty`, {
-      headers: { 'x-user-role': user.role || 'guest', 'x-tenant-id': user.tenant?.id || '' }
-    });
-    return res.json();
-  },
-  async saveSettingsLoyalty(data) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const res = await fetch(`${API_URL}/settings/loyalty`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-user-role': user.role || 'guest', 
-        'x-tenant-id': user.tenant?.id || '' 
-      },
-      body: JSON.stringify(data)
+      body: JSON.stringify(credentials)
     });
     return res.json();
   }
 };
 
-// Gunakan Proxy agar semua fungsi seperti getTransactions, getMenu, dll otomatis jalan
 export const api = new Proxy(apiBase, {
   get(target, prop) {
     if (prop in target) return target[prop];
-    
-    // Helper untuk headers otentikasi
-    const getHeaders = () => {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const currentOutletId = localStorage.getItem('currentOutletId') || '';
-      return {
-        'Content-Type': 'application/json',
-        'x-user-role': user.role || 'guest',
-        'x-tenant-id': user.tenant?.id || '',
-        'x-outlet-id': currentOutletId
-      };
-    };
+    if (typeof prop !== 'string') return undefined;
 
-    // Helper untuk normalisasi resource
-    const getResource = (p) => {
-      let r = p.replace('get', '').replace('add', '').replace('update', '').replace('save', '').replace('delete', '').toLowerCase();
-      if (r === 'shift') return 'shifts';
-      if (r === 'transaction') return 'transactions';
-      if (r === 'purchaseorders' || r === 'po') return 'po';
-      if (r === 'purchaseinvoices') return 'purchase_invoices';
-      if (r === 'purchasepayments') return 'purchase_payments';
-      if (r === 'grn') return 'grns';
-      if (r === 'supplier') return 'suppliers';
-      if (r === 'outlet') return 'outlets';
-      if (r === 'tenant' && p.startsWith('get')) return 'tenants';
-      if (r === 'analyticsinventory') return 'v1/analytics/inventory';
-      if (r === 'analyticssales') return 'v1/analytics/sales';
-      if (r === 'analyticsfinancial') return 'v1/analytics/financial';
-      return r;
-    };
-
-    // Jika fungsi yang dipanggil berawalan 'get' (contoh: getTransactions)
+    // Handle GET
     if (prop.startsWith('get')) {
       const resource = getResource(prop);
       return async () => {
         const res = await fetch(`${API_URL}/${resource}`, { headers: getHeaders() });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || res.statusText || 'Gagal mengambil data');
-        }
+        if (!res.ok) throw new Error(`Gagal mengambil data ${resource}`);
         return res.json();
       };
     }
-    
-    // Jika fungsi berawalan 'add', 'update', atau 'save'
-    if (prop.startsWith('add') || prop.startsWith('update') || prop.startsWith('save')) {
-        return async (data) => {
-          const isUpdate = prop.startsWith('update') && data.id;
-          const resource = getResource(prop);
-          const url = isUpdate ? `${API_URL}/${resource}/${data.id}` : `${API_URL}/${resource}`;
-          const res = await fetch(url, {
-            method: isUpdate ? 'PUT' : 'POST',
-            headers: getHeaders(),
-            body: JSON.stringify(data)
-          });
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.error || res.statusText || 'Gagal menyimpan data');
-          }
-          return res.json();
-        };
+
+    // Handle POST (add/save)
+    if (prop.startsWith('add') || prop.startsWith('save')) {
+      const resource = getResource(prop);
+      return async (data) => {
+        const res = await fetch(`${API_URL}/${resource}`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(`Gagal menyimpan data ${resource}`);
+        return res.json();
+      };
     }
 
-    // Jika fungsi berawalan 'delete'
+    // Handle PUT (update)
+    if (prop.startsWith('update')) {
+      const resource = getResource(prop);
+      return async (data) => {
+        const id = data.id || data.code || '';
+        const res = await fetch(`${API_URL}/${resource}/${id}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(`Gagal memperbarui data ${resource}`);
+        return res.json();
+      };
+    }
+
+    // Handle DELETE
     if (prop.startsWith('delete')) {
+      const resource = getResource(prop);
       return async (id) => {
-        const res = await fetch(`${API_URL}/${getResource(prop)}/${id}`, {
+        const res = await fetch(`${API_URL}/${resource}/${id}`, {
           method: 'DELETE',
           headers: getHeaders()
         });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || res.statusText || 'Gagal menghapus data');
-        }
+        if (!res.ok) throw new Error(`Gagal menghapus data ${resource}`);
         return res.json();
       };
     }
 
-    return target[prop];
+    return undefined;
   }
 });
 
-export default API_URL;
+export default api;
