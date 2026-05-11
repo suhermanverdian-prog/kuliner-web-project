@@ -82,7 +82,9 @@ function App() {
     localStorage.setItem('user', JSON.stringify(userData));
     setActivePage('dashboard');
     // Log Activity
-    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+      ? 'http://localhost:3001/api' 
+      : 'https://kuliner-web-project.vercel.app/api';
     fetch(`${API_BASE}/system-logs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
