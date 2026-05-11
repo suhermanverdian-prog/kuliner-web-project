@@ -1545,7 +1545,7 @@ app.get('/api/v1/analytics/inventory', async (req, res) => {
       .lt('created_at', end.toISOString());
     if (error) throw error;
     let totalIn = 0; let totalOut = 0; let totalWaste = 0;
-    movements.forEach(m => {
+    (movements || []).forEach(m => {
       const q = Number(m.quantity || 0);
       if (m.type === 'adjustment' && q > 0) totalIn += q;
       else if (m.type === 'adjustment' && q < 0) totalOut += Math.abs(q);
@@ -1561,16 +1561,21 @@ app.get('/api/laporan/summary', async (req, res) => {
   const { start, end } = getDateRange(period);
   const tenantId = req.headers['x-tenant-id'];
   try {
-    const { data: trx, error } = await supabase
+    let query = supabase
       .from('transactions')
       .select('*')
-      .eq('tenant_id', tenantId)
       .gte('created_at', start.toISOString())
       .lt('created_at', end.toISOString())
       .eq('payment_status', 'paid');
+      
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+
+    const { data: trx, error } = await query;
     if (error) throw error;
-    const totalRevenue = trx.reduce((s, t) => s + Number(t.total || 0), 0);
-    const totalTransactions = trx.length;
+    
+    const safeTrx = trx || [];
+    const totalRevenue = safeTrx.reduce((s, t) => s + Number(t.total || 0), 0);
+    const totalTransactions = safeTrx.length;
     res.json({
       totalRevenue, totalTransactions,
       avgTransaction: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
@@ -2281,11 +2286,12 @@ app.get('/api/accounting/summary', async (req, res) => {
   try {
     let journals = [];
     if (DB_MODE === 'cloud') {
-      let query = supabase.from('journals').select('*, journal_lines(*)').eq('tenant_id', tenantId);
+      let query = supabase.from('journals').select('*, journal_lines(*)');
+      if (tenantId) query = query.eq('tenant_id', tenantId);
       if (outletId) query = query.eq('outlet_id', outletId);
       const { data, error } = await query;
       if (error) throw error;
-      journals = data;
+      journals = data || [];
     } else {
       const db = readDB();
       journals = (db.journals || []).map(j => ({
