@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "build": "echo 'Building backend...'",
     "dev": "node --watch src/server.js"
   },
   "dependencies": {

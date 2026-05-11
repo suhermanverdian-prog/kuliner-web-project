@@ -2565,6 +2565,7 @@ app.get('/api/accounting/summary', async (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+app.get('/api/version', (req, res) => res.json({ version: 'Phase 4 - Stabilized', date: '2026-05-11' }));
 
 
 // ---- SYSTEM LOGS (FASE 4) ----
