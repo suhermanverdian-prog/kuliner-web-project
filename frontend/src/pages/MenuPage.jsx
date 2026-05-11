@@ -365,7 +365,9 @@ export default function MenuPage({ user }) {
             // Check for price change
             const old = menus.find(m => m.id === data.id);
             if (old && Number(old.price) !== Number(data.price)) {
-               const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+               const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+                 ? 'http://localhost:3001/api' 
+                 : 'https://kuliner-web-project.vercel.app/api';
                fetch(`${API_BASE}/system-logs`, {
                  method: 'POST',
                  headers: { 'Content-Type': 'application/json' },

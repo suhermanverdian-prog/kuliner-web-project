@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../co
 import { Button } from '../components/ui/Button';
 import { cn } from '../lib/utils';
 
-const API = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+const API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+  ? 'http://localhost:3001/api' 
+  : 'https://kuliner-web-project.vercel.app/api';
 const fmt = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
 const fmtShort = (n) => n >= 1e9 ? `${(n/1e9).toFixed(1)}M` : n >= 1e6 ? `${(n/1e6).toFixed(1)}jt` : n >= 1e3 ? `${(n/1e3).toFixed(0)}rb` : String(Math.round(n||0));
 

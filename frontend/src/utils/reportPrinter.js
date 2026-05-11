@@ -1,4 +1,6 @@
-const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+  ? 'http://localhost:3001/api' 
+  : 'https://kuliner-web-project.vercel.app/api';
 
 const fmt = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
 

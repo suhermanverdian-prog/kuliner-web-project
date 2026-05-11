@@ -11,7 +11,9 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
 
-const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3001/api' : '/api';
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
+  ? 'http://localhost:3001/api' 
+  : 'https://kuliner-web-project.vercel.app/api';
 
 export default function ActivityLogPage() {
   const [logs, setLogs] = useState([]);
