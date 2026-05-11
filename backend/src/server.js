@@ -2488,21 +2488,6 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', time: new Date().t
 
 // --- PRODUCTION: Serve Frontend Static Files ---
 // Asumsi struktur folder saat ini: backend ada di /backend dan frontend di /frontend
-const frontendDistPath = path.join(__dirname, '..', '..', 'frontend', 'dist');
-if (fs.existsSync(frontendDistPath)) {
-  app.use(express.static(frontendDistPath));
-  // Tangkap semua route selain /api dan kirim ke index.html (untuk React Router)
-  app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api')) {
-      res.sendFile(path.join(frontendDistPath, 'index.html'));
-    } else {
-      res.status(404).json({ error: 'Endpoint API tidak ditemukan' });
-    }
-  });
-} else {
-  console.log('⚠️ Folder frontend/dist tidak ditemukan. Pastikan Anda telah menjalankan build frontend.');
-}
-
 // ---- SYSTEM CHECK (DEBUG) ----
 app.get('/api/system-check', (req, res) => {
   res.json({
@@ -2535,7 +2520,6 @@ app.get('/api/accounting/summary', async (req, res) => {
       })).filter(j => j.tenantId === tenantId);
     }
 
-    // Aggregation Logic
     const balances = {};
     journals.forEach(j => {
       if (j.journal_lines) {
@@ -2546,7 +2530,6 @@ app.get('/api/accounting/summary', async (req, res) => {
       }
     });
 
-    // P&L Calculation (simplified)
     const pendapatan = Math.abs(balances['4-1000'] || 0);
     const hpp = Math.abs(balances['5-1000'] || 0);
     const biaya = Math.abs(balances['6-1000'] || 0) + Math.abs(balances['6-2000'] || 0);
@@ -2554,17 +2537,25 @@ app.get('/api/accounting/summary', async (req, res) => {
     const labaBersih = labaKotor - biaya;
 
     res.json({
-      kpi: {
-        totalRevenue: pendapatan,
-        netProfit: labaBersih,
-        cashBalance: balances['1-1000'] || 0,
-        unpaidHutang: Math.abs(balances['2-1000'] || 0)
-      },
+      kpi: { totalRevenue: pendapatan, netProfit: labaBersih, cashBalance: balances['1-1000'] || 0, unpaidHutang: Math.abs(balances['2-1000'] || 0) },
       pnl: { pendapatan, hpp, biaya, labaKotor, labaBersih },
       balances
     });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
+
+// ---- STATIC FILES & WILDCARD (MUST BE AT THE END) ----
+const frontendDistPath = path.join(__dirname, '..', '..', 'frontend', 'dist');
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(frontendDistPath, 'index.html'));
+    } else {
+      res.status(404).json({ error: 'Endpoint API tidak ditemukan' });
+    }
+  });
+}
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 KEN Server running on port ${PORT} [Mode: ${DB_MODE}]`);
