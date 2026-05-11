@@ -8,7 +8,7 @@ const { supabase } = require('./supabase');
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DB_PATH = path.join(__dirname, 'db', 'data.json');
-const DB_MODE = process.env.DB_MODE || 'local'; // 'local' or 'cloud'
+const DB_MODE = process.env.DB_MODE || (process.env.VERCEL ? 'cloud' : 'local'); // Auto-cloud on Vercel
 const SUPABASE_SYNC_ENABLED = true;
 
 // Middleware
