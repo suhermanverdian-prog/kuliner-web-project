@@ -656,8 +656,34 @@ app.post('/api/purchase_payments', (req, res) => {
 app.get('/api/transactions', async (req, res) => {
   if (DB_MODE === 'cloud') {
     try {
-      const data = await fetchFromCloud('transactions', req.headers['x-tenant-id'], req.headers['x-outlet-id']);
-      return res.json(data);
+      let query = supabase.from('transactions').select('*, items:transaction_items(*, menu(*))').order('created_at', { ascending: false });
+      const tenantId = req.headers['x-tenant-id'];
+      const outletId = req.headers['x-outlet-id'];
+      if (tenantId) query = query.eq('tenant_id', tenantId);
+      if (outletId) query = query.eq('outlet_id', outletId);
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      const formatted = data.map(t => ({
+        ...t,
+        kdsStatus: t.kds_status || 'new',
+        customerName: t.customer_name || 'Tamu',
+        paymentMethod: t.payment_method,
+        paymentStatus: t.payment_status,
+        tableType: t.table_type || t.tableType,
+        cashierName: t.cashier_name || 'System',
+        createdAt: t.created_at,
+        items: (t.items || []).map(i => ({
+          ...i,
+          id: i.menu_id,
+          name: i.menu?.name || 'Item',
+          category: i.menu?.category,
+          qty: i.qty,
+          price: i.price
+        }))
+      }));
+      return res.json(formatted);
     } catch (err) { return res.status(500).json({ error: err.message }); }
   }
   try {
@@ -705,7 +731,43 @@ app.post('/api/transactions', async (req, res) => {
       items: body.items || []
     };
 
-    // Simpan ke JSON DB (Utama)
+    const tenantId = req.headers['x-tenant-id'];
+    
+    if (DB_MODE === 'cloud') {
+      const payload = {
+        id: trxId,
+        tenant_id: tenantId,
+        outlet_id: req.headers['x-outlet-id'] || null,
+        total: trxData.total,
+        subtotal: trxData.subtotal,
+        tax_amount: trxData.taxAmount,
+        discount_amount: trxData.discountAmount,
+        payment_method: trxData.paymentMethod,
+        payment_status: trxData.paymentStatus,
+        customer_name: trxData.customerName,
+        cashier_name: trxData.cashierName,
+        table_type: trxData.tableType,
+        kds_status: 'new'
+      };
+
+      const { data, error } = await supabase.from('transactions').insert([payload]).select();
+      if (error) throw error;
+
+      if (trxData.items && trxData.items.length > 0) {
+        const itemsToInsert = trxData.items.map(i => ({
+          transaction_id: trxId,
+          menu_id: i.id,
+          qty: i.qty,
+          price: i.price
+        })).filter(i => i.menu_id);
+        const { error: itemsErr } = await supabase.from('transaction_items').insert(itemsToInsert);
+        if (itemsErr) console.error('Supabase Sync Items Error:', itemsErr);
+      }
+      
+      return res.json(trxData);
+    }
+
+    // --- LOGIKA LOKAL ---
     db.transactions = db.transactions || [];
     db.transactions.push(trxData);
 
@@ -759,26 +821,6 @@ app.post('/api/transactions', async (req, res) => {
     }
 
     writeDB(db);
-
-    // Sync ke Supabase (Optional/Background)
-    supabase.from('transactions').insert([{
-      id: trxId,
-      total: trxData.total,
-      subtotal: trxData.subtotal,
-      payment_method: trxData.paymentMethod,
-      customer_name: trxData.customerName
-    }]).then(() => {
-      if (trxData.items.length > 0) {
-        const itemsToInsert = trxData.items.map(i => ({
-          transaction_id: trxId,
-          menu_id: i.id,
-          qty: i.qty,
-          price: i.price
-        })).filter(i => i.menu_id);
-        supabase.from('transaction_items').insert(itemsToInsert).catch(e => console.error('Supabase Sync Items Error:', e));
-      }
-    }).catch(e => console.error('Supabase Sync Header Error:', e));
-
     res.json(trxData);
   } catch (err) {
     console.error('Checkout Error:', err);
