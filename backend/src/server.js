@@ -1427,6 +1427,46 @@ app.get('/api/shifts', async (req, res) => {
   }
 });
 
+app.get('/api/activeshift', async (req, res) => {
+  try {
+    const tenantId = req.headers['x-tenant-id'];
+    
+    if (DB_MODE === 'cloud') {
+      let query = supabase.from('shifts').select('*').eq('status', 'open').order('created_at', { ascending: false }).limit(1);
+      if (tenantId) query = query.eq('tenant_id', tenantId);
+      
+      const { data, error } = await query;
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      const active = data && data.length > 0 ? data[0] : null;
+      if (!active) return res.json(null);
+      
+      return res.json({
+        ...active,
+        openTime: active.start_time,
+        closeTime: active.end_time,
+        startTime: active.start_time,
+        endTime: active.end_time,
+        openCash: active.open_cash,
+        currentSales: active.current_sales,
+        currentCash: active.current_cash,
+        currentQris: active.current_qris,
+        totalSales: active.total_sales,
+        totalCash: active.total_cash,
+        totalQris: active.total_qris,
+        userName: active.user_name,
+        kasir: active.user_name
+      });
+    }
+    
+    const db = readDB();
+    const active = (db.shifts || []).find(s => s.status === 'open');
+    return res.json(active || null);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/shifts', async (req, res) => {
   try {
     const tenantId = req.headers['x-tenant-id'];
