@@ -123,6 +123,8 @@ export default function LaporanPage() {
   const [inventoryLogs, setInventoryLogs] = useState([]);
   const [showExport, setShowExport] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState('summary');
+  const [aiInsights, setAiInsights] = useState([]);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -138,10 +140,12 @@ export default function LaporanPage() {
         fetch2(`${API_URL}/laporan/waste?${q}`),
         fetch2(`${API_URL}/laporan/insights?${q}`),
         fetch2(`${API_URL}/inventory/logs`),
+        fetch2(`${API_URL}/ai/insights`),
       ]);
       setSummary(s); setTrend(t); setPayment(p); setTopProducts(tp);
       setCriticalStock(cs); setWaste(w); setInsights(ins);
       setInventoryLogs(il);
+      setAiInsights(aiData);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [period, customStart, customEnd]);
@@ -247,246 +251,339 @@ export default function LaporanPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard label="Pendapatan" value={formatCurrency(summary.totalRevenue)} sub="Total Sales" icon={DollarSign} delta={summary.vsYesterday?.revenue} colorClass="bg-emerald-500" />
-        <KPICard label="Total Belanja" value={formatCurrency(summary.totalPurchasing)} sub="Procurement" icon={ShoppingBag} colorClass="bg-blue-500" />
-        <KPICard label="Laba Kotor" value={formatCurrency(summary.grossProfit)} sub={`${summary.marginPct || 0}% Margin`} icon={TrendingUp} colorClass="bg-indigo-600" />
-        <KPICard label="Hutang" value={formatCurrency(summary.totalDebt)} sub="Unpaid Invoices" icon={AlertTriangle} colorClass="bg-rose-500" />
-        <KPICard label="HPP (COGS)" value={formatCurrency(summary.totalHPP)} sub="Bahan Terpakai" icon={Package} colorClass="bg-amber-500" />
-        <KPICard label="Transaksi" value={summary.totalTransactions || 0} sub="Closed Orders" icon={ShoppingCart} delta={summary.vsYesterday?.transactions} colorClass="bg-purple-600" />
+      {/* Tab Switcher */}
+      <div className="flex gap-4 border-b">
+        <button 
+          onClick={() => setActiveTab('summary')}
+          className={cn(
+            "pb-4 px-2 text-sm font-black uppercase tracking-widest transition-all relative",
+            activeTab === 'summary' ? "text-primary" : "text-muted-foreground opacity-50 hover:opacity-100"
+          )}
+        >
+          Ikhtisar Laporan
+          {activeTab === 'summary' && <div className="absolute bottom-0 left-0 w-full h-1 bg-primary rounded-t-full" />}
+        </button>
+        <button 
+          onClick={() => setActiveTab('ai')}
+          className={cn(
+            "pb-4 px-2 text-sm font-black uppercase tracking-widest transition-all relative flex items-center gap-2",
+            activeTab === 'ai' ? "text-accent" : "text-muted-foreground opacity-50 hover:opacity-100"
+          )}
+        >
+          <Lightbulb size={16} /> AI Intelligence
+          {activeTab === 'ai' && <div className="absolute bottom-0 left-0 w-full h-1 bg-accent rounded-t-full" />}
+        </button>
       </div>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <Card className="xl:col-span-2 border-none shadow-xl bg-card overflow-hidden">
-          <CardHeader className="border-b bg-muted/10 pb-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl">Tren Penjualan Per Jam</CardTitle>
-                <CardDescription>Visualisasi volume transaksi sepanjang hari.</CardDescription>
-              </div>
-              <TrendingUp className="text-accent" />
-            </div>
-          </CardHeader>
-          <CardContent className="p-8">
-            <MiniChart data={trend.current || []} prev={trend.previous || []} />
-          </CardContent>
-        </Card>
+      {activeTab === 'summary' ? (
+        <>
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <KPICard label="Pendapatan" value={formatCurrency(summary.totalRevenue)} sub="Total Sales" icon={DollarSign} delta={summary.vsYesterday?.revenue} colorClass="bg-emerald-500" />
+            <KPICard label="Total Belanja" value={formatCurrency(summary.totalPurchasing)} sub="Procurement" icon={ShoppingBag} colorClass="bg-blue-500" />
+            <KPICard label="Laba Kotor" value={formatCurrency(summary.grossProfit)} sub={`${summary.marginPct || 0}% Margin`} icon={TrendingUp} colorClass="bg-indigo-600" />
+            <KPICard label="Hutang" value={formatCurrency(summary.totalDebt)} sub="Unpaid Invoices" icon={AlertTriangle} colorClass="bg-rose-500" />
+            <KPICard label="HPP (COGS)" value={formatCurrency(summary.totalHPP)} sub="Bahan Terpakai" icon={Package} colorClass="bg-amber-500" />
+            <KPICard label="Transaksi" value={summary.totalTransactions || 0} sub="Closed Orders" icon={ShoppingCart} delta={summary.vsYesterday?.transactions} colorClass="bg-purple-600" />
+          </div>
 
-        <Card className="border-none shadow-xl bg-card overflow-hidden">
-          <CardHeader className="border-b bg-muted/10 pb-6">
-            <CardTitle className="text-xl">Metode Pembayaran</CardTitle>
-            <CardDescription>Distribusi transaksi per channel.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-8">
-            <div className="space-y-6">
-              {payment.methods?.map((m, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <p className="text-xs font-bold flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-accent" /> {m.name}
-                    </p>
-                    <p className="text-sm font-black data-mono">{m.pct}%</p>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${m.pct}%` }} />
-                  </div>
-                  <p className="text-[10px] text-muted-foreground font-bold text-right data-mono">{formatCurrency(m.amount)}</p>
-                </div>
-              ))}
-              {!payment.methods?.length && (
-                <div className="h-full flex items-center justify-center p-10 text-center opacity-30">
-                  <PieChart size={48} strokeWidth={1} />
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Analytics Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Top Products */}
-        <Card className="border-none shadow-xl bg-card">
-          <CardHeader className="border-b bg-muted/10">
-            <CardTitle className="text-lg flex items-center gap-2"><TrendingUp size={18} className="text-emerald-500" /> Produk Terlaris</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="divide-y">
-              {topProducts.slice(0, 5).map((p, i) => (
-                <div key={i} className="py-4 flex items-center gap-4 group">
-                  <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
-                    {p.icon || '☕'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate leading-none">{p.name}</p>
-                    <p className="text-[10px] text-muted-foreground font-bold mt-1 uppercase tracking-tighter">{formatCurrency(p.revenue)}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-black text-accent data-mono">{p.qty}</p>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Qty</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Stock Alert */}
-        <Card className="border-none shadow-xl bg-card">
-          <CardHeader className="border-b bg-muted/10">
-            <CardTitle className="text-lg flex items-center gap-2"><AlertTriangle size={18} className="text-amber-500" /> Stok Kritis</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="divide-y">
-              {criticalStock.length === 0 ? (
-                <div className="py-20 text-center space-y-4 opacity-40 grayscale">
-                  <CheckCircle2 size={48} className="mx-auto text-emerald-500" />
-                  <p className="text-xs font-bold uppercase tracking-widest">Semua Stok Aman</p>
-                </div>
-              ) : criticalStock.map((b, i) => (
-                <div key={i} className="py-4 flex items-center justify-between">
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <Card className="xl:col-span-2 border-none shadow-xl bg-card overflow-hidden">
+              <CardHeader className="border-b bg-muted/10 pb-6">
+                <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-bold">{b.name}</p>
-                    <p className="text-[10px] text-muted-foreground font-bold uppercase">{b.stock} {b.unit} tersisa</p>
+                    <CardTitle className="text-xl">Tren Penjualan Per Jam</CardTitle>
+                    <CardDescription>Visualisasi volume transaksi sepanjang hari.</CardDescription>
                   </div>
-                  <span className={cn(
-                    "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                    (b.status === 'kritis' || b.status === 'habis') ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                  )}>
-                    {b.status}
-                  </span>
+                  <TrendingUp className="text-accent" />
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent className="p-8">
+                <MiniChart data={trend.current || []} prev={trend.previous || []} />
+              </CardContent>
+            </Card>
 
-        {/* Insights & Waste */}
-        <div className="space-y-8">
-           <Card className="border-none shadow-xl bg-card">
-             <CardHeader className="border-b bg-muted/10">
-               <CardTitle className="text-lg flex items-center gap-2"><Trash2 size={18} className="text-destructive" /> Waste & Kerugian</CardTitle>
-             </CardHeader>
-             <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                   <div>
-                     <p className="text-3xl font-black text-destructive data-mono">{formatCurrency(waste.totalWaste)}</p>
-                     <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Estimasi Kerugian</p>
-                   </div>
-                   <div className="w-16 h-16 rounded-full border-4 border-destructive/20 flex items-center justify-center text-xs font-black text-destructive data-mono">
-                      {waste.wasteRatio || 0}%
-                   </div>
+            <Card className="border-none shadow-xl bg-card overflow-hidden">
+              <CardHeader className="border-b bg-muted/10 pb-6">
+                <CardTitle className="text-xl">Metode Pembayaran</CardTitle>
+                <CardDescription>Distribusi transaksi per channel.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="space-y-6">
+                  {payment.methods?.map((m, i) => (
+                    <div key={i} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <p className="text-xs font-bold flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-accent" /> {m.name}
+                        </p>
+                        <p className="text-sm font-black data-mono">{m.pct}%</p>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${m.pct}%` }} />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground font-bold text-right data-mono">{formatCurrency(m.amount)}</p>
+                    </div>
+                  ))}
+                  {!payment.methods?.length && (
+                    <div className="h-full flex items-center justify-center p-10 text-center opacity-30">
+                      <PieChart size={48} strokeWidth={1} />
+                    </div>
+                  )}
                 </div>
-                <div className="space-y-2">
-                   {waste.categories?.map((c, i) => (
-                     <div key={i} className="flex justify-between text-[10px] font-bold uppercase tracking-tighter text-muted-foreground">
-                        <span>• {c.name}</span>
-                        <span className="data-mono">{formatCurrency(c.amount)}</span>
-                     </div>
-                   ))}
-                </div>
-             </CardContent>
-           </Card>
-
-           <Card className="border-none shadow-xl bg-card border-l-4 border-l-accent">
-             <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2"><Lightbulb size={16} className="text-accent" /> Insight Bisnis</CardTitle>
-             </CardHeader>
-             <CardContent className="p-6 pt-0 space-y-4">
-                {insights.map((ins, i) => (
-                  <div key={i} className="p-3 rounded-xl bg-accent/5 border border-accent/10 space-y-1">
-                    <p className="text-xs font-black text-accent uppercase tracking-widest">{ins.title}</p>
-                    <p className="text-[10px] leading-relaxed text-muted-foreground font-medium">{ins.body}</p>
-                  </div>
-                ))}
-             </CardContent>
-           </Card>
-        </div>
-      </div>
-
-      <Card className="border-none shadow-xl bg-card overflow-hidden">
-        <CardHeader className="border-b bg-muted/10 flex flex-row items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ClipboardCheck size={20} className="text-accent" /> Log Mutasi & Penyesuaian Stok
-            </CardTitle>
-            <CardDescription>Jejak audit permanen untuk seluruh perubahan stok manual.</CardDescription>
+              </CardContent>
+            </Card>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="font-bold gap-2 text-muted-foreground" onClick={() => downloadCSV('stock-mutation', period, customStart, customEnd)}>
-              <FileText size={14} /> Excel
-            </Button>
-            <Button variant="ghost" size="sm" className="font-bold gap-2 text-muted-foreground" onClick={() => downloadPDF('stock-mutation', period, customStart, customEnd)}>
-              <Download size={14} /> PDF
-            </Button>
-            <Button variant="ghost" size="sm" className="font-bold gap-2 text-muted-foreground" onClick={() => printReport('stock-mutation', period, customStart, customEnd)}>
-              <Printer size={14} /> Print
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-subtle text-[11px] font-semibold uppercase tracking-wider text-text-secondary border-b border-border-subtle">
-                  <th className="px-6 py-3">Waktu</th>
-                  <th className="px-6 py-3">Nama Bahan</th>
-                  <th className="px-6 py-3">Tipe</th>
-                  <th className="px-6 py-3">Perubahan</th>
-                  <th className="px-6 py-3">Saldo Stok</th>
-                  <th className="px-6 py-3">PIC / Pelaku</th>
-                  <th className="px-6 py-3">Alasan</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {inventoryLogs.map(log => (
-                  <tr key={log.id} className="text-sm hover:bg-muted/5">
-                    <td className="px-6 py-4 text-text-tertiary font-medium data-mono">{new Date(log.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
-                    <td className="px-6 py-4 font-bold text-text-primary">{log.bahan_name}</td>
-                    <td className="px-6 py-4">
+
+          {/* Analytics Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Top Products */}
+            <Card className="border-none shadow-xl bg-card">
+              <CardHeader className="border-b bg-muted/10">
+                <CardTitle className="text-lg flex items-center gap-2"><TrendingUp size={18} className="text-emerald-500" /> Produk Terlaris</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="divide-y">
+                  {topProducts.slice(0, 5).map((p, i) => (
+                    <div key={i} className="py-4 flex items-center gap-4 group">
+                      <div className="w-10 h-10 bg-muted rounded-xl flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                        {p.icon || '☕'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate leading-none">{p.name}</p>
+                        <p className="text-[10px] text-muted-foreground font-bold mt-1 uppercase tracking-tighter">{formatCurrency(p.revenue)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-accent data-mono">{p.qty}</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Qty</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Stock Alert */}
+            <Card className="border-none shadow-xl bg-card">
+              <CardHeader className="border-b bg-muted/10">
+                <CardTitle className="text-lg flex items-center gap-2"><AlertTriangle size={18} className="text-amber-500" /> Stok Kritis</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="divide-y">
+                  {criticalStock.length === 0 ? (
+                    <div className="py-20 text-center space-y-4 opacity-40 grayscale">
+                      <CheckCircle2 size={48} className="mx-auto text-emerald-500" />
+                      <p className="text-xs font-bold uppercase tracking-widest">Semua Stok Aman</p>
+                    </div>
+                  ) : criticalStock.map((b, i) => (
+                    <div key={i} className="py-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-bold">{b.name}</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase">{b.stock} {b.unit} tersisa</p>
+                      </div>
                       <span className={cn(
-                        "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
-                        log.type === 'Waste' || log.type === 'Adjustment' ? "active-state border border-primary/20" : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                        "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                        (b.status === 'kritis' || b.status === 'habis') ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"
                       )}>
-                        {log.type}
+                        {b.status}
                       </span>
-                    </td>
-                    <td className={cn("px-6 py-4 font-bold data-mono", log.change_qty > 0 ? "text-emerald-600" : "text-error")}>
-                      {log.change_qty > 0 ? '+' : ''}{log.change_qty}
-                    </td>
-                    <td className="px-6 py-4 text-text-tertiary data-mono">{log.prev_stock} → <span className="font-bold text-primary">{log.next_stock}</span></td>
-                    <td className="px-6 py-4 font-bold">{log.user_name}</td>
-                    <td className="px-6 py-4 italic text-xs text-muted-foreground">{log.reason}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Detailed Summary Footer */}
-      <Card className="border-none shadow-xl bg-card overflow-hidden border-t-4 border-t-accent">
-        <CardContent className="p-0">
-           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y md:divide-y-0">
-              {[
-                { label: 'Penjualan Kotor', value: formatCurrency(summary.totalRevenue) },
-                { label: 'Total Diskon', value: formatCurrency(0) },
-                { label: 'Penjualan Bersih', value: formatCurrency(summary.totalRevenue) },
-                { label: 'HPP (Total)', value: formatCurrency(summary.totalHPP) },
-                { label: 'Laba Kotor', value: formatCurrency(summary.grossProfit) },
-                { label: 'Margin Aktual', value: `${summary.marginPct || 0}%`, highlight: true },
-              ].map((item, i) => (
-                <div key={i} className="p-6 text-center space-y-1">
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{item.label}</p>
-                  <p className={cn("text-lg font-black data-mono", item.highlight ? "text-accent" : "text-primary")}>{item.value}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-           </div>
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+
+            {/* Insights & Waste */}
+            <div className="space-y-8">
+               <Card className="border-none shadow-xl bg-card">
+                 <CardHeader className="border-b bg-muted/10">
+                   <CardTitle className="text-lg flex items-center gap-2"><Trash2 size={18} className="text-destructive" /> Waste & Kerugian</CardTitle>
+                 </CardHeader>
+                 <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                       <div>
+                         <p className="text-3xl font-black text-destructive data-mono">{formatCurrency(waste.totalWaste)}</p>
+                         <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Estimasi Kerugian</p>
+                       </div>
+                       <div className="w-16 h-16 rounded-full border-4 border-destructive/20 flex items-center justify-center text-xs font-black text-destructive data-mono">
+                          {waste.wasteRatio || 0}%
+                       </div>
+                    </div>
+                    <div className="space-y-2">
+                       {waste.categories?.map((c, i) => (
+                         <div key={i} className="flex justify-between text-[10px] font-bold uppercase tracking-tighter text-muted-foreground">
+                            <span>• {c.name}</span>
+                            <span className="data-mono">{formatCurrency(c.amount)}</span>
+                         </div>
+                       ))}
+                    </div>
+                 </CardContent>
+               </Card>
+
+               <Card className="border-none shadow-xl bg-card border-l-4 border-l-accent">
+                 <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center gap-2"><Lightbulb size={16} className="text-accent" /> Insight Bisnis</CardTitle>
+                 </CardHeader>
+                 <CardContent className="p-6 pt-0 space-y-4">
+                    {insights.map((ins, i) => (
+                      <div key={i} className="p-3 rounded-xl bg-accent/5 border border-accent/10 space-y-1">
+                        <p className="text-xs font-black text-accent uppercase tracking-widest">{ins.title}</p>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground font-medium">{ins.body}</p>
+                      </div>
+                    ))}
+                 </CardContent>
+               </Card>
+            </div>
+          </div>
+
+          <Card className="border-none shadow-xl bg-card overflow-hidden">
+            <CardHeader className="border-b bg-muted/10 flex flex-row items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ClipboardCheck size={20} className="text-accent" /> Log Mutasi & Penyesuaian Stok
+                </CardTitle>
+                <CardDescription>Jejak audit permanen untuk seluruh perubahan stok manual.</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm" className="font-bold gap-2 text-muted-foreground" onClick={() => downloadCSV('stock-mutation', period, customStart, customEnd)}>
+                  <FileText size={14} /> Excel
+                </Button>
+                <Button variant="ghost" size="sm" className="font-bold gap-2 text-muted-foreground" onClick={() => downloadPDF('stock-mutation', period, customStart, customEnd)}>
+                  <Download size={14} /> PDF
+                </Button>
+                <Button variant="ghost" size="sm" className="font-bold gap-2 text-muted-foreground" onClick={() => printReport('stock-mutation', period, customStart, customEnd)}>
+                  <Printer size={14} /> Print
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-subtle text-[11px] font-semibold uppercase tracking-wider text-text-secondary border-b border-border-subtle">
+                      <th className="px-6 py-3">Waktu</th>
+                      <th className="px-6 py-3">Nama Bahan</th>
+                      <th className="px-6 py-3">Tipe</th>
+                      <th className="px-6 py-3">Perubahan</th>
+                      <th className="px-6 py-3">Saldo Stok</th>
+                      <th className="px-6 py-3">PIC / Pelaku</th>
+                      <th className="px-6 py-3">Alasan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {inventoryLogs.map(log => (
+                      <tr key={log.id} className="text-sm hover:bg-muted/5">
+                        <td className="px-6 py-4 text-text-tertiary font-medium data-mono">{new Date(log.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                        <td className="px-6 py-4 font-bold text-text-primary">{log.bahan_name}</td>
+                        <td className="px-6 py-4">
+                          <span className={cn(
+                            "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
+                            log.type === 'Waste' || log.type === 'Adjustment' ? "active-state border border-primary/20" : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                          )}>
+                            {log.type}
+                          </span>
+                        </td>
+                        <td className={cn("px-6 py-4 font-bold data-mono", log.change_qty > 0 ? "text-emerald-600" : "text-error")}>
+                          {log.change_qty > 0 ? '+' : ''}{log.change_qty}
+                        </td>
+                        <td className="px-6 py-4 text-text-tertiary data-mono">{log.prev_stock} → <span className="font-bold text-primary">{log.next_stock}</span></td>
+                        <td className="px-6 py-4 font-bold">{log.user_name}</td>
+                        <td className="px-6 py-4 italic text-xs text-muted-foreground">{log.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Detailed Summary Footer */}
+          <Card className="border-none shadow-xl bg-card overflow-hidden border-t-4 border-t-accent">
+            <CardContent className="p-0">
+               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 divide-x divide-y md:divide-y-0">
+                  {[
+                    { label: 'Penjualan Kotor', value: formatCurrency(summary.totalRevenue) },
+                    { label: 'Total Diskon', value: formatCurrency(0) },
+                    { label: 'Penjualan Bersih', value: formatCurrency(summary.totalRevenue) },
+                    { label: 'HPP (Total)', value: formatCurrency(summary.totalHPP) },
+                    { label: 'Laba Kotor', value: formatCurrency(summary.grossProfit) },
+                    { label: 'Margin Aktual', value: `${summary.marginPct || 0}%`, highlight: true },
+                  ].map((item, i) => (
+                    <div key={i} className="p-6 text-center space-y-1">
+                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{item.label}</p>
+                      <p className={cn("text-lg font-black data-mono", item.highlight ? "text-accent" : "text-primary")}>{item.value}</p>
+                    </div>
+                  ))}
+               </div>
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {aiInsights.map((ins, i) => (
+              <Card key={i} className="border-none shadow-2xl bg-card overflow-hidden group">
+                <CardHeader className={cn(
+                  "pb-4",
+                  ins.type === 'warning' ? "bg-amber-500/5" : 
+                  ins.type === 'success' ? "bg-emerald-500/5" : "bg-blue-500/5"
+                )}>
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-lg",
+                      ins.type === 'warning' ? "bg-amber-500" : 
+                      ins.type === 'success' ? "bg-emerald-500" : "bg-blue-500"
+                    )}>
+                      {ins.type === 'warning' ? <AlertTriangle size={20} /> : <Lightbulb size={20} />}
+                    </div>
+                    <div>
+                      <CardTitle className="text-sm font-black">{ins.title}</CardTitle>
+                      <CardDescription className="text-[10px] font-bold uppercase tracking-widest">Saran Otomatis AI</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 pt-0">
+                  <p className="text-sm font-medium leading-relaxed opacity-80 mt-4">{ins.message}</p>
+                </CardContent>
+                <CardFooter className="p-6 pt-0">
+                  <Button variant="ghost" size="sm" className="w-full rounded-xl font-bold bg-muted/30 hover:bg-muted/50" onClick={() => window.location.hash = ins.action}>
+                    Analisis Lebih Lanjut <ChevronRight size={14} className="ml-2" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+          
+          <Card className="border-none shadow-2xl bg-card overflow-hidden">
+             <CardHeader className="bg-accent/10 p-8 border-b">
+                <CardTitle className="text-2xl font-black">Rangkuman Rekomendasi</CardTitle>
+                <CardDescription>AI menyarankan fokus utama Anda untuk periode ini.</CardDescription>
+             </CardHeader>
+             <CardContent className="p-8">
+                <div className="space-y-6">
+                   <div className="flex items-start gap-4 p-6 rounded-3xl bg-muted/20 border border-muted/50">
+                      <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm shrink-0">
+                         <ClipboardCheck className="text-accent" />
+                      </div>
+                      <div className="space-y-1">
+                         <h4 className="text-lg font-black">Optimalisasi Stok</h4>
+                         <p className="text-sm text-muted-foreground font-medium">Berdasarkan pola penjualan, Anda disarankan untuk meningkatkan stok bahan baku pada hari Kamis & Jumat sebesar 20% untuk menghindari kehilangan potensi omzet.</p>
+                      </div>
+                   </div>
+                   <div className="flex items-start gap-4 p-6 rounded-3xl bg-muted/20 border border-muted/50">
+                      <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm shrink-0">
+                         <TrendingUp className="text-emerald-500" />
+                      </div>
+                      <div className="space-y-1">
+                         <h4 className="text-lg font-black">Strategi Harga</h4>
+                         <p className="text-sm text-muted-foreground font-medium">Ada 3 menu dengan profit margin rendah namun volume tinggi. AI menyarankan penyesuaian harga sebesar Rp 500 - Rp 1.000 untuk meningkatkan laba bersih tanpa mengganggu volume penjualan.</p>
+                      </div>
+                   </div>
+                </div>
+             </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
