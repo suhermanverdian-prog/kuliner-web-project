@@ -1,16 +1,8 @@
 const hostname = window.location.hostname;
 const port = window.location.port;
-const API_URL = (
-  hostname === 'localhost' || 
-  hostname === '127.0.0.1' || 
-  hostname.startsWith('192.168.') || 
-  hostname.startsWith('10.') || 
-  hostname.startsWith('172.') ||
-  hostname.endsWith('.local') ||
-  port === '5173' || port === '5174' || port === '5175'
-)
-  ? `http://${hostname}:3001/api`
-  : 'https://kuliner-web-project.vercel.app/api';
+const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? `http://${window.location.hostname}:3001/api`
+  : 'http://localhost:3001/api'; // Force local for now to ensure testing works
 
 const getHeaders = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -51,7 +43,7 @@ const apiBase = {
   url: API_URL,
   // Fungsi manual jika dibutuhkan
   async login(credentials) {
-    const res = await fetch(`${API_URL}/auth/login`, {
+    const res = await fetch(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(credentials)

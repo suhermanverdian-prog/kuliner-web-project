@@ -38,7 +38,7 @@ function BarChart({ data }) {
               <text 
                 x={x + BAR_W / 2} y={H + 20} textAnchor="middle" 
                 className={cn(
-                  "text-[10px] font-medium",
+                  "text-[10px] font-mono font-medium",
                   isToday ? "fill-accent font-bold" : "fill-muted-foreground"
                 )}
               >
@@ -80,6 +80,7 @@ export default function Dashboard({ user, onNavigate }) {
   const [grns, setGrns] = useState([]);
   const [accountingSummary, setAccountingSummary] = useState(null);
   const [lowStockItems, setLowStockItems] = useState([]);
+  const [aiInsights, setAiInsights] = useState([]);
 
   const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
     ? 'http://localhost:3001/api' 
@@ -100,7 +101,8 @@ export default function Dashboard({ user, onNavigate }) {
       hasFeature(user, 'procurement') ? api.getPurchaseInvoices().catch(() => []) : Promise.resolve([]),
       fetch(`${API_URL}/accounting/summary?period=today`, { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
       fetch(`${API_URL}/inventory/low-stock`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
-    ]).then(([txData, menuData, tblData, salesData, finData, invData, poData, grnData, invoiceData, accSum, lowStock]) => {
+      fetch(`${API_URL}/ai/insights`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
+    ]).then(([txData, menuData, tblData, salesData, finData, invData, poData, grnData, invoiceData, accSum, lowStock, aiData]) => {
       setTransactions(Array.isArray(txData) ? txData : []);
       setMenu(Array.isArray(menuData) ? menuData : []);
       setTables(Array.isArray(tblData) ? tblData : []);
@@ -108,6 +110,7 @@ export default function Dashboard({ user, onNavigate }) {
       setGrns(Array.isArray(grnData) ? grnData : []);
       setInvoices(Array.isArray(invoiceData) ? invoiceData : []);
       setLowStockItems(Array.isArray(lowStock) ? lowStock : []);
+      setAiInsights(Array.isArray(aiData) ? aiData : []);
       if (salesData) setSalesAnalytics(salesData);
       if (finData) setFinancialAnalytics(finData);
       if (invData) setInventoryAnalytics(invData);
@@ -154,9 +157,12 @@ export default function Dashboard({ user, onNavigate }) {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard (Production V4)</h2>
-          <p className="text-muted-foreground">
-            {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })} · Selamat datang kembali, {user?.name?.split(' ')[0] || 'User'} · <span className="text-accent font-bold">KEN</span>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">Dashboard Overview</h2>
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
+            <span className="data-mono">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</span> · Selamat datang kembali, {user?.name?.split(' ')[0] || 'User'} · <span className="text-zinc-950 font-bold">KEN</span>
+            <span className="ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-800 border border-green-200 text-[9px] font-black tracking-widest flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> NODES ACTIVE
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -167,25 +173,67 @@ export default function Dashboard({ user, onNavigate }) {
 
       {/* Low Stock Warning Banner */}
       {lowStockItems.length > 0 && (
-        <Card className="bg-destructive/10 border-destructive/20 border-dashed animate-in slide-in-from-top-4 duration-500">
+        <Card className="bg-amber-50 border-amber-200 border animate-in slide-in-from-top-4 duration-500 shadow-sm">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-destructive/20 rounded-xl flex items-center justify-center text-destructive">
-                <AlertTriangle className="animate-pulse" size={20} />
+              <div className="w-10 h-10 bg-amber-200/50 rounded-xl flex items-center justify-center text-amber-700">
+                <AlertTriangle className="animate-bounce" size={20} />
               </div>
               <div>
-                <p className="text-sm font-black text-destructive">PERINGATAN STOK KRITIS!</p>
-                <p className="text-xs text-destructive/80 font-bold">Ada {lowStockItems.length} bahan baku di bawah stok minimum. Segera lakukan restock.</p>
+                <p className="text-sm font-black text-amber-800">PERINGATAN STOK KRITIS!</p>
+                <p className="text-xs text-amber-700/80 font-bold">Ada {lowStockItems.length} bahan baku di bawah stok minimum. Segera lakukan restock.</p>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="bg-background border-destructive text-destructive font-black text-[10px]" onClick={() => onNavigate?.('inventori')}>LIHAT DAFTAR</Button>
+              <Button size="sm" variant="outline" className="bg-white border-amber-300 text-amber-800 font-black text-[10px] hover:bg-amber-100" onClick={() => onNavigate?.('inventori')}>LIHAT DAFTAR</Button>
               {hasFeature(user, 'procurement') && (
-                <Button size="sm" className="bg-destructive text-white font-black text-[10px]" onClick={() => onNavigate?.('pembelian')}>BUAT PO</Button>
+                <Button size="sm" className="bg-amber-500 text-white font-black text-[10px] hover:bg-amber-600 shadow-md shadow-amber-200" onClick={() => onNavigate?.('pembelian')}>BUAT PO</Button>
               )}
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* AI Business Insights Widget */}
+      {aiInsights.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in slide-in-from-bottom-4 duration-700">
+          {aiInsights.map((insight, idx) => (
+            <Card key={idx} className={cn(
+              "border-none shadow-lg overflow-hidden relative group",
+              insight.type === 'warning' ? "bg-amber-500/10" : 
+              insight.type === 'success' ? "bg-emerald-500/10" : "bg-blue-500/10"
+            )}>
+              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-500">
+                <Zap size={80} />
+              </div>
+              <CardContent className="p-6 relative z-10 flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center shadow-sm",
+                    insight.type === 'warning' ? "bg-amber-500 text-white" : 
+                    insight.type === 'success' ? "bg-emerald-500 text-white" : "bg-blue-500 text-white"
+                  )}>
+                    {insight.type === 'warning' ? <AlertTriangle size={18} /> : 
+                     insight.type === 'success' ? <TrendingUp size={18} /> : <Zap size={18} />}
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black tracking-tight">{insight.title}</h4>
+                    <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest">AI Business Insight</p>
+                  </div>
+                </div>
+                <p className="text-xs font-medium leading-relaxed opacity-80">{insight.message}</p>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="mt-2 w-fit h-8 rounded-lg text-[10px] font-black uppercase hover:bg-black/5"
+                  onClick={() => onNavigate?.(insight.action)}
+                >
+                  Lihat Detail <ChevronRight size={14} className="ml-1" />
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
 
       {/* Stats Grid */}
@@ -196,16 +244,16 @@ export default function Dashboard({ user, onNavigate }) {
             <Card key={i} className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{s.label}</CardTitle>
-                <div className="h-8 w-8 bg-muted rounded-lg flex items-center justify-center">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
+                <div className="h-8 w-8 flex items-center justify-center">
+                  <Icon className="h-5 w-5 text-zinc-500" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{s.value}</div>
-                <div className="flex items-center gap-1 mt-1">
-                  {s.isUp ? <ArrowUpRight className="h-3 w-3 text-emerald-500" /> : <ArrowDownRight className="h-3 w-3 text-destructive" />}
-                  <span className={cn("text-xs font-bold", s.isUp ? "text-emerald-500" : "text-destructive")}>{s.trend}</span>
-                  <span className="text-xs text-muted-foreground">{s.description}</span>
+                <div className="text-[30px] font-bold data-mono tracking-tighter leading-none mb-2">{s.value}</div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  {s.isUp ? <ArrowUpRight className="h-3 w-3 text-emerald-500" /> : <ArrowDownRight className="h-3 w-3 text-error" />}
+                  <span className={cn("text-xs font-bold data-mono", s.isUp ? "text-emerald-500" : "text-error")}>{s.trend}</span>
+                  <span className="text-xs text-muted-foreground font-medium">{s.description}</span>
                 </div>
               </CardContent>
             </Card>
@@ -243,12 +291,12 @@ export default function Dashboard({ user, onNavigate }) {
                   <Clock className="h-5 w-5 text-muted-foreground group-hover:text-accent transition-colors" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">Pesanan #{tx?.id?.slice(-6).toUpperCase() || '????'}</p>
-                  <p className="text-xs text-muted-foreground">{tx?.tableType} · {tx?.items?.length || 0} item</p>
+                  <p className="text-sm font-bold truncate data-mono tracking-tight">ID:{tx?.id?.slice(-6).toUpperCase() || '????'}</p>
+                  <p className="text-xs text-muted-foreground font-medium">{tx?.tableType} · {tx?.items?.length || 0} items</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold">{formatRupiah(tx?.total || 0)}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase">{tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</p>
+                  <p className="text-sm font-bold data-mono text-primary">{formatRupiah(tx?.total || 0)}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase data-mono">{tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</p>
                 </div>
               </div>
             ))}
@@ -270,12 +318,12 @@ export default function Dashboard({ user, onNavigate }) {
             <div className="flex items-center justify-center gap-8 py-4">
               <div className="text-center">
                 <DonutMini pct={(activeTables / (tables.length || 1)) * 100} color="hsl(var(--accent))" />
-                <p className="mt-2 text-xl font-bold">{activeTables}</p>
+                <p className="mt-2 text-xl font-bold data-mono">{activeTables}</p>
                 <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Terisi</p>
               </div>
               <div className="text-center">
                 <DonutMini pct={((tables.length - activeTables) / (tables.length || 1)) * 100} color="hsl(var(--muted))" />
-                <p className="mt-2 text-xl font-bold">{tables.length - activeTables}</p>
+                <p className="mt-2 text-xl font-bold data-mono">{tables.length - activeTables}</p>
                 <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Tersedia</p>
               </div>
             </div>
@@ -289,7 +337,7 @@ export default function Dashboard({ user, onNavigate }) {
                   )}
                 >
                   <Armchair size={14} />
-                  <span className="text-[10px] font-bold">{t?.name?.split(' ')[1] || '??'}</span>
+                  <span className="text-[10px] font-bold data-mono">{t?.name?.split(' ')[1] || '??'}</span>
                 </div>
               ))}
             </div>
@@ -311,7 +359,7 @@ export default function Dashboard({ user, onNavigate }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-sm font-bold truncate">{item?.name || 'Item'}</p>
-                    <p className="text-xs text-muted-foreground font-medium">Terjual {42 - i * 5}</p>
+                    <p className="text-xs text-muted-foreground font-medium">Terjual <span className="data-mono font-bold text-accent">{42 - i * 5}</span></p>
                   </div>
                   <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                     <div 

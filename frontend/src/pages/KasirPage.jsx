@@ -74,12 +74,12 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
             {tx.items?.map((item, i) => (
               <div key={i} className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground font-medium">{item.qty}x <span className="text-primary font-bold">{item.name}</span></span>
-                <span className="font-black text-primary">{formatRupiah(item.price * item.qty)}</span>
+                <span className="text-lg font-black text-primary data-mono">{formatRupiah(item.price * item.qty)}</span>
               </div>
             ))}
             <div className="pt-4 border-t border-muted flex justify-between items-center">
               <span className="font-black text-sm uppercase tracking-widest text-muted-foreground">Total Tagihan</span>
-              <span className="font-black text-3xl text-accent">{formatRupiah(total)}</span>
+              <span className="font-black text-3xl text-accent data-mono">{formatRupiah(total)}</span>
             </div>
           </div>
 
@@ -91,7 +91,7 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
                    <span className="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-muted-foreground/30 group-focus-within:text-accent transition-colors">Rp</span>
                    <input
                      type="text"
-                     className="w-full h-20 bg-muted/20 border-2 border-transparent focus:border-accent focus:bg-background rounded-[2rem] text-4xl font-black text-center focus:ring-0 placeholder:text-muted/50 transition-all shadow-inner pl-16"
+                     className="w-full h-20 bg-muted/20 border-2 border-transparent focus:border-accent focus:bg-background rounded-[2rem] text-4xl font-black text-center focus:ring-0 placeholder:text-muted/50 transition-all shadow-inner pl-16 data-mono"
                      value={cashNum > 0 ? cashNum.toLocaleString('id-ID') : ''}
                      onChange={e => setCashReceived(e.target.value.replace(/[^0-9]/g, ''))}
                      placeholder="0"
@@ -104,7 +104,7 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
                   <Button 
                     key={amt} variant={cashNum === amt ? "default" : "outline"} 
                     className={cn(
-                      "h-12 font-black rounded-xl border-2 transition-all",
+                      "h-12 font-black rounded-xl border-2 transition-all data-mono",
                       cashNum === amt ? "bg-accent border-accent text-white shadow-lg shadow-accent/20" : "hover:border-accent hover:text-accent"
                     )}
                     onClick={() => setCashReceived(String(amt))}
@@ -119,7 +119,7 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
               )}>
                 <div>
                    <p className="text-[10px] font-black uppercase tracking-widest">{change >= 0 ? 'Uang Kembali' : 'Kurang Bayar'}</p>
-                   <p className="text-3xl font-black mt-1">{formatRupiah(Math.abs(change))}</p>
+                   <p className="text-3xl font-black mt-1 data-mono">{formatRupiah(Math.abs(change))}</p>
                 </div>
                 <div className={cn("w-12 h-12 rounded-full flex items-center justify-center", change >= 0 ? "bg-emerald-500/10" : "bg-destructive/10")}>
                    {change >= 0 ? <CheckCircle2 /> : <AlertCircle />}
@@ -219,7 +219,6 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
       <Card className="w-full max-w-5xl shadow-[0_32px_128px_-32px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 border-none rounded-[3rem] overflow-hidden">
         <div className="flex flex-col md:flex-row h-full max-h-[85vh]">
-          {/* Summary Panel */}
           <div className="w-full md:w-[360px] p-8 bg-muted/20 border-r border-muted flex flex-col h-full">
             <div className="mb-6">
                <h3 className="text-xl font-black">Detail Tagihan</h3>
@@ -233,28 +232,27 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                     <p className="text-sm font-black truncate">{item.name}</p>
                     <p className="text-[10px] text-muted-foreground font-bold">{item.qty}x {formatRupiah(item.price)}</p>
                   </div>
-                  <p className="text-sm font-black">{formatRupiah(item.price * item.qty)}</p>
+                  <p className="text-sm font-black data-mono">{formatRupiah(item.price * item.qty)}</p>
                 </div>
               ))}
             </div>
 
             <div className="pt-6 mt-4 border-t-2 border-dashed border-muted-foreground/20 space-y-3">
-              <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest data-mono">
                 <span>Subtotal</span>
                 <span>{formatRupiah(subtotal)}</span>
               </div>
-              <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              <div className="flex justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest data-mono">
                 <span>Pajak (10%)</span>
                 <span>{formatRupiah(taxAmount)}</span>
               </div>
               <div className="flex justify-between items-end pt-1">
                 <span className="text-base font-black uppercase tracking-tighter">Total</span>
-                <span className="text-3xl font-black text-accent">{formatRupiah(total)}</span>
+                <span className="text-2xl font-black text-primary data-mono">{formatRupiah(total)}</span>
               </div>
             </div>
           </div>
 
-          {/* Settings Panel */}
           <div className="flex-1 p-8 space-y-8 overflow-y-auto custom-scrollbar">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -336,21 +334,14 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                         value={cashReceived}
                         onChange={e => setCashReceived(e.target.value)}
                         placeholder="0"
-                        className="h-14 text-2xl font-black pl-11 rounded-2xl border-2 border-emerald-500/30 focus:ring-emerald-500 bg-white"
+                        className="h-14 text-2xl font-black pl-11 rounded-2xl border-2 border-emerald-500/30 focus:ring-emerald-500 bg-white data-mono"
                       />
-                    </div>
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {[50000, 100000, 200000].map(amt => (
-                        <button key={amt} onClick={() => setCashReceived(String(amt))} className="px-2 py-1 bg-white border border-emerald-500/20 rounded-lg text-[8px] font-black text-emerald-700 hover:bg-emerald-500 hover:text-white transition-all shadow-sm">
-                          {amt/1000}rb
-                        </button>
-                      ))}
                     </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] font-black uppercase tracking-widest text-emerald-700 px-2 text-right block">Kembalian</label>
                     <div className="h-14 flex items-center justify-end px-5 bg-white rounded-2xl border-2 border-emerald-500/30">
-                       <span className={cn("text-2xl font-black", changeAmount >= 0 ? "text-emerald-600" : "text-muted-foreground/30")}>
+                       <span className={cn("text-2xl font-black data-mono", changeAmount >= 0 ? "text-emerald-600" : "text-muted-foreground/30")}>
                          {changeAmount >= 0 ? formatRupiah(changeAmount) : 'Rp 0'}
                        </span>
                     </div>
@@ -416,22 +407,6 @@ export default function KasirPage({ user, onNavigate }) {
     }
   };
 
-  const handleCloseShift = async () => {
-    if (!window.confirm('Yakin ingin menutup shift sekarang?')) return;
-    const actualCash = prompt('Masukkan total uang tunai di laci (Cash on Hand):');
-    if (actualCash === null) return;
-    
-    try {
-      await api.updateShift(activeShift.id, { 
-        status: 'closed', 
-        actual_cash: Number(actualCash),
-        endTime: new Date().toISOString()
-      });
-      alert('Shift berhasil ditutup. Sistem akan logout otomatis.');
-      window.location.reload();
-    } catch (e) { alert('Gagal tutup shift'); }
-  };
-
   useEffect(() => {
     fetchMenuAndOrders(true);
     const interval = setInterval(() => fetchMenuAndOrders(false), 8000);
@@ -457,35 +432,12 @@ export default function KasirPage({ user, onNavigate }) {
   const filtered = safeMenus.filter(m => (category === 'Semua' || m.category === category) && (m.name || '').toLowerCase().includes(search.toLowerCase()));
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
 
-  if (!loading && !activeShift) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[70vh] max-w-md mx-auto text-center space-y-8 animate-in zoom-in-95 duration-500">
-        <div className="w-32 h-32 bg-accent/10 rounded-[3rem] flex items-center justify-center shadow-inner relative group">
-          <div className="absolute inset-0 bg-accent/20 rounded-[3rem] animate-ping opacity-20" />
-          <Lock size={56} className="text-accent group-hover:scale-110 transition-transform" />
-        </div>
-        <div>
-          <h2 className="text-3xl font-black tracking-tight">Shift Terkunci</h2>
-          <p className="text-muted-foreground mt-3 font-medium leading-relaxed">
-            Sesi kasir belum aktif atau sudah ditutup. Harap buka shift baru dari dashboard manajemen untuk mulai melayani pelanggan.
-          </p>
-        </div>
-        <Button size="lg" className="h-14 px-10 font-black text-lg bg-accent shadow-xl shadow-accent/20 gap-3" onClick={() => onNavigate?.('shift')}>
-          <Clock size={24} /> Buka Manajemen Shift
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-8 animate-in fade-in duration-700">
       
-      {/* Product List Section */}
       <div className="flex-1 flex flex-col min-w-0 space-y-6 overflow-hidden">
         
-        {/* Toolbar: Search & Categories */}
         <div className="flex flex-col gap-4 shrink-0">
-          {/* Search Bar Row */}
           <div className="relative group p-1">
              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                 <Search className="text-muted-foreground group-focus-within:text-accent transition-colors" size={18} />
@@ -497,17 +449,16 @@ export default function KasirPage({ user, onNavigate }) {
              />
           </div>
 
-          {/* Categories Row */}
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 px-1">
             {MENU_CATEGORIES.map(c => (
               <button 
                 key={c}
                 onClick={() => setCategory(c)}
                 className={cn(
-                  "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shadow-sm border",
+                  "h-8 px-4 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all whitespace-nowrap border",
                   category === c 
-                    ? "bg-accent border-accent text-white shadow-lg shadow-accent/20" 
-                    : "bg-card border-border/50 text-muted-foreground hover:bg-muted/50"
+                    ? "active-state border-transparent shadow-md" 
+                    : "bg-card border-border-subtle text-text-tertiary hover:bg-subtle"
                 )}
               >
                 {c}
@@ -516,7 +467,6 @@ export default function KasirPage({ user, onNavigate }) {
           </div>
         </div>
 
-        {/* Grid Menu */}
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 content-start auto-rows-max pb-10">
           {loading ? (
             Array(10).fill(0).map((_, i) => (
@@ -543,7 +493,7 @@ export default function KasirPage({ user, onNavigate }) {
                   <h3 className="font-bold text-base text-foreground leading-tight">{item.name}</h3>
                 </div>
                 <div className="mt-4">
-                   <p className="text-lg font-black text-foreground">{formatRupiah(item.price)}</p>
+                   <p className="text-lg font-bold text-foreground data-mono">{formatRupiah(item.price)}</p>
                 </div>
               </div>
             </div>
@@ -605,7 +555,7 @@ export default function KasirPage({ user, onNavigate }) {
                                  </p>
                                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest mt-1">{tx.tableType} · {tx.paymentMethod}</p>
                               </div>
-                              <p className="font-bold text-accent">{formatRupiah(tx.total)}</p>
+                              <p className="font-bold text-accent data-mono">{formatRupiah(tx.total)}</p>
                            </div>
                            <Button className="w-full h-10 font-bold bg-accent rounded-xl text-xs gap-2" onClick={() => setSelectedPendingTx(tx)}>
                               <Banknote size={14} /> Bayar
@@ -632,7 +582,7 @@ export default function KasirPage({ user, onNavigate }) {
                            </div>
                            <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold text-foreground truncate">{item.name}</p>
-                              <p className="text-xs font-bold text-accent mt-0.5">{formatRupiah(item.price)}</p>
+                              <p className="text-xs font-bold text-accent mt-0.5 data-mono">{formatRupiah(item.price)}</p>
                            </div>
                            <div className="flex items-center bg-muted/50 rounded-lg p-0.5 border shadow-sm">
                               <button onClick={() => changeQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground"><Minus size={12} /></button>
@@ -650,12 +600,12 @@ export default function KasirPage({ user, onNavigate }) {
                   <div className="w-full space-y-2">
                      <div className="flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-1">
                         <span>Pajak (10%)</span>
-                        <span>{formatRupiah(Math.round(subtotal * 0.1))}</span>
+                        <span className="data-mono">{formatRupiah(Math.round(subtotal * 0.1))}</span>
                      </div>
                       <div className="flex justify-between items-center bg-background rounded-2xl p-4 border border-border shadow-sm ring-1 ring-black/5">
                          <div className="space-y-0.5">
                             <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Total Pembayaran</p>
-                            <p className="text-xl font-black text-primary">{formatRupiah(subtotal + Math.round(subtotal * 0.1))}</p>
+                            <p className="text-xl font-bold text-primary data-mono">{formatRupiah(subtotal + Math.round(subtotal * 0.1))}</p>
                          </div>
                          <Button variant="ghost" size="icon" className="h-9 w-9 text-destructive hover:bg-destructive/10 rounded-xl shrink-0" onClick={() => setCart([])}>
                             <Trash2 size={18} />

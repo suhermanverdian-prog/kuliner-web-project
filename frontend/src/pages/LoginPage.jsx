@@ -31,7 +31,7 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
     if (!username || !password) return setError('Harap isi semua kolom');
     setLoading(true); setError('');
     try {
-      const res = await api.login(username, password, selectedRole);
+      const res = await api.login({ username, password, role: selectedRole });
       onLogin(res.user);
     } catch {
       setError('Kredensial atau role tidak valid');

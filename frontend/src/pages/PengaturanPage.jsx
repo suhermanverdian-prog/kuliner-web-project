@@ -266,14 +266,16 @@ export default function PengaturanPage() {
           { key: 'system', label: 'Pajak & Sistem', icon: Settings },
           { key: 'branding', label: 'Branding', icon: Palette },
         ].map(t => (
-          <Button 
-            key={t.key}
-            variant={activeTab === t.key ? "secondary" : "ghost"} 
-            className={cn("h-10 px-6 font-bold rounded-xl", activeTab === t.key && "bg-background shadow-sm")}
+          <button 
+            key={t.key} 
+            className={cn(
+              "h-8 px-4 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2", 
+              activeTab === t.key ? "active-state shadow-sm" : "text-text-tertiary hover:text-text-secondary"
+            )}
             onClick={() => setActiveTab(t.key)}
           >
-            <t.icon size={16} className="mr-2" /> {t.label}
-          </Button>
+            <t.icon size={14} /> {t.label}
+          </button>
         ))}
       </div>
 
@@ -442,13 +444,13 @@ export default function PengaturanPage() {
                         type="number" 
                         value={loyaltyConfig.multiplier} 
                         onChange={e => setLoyaltyConfig({...loyaltyConfig, multiplier: Number(e.target.value)})} 
-                        className="h-10 text-sm font-bold" 
+                        className="h-10 text-sm font-bold data-mono" 
                       />
                       <p className="text-[9px] text-muted-foreground italic">Dapat 1 Poin</p>
                     </div>
                     <div className="space-y-2 opacity-40">
                       <label className="text-[10px] font-bold text-muted-foreground uppercase">Nilai 1 Poin (Rp)</label>
-                      <Input type="number" value={100} disabled className="h-10 text-sm font-bold" />
+                      <Input type="number" value={100} disabled className="h-10 text-sm font-bold data-mono" />
                       <p className="text-[9px] text-muted-foreground italic">Potongan diskon (Segera)</p>
                     </div>
                   </div>

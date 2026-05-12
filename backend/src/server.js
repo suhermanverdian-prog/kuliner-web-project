@@ -2588,6 +2588,77 @@ app.post('/api/settings/loyalty', async (req, res) => {
 
 
 // ===========================================================
+// ---- FASE 9: AI BUSINESS INSIGHTS (Heuristic Engine) ----
+// ===========================================================
+app.get('/api/ai/insights', async (req, res) => {
+  try {
+    const tenantId = req.headers['x-tenant-id'];
+    const outletId = req.headers['x-outlet-id'];
+    
+    // 1. Ambil data mentah untuk dianalisis
+    const [trx, inventory, po] = await Promise.all([
+      supabase.from('transactions').select('total, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50),
+      supabase.from('bahan').select('name, stock, min_stock, location').eq('tenant_id', tenantId),
+      supabase.from('purchase_orders').select('status').eq('tenant_id', tenantId).eq('status', 'pending')
+    ]);
+
+    const insights = [];
+    
+    // --- ANALISIS STOK (Inventory Intelligence) ---
+    const lowStock = (inventory.data || []).filter(b => Number(b.stock) <= Number(b.min_stock || 0));
+    if (lowStock.length > 0) {
+      insights.push({
+        type: 'warning',
+        title: 'Restock Kritis',
+        message: `${lowStock.length} bahan baku (termasuk ${lowStock[0].name}) sudah di bawah batas minimum. Segera buat PO untuk menghindari gangguan operasional.`,
+        action: 'inventori'
+      });
+    }
+
+    // --- ANALISIS PENJUALAN (Sales Intelligence) ---
+    const recentTrx = trx.data || [];
+    if (recentTrx.length > 10) {
+      const today = new Date().toISOString().split('T')[0];
+      const todaySales = recentTrx.filter(t => t.created_at.startsWith(today)).reduce((s, t) => s + Number(t.total), 0);
+      
+      if (todaySales > 1000000) {
+        insights.push({
+          type: 'success',
+          title: 'Performa Tinggi',
+          message: `Penjualan hari ini sangat baik! Pertimbangkan untuk menambah staf di jam sibuk besok untuk menjaga kualitas layanan.`,
+          action: 'dashboard'
+        });
+      }
+    }
+
+    // --- ANALISIS PENGADAAN (Procurement Logic) ---
+    const pendingPO = (po.data || []).length;
+    if (pendingPO > 3) {
+      insights.push({
+        type: 'info',
+        title: 'Hambatan Pengadaan',
+        message: `Ada ${pendingPO} pesanan pembelian (PO) yang masih menunggu persetujuan. Segera tindak lanjuti agar stok tidak terhambat.`,
+        action: 'pembelian'
+      });
+    }
+
+    // Default insight jika data masih sedikit
+    if (insights.length === 0) {
+      insights.push({
+        type: 'info',
+        title: 'AI Siap Menganalisis',
+        message: 'Lakukan lebih banyak transaksi agar AI dapat memberikan rekomendasi bisnis yang lebih akurat untuk Anda.',
+        action: 'dashboard'
+      });
+    }
+
+    res.json(insights);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===========================================================
 // ---- FASE 7: ACCOUNTING API ENDPOINTS ----
 // ===========================================================
 

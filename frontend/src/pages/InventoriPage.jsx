@@ -87,9 +87,9 @@ const TagInput = ({ label, tags, onChange }) => {
       <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-background rounded-xl border border-dashed">
         {tags.length === 0 && <span className="text-[10px] text-muted-foreground italic p-2">Belum ada data</span>}
         {tags.map((tag, index) => (
-          <span key={index} className="px-3 py-1 bg-accent/10 text-accent text-[10px] font-black uppercase tracking-widest rounded-lg flex items-center gap-2 border border-accent/20">
+          <span key={index} className="px-3 py-1 active-state text-[10px] uppercase tracking-widest rounded-lg flex items-center gap-2 border border-primary/20 shadow-sm">
             {tag}
-            <button onClick={() => removeTag(index)} className="hover:text-destructive transition-colors"><X size={12} /></button>
+            <button onClick={() => removeTag(index)} className="hover:text-error transition-colors"><X size={12} /></button>
           </span>
         ))}
       </div>
@@ -251,9 +251,9 @@ export default function InventoriPage() {
 
   const getStockStatus = (item) => {
     const ratio = item.stock / (item.minStock || 1);
-    if (item.stock === 0) return { label: 'HABIS', color: 'text-destructive', bg: 'bg-destructive/10', barCls: 'bg-destructive', pct: 0 };
-    if (ratio < 1) return { label: 'LOW', color: 'text-amber-600', bg: 'bg-amber-600/10', barCls: 'bg-amber-500', pct: Math.min((ratio * 100), 100) };
-    return { label: 'AMAN', color: 'text-emerald-600', bg: 'bg-emerald-600/10', barCls: 'bg-emerald-500', pct: Math.min((ratio / 2 * 100), 100) };
+    if (item.stock === 0) return { label: 'HABIS', color: 'text-zinc-900', bg: 'bg-destructive', barCls: 'bg-destructive', pct: 0 };
+    if (ratio < 1) return { label: 'LOW', color: 'text-zinc-900', bg: 'active-state', barCls: 'bg-amber-500', pct: Math.min((ratio * 100), 100) };
+    return { label: 'AMAN', color: 'text-zinc-900', bg: 'bg-emerald-500', barCls: 'bg-emerald-500', pct: Math.min((ratio / 2 * 100), 100) };
   };
 
   if (loading && bahan.length === 0) return (
@@ -316,14 +316,14 @@ export default function InventoriPage() {
          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
                <thead>
-                  <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
-                     <th className="px-6 py-4">Bahan Baku</th>
-                     <th className="px-6 py-4">Satuan</th>
-                     <th className="px-6 py-4">Ketersediaan</th>
-                     <th className="px-6 py-4">Modal / Unit</th>
-                     <th className="px-6 py-4">Lokasi</th>
-                     <th className="px-6 py-4">Status</th>
-                     <th className="px-6 py-4 text-right">Aksi</th>
+                  <tr className="bg-subtle text-[11px] font-semibold uppercase tracking-wider text-text-secondary border-b border-border-subtle">
+                     <th className="px-6 py-3">Bahan Baku</th>
+                     <th className="px-6 py-3">Satuan</th>
+                     <th className="px-6 py-3">Ketersediaan</th>
+                     <th className="px-6 py-3">Modal / Unit</th>
+                     <th className="px-6 py-3">Lokasi</th>
+                     <th className="px-6 py-3">Status</th>
+                     <th className="px-6 py-3 text-right">Aksi</th>
                   </tr>
                </thead>
                <tbody className="divide-y">
@@ -338,7 +338,7 @@ export default function InventoriPage() {
                                </div>
                                <div>
                                   <p className="text-sm font-black">{item.name}</p>
-                                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Min. Stok: {getMediumQty({...item, stock: item.minStock})} {getMediumUnit(item)}</p>
+                                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Min. Stok: <span className="data-mono">{getMediumQty({...item, stock: item.minStock})}</span> {getMediumUnit(item)}</p>
                                </div>
                             </div>
                          </td>
@@ -347,13 +347,13 @@ export default function InventoriPage() {
                          </td>
                          <td className="px-6 py-4">
                             <div className="space-y-2 max-w-[120px]">
-                               <p className="text-sm font-black">{getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] text-muted-foreground ml-1">{getMediumUnit(item)}</span></p>
+                               <p className="text-sm font-black data-mono">{getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] text-muted-foreground ml-1 font-sans">{getMediumUnit(item)}</span></p>
                                <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner">
                                   <div className={cn("h-full transition-all duration-1000", st.barCls)} style={{ width: `${st.pct}%` }} />
                                </div>
                             </div>
                          </td>
-                         <td className="px-6 py-4 font-black text-sm">{formatRupiah(item.price)}</td>
+                         <td className="px-6 py-4 font-bold text-sm data-mono">{formatRupiah(item.price)}</td>
                          <td className="px-6 py-4">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase">
                                <MapPin size={12} className="text-accent" /> {item.location}
@@ -427,7 +427,7 @@ export default function InventoriPage() {
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-xl">
                 {['Pengurangan', 'Penambahan'].map(t => (
-                  <button key={t} onClick={() => setAdjForm({...adjForm, type: t})} className={cn("py-2 rounded-lg text-xs font-black uppercase transition-all", adjForm.type === t ? "bg-background shadow-sm text-accent" : "text-muted-foreground")}>
+                  <button key={t} onClick={() => setAdjForm({...adjForm, type: t})} className={cn("py-2 rounded-lg text-[11px] font-bold uppercase transition-all flex-1", adjForm.type === t ? "active-state shadow-sm" : "text-text-tertiary hover:bg-subtle")}>
                     {t}
                   </button>
                 ))}

@@ -308,42 +308,25 @@ export default function PembelianPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-2xl border w-fit overflow-x-auto max-w-full no-scrollbar">
-        <Button 
-          variant={activeTab === 'PO' ? "secondary" : "ghost"} 
-          className={cn("h-10 px-6 font-bold rounded-xl whitespace-nowrap", activeTab === 'PO' && "bg-background shadow-sm")}
-          onClick={() => setActiveTab('PO')}
-        >
-          <FileText size={16} className="mr-2" /> Purchase Orders
-        </Button>
-        <Button 
-          variant={activeTab === 'GRN' ? "secondary" : "ghost"} 
-          className={cn("h-10 px-6 font-bold rounded-xl whitespace-nowrap", activeTab === 'GRN' && "bg-background shadow-sm")}
-          onClick={() => setActiveTab('GRN')}
-        >
-          <Download size={16} className="mr-2" /> Barang Masuk (GRN)
-        </Button>
-        <Button 
-          variant={activeTab === 'INVOICE' ? "secondary" : "ghost"} 
-          className={cn("h-10 px-6 font-bold rounded-xl whitespace-nowrap", activeTab === 'INVOICE' && "bg-background shadow-sm")}
-          onClick={() => setActiveTab('INVOICE')}
-        >
-          <FileText size={16} className="mr-2" /> Tagihan
-        </Button>
-        <Button 
-          variant={activeTab === 'PAYMENT' ? "secondary" : "ghost"} 
-          className={cn("h-10 px-6 font-bold rounded-xl whitespace-nowrap", activeTab === 'PAYMENT' && "bg-background shadow-sm")}
-          onClick={() => setActiveTab('PAYMENT')}
-        >
-          <CheckCircle2 size={16} className="mr-2" /> Pembayaran
-        </Button>
-        <Button 
-          variant={activeTab === 'SUPPLIER' ? "secondary" : "ghost"} 
-          className={cn("h-10 px-6 font-bold rounded-xl whitespace-nowrap", activeTab === 'SUPPLIER' && "bg-background shadow-sm")}
-          onClick={() => setActiveTab('SUPPLIER')}
-        >
-          <Truck size={16} className="mr-2" /> Daftar Supplier
-        </Button>
+      <div className="flex items-center gap-2 bg-subtle/50 p-1 rounded-xl border border-border-subtle w-fit overflow-x-auto max-w-full no-scrollbar">
+        {[
+          { key: 'PO', label: 'Purchase Orders', icon: FileText },
+          { key: 'GRN', label: 'Barang Masuk (GRN)', icon: Download },
+          { key: 'INVOICE', label: 'Tagihan', icon: FileText },
+          { key: 'PAYMENT', label: 'Pembayaran', icon: CheckCircle2 },
+          { key: 'SUPPLIER', label: 'Daftar Supplier', icon: Truck },
+        ].map(t => (
+          <button 
+            key={t.key} 
+            className={cn(
+              "h-8 px-4 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center whitespace-nowrap", 
+              activeTab === t.key ? "active-state shadow-sm" : "text-text-tertiary hover:text-text-secondary"
+            )}
+            onClick={() => setActiveTab(t.key)}
+          >
+            <t.icon size={14} className="mr-2" /> {t.label}
+          </button>
+        ))}
       </div>
 
       {activeTab === 'PO' && (
@@ -353,13 +336,13 @@ export default function PembelianPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
-                    <th className="px-6 py-4">No PO / Tanggal</th>
-                    <th className="px-6 py-4">Supplier</th>
-                    <th className="px-6 py-4">Item</th>
-                    <th className="px-6 py-4">Total Estimasi</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-right">Aksi</th>
+                  <tr className="bg-subtle text-[11px] font-semibold uppercase tracking-wider text-text-secondary border-b border-border-subtle">
+                    <th className="px-6 py-3">No PO / Tanggal</th>
+                    <th className="px-6 py-3">Supplier</th>
+                    <th className="px-6 py-3 text-center">Item</th>
+                    <th className="px-6 py-3">Total Estimasi</th>
+                    <th className="px-6 py-3">Status</th>
+                    <th className="px-6 py-3 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -370,12 +353,12 @@ export default function PembelianPage() {
                       <tr key={po.id} className="hover:bg-muted/20 transition-colors group">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground group-hover:text-accent transition-colors">
-                              <FileText size={20} />
+                            <div className="h-9 w-9 rounded-md bg-subtle flex items-center justify-center text-text-tertiary group-hover:text-primary transition-colors border border-border-subtle">
+                              <FileText size={16} />
                             </div>
                             <div>
-                              <p className="text-sm font-bold">{po.poNumber}</p>
-                              <p className="text-[10px] text-muted-foreground font-medium">{new Date(po.createdAt).toLocaleDateString('id-ID')}</p>
+                              <p className="text-sm font-bold text-text-primary data-mono">{po.poNumber}</p>
+                              <p className="text-[10px] text-text-tertiary font-bold uppercase tracking-wider data-mono">{new Date(po.createdAt).toLocaleDateString('id-ID')}</p>
                             </div>
                           </div>
                         </td>
@@ -386,7 +369,7 @@ export default function PembelianPage() {
                         <td className="px-6 py-4">
                           <span className="text-xs font-bold bg-muted px-2 py-1 rounded-md">{po.items.length} Macam</span>
                         </td>
-                        <td className="px-6 py-4 font-black text-sm">{formatRupiah(totalEst)}</td>
+                        <td className="px-6 py-4 font-bold text-sm data-mono">{formatRupiah(totalEst)}</td>
                         <td className="px-6 py-4">
                           <span className={cn(
                             "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
@@ -453,7 +436,7 @@ export default function PembelianPage() {
                     </td>
                     <td className="px-6 py-4">
                       {g.items.map((it, idx) => (
-                        <div key={idx} className="text-xs font-black text-emerald-600">+{it.receivedQty || it.qty}</div>
+                        <div key={idx} className="text-xs font-black text-emerald-600 data-mono">+{it.receivedQty || it.qty}</div>
                       ))}
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -499,7 +482,7 @@ export default function PembelianPage() {
                         <p className="text-[10px] text-muted-foreground">PO: {inv.poNumber}</p>
                       </td>
                       <td className="px-6 py-4 text-sm font-bold">{s?.name || 'Unknown'}</td>
-                      <td className="px-6 py-4 font-black text-sm">{formatRupiah(inv.amount)}</td>
+                      <td className="px-6 py-4 font-bold text-sm data-mono">{formatRupiah(inv.amount)}</td>
                       <td className="px-6 py-4">
                         <span className={cn(
                           "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
@@ -548,7 +531,7 @@ export default function PembelianPage() {
                     <tr key={p.id} className="hover:bg-muted/20">
                       <td className="px-6 py-4 text-sm font-bold text-accent">{p.paymentNumber}</td>
                       <td className="px-6 py-4 text-sm font-bold">{s?.name || 'Unknown'}</td>
-                      <td className="px-6 py-4 font-black text-sm text-emerald-600">{formatRupiah(p.amount)}</td>
+                      <td className="px-6 py-4 font-bold text-sm text-emerald-600 data-mono">{formatRupiah(p.amount)}</td>
                       <td className="px-6 py-4 text-xs font-bold text-muted-foreground uppercase">Bank Transfer / Kas</td>
                     </tr>
                   );
@@ -701,12 +684,12 @@ export default function PembelianPage() {
 
                           <div className="flex-1 space-y-1">
                             <label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Qty</label>
-                            <Input type="number" min="1" className="h-11 font-black text-center" required value={item.qty} onChange={e => updatePoItem(i, 'qty', e.target.value)} />
+                            <Input type="number" min="1" className="h-11 font-black text-center data-mono" required value={item.qty} onChange={e => updatePoItem(i, 'qty', e.target.value)} />
                           </div>
 
                           <div className="flex-[1.5] space-y-1">
                             <label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Harga Beli</label>
-                            <Input type="number" min="0" className="h-11 font-bold text-accent" required value={item.price} onChange={e => updatePoItem(i, 'price', e.target.value)} />
+                            <Input type="number" min="0" className="h-11 font-bold text-accent data-mono" required value={item.price} onChange={e => updatePoItem(i, 'price', e.target.value)} />
                           </div>
 
                           <Button type="button" variant="ghost" size="icon" className="text-destructive h-10 w-10 shrink-0 self-end mb-1" onClick={() => removePoItem(i)}><Trash2 size={16} /></Button>

@@ -86,7 +86,7 @@ export default function PelangganPage() {
             <CardContent className="p-6 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{s.label}</p>
-                <h3 className={cn("text-2xl font-black mt-1", s.color)}>{s.val}</h3>
+                <h3 className={cn("text-2xl font-black mt-1 data-mono", s.color)}>{s.val}</h3>
               </div>
               <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner", s.bg)}>
                 <s.icon className={s.color} size={24} />
@@ -129,19 +129,21 @@ export default function PelangganPage() {
       </Card>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 bg-muted/20 p-1 rounded-2xl border w-fit">
+      <div className="flex items-center gap-2 bg-subtle/50 p-1 rounded-xl border border-border-subtle w-fit">
         {[
           { key: 'list', label: 'Daftar Pelanggan', icon: Users },
           { key: 'qr', label: 'QR Self-Order', icon: QrCode },
         ].map(t => (
-          <Button 
-            key={t.key}
-            variant={activeTab === t.key ? "secondary" : "ghost"} 
-            className={cn("h-10 px-6 font-bold rounded-xl", activeTab === t.key && "bg-background shadow-sm")}
+          <button 
+            key={t.key} 
+            className={cn(
+              "h-8 px-4 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2", 
+              activeTab === t.key ? "active-state shadow-sm" : "text-text-tertiary hover:text-text-secondary"
+            )}
             onClick={() => setActiveTab(t.key)}
           >
-            <t.icon size={16} className="mr-2" /> {t.label}
-          </Button>
+            <t.icon size={14} /> {t.label}
+          </button>
         ))}
       </div>
 
@@ -204,11 +206,11 @@ export default function PelangganPage() {
                                 </span>
                              </td>
                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-1.5 font-black text-sm text-accent">
+                                <div className="flex items-center gap-1.5 font-bold text-sm text-accent data-mono">
                                    <Star size={14} fill="currentColor" /> {c.points}
                                 </div>
                              </td>
-                             <td className="px-6 py-4 font-black text-sm">{formatRupiah(c.totalSpend)}</td>
+                             <td className="px-6 py-4 font-bold text-sm data-mono">{formatRupiah(c.totalSpend)}</td>
                              <td className="px-6 py-4 text-right">
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-accent" onClick={() => setSelected(c)}>
                                    <ChevronRight size={20} />
@@ -248,11 +250,11 @@ export default function PelangganPage() {
                     <div className="grid grid-cols-2 gap-4">
                        <div className="p-4 bg-muted/30 rounded-2xl space-y-1">
                           <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Total Belanja</p>
-                          <p className="text-sm font-black text-primary">{formatRupiah(selected.totalSpend)}</p>
+                          <p className="text-sm font-bold text-primary data-mono">{formatRupiah(selected.totalSpend)}</p>
                        </div>
                        <div className="p-4 bg-accent/5 rounded-2xl space-y-1 border border-accent/10">
                           <p className="text-[9px] font-black text-accent uppercase tracking-widest">Saldo Poin</p>
-                          <p className="text-sm font-black text-accent flex items-center gap-1"><Star size={12} fill="currentColor" /> {selected.points}</p>
+                          <p className="text-sm font-bold text-accent flex items-center gap-1 data-mono"><Star size={12} fill="currentColor" /> {selected.points}</p>
                        </div>
                     </div>
 
@@ -269,7 +271,7 @@ export default function PelangganPage() {
                           </div>
                           <div className="flex items-center gap-3">
                              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground"><Calendar size={14} /></div>
-                             <p className="text-sm font-bold">Terdaftar: {selected.joinDate}</p>
+                             <p className="text-sm font-bold data-mono">Terdaftar: {selected.joinDate}</p>
                           </div>
                        </div>
                     </div>
@@ -280,13 +282,13 @@ export default function PelangganPage() {
                           {MOCK_HISTORY.map(h => (
                             <div key={h.id} className="p-3 bg-card border rounded-2xl space-y-2 hover:border-accent/40 transition-colors shadow-sm">
                                <div className="flex justify-between items-center">
-                                  <span className="text-[10px] font-black text-accent">{h.id}</span>
-                                  <span className="text-[10px] font-bold text-muted-foreground">{h.date}</span>
+                                  <span className="text-[10px] font-bold text-accent data-mono">{h.id}</span>
+                                  <span className="text-[10px] font-bold text-muted-foreground data-mono">{h.date}</span>
                                </div>
                                <p className="text-xs font-black truncate">{h.items}</p>
                                <div className="flex justify-between items-center pt-2 border-t border-dashed">
-                                  <p className="text-xs font-black">{formatRupiah(h.total)}</p>
-                                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">{h.points} Poin</span>
+                                  <p className="text-xs font-bold data-mono">{formatRupiah(h.total)}</p>
+                                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full data-mono">{h.points} Poin</span>
                                </div>
                             </div>
                           ))}

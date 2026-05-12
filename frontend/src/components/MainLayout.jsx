@@ -42,41 +42,53 @@ function Sidebar({ user, activePage, onNavigate, onLogout, isCollapsed, setIsCol
   });
 
   return (
-    <div className="flex flex-col h-full bg-card border-r">
-      {/* Brand Header */}
+    <div className="flex flex-col h-full bg-muted border-r border-border/50">
+      {/* Brand Header - Precise h-16 */}
       <div className={cn(
-        "h-20 flex items-center px-4 border-b transition-all duration-300",
-        isCollapsed && !isMobile ? "justify-center px-2" : "justify-between px-6"
+        "h-16 flex items-center border-b border-border/50 transition-all duration-300",
+        isCollapsed && !isMobile ? "justify-center px-0" : "px-6 justify-between"
       )}>
-        <div className="flex items-center gap-3 px-4 py-6 border-b border-white/5">
-          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-black/20 shrink-0">
-            <span className="text-xl font-black text-slate-900">K</span>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
+            <span className="text-sm font-black text-white">K</span>
           </div>
-          <div className={cn("transition-all duration-300", isCollapsed ? "opacity-0 w-0" : "opacity-100")}>
-            <h1 className="text-lg font-black tracking-tighter text-white leading-none">KEN</h1>
-            <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">Kitchen Enterprise</p>
-          </div>
+          {(!isCollapsed || isMobile) && (
+            <div className="transition-all duration-300">
+              <h1 className="text-sm font-black tracking-tighter text-foreground leading-none">KEN</h1>
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Enterprise</p>
+            </div>
+          )}
         </div>
-        {!isMobile && (
+        {!isMobile && !isCollapsed && (
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex h-7 w-7 rounded-lg hover:bg-accent hover:text-white"
+            onClick={() => setIsCollapsed(true)}
+            className="h-7 w-7 rounded-md hover:bg-background"
           >
-            {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+            <ChevronLeft size={14} className="text-muted-foreground" />
+          </Button>
+        )}
+        {!isMobile && isCollapsed && (
+           <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsCollapsed(false)}
+            className="h-7 w-7 rounded-md hover:bg-background"
+          >
+            <ChevronRight size={14} className="text-muted-foreground" />
           </Button>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto py-4 px-2 space-y-6">
+      <div className="flex-1 overflow-y-auto py-6 px-3 space-y-8 no-scrollbar">
         {['Utama', 'Gudang', 'Pengadaan', 'Bisnis', 'Enterprise', 'Sistem'].map(group => {
           const items = visibleNavItems.filter(item => item.group === group);
           if (items.length === 0) return null;
           return (
             <div key={group} className="space-y-1">
               {(!isCollapsed || isMobile) && (
-                <h4 className="px-3 mb-2 text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground/50">
+                <h4 className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
                   {group}
                 </h4>
               )}
@@ -89,16 +101,16 @@ function Sidebar({ user, activePage, onNavigate, onLogout, isCollapsed, setIsCol
                     onClick={() => onNavigate(item.id)}
                     title={isCollapsed && !isMobile ? item.label : ''}
                     className={cn(
-                      "w-full flex items-center gap-3 h-10 rounded-xl transition-all duration-200 px-3 text-left",
+                      "w-full flex items-center gap-3 h-9 rounded-md transition-all duration-200 px-3 text-left relative",
                       isActive
-                        ? "bg-accent text-white font-bold shadow-md shadow-accent/20"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
-                      isCollapsed && !isMobile && "justify-center px-0 w-10 mx-auto"
+                        ? "bg-amber-400 text-zinc-950 font-bold"
+                        : "text-muted-foreground hover:bg-background/50 hover:text-foreground",
+                      isCollapsed && !isMobile && "justify-center px-0 w-9 mx-auto"
                     )}
                   >
                     <Icon size={18} strokeWidth={isActive ? 2.5 : 1.8} className="shrink-0" />
                     {(!isCollapsed || isMobile) && (
-                      <span className="text-xs font-semibold truncate">{item.label}</span>
+                      <span className="text-sm truncate">{item.label}</span>
                     )}
                   </button>
                 );
@@ -109,28 +121,28 @@ function Sidebar({ user, activePage, onNavigate, onLogout, isCollapsed, setIsCol
       </div>
 
       {/* User Profile */}
-      <div className="p-3 border-t">
+      <div className="p-4 border-t border-border/50 bg-background/20">
         <div className={cn(
-          "flex items-center gap-3 p-2 rounded-xl bg-muted/30 hover:bg-muted/50 transition-all",
+          "flex items-center gap-3 p-1.5 rounded-lg border border-transparent transition-all",
           isCollapsed && !isMobile && "justify-center"
         )}>
           <div className="relative shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white text-xs font-black">
+            <div className="w-8 h-8 rounded-md bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 text-xs font-bold">
               {user?.name?.[0] || 'U'}
             </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-background" />
+            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-muted" />
           </div>
           {(!isCollapsed || isMobile) && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold truncate">{user?.name}</p>
-              <p className="text-[9px] text-muted-foreground uppercase tracking-wider truncate">{user?.role}</p>
+              <p className="text-xs font-bold truncate text-foreground">{user?.name}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider truncate font-medium">{user?.role}</p>
             </div>
           )}
           {(!isCollapsed || isMobile) && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 rounded-lg shrink-0 text-muted-foreground hover:text-destructive"
+              className="h-8 w-8 rounded-md shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
               onClick={onLogout}
             >
               <LogOut size={14} />
@@ -169,13 +181,13 @@ export default function MainLayout({ children, user, activePage, onNavigate, onL
         "lg:ml-64",
         isCollapsed && "lg:ml-16"
       )}>
-        {/* Topbar */}
-        <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b">
+        {/* Topbar - Precise h-16 */}
+        <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50">
           <div className="flex items-center gap-4">
             {/* Mobile menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden">
+                <Button variant="ghost" size="icon" className="lg:hidden h-9 w-9">
                   <Menu size={20} />
                 </Button>
               </SheetTrigger>
@@ -194,36 +206,35 @@ export default function MainLayout({ children, user, activePage, onNavigate, onL
               </SheetContent>
             </Sheet>
 
-            {/* Page title */}
+            {/* Page title - Enterprise Heading/M */}
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-bold text-muted-foreground capitalize tracking-wide">
-                {activePage.replace('_', ' ')}
-              </h1>
-              <Sparkles size={12} className="text-accent" />
+              <h2 className="text-base font-bold text-foreground capitalize tracking-tight">
+                {activePage.replace('-', ' ').replace('_', ' ')}
+              </h2>
             </div>
           </div>
 
           {/* Right side controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {/* System status */}
-            <div className="hidden md:flex items-center gap-2 text-xs text-emerald-600 font-semibold">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-500/5 rounded-full border border-emerald-500/10 text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-              Online
+              Nodes Active
             </div>
 
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-xl">
-              <Bell size={18} />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-accent rounded-full border border-background" />
+            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-md border border-transparent hover:border-border hover:bg-muted">
+              <Bell size={18} className="text-muted-foreground" />
+              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full border border-background" />
             </Button>
 
-            <Button variant="ghost" size="icon" onClick={onToggleTheme} className="h-9 w-9 rounded-xl">
-              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            <Button variant="ghost" size="icon" onClick={onToggleTheme} className="h-9 w-9 rounded-md border border-transparent hover:border-border hover:bg-muted">
+              {theme === 'light' ? <Moon size={18} className="text-muted-foreground" /> : <Sun size={18} className="text-muted-foreground" />}
             </Button>
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-[1800px] w-full mx-auto">
+        {/* Page Content - SaaS Compact but Breathable */}
+        <main className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto animate-in fade-in duration-500">
           {children}
         </main>
 

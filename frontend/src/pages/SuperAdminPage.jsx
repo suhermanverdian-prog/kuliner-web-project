@@ -82,45 +82,49 @@ export default function SuperAdminPage() {
 
   if (loading && tenants.length === 0) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-      <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-      <p className="text-muted-foreground font-bold animate-pulse uppercase tracking-widest text-[10px]">Menghubungkan ke Pusat Server...</p>
+      <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <p className="text-muted-foreground font-medium animate-pulse uppercase tracking-widest text-[10px] data-mono">Establishing Secure Node Connection...</p>
     </div>
   );
 
   return (
-    <div className="space-y-10 pb-10 animate-in fade-in duration-700">
+    <div className="space-y-8 pb-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
            <div className="flex items-center gap-3 mb-2">
-              <span className="px-3 py-1 bg-primary text-white text-[9px] font-black uppercase tracking-widest rounded-full">System Owner Access</span>
-              <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-500 animate-pulse"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Server Online</span>
+              <span className="px-2.5 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider rounded border border-primary/20">System Owner Access</span>
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-500"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Nodes Online</span>
            </div>
-           <h2 className="text-4xl font-black tracking-tighter text-primary">SuperAdmin Hub</h2>
-           <p className="text-muted-foreground mt-1 font-medium">Panel kendali pusat untuk manajemen platform SaaS <span className="text-accent font-bold">KEN</span> &mdash; Kitchen Enterprise Nodes.</p>
+           <h2 className="text-3xl font-bold tracking-tight text-text-primary">SuperAdmin Hub</h2>
+           <p className="text-sm text-text-secondary mt-1">
+             Pusat kendali platform SaaS <span className="text-primary font-bold">KEN</span> &mdash; Kitchen Enterprise Nodes.
+           </p>
         </div>
         <div className="flex gap-3">
-           <Button variant="outline" className="h-12 font-bold" onClick={fetchTenants}><RefreshCw className="mr-2 h-4 w-4" /> Sinkronisasi</Button>
-           <Button className="h-12 px-8 font-black bg-accent hover:bg-accent/90 shadow-xl shadow-accent/20">+ Daftarkan Client</Button>
+           <Button variant="outline" size="sm" onClick={fetchTenants} className="h-9 px-4">
+             <RefreshCw className="mr-2 h-4 w-4" /> Sinkronisasi
+           </Button>
+           <Button size="sm" className="h-9 px-6 font-bold shadow-lg shadow-primary/10">+ Registrasi Client</Button>
         </div>
       </div>
 
-      {/* KPI Stats */}
+      {/* KPI Stats - 8px Snap */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
          {[
-           { label: 'Total Client', val: tenants.length, icon: Globe, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-           { label: 'Active Subscription', val: tenants.filter(t=>t.is_active).length, icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-           { label: 'Premium Tier', val: tenants.filter(t=>t.tier==='pro' || t.tier==='enterprise').length, icon: ShieldCheck, color: 'text-accent', bg: 'bg-accent/10' },
-           { label: 'System Health', val: '99.9%', icon: Activity, color: 'text-purple-600', bg: 'bg-purple-600/10' },
+           { label: 'Total Client', val: tenants.length, icon: Globe, color: 'text-text-primary', bg: 'bg-subtle' },
+           { label: 'Subskripsi Aktif', val: tenants.filter(t=>t.is_active).length, icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+           { label: 'Tier Enterprise', val: tenants.filter(t=>t.tier==='enterprise').length, icon: ShieldCheck, color: 'text-primary', bg: 'bg-primary/10' },
+           { label: 'Node Health', val: '99.9%', icon: Activity, color: 'text-info', bg: 'bg-info/10' },
          ].map((s, i) => (
-           <Card key={i} className="border-none shadow-md bg-card group hover:scale-[1.02] transition-all">
-             <CardContent className="p-6 flex items-center justify-between">
+           <Card key={i} className="group hover:border-border-strong transition-all">
+             <CardContent className="p-5 flex items-center justify-between">
                 <div>
-                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{s.label}</p>
-                   <p className={cn("text-3xl font-black mt-1", s.color)}>{s.val}</p>
+                   <p className="text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">{s.label}</p>
+                   <p className={cn("text-2xl font-bold mt-1 data-mono", s.color)}>{s.val}</p>
                 </div>
-                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner", s.bg)}>
-                   <s.icon size={24} className={cn("group-hover:scale-110 transition-transform", s.color)} />
+                <div className={cn("w-10 h-10 rounded-md flex items-center justify-center border border-border-subtle", s.bg)}>
+                   <s.icon size={20} className={cn("group-hover:scale-110 transition-transform", s.color)} />
                 </div>
              </CardContent>
            </Card>
@@ -128,18 +132,18 @@ export default function SuperAdminPage() {
       </div>
 
       {/* Main Control Panel */}
-      <Card className="border-none shadow-2xl bg-card overflow-hidden rounded-[2.5rem]">
-         <CardHeader className="p-8 border-b bg-muted/10">
+      <Card className="overflow-hidden">
+         <CardHeader className="border-b bg-subtle/30">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                <div>
-                  <CardTitle className="text-xl font-black">Manajemen Tenant</CardTitle>
-                  <CardDescription className="text-xs uppercase font-bold tracking-widest mt-1">Konfigurasi Hak Akses & Fitur Global Client</CardDescription>
+                  <CardTitle className="text-lg font-bold">Manajemen Tenant</CardTitle>
+                  <CardDescription className="text-xs font-medium text-text-tertiary mt-0.5">Konfigurasi Hak Akses & Fitur Global Client</CardDescription>
                </div>
-               <div className="relative group min-w-[300px]">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={18} />
+               <div className="relative group min-w-[320px]">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-primary transition-colors" size={16} />
                   <Input 
-                    className="pl-12 h-12 rounded-2xl border-none bg-muted/20 focus:bg-background shadow-inner font-bold" 
-                    placeholder="Cari nama bisnis..." 
+                    className="pl-10 h-9" 
+                    placeholder="Cari nama bisnis atau ID..." 
                     value={search} onChange={e => setSearch(e.target.value)}
                   />
                </div>
@@ -148,37 +152,37 @@ export default function SuperAdminPage() {
          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
                <thead>
-                  <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
-                     <th className="px-8 py-4">Client / Bisnis</th>
-                     <th className="px-8 py-4">Paket Langganan</th>
-                     <th className="px-8 py-4">Kustomisasi Fitur</th>
-                     <th className="px-8 py-4">Status & Billing</th>
-                     <th className="px-8 py-4 text-right">Aksi</th>
+                  <tr className="bg-subtle text-[11px] font-semibold uppercase tracking-wider text-text-secondary border-b border-border-subtle">
+                     <th className="px-6 py-3">Client / Bisnis</th>
+                     <th className="px-6 py-3">Paket Langganan</th>
+                     <th className="px-6 py-3">Kustomisasi Fitur</th>
+                     <th className="px-6 py-3">Status & Billing</th>
+                     <th className="px-6 py-3 text-right">Aksi</th>
                   </tr>
                </thead>
-               <tbody className="divide-y">
+               <tbody className="divide-y divide-border-subtle">
                   {filtered.map(t => (
-                    <tr key={t.id} className="hover:bg-muted/10 transition-colors group">
-                       <td className="px-8 py-6">
+                    <tr key={t.id} className="hover:bg-subtle/50 transition-colors group">
+                       <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
-                             <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center text-xl font-black shadow-sm group-hover:bg-accent group-hover:text-white transition-all">
+                             <div className="w-10 h-10 rounded-md bg-subtle flex items-center justify-center text-lg font-bold text-text-primary border border-border-subtle group-hover:bg-primary group-hover:text-white transition-all">
                                 {t.name[0]}
                              </div>
                              <div>
-                                <p className="text-sm font-black group-hover:text-accent transition-colors">{t.name}</p>
-                                <p className="text-[10px] text-muted-foreground font-bold flex items-center gap-1 uppercase">
-                                   <Calendar size={10} /> Terdaftar: {new Date(t.created_at).toLocaleDateString('id-ID')}
+                                <p className="text-sm font-semibold text-text-primary group-hover:text-primary transition-colors">{t.name}</p>
+                                <p className="text-[11px] text-text-tertiary font-medium flex items-center gap-1 uppercase">
+                                   <Calendar size={10} /> Terdaftar: <span className="data-mono">{new Date(t.created_at).toLocaleDateString('id-ID')}</span>
                                 </p>
                              </div>
                           </div>
                        </td>
-                       <td className="px-8 py-6">
+                       <td className="px-6 py-4">
                           <select 
                             value={t.tier} 
                             onChange={(e) => changeTier(t, e.target.value)}
                             className={cn(
-                              "h-10 px-4 rounded-xl border-2 font-black text-xs uppercase tracking-widest outline-none transition-all",
-                              t.tier === 'pro' || t.tier === 'franchise' ? "bg-accent/5 border-accent text-accent" : "bg-muted border-transparent"
+                              "h-9 px-3 rounded-md border text-[11px] font-bold uppercase tracking-wider outline-none transition-all cursor-pointer",
+                              t.tier === 'enterprise' || t.tier === 'pro' ? "bg-primary/5 border-primary/30 text-primary" : "bg-subtle border-border-strong text-text-secondary"
                             )}
                           >
                              <option value="lite">LITE</option>
@@ -186,45 +190,45 @@ export default function SuperAdminPage() {
                              <option value="enterprise">ENTERPRISE</option>
                           </select>
                        </td>
-                       <td className="px-8 py-6">
+                       <td className="px-6 py-4">
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="text-xs font-bold"
+                            className="h-8 text-[11px] font-bold uppercase tracking-wider"
                             onClick={() => setEditingFeatures(t)}
                           >
                             <Settings size={14} className="mr-2" /> Atur Fitur
                           </Button>
                        </td>
-                       <td className="px-8 py-6">
+                       <td className="px-6 py-4">
                           <div className={cn(
-                            "inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm",
-                            t.is_active ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-destructive/10 text-destructive border-destructive/20"
+                            "inline-flex items-center gap-2 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border",
+                            t.is_active ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-error/10 text-error border-error/20"
                           )}>
-                             <div className={cn("w-1.5 h-1.5 rounded-full", t.is_active ? "bg-emerald-500 animate-pulse" : "bg-destructive")} />
-                             {t.is_active ? 'Subscription Active' : 'Account Suspended'}
+                             <div className={cn("w-1.5 h-1.5 rounded-full", t.is_active ? "bg-emerald-500 animate-pulse" : "bg-error")} />
+                             {t.is_active ? 'Active' : 'Suspended'}
                           </div>
                        </td>
-                       <td className="px-8 py-6 text-right">
+                       <td className="px-6 py-4 text-right">
                           <div className="flex justify-end gap-2">
                              <Button 
                                variant={t.is_active ? "destructive" : "default"} 
                                size="sm"
-                               className="h-9 px-4 font-black text-[10px] uppercase tracking-widest rounded-xl"
+                               className="h-8 px-3 text-[10px] uppercase tracking-wider"
                                onClick={() => toggleStatus(t)}
                              >
                                 {t.is_active ? 'Suspend' : 'Activate'}
                              </Button>
-                             <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl"><MoreHorizontal size={16} /></Button>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md"><MoreHorizontal size={14} /></Button>
                           </div>
                        </td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
                     <tr>
-                       <td colSpan="5" className="py-24 text-center opacity-20 space-y-4">
-                          <Shield size={64} className="mx-auto" strokeWidth={1} />
-                          <p className="text-xl font-black uppercase tracking-[0.2em]">Tenant Tidak Ditemukan</p>
+                       <td colSpan="5" className="py-20 text-center opacity-40 space-y-4">
+                          <Shield size={48} className="mx-auto text-text-tertiary" strokeWidth={1.5} />
+                          <p className="text-sm font-semibold uppercase tracking-widest text-text-tertiary">Client Tidak Ditemukan</p>
                        </td>
                     </tr>
                   )}
@@ -234,57 +238,57 @@ export default function SuperAdminPage() {
       </Card>
 
       {/* Security Info Banner */}
-      <div className="p-8 bg-blue-500/5 border-2 border-dashed border-blue-500/20 rounded-[2.5rem] flex flex-col md:flex-row items-center gap-6">
-         <div className="w-16 h-16 bg-blue-500 rounded-[1.5rem] flex items-center justify-center text-white shadow-xl shadow-blue-500/20 shrink-0">
-            <ShieldCheck size={32} />
+      <div className="p-6 bg-info/5 border border-info/20 rounded-xl flex flex-col md:flex-row items-center gap-6">
+         <div className="w-12 h-12 bg-info rounded-lg flex items-center justify-center text-white shadow-lg shadow-info/20 shrink-0">
+            <ShieldCheck size={24} />
          </div>
          <div className="flex-1 space-y-1 text-center md:text-left">
-            <p className="text-lg font-black text-blue-600">Protokol Keamanan Level Tinggi</p>
-            <p className="text-sm font-medium text-muted-foreground leading-relaxed">
-               Anda sedang berada di dashboard pusat. Seluruh aktivitas audit log terekam secara otomatis. Pastikan hanya merubah konfigurasi tier atas izin manajerial atau kontrak berlangganan yang sah.
+            <p className="text-base font-bold text-info">Protokol Keamanan Level Tinggi</p>
+            <p className="text-xs font-medium text-text-secondary leading-relaxed">
+               Anda sedang berada di dashboard pusat. Seluruh aktivitas audit log terekam secara otomatis. Pastikan hanya merubah konfigurasi tier atas izin manajerial yang sah.
             </p>
          </div>
-         <Button className="bg-blue-600 hover:bg-blue-700 h-12 px-8 font-black rounded-xl">LIHAT LOG AUDIT</Button>
+         <Button variant="outline" className="border-info/30 text-info hover:bg-info/10 h-9 px-6 text-xs font-bold uppercase tracking-wider">Audit Log</Button>
       </div>
 
       {/* Feature Flag Modal */}
       {editingFeatures && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in">
-          <Card className="w-full max-w-2xl shadow-2xl bg-background border-none overflow-hidden flex flex-col max-h-[90vh]">
-            <CardHeader className="bg-muted/30 border-b flex flex-row items-start justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+          <Card className="w-full max-w-2xl shadow-2xl bg-card border-border-subtle overflow-hidden flex flex-col max-h-[90vh]">
+            <CardHeader className="bg-subtle/50 border-b flex flex-row items-start justify-between p-6">
               <div>
-                <CardTitle className="text-2xl font-black">{editingFeatures.name}</CardTitle>
-                <CardDescription className="uppercase font-bold tracking-widest text-xs mt-1">Feature Flags &amp; Overrides</CardDescription>
+                <CardTitle className="text-xl font-bold">{editingFeatures.name}</CardTitle>
+                <CardDescription className="uppercase font-bold tracking-widest text-[10px] text-primary mt-1">Feature Flags &amp; Overrides</CardDescription>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => setEditingFeatures(null)}><X size={20} /></Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md" onClick={() => setEditingFeatures(null)}><X size={18} /></Button>
             </CardHeader>
-            <CardContent className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            <CardContent className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 no-scrollbar">
               {['Core', 'Produksi', 'Pengadaan', 'Laporan', 'Keuangan', 'Bisnis', 'Enterprise'].map(group => (
                 <div key={group} className="space-y-3 col-span-1 md:col-span-2">
-                  <h4 className="text-sm font-black uppercase tracking-widest text-accent border-b pb-2">{group}</h4>
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-text-tertiary border-b border-border-subtle pb-2">{group}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {FEATURE_CATALOG.filter(f => f.group === group).map(f => {
                       const isActive = resolveFeatures(editingFeatures)[f.key];
                       const isOverride = editingFeatures.feature_overrides && (f.key in editingFeatures.feature_overrides);
                       
                       return (
-                        <div key={f.key} className="flex items-center justify-between p-3 rounded-xl border bg-card">
+                        <div key={f.key} className="flex items-center justify-between p-3 rounded-md border border-border-subtle bg-subtle/20 hover:bg-subtle/40 transition-colors">
                           <div className="flex items-center gap-3">
-                            <span className="text-xl">{f.icon}</span>
+                            <span className="text-lg">{f.icon}</span>
                             <div>
-                              <p className="text-sm font-bold leading-none">{f.label}</p>
-                              <p className="text-[10px] text-muted-foreground mt-1">{f.description}</p>
+                              <p className="text-[13px] font-semibold text-text-primary leading-none">{f.label}</p>
+                              <p className="text-[10px] text-text-tertiary mt-1 font-medium">{f.description}</p>
                             </div>
                           </div>
                           <button 
                             onClick={() => toggleFeatureOverride(editingFeatures, f.key)}
                             className={cn(
-                              "w-10 h-6 rounded-full transition-colors relative flex items-center",
-                              isActive ? "bg-emerald-500" : "bg-muted-foreground/30",
-                              isOverride ? "ring-2 ring-accent ring-offset-2 ring-offset-background" : ""
+                              "w-9 h-5 rounded-full transition-colors relative flex items-center",
+                              isActive ? "bg-emerald-500" : "bg-text-tertiary/30",
+                              isOverride ? "ring-2 ring-primary ring-offset-2 ring-offset-bg-card" : ""
                             )}
                           >
-                            <span className={cn("w-4 h-4 bg-white rounded-full transition-transform absolute left-1", isActive ? "translate-x-4" : "translate-x-0")} />
+                            <span className={cn("w-3.5 h-3.5 bg-white rounded-full shadow-sm transition-transform absolute left-0.5", isActive ? "translate-x-4" : "translate-x-0")} />
                           </button>
                         </div>
                       );
@@ -293,9 +297,9 @@ export default function SuperAdminPage() {
                 </div>
               ))}
             </CardContent>
-            <CardFooter className="bg-muted/10 p-4 border-t flex justify-between">
-              <Button variant="outline" onClick={() => resetFeatureOverrides(editingFeatures)}>Reset ke Default {editingFeatures.tier.toUpperCase()}</Button>
-              <Button onClick={() => setEditingFeatures(null)}>Selesai</Button>
+            <CardFooter className="bg-subtle/30 p-4 border-t flex justify-between gap-3">
+              <Button variant="outline" size="sm" className="text-[10px] uppercase font-bold" onClick={() => resetFeatureOverrides(editingFeatures)}>Reset ke Default {editingFeatures.tier}</Button>
+              <Button size="sm" className="px-6 font-bold" onClick={() => setEditingFeatures(null)}>Simpan Perubahan</Button>
             </CardFooter>
           </Card>
         </div>

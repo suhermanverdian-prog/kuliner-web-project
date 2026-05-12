@@ -37,7 +37,7 @@ function KPICard({ label, value, sub, icon: Icon, delta, colorClass }) {
         <div className="flex justify-between items-start">
           <div className="space-y-1">
             <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">{label}</p>
-            <h3 className="text-xl font-black tracking-tight">{value}</h3>
+            <h3 className="text-xl font-black tracking-tight data-mono">{value}</h3>
             {sub && <p className="text-[9px] text-muted-foreground font-bold">{sub}</p>}
           </div>
           <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", colorClass)}>
@@ -48,10 +48,10 @@ function KPICard({ label, value, sub, icon: Icon, delta, colorClass }) {
           <div className="mt-3 flex items-center gap-2">
             <div className={cn(
               "flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase",
-              isUp ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive"
+              isUp ? "bg-emerald-500 text-zinc-900" : "bg-destructive text-white"
             )}>
               {isUp ? <TrendingUp size={9} /> : <TrendingDown size={9} />}
-              {Math.abs(delta)}%
+              <span className="data-mono">{Math.abs(delta)}%</span>
             </div>
             <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-tighter">vs periode lalu</span>
           </div>
@@ -196,13 +196,16 @@ export default function LaporanPage() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex bg-muted/20 p-1 rounded-2xl border shrink-0">
             {PERIODS.map(p => (
-              <Button 
-                key={p.key} variant={period === p.key ? "secondary" : "ghost"} 
-                className={cn("h-10 px-4 font-bold rounded-xl", period === p.key && "bg-background shadow-sm")}
+              <button 
+                key={p.key} 
+                className={cn(
+                  "h-8 px-4 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all", 
+                  period === p.key ? "active-state shadow-sm" : "text-text-tertiary hover:text-text-secondary"
+                )}
                 onClick={() => setPeriod(p.key)}
               >
                 {p.label}
-              </Button>
+              </button>
             ))}
           </div>
           {period === 'custom' && (
@@ -284,12 +287,12 @@ export default function LaporanPage() {
                     <p className="text-xs font-bold flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-accent" /> {m.name}
                     </p>
-                    <p className="text-sm font-black">{m.pct}%</p>
+                    <p className="text-sm font-black data-mono">{m.pct}%</p>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div className="h-full bg-accent transition-all duration-1000" style={{ width: `${m.pct}%` }} />
                   </div>
-                  <p className="text-[10px] text-muted-foreground font-bold text-right">{formatCurrency(m.amount)}</p>
+                  <p className="text-[10px] text-muted-foreground font-bold text-right data-mono">{formatCurrency(m.amount)}</p>
                 </div>
               ))}
               {!payment.methods?.length && (
@@ -321,7 +324,7 @@ export default function LaporanPage() {
                     <p className="text-[10px] text-muted-foreground font-bold mt-1 uppercase tracking-tighter">{formatCurrency(p.revenue)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-black text-accent">{p.qty}</p>
+                    <p className="text-sm font-black text-accent data-mono">{p.qty}</p>
                     <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Qty</p>
                   </div>
                 </div>
@@ -369,10 +372,10 @@ export default function LaporanPage() {
              <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-6">
                    <div>
-                     <p className="text-3xl font-black text-destructive">{formatCurrency(waste.totalWaste)}</p>
+                     <p className="text-3xl font-black text-destructive data-mono">{formatCurrency(waste.totalWaste)}</p>
                      <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest mt-1">Estimasi Kerugian</p>
                    </div>
-                   <div className="w-16 h-16 rounded-full border-4 border-destructive/20 flex items-center justify-center text-xs font-black text-destructive">
+                   <div className="w-16 h-16 rounded-full border-4 border-destructive/20 flex items-center justify-center text-xs font-black text-destructive data-mono">
                       {waste.wasteRatio || 0}%
                    </div>
                 </div>
@@ -380,7 +383,7 @@ export default function LaporanPage() {
                    {waste.categories?.map((c, i) => (
                      <div key={i} className="flex justify-between text-[10px] font-bold uppercase tracking-tighter text-muted-foreground">
                         <span>• {c.name}</span>
-                        <span>{formatCurrency(c.amount)}</span>
+                        <span className="data-mono">{formatCurrency(c.amount)}</span>
                      </div>
                    ))}
                 </div>
@@ -427,33 +430,33 @@ export default function LaporanPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-muted/30 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
-                  <th className="px-6 py-4">Waktu</th>
-                  <th className="px-6 py-4">Nama Bahan</th>
-                  <th className="px-6 py-4">Tipe</th>
-                  <th className="px-6 py-4">Perubahan</th>
-                  <th className="px-6 py-4">Saldo Stok</th>
-                  <th className="px-6 py-4">PIC / Pelaku</th>
-                  <th className="px-6 py-4">Alasan</th>
+                <tr className="bg-subtle text-[11px] font-semibold uppercase tracking-wider text-text-secondary border-b border-border-subtle">
+                  <th className="px-6 py-3">Waktu</th>
+                  <th className="px-6 py-3">Nama Bahan</th>
+                  <th className="px-6 py-3">Tipe</th>
+                  <th className="px-6 py-3">Perubahan</th>
+                  <th className="px-6 py-3">Saldo Stok</th>
+                  <th className="px-6 py-3">PIC / Pelaku</th>
+                  <th className="px-6 py-3">Alasan</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {inventoryLogs.map(log => (
                   <tr key={log.id} className="text-sm hover:bg-muted/5">
-                    <td className="px-6 py-4 text-muted-foreground font-medium">{new Date(log.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
-                    <td className="px-6 py-4 font-bold">{log.bahan_name}</td>
+                    <td className="px-6 py-4 text-text-tertiary font-medium data-mono">{new Date(log.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
+                    <td className="px-6 py-4 font-bold text-text-primary">{log.bahan_name}</td>
                     <td className="px-6 py-4">
                       <span className={cn(
-                        "px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter",
-                        log.type === 'Waste' || log.type === 'Adjustment' ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700"
+                        "px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
+                        log.type === 'Waste' || log.type === 'Adjustment' ? "active-state border border-primary/20" : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
                       )}>
                         {log.type}
                       </span>
                     </td>
-                    <td className={cn("px-6 py-4 font-black", log.change_qty > 0 ? "text-emerald-600" : "text-destructive")}>
+                    <td className={cn("px-6 py-4 font-bold data-mono", log.change_qty > 0 ? "text-emerald-600" : "text-error")}>
                       {log.change_qty > 0 ? '+' : ''}{log.change_qty}
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground">{log.prev_stock} → <span className="font-bold text-primary">{log.next_stock}</span></td>
+                    <td className="px-6 py-4 text-text-tertiary data-mono">{log.prev_stock} → <span className="font-bold text-primary">{log.next_stock}</span></td>
                     <td className="px-6 py-4 font-bold">{log.user_name}</td>
                     <td className="px-6 py-4 italic text-xs text-muted-foreground">{log.reason}</td>
                   </tr>
@@ -478,7 +481,7 @@ export default function LaporanPage() {
               ].map((item, i) => (
                 <div key={i} className="p-6 text-center space-y-1">
                   <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{item.label}</p>
-                  <p className={cn("text-lg font-black", item.highlight ? "text-accent" : "text-primary")}>{item.value}</p>
+                  <p className={cn("text-lg font-black data-mono", item.highlight ? "text-accent" : "text-primary")}>{item.value}</p>
                 </div>
               ))}
            </div>

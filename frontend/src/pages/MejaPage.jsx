@@ -13,8 +13,8 @@ import { cn } from "../lib/utils";
 
 const STATUS_STYLE = {
   available: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', color: 'text-emerald-600', label: 'Kosong', icon: Armchair },
-  occupied:  { bg: 'bg-destructive/10',  border: 'border-destructive/20',  color: 'text-destructive',  label: 'Terisi', icon: Users },
-  reserved:  { bg: 'bg-amber-500/10', border: 'border-amber-500/20', color: 'text-amber-600', label: 'Reservasi', icon: Bookmark },
+  occupied:  { bg: 'bg-rose-500/10',  border: 'border-rose-500/20',  color: 'text-rose-600',  label: 'Terisi', icon: Users },
+  reserved:  { bg: 'active-state', border: 'border-transparent', color: 'text-zinc-900', label: 'Reservasi', icon: Bookmark },
 };
 
 export default function MejaPage() {
@@ -89,7 +89,7 @@ export default function MejaPage() {
             <CardContent className="p-6 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{s.label}</p>
-                <h3 className={cn("text-3xl font-black mt-1", s.color)}>{s.count}</h3>
+                <h3 className={cn("text-3xl font-black mt-1 data-mono", s.color)}>{s.count}</h3>
               </div>
               <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner", s.bg)}>
                 {s.key === 'available' ? <Armchair className={s.color} /> : s.key === 'occupied' ? <Users className={s.color} /> : <Bookmark className={s.color} />}
@@ -133,8 +133,8 @@ export default function MejaPage() {
                     )}>
                       <Icon className={cn("transition-colors", isSelected ? st.color : "text-muted-foreground group-hover:text-primary")} size={24} />
                     </div>
-                    <p className="text-sm font-black truncate max-w-full">{t.name}</p>
-                    <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-muted-foreground uppercase">
+                    <p className="text-sm font-bold truncate max-w-full data-mono">{t.name}</p>
+                    <div className="flex items-center gap-1 mt-1 text-[10px] font-bold text-muted-foreground uppercase data-mono">
                       <Users size={10} /> {t.capacity}
                     </div>
                     <div className={cn(
@@ -181,8 +181,8 @@ export default function MejaPage() {
                     <Trash2 size={18} />
                   </Button>
                 </div>
-                <CardTitle className="mt-6 text-2xl font-black">{selected.name}</CardTitle>
-                <CardDescription className="flex items-center gap-1"><Users size={14} /> Maks. {selected.capacity} Tamu</CardDescription>
+                <CardTitle className="mt-6 text-2xl font-black data-mono">{selected.name}</CardTitle>
+                <CardDescription className="flex items-center gap-1"><Users size={14} /> Maks. <span className="data-mono">{selected.capacity}</span> Tamu</CardDescription>
               </CardHeader>
               <CardContent className="p-8 space-y-6">
                 <div className="space-y-4">
