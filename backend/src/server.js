@@ -2596,49 +2596,79 @@ app.get('/api/ai/insights', async (req, res) => {
     const outletId = req.headers['x-outlet-id'];
     
     // 1. Ambil data mentah untuk dianalisis
-    const [trx, inventory, po] = await Promise.all([
-      supabase.from('transactions').select('total, created_at').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(50),
+    const [trx, inventory, po, auditLogs] = await Promise.all([
+      supabase.from('transactions').select('total, items, created_at, payment_status').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100),
       supabase.from('bahan').select('name, stock, min_stock, location').eq('tenant_id', tenantId),
-      supabase.from('purchase_orders').select('status').eq('tenant_id', tenantId).eq('status', 'pending')
+      supabase.from('purchase_orders').select('status').eq('tenant_id', tenantId).eq('status', 'pending'),
+      supabase.from('audit_logs').select('*').eq('action_type', 'VOID_TRANSACTION').limit(10)
     ]);
 
     const insights = [];
+    const recentTrx = trx.data || [];
     
-    // --- ANALISIS STOK (Inventory Intelligence) ---
+    // --- 1. ANALISIS MENU (Menu Intelligence) ---
+    if (recentTrx.length > 20) {
+      const itemCounts = {};
+      recentTrx.forEach(t => {
+        const items = Array.isArray(t.items) ? t.items : [];
+        items.forEach(it => {
+          itemCounts[it.name] = (itemCounts[it.name] || 0) + Number(it.qty || 0);
+        });
+      });
+      
+      const sorted = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]);
+      if (sorted.length > 0) {
+        insights.push({
+          type: 'success',
+          title: 'Produk Unggulan (Star)',
+          message: `${sorted[0][0]} adalah produk terlaris Anda saat ini. Pertimbangkan untuk membuat promo bundling dengan produk ini.`,
+          action: 'analitik'
+        });
+        
+        if (sorted.length > 3) {
+          const slowMover = sorted[sorted.length - 1];
+          insights.push({
+            type: 'info',
+            title: 'Analisis Slow Mover',
+            message: `Produk ${slowMover[0]} memiliki penjualan terendah. Pertimbangkan untuk mengevaluasi resep atau posisi di menu.`,
+            action: 'analitik'
+          });
+        }
+      }
+    }
+
+    // --- 2. DETEKSI ANOMALI (Fraud Detection) ---
+    const voidLogs = auditLogs.data || [];
+    if (voidLogs.length > 5) {
+      insights.push({
+        type: 'warning',
+        title: 'Deteksi Anomali Kasir',
+        message: 'Terdeteksi frekuensi pembatalan transaksi (VOID) yang cukup tinggi dalam waktu singkat. Harap lakukan audit pada log aktivitas kasir.',
+        action: 'monitor'
+      });
+    }
+
+    // --- 3. PREDIKSI STOK (Inventory Forecasting) ---
     const lowStock = (inventory.data || []).filter(b => Number(b.stock) <= Number(b.min_stock || 0));
     if (lowStock.length > 0) {
       insights.push({
         type: 'warning',
-        title: 'Restock Kritis',
-        message: `${lowStock.length} bahan baku (termasuk ${lowStock[0].name}) sudah di bawah batas minimum. Segera buat PO untuk menghindari gangguan operasional.`,
+        title: 'Peringatan Stok Kritis',
+        message: `${lowStock.length} bahan baku (termasuk ${lowStock[0].name}) akan segera habis. Segera lakukan pengadaan.`,
         action: 'inventori'
       });
     }
 
-    // --- ANALISIS PENJUALAN (Sales Intelligence) ---
-    const recentTrx = trx.data || [];
-    if (recentTrx.length > 10) {
-      const today = new Date().toISOString().split('T')[0];
-      const todaySales = recentTrx.filter(t => t.created_at.startsWith(today)).reduce((s, t) => s + Number(t.total), 0);
-      
-      if (todaySales > 1000000) {
-        insights.push({
-          type: 'success',
-          title: 'Performa Tinggi',
-          message: `Penjualan hari ini sangat baik! Pertimbangkan untuk menambah staf di jam sibuk besok untuk menjaga kualitas layanan.`,
-          action: 'dashboard'
-        });
-      }
-    }
-
-    // --- ANALISIS PENGADAAN (Procurement Logic) ---
-    const pendingPO = (po.data || []).length;
-    if (pendingPO > 3) {
+    // --- 4. SALES PERFORMANCE (Today's Pulse) ---
+    const today = new Date().toISOString().split('T')[0];
+    const todaySales = recentTrx.filter(t => t.created_at.startsWith(today) && t.payment_status === 'paid').reduce((s, t) => s + Number(t.total), 0);
+    
+    if (todaySales > 1500000) {
       insights.push({
-        type: 'info',
-        title: 'Hambatan Pengadaan',
-        message: `Ada ${pendingPO} pesanan pembelian (PO) yang masih menunggu persetujuan. Segera tindak lanjuti agar stok tidak terhambat.`,
-        action: 'pembelian'
+        type: 'success',
+        title: 'Lonjakan Penjualan',
+        message: 'Penjualan hari ini melampaui target harian. AI menyarankan untuk memastikan ketersediaan bahan baku segar untuk besok.',
+        action: 'dashboard'
       });
     }
 
@@ -2646,8 +2676,8 @@ app.get('/api/ai/insights', async (req, res) => {
     if (insights.length === 0) {
       insights.push({
         type: 'info',
-        title: 'AI Siap Menganalisis',
-        message: 'Lakukan lebih banyak transaksi agar AI dapat memberikan rekomendasi bisnis yang lebih akurat untuk Anda.',
+        title: 'AI Menunggu Data',
+        message: 'Lakukan lebih banyak transaksi agar AI dapat menganalisis pola menu dan memberikan prediksi stok yang akurat.',
         action: 'dashboard'
       });
     }
