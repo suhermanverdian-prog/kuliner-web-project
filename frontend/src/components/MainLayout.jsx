@@ -103,12 +103,12 @@ function Sidebar({ user, activePage, onNavigate, onLogout, isCollapsed, setIsCol
                     className={cn(
                       "w-full flex items-center gap-3 h-9 rounded-md transition-all duration-200 px-3 text-left relative",
                       isActive
-                        ? "bg-amber-400 text-zinc-950 font-bold"
+                        ? "bg-amber-500 text-zinc-900 dark:bg-amber-400 dark:text-zinc-950 font-semibold shadow-sm"
                         : "text-muted-foreground hover:bg-background/50 hover:text-foreground",
                       isCollapsed && !isMobile && "justify-center px-0 w-9 mx-auto"
                     )}
                   >
-                    <Icon size={18} strokeWidth={isActive ? 2.5 : 1.8} className="shrink-0" />
+                    <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} className={cn("shrink-0", isActive ? "text-zinc-900 dark:text-zinc-950" : "text-muted-foreground")} />
                     {(!isCollapsed || isMobile) && (
                       <span className="text-sm truncate">{item.label}</span>
                     )}

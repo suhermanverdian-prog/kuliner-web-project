@@ -561,22 +561,28 @@ export default function LaporanPage() {
              </CardHeader>
              <CardContent className="p-8">
                 <div className="space-y-6">
-                   <div className="flex items-start gap-4 p-6 rounded-3xl bg-muted/20 border border-muted/50">
+                   <div className="flex items-start gap-4 p-6 rounded-3xl bg-muted/20 border border-muted/50 group hover:border-accent/50 transition-colors">
                       <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm shrink-0">
                          <ClipboardCheck className="text-accent" />
                       </div>
-                      <div className="space-y-1">
+                      <div className="flex-1 space-y-1">
                          <h4 className="text-lg font-black">Optimalisasi Stok</h4>
                          <p className="text-sm text-muted-foreground font-medium">Berdasarkan pola penjualan, Anda disarankan untuk meningkatkan stok bahan baku pada hari Kamis & Jumat sebesar 20% untuk menghindari kehilangan potensi omzet.</p>
+                         <Button variant="link" className="p-0 h-auto text-accent font-black text-[10px] uppercase tracking-widest mt-2" onClick={() => window.location.hash = 'inventori'}>
+                            Buka Inventori <ChevronRight size={12} className="ml-1" />
+                         </Button>
                       </div>
                    </div>
-                   <div className="flex items-start gap-4 p-6 rounded-3xl bg-muted/20 border border-muted/50">
+                   <div className="flex items-start gap-4 p-6 rounded-3xl bg-muted/20 border border-muted/50 group hover:border-emerald-500/50 transition-colors">
                       <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm shrink-0">
                          <TrendingUp className="text-emerald-500" />
                       </div>
-                      <div className="space-y-1">
+                      <div className="flex-1 space-y-1">
                          <h4 className="text-lg font-black">Strategi Harga</h4>
                          <p className="text-sm text-muted-foreground font-medium">Ada 3 menu dengan profit margin rendah namun volume tinggi. AI menyarankan penyesuaian harga sebesar Rp 500 - Rp 1.000 untuk meningkatkan laba bersih tanpa mengganggu volume penjualan.</p>
+                         <Button variant="link" className="p-0 h-auto text-emerald-600 font-black text-[10px] uppercase tracking-widest mt-2" onClick={() => window.location.hash = 'menu'}>
+                            Atur Harga Menu <ChevronRight size={12} className="ml-1" />
+                         </Button>
                       </div>
                    </div>
                 </div>
