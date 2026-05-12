@@ -2,7 +2,7 @@ const hostname = window.location.hostname;
 const port = window.location.port;
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? `http://${window.location.hostname}:3001/api`
-  : 'http://localhost:3001/api'; // Force local for now to ensure testing works
+  : 'https://kuliner-web-project.vercel.app/api';
 
 const getHeaders = () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
