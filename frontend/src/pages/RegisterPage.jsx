@@ -49,8 +49,8 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
     <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden font-sans">
       {/* Background Decor */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
-         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent blur-[120px] rounded-full animate-pulse" />
-         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary blur-[120px] rounded-full" />
+         <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-amber-500/10 blur-[120px] rounded-full animate-pulse" />
+         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-zinc-900/10 blur-[120px] rounded-full" />
       </div>
 
       <div className="w-full max-w-[1000px] flex flex-col lg:flex-row gap-0 lg:gap-12 p-4 relative z-10 items-center justify-center">
@@ -58,10 +58,10 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
         {/* Left Side: Benefits (Desktop) */}
         <div className="hidden lg:flex flex-col flex-1 space-y-10 animate-in fade-in slide-in-from-left-12 duration-1000">
            <div className="space-y-4">
-              <Button variant="ghost" className="p-0 h-auto hover:bg-transparent text-accent font-black tracking-widest flex items-center gap-2 group" onClick={onGoLogin}>
+              <Button variant="ghost" className="p-0 h-auto hover:bg-transparent text-amber-600 font-black tracking-widest flex items-center gap-2 group" onClick={onGoLogin}>
                  <ChevronLeft className="group-hover:-translate-x-1 transition-transform" /> KEMBALI KE LOGIN
               </Button>
-              <h1 className="text-5xl font-black text-primary leading-tight">Bergabunglah dengan <span className="text-accent">Elite Club</span> Kami.</h1>
+              <h1 className="text-5xl font-black text-zinc-900 leading-tight">Bergabunglah dengan <span className="text-zinc-950 underline decoration-amber-500 decoration-8 underline-offset-8">Elite Club</span> Kami.</h1>
               <p className="text-lg text-muted-foreground font-medium">Dapatkan akses eksklusif ke promo, reward, dan fitur self-order tercepat.</p>
            </div>
 
@@ -72,7 +72,7 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
                 { icon: Zap, title: 'Antrian Prioritas', desc: 'Pesan via QR & lewati antrian panjang di kasir.' }
               ].map((item, i) => (
                 <div key={i} className="flex gap-4 p-5 rounded-3xl bg-white/50 backdrop-blur-sm border shadow-sm transition-all hover:translate-x-2">
-                   <div className="w-12 h-12 bg-accent rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-accent/20">
+                   <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-zinc-900 shrink-0 shadow-lg shadow-amber-500/20">
                       <item.icon size={24} />
                    </div>
                    <div>
@@ -87,19 +87,19 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
         {/* Right Side: Form Card */}
         <Card className="w-full max-w-[480px] border-none shadow-[0_32px_128px_-32px_rgba(0,0,0,0.2)] bg-background/80 backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-12 duration-1000 rounded-[3rem] overflow-hidden">
            <CardHeader className="text-center pt-12 pb-8 space-y-2">
-              <div className="w-16 h-16 bg-accent mx-auto rounded-2xl flex items-center justify-center shadow-lg shadow-accent/20 mb-4 lg:hidden">
-                 <Coffee className="text-white" size={32} />
+              <div className="w-16 h-16 bg-amber-500 mx-auto rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 mb-4 lg:hidden">
+                 <Coffee className="text-zinc-900" size={32} />
               </div>
-              <CardTitle className="text-3xl font-black tracking-tight">Daftar Member</CardTitle>
+              <CardTitle className="text-3xl font-black tracking-tight text-zinc-900">Daftar Member</CardTitle>
               <CardDescription className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Mulai Perjalanan Anda</CardDescription>
            </CardHeader>
 
            <CardContent className="px-10 pb-10">
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-6">
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Nama Lengkap *</label>
                     <div className="relative group">
-                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={18} />
+                       <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-amber-500 transition-colors" size={18} />
                        <Input className="pl-12 h-12 bg-muted/20 border-transparent focus:bg-background rounded-2xl font-bold" placeholder="cth: Rina Amelia" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
                     </div>
                  </div>
@@ -107,8 +107,8 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Nomor WhatsApp *</label>
                     <div className="relative group">
-                       <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={18} />
-                       <Input className="pl-12 h-12 bg-muted/20 border-transparent focus:bg-background rounded-2xl font-bold" placeholder="cth: 08123456789" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
+                       <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-amber-500 transition-colors" size={18} />
+                       <Input className="pl-12 h-12 bg-muted/20 border-transparent focus:bg-background rounded-2xl font-bold data-mono" placeholder="cth: 08123456789" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} />
                     </div>
                     <p className="text-[9px] text-muted-foreground px-2 italic">Digunakan untuk konfirmasi pesanan & login.</p>
                  </div>
@@ -116,7 +116,7 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest px-2">Email (Opsional)</label>
                     <div className="relative group">
-                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-accent transition-colors" size={18} />
+                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-amber-500 transition-colors" size={18} />
                        <Input className="pl-12 h-12 bg-muted/20 border-transparent focus:bg-background rounded-2xl font-bold" placeholder="rina@example.com" value={form.email} onChange={e => setForm({...form, email: e.target.value})} />
                     </div>
                  </div>
@@ -133,23 +133,22 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
                  </div>
 
                  {error && (
-                   <div className="p-4 rounded-2xl bg-destructive/5 border border-destructive/10 text-destructive text-[11px] font-black flex items-center gap-3 animate-in fade-in zoom-in-95">
+                   <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/10 text-rose-600 text-[11px] font-black flex items-center gap-3 animate-in fade-in zoom-in-95">
                       <Shield size={14} /> {error}
                    </div>
                  )}
 
-                 <Button type="submit" disabled={loading} className="w-full h-14 text-md font-black shadow-xl shadow-accent/20 bg-accent hover:bg-accent/90 rounded-2xl group overflow-hidden relative">
+                 <Button type="submit" disabled={loading} className="w-full h-14 text-md font-black shadow-xl shadow-amber-500/20 bg-amber-500 hover:bg-amber-600 text-zinc-900 group overflow-hidden relative rounded-2xl">
                     <span className="relative z-10 flex items-center gap-2">
                        {loading ? 'Sedang Memproses...' : 'Daftar Sekarang'}
                        {!loading && <Sparkles size={18} className="group-hover:rotate-12 transition-transform" />}
                     </span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-accent to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                  </Button>
 
                  <div className="text-center pt-2">
                     <p className="text-xs font-medium text-muted-foreground">
                        Sudah punya akun? 
-                       <button type="button" onClick={onGoLogin} className="text-accent font-black ml-1 hover:underline uppercase tracking-widest">Login Disini</button>
+                       <button type="button" onClick={onGoLogin} className="text-amber-600 font-black ml-1 hover:underline uppercase tracking-widest">Login Disini</button>
                     </p>
                  </div>
               </form>
@@ -157,7 +156,7 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
 
            <CardFooter className="bg-muted/10 p-8 flex flex-col items-center gap-4 border-t border-muted">
               <div className="flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 transition-all cursor-default">
-                 <Heart className="text-destructive fill-destructive" size={14} />
+                 <Heart className="text-rose-500 fill-rose-500" size={14} />
                  <span className="text-[9px] font-black uppercase tracking-widest">Bergabung dengan 2,400+ member aktif lainnya</span>
               </div>
            </CardFooter>

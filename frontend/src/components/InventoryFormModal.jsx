@@ -12,7 +12,7 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { cn } from "../lib/utils";
 
-export default function InventoryFormModal({ isOpen, onClose, onSave, initialData, locations, inventoryMeta }) {
+export default function InventoryFormModal({ isOpen, onClose, onSave, initialData, locations, inventoryMeta, isSaving }) {
   const categories = inventoryMeta?.categories?.length > 0 ? inventoryMeta.categories : ['Bahan Baku', 'Minuman', 'Makanan', 'Kemasan', 'Lainnya'];
   const packageUnits = inventoryMeta?.packageUnits?.length > 0 ? inventoryMeta.packageUnits : ['Karton', 'Dus', 'Ball', 'Box'];
   const itemUnits = inventoryMeta?.itemUnits?.length > 0 ? inventoryMeta.itemUnits : ['Botol', 'Pcs', 'Gram', 'ML', 'Sachet', 'Kg', 'Liter'];
@@ -45,21 +45,24 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
-        setForm({ ...initialFormState, ...initialData, storageType: initialData.storageType || 'Satuan Biasa' });
+        const cost = initialData.cost || initialData.price || '';
+        const price = initialData.price || initialData.cost || '';
+        setForm({ ...initialFormState, ...initialData, cost, price, storageType: initialData.storageType || 'Satuan Biasa' });
       } else {
         setForm({ ...initialFormState, category: categories[0], unit: itemUnits[0], packageUnit: packageUnits[0], packageItemUnit: itemUnits[0], location: locations[0]?.name || '' });
       }
     }
-  }, [isOpen, initialData, inventoryMeta]);
+  }, [isOpen, initialData, inventoryMeta, locations]);
 
   if (!isOpen) return null;
 
   const handleSave = () => {
-    if (!form.name || !form.location) return alert('Nama dan Lokasi wajib diisi!');
+    if (!form.name?.trim() || !form.location?.trim()) return alert('Nama dan Lokasi wajib diisi!');
     let normalizedData = { ...form };
     normalizedData.stock = Number(form.stock) || 0;
     normalizedData.minStock = Number(form.minStock) || 0;
-    normalizedData.price = Number(form.price) || 0;
+    normalizedData.cost = Number(form.price) || Number(form.cost) || 0;
+    normalizedData.price = normalizedData.cost;
     
     if (form.storageType === 'Kemasan') {
       normalizedData.packageStock = Number(form.packageStock) || 0;
@@ -305,7 +308,7 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                           <div className="text-right space-y-1">
                              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Harga / Unit</p>
                              <p className="text-lg font-black text-accent">
-                                {formatRupiah(form.storageType === 'Kemasan' ? calculatedUnitPrice : form.price)}
+                                {formatRupiah(form.storageType === 'Kemasan' ? calculatedUnitPrice : (form.cost || form.price || 0))}
                              </p>
                           </div>
                        </div>
@@ -343,8 +346,21 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
 
         <div className="p-5 border-t bg-background flex items-center justify-end gap-3">
            <Button variant="ghost" className="h-11 px-6 font-bold text-muted-foreground" onClick={onClose}>Batalkan</Button>
-           <Button className="h-11 px-10 font-black bg-accent hover:bg-accent/90 shadow-xl shadow-accent/20 gap-2" onClick={handleSave}>
-              <Save size={18} /> {initialData ? 'Perbarui Barang' : 'Daftarkan Barang'}
+           <Button 
+             className="h-11 px-10 font-black bg-accent hover:bg-accent/90 shadow-xl shadow-accent/20 gap-2 min-w-[180px]" 
+             onClick={handleSave}
+             disabled={isSaving}
+           >
+              {isSaving ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Menyimpan...
+                </div>
+              ) : (
+                <>
+                  <Save size={18} /> {initialData ? 'Perbarui Barang' : 'Daftarkan Barang'}
+                </>
+              )}
            </Button>
         </div>
       </Card>

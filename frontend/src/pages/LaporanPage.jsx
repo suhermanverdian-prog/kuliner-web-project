@@ -6,7 +6,7 @@ import {
   Calendar, Download, Printer, Filter,
   AlertTriangle, CheckCircle2, ChevronRight,
   ShoppingBag, Trash2, Lightbulb, ArrowUpRight,
-  ArrowDownRight, RefreshCw, FileText, ChevronDown, ClipboardCheck
+  ArrowDownRight, RefreshCw, FileText, ChevronDown, ClipboardCheck, Lock
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -125,6 +125,12 @@ export default function LaporanPage() {
   const [exporting, setExporting] = useState(false);
   const [activeTab, setActiveTab] = useState('summary');
   const [aiInsights, setAiInsights] = useState([]);
+  const [features, setFeatures] = useState({});
+
+  useEffect(() => {
+    const savedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    setFeatures(savedUser.features || {});
+  }, []);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -220,7 +226,7 @@ export default function LaporanPage() {
           )}
           
           <div className="relative">
-            <Button className="h-12 px-6 font-black gap-2 bg-accent hover:bg-accent/90 shadow-xl shadow-accent/20" onClick={() => setShowExport(!showExport)}>
+            <Button className="h-12 px-6 font-black gap-2 bg-amber-500 hover:bg-amber-600 text-zinc-900 shadow-xl shadow-amber-500/20" onClick={() => setShowExport(!showExport)}>
               <Download size={20} /> Ekspor Laporan <ChevronDown size={16} />
             </Button>
             {showExport && (
@@ -520,25 +526,36 @@ export default function LaporanPage() {
         </>
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {!features.ai_insights ? (
+            <div className="py-24 flex flex-col items-center justify-center text-center space-y-6">
+               <div className="w-20 h-20 rounded-3xl bg-amber-500/10 flex items-center justify-center text-amber-600 shadow-xl border border-amber-500/20">
+                  <Lock size={40} strokeWidth={2.5} />
+               </div>
+               <div className="max-w-md space-y-2">
+                  <h3 className="text-2xl font-black">AI Insights Terkunci</h3>
+                  <p className="text-sm text-muted-foreground font-medium">Fitur analisis bisnis cerdas (Star vs Deadwood, Fraud Detection, Forecasting) hanya tersedia untuk pelanggan **Tier Enterprise**.</p>
+               </div>
+               <Button className="h-12 px-8 rounded-xl font-black bg-amber-500 text-zinc-900 hover:bg-amber-600 shadow-lg shadow-amber-500/20">
+                  Upgrade ke Enterprise Sekarang
+               </Button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {aiInsights.map((ins, i) => (
-              <Card key={i} className="border-none shadow-2xl bg-card overflow-hidden group">
-                <CardHeader className={cn(
-                  "pb-4",
-                  ins.type === 'warning' ? "bg-amber-500/5" : 
-                  ins.type === 'success' ? "bg-emerald-500/5" : "bg-blue-500/5"
-                )}>
-                  <div className="flex items-center gap-3">
+              <Card key={i} className="border-none shadow-2xl bg-card overflow-hidden group border border-muted">
+                <CardHeader className="p-6 bg-muted/5 flex flex-row items-center justify-between border-b">
+                  <div className="flex items-center gap-4">
                     <div className={cn(
-                      "w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-lg",
+                      "w-12 h-12 rounded-2xl flex items-center justify-center text-zinc-900 shadow-lg",
                       ins.type === 'warning' ? "bg-amber-500" : 
-                      ins.type === 'success' ? "bg-emerald-500" : "bg-blue-500"
+                      ins.type === 'success' ? "bg-emerald-500 text-white" : "bg-blue-500 text-white"
                     )}>
                       {ins.type === 'warning' ? <AlertTriangle size={20} /> : <Lightbulb size={20} />}
                     </div>
                     <div>
-                      <CardTitle className="text-sm font-black">{ins.title}</CardTitle>
-                      <CardDescription className="text-[10px] font-bold uppercase tracking-widest">Saran Otomatis AI</CardDescription>
+                      <CardTitle className="text-sm font-black uppercase tracking-tight">{ins.title}</CardTitle>
+                      <p className="text-[9px] font-black uppercase text-muted-foreground tracking-widest mt-1">Saran Otomatis AI</p>
                     </div>
                   </div>
                 </CardHeader>
@@ -588,6 +605,8 @@ export default function LaporanPage() {
                 </div>
              </CardContent>
           </Card>
+            </>
+          )}
         </div>
       )}
     </div>

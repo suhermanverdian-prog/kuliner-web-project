@@ -17,11 +17,18 @@ import {
   Banknote, 
   MapPin,
   Star,
-  CreditCard
+  CreditCard,
+  Landmark,
+  ArrowLeft,
+  X,
+  Smartphone,
+  Coffee,
+  CheckCircle2
 } from 'lucide-react';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { cn } from '../lib/utils';
 
 const printReceipt = (order) => {
   const printWindow = window.open('', '_blank');
@@ -192,9 +199,21 @@ function OrderTracking({ orderId, onBack }) {
                     <span className="font-bold">{formatRupiah(item.price * item.qty)}</span>
                   </div>
                 ))}
-                <div className="pt-3 mt-3 border-t border-dashed flex justify-between items-center">
-                  <span className="font-bold">Total Pembayaran</span>
-                  <span className="text-lg font-black text-primary">{formatRupiah(order.total)}</span>
+                <div className="pt-3 mt-3 border-t border-dashed space-y-2">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="font-bold">Subtotal + Pajak</span>
+                    <span className="font-bold">{formatRupiah(order.total - (order.unique_code || 0))}</span>
+                  </div>
+                  {order.unique_code > 0 && (
+                    <div className="flex justify-between items-center text-sm text-amber-600 font-black">
+                      <span>Kode Unik</span>
+                      <span>+{order.unique_code}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="font-black text-lg">Total Bayar</span>
+                    <span className="text-2xl font-black text-primary">{formatRupiah(order.total)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -221,8 +240,8 @@ function OrderTracking({ orderId, onBack }) {
 const PAYMENT_METHODS = [
   { key: 'Tunai',         label: 'Tunai',        icon: <Banknote size={20} />, desc: 'Bayar ke kasir' },
   { key: 'QRIS',          label: 'QRIS',         icon: <QrCode size={20} />, desc: 'Scan QR Code' },
+  { key: 'Transfer',      label: 'Transfer Bank', icon: <Landmark size={20} />, desc: 'Transfer ke Rekening' },
   { key: 'E-Wallet',      label: 'E-Wallet',     icon: <Wallet size={20} />, desc: 'GoPay / OVO / Dana' },
-  { key: 'Kartu Debit',   label: 'Kartu',        icon: <CreditCard size={20} />, desc: 'Debit / Kredit' },
 ];
 
 function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, defaultTableNum }) {
@@ -255,7 +274,8 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
       const res = await api.checkout(trxData);
       onSuccess(res.id);
     } catch (err) {
-      alert('Gagal mengirim pesanan. Silakan coba lagi.');
+      console.error('Checkout Error:', err);
+      alert(`⚠️ GAGAL MENGIRIM PESANAN: ${err.message}\n\nHarap hubungi kasir jika masalah berlanjut.`);
     } finally {
       setLoading(false);
     }
@@ -298,31 +318,45 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
                   className="rounded-2xl h-12 bg-muted/30 border-none"
                   required
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-muted-foreground uppercase ml-1">Tipe Pesanan</label>
-                  <select 
-                    value={form.orderType}
-                    onChange={e => setForm({...form, orderType: e.target.value})}
-                    className="w-full h-12 rounded-2xl bg-muted/30 border-none px-4 text-sm font-medium outline-none appearance-none"
+                <div className="grid grid-cols-2 gap-4">
+                  <Button 
+                    type="button"
+                    variant={form.orderType === 'Dine-in' ? "default" : "outline"}
+                    onClick={() => setForm({...form, orderType: 'Dine-in'})}
+                    className={cn(
+                      "h-28 flex-col gap-2 rounded-3xl border-2 transition-all",
+                      form.orderType === 'Dine-in' ? "bg-primary border-primary text-white shadow-xl" : "hover:border-primary/50"
+                    )}
                   >
-                    <option value="Dine-in">Dine-in</option>
-                    <option value="Take Away">Take Away</option>
-                  </select>
+                    <Coffee size={24} />
+                    <span className="text-xs font-black uppercase tracking-widest">Makan Sini</span>
+                  </Button>
+
+                  <Button 
+                    type="button"
+                    variant={form.orderType === 'Take Away' ? "default" : "outline"}
+                    onClick={() => setForm({...form, orderType: 'Take Away', tableNum: ''})}
+                    className={cn(
+                      "h-28 flex-col gap-2 rounded-3xl border-2 transition-all",
+                      form.orderType === 'Take Away' ? "bg-accent border-accent text-white shadow-xl" : "hover:border-accent/50"
+                    )}
+                  >
+                    <ShoppingBag size={24} />
+                    <span className="text-xs font-black uppercase tracking-widest">Bawa Pulang</span>
+                  </Button>
                 </div>
-                {form.orderType === 'Dine-in' && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-muted-foreground uppercase ml-1">No. Meja</label>
-                    <Input 
-                      value={form.tableNum}
-                      onChange={e => setForm({...form, tableNum: e.target.value})}
-                      placeholder="Meja"
-                      className="rounded-2xl h-12 bg-muted/30 border-none"
-                    />
-                  </div>
-                )}
               </div>
+              {form.orderType === 'Dine-in' && (
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-muted-foreground uppercase ml-1">No. Meja</label>
+                  <Input 
+                    value={form.tableNum}
+                    onChange={e => setForm({...form, tableNum: e.target.value})}
+                    placeholder="Meja"
+                    className="rounded-2xl h-12 bg-muted/30 border-none"
+                  />
+                </div>
+              )}
             </div>
           </section>
 
@@ -496,11 +530,22 @@ export default function GuestMenuPage({ user, tableFromQR }) {
   const [menu, setMenu] = useState([]);
   const [orderMode, setOrderMode] = useState(tableFromQR ? 'Dine-in' : null);
   const [tableNumber, setTableNumber] = useState(tableFromQR || '');
+  const [activeShift, setActiveShift] = useState(null);
+  const [loadingShift, setLoadingShift] = useState(true);
 
   useEffect(() => {
     const fetchMenu = () => api.getMenu().then(data => setMenu(data));
+    const fetchShift = () => api.getActiveShift().then(data => {
+      setActiveShift(data);
+      setLoadingShift(false);
+    }).catch(() => setLoadingShift(false));
+    
     fetchMenu();
-    const interval = setInterval(fetchMenu, 10000);
+    fetchShift();
+    const interval = setInterval(() => {
+      fetchMenu();
+      fetchShift();
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -562,13 +607,32 @@ export default function GuestMenuPage({ user, tableFromQR }) {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-32 relative">
+      {!activeShift && !loadingShift && !user && (
+        <div className="fixed inset-0 z-[150] flex items-center justify-center bg-background/80 backdrop-blur-xl p-6 text-center">
+          <div className="space-y-6 max-w-sm animate-in zoom-in-95 duration-500">
+             <div className="w-24 h-24 bg-accent/10 rounded-[2.5rem] flex items-center justify-center text-accent mx-auto">
+                <Coffee size={48} className="animate-bounce" />
+             </div>
+             <div className="space-y-2">
+                <h1 className="text-3xl font-black tracking-tight">Outlet Sedang Tutup</h1>
+                <p className="text-sm font-medium text-muted-foreground leading-relaxed">
+                  Mohon maaf, saat ini kami belum menerima pesanan online. <br/>
+                  Silakan datang kembali beberapa saat lagi!
+                </p>
+             </div>
+             <div className="pt-4">
+                <div className="h-1 w-20 bg-accent/20 mx-auto rounded-full" />
+             </div>
+          </div>
+        </div>
+      )}
       {/* Header Glassmorphism */}
       <header className="sticky top-0 z-[100] w-full border-b bg-background/80 backdrop-blur-xl">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground font-black text-xs">BM</div>
-            <span className="font-black text-xl tracking-tight text-primary">KEN</span>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-zinc-900 rounded-lg flex items-center justify-center text-zinc-50 font-black text-xs shadow-lg">BM</div>
+            <span className="font-black text-xl tracking-tighter text-zinc-900 uppercase">KEN</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -601,25 +665,32 @@ export default function GuestMenuPage({ user, tableFromQR }) {
         </div>
       </header>
 
-      {/* Hero Banner */}
-      <div className="relative overflow-hidden bg-primary px-6 pt-10 pb-20 rounded-b-[4rem] shadow-2xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-accent/20 rounded-full blur-3xl -mr-20 -mt-20 animate-pulse" />
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-background/5 rounded-full blur-2xl -ml-10 -mb-10" />
+      {/* Hero Banner - Compact Version */}
+      <div className="relative overflow-hidden bg-zinc-50 px-6 py-10 border-b border-zinc-200">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-[100px] -mr-32 -mt-32" />
         
-        <div className="max-w-3xl mx-auto relative z-10">
-          <p className="text-accent font-black uppercase tracking-[0.2em] text-[10px] mb-3">Selamat Datang</p>
-          <p className="text-4xl md:text-5xl font-black text-white leading-tight mb-4">
-            {user?.name ? `Siap ngopi lagi, ${user.name.split(' ')[0]}?` : 'Nikmati Kopi Terbaik Hari Ini.'}
-          </p>
-          <p className="text-white/60 font-medium text-sm md:text-base max-w-sm">
-            Temukan menu terbaik dan rasakan pengalaman memesan yang mudah dan cepat.
-          </p>
+        <div className="max-w-3xl mx-auto relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-1">
+            <p className="text-amber-600 font-black uppercase tracking-[0.3em] text-[8px] mb-2">Dashboard KEN</p>
+            <h1 className="text-2xl md:text-3xl font-black text-zinc-900 tracking-tighter leading-none">
+              Ringkasan <span className="text-zinc-400">Keuangan & Menu</span>
+            </h1>
+            <p className="text-[10px] md:text-[11px] text-zinc-500 font-medium max-w-[240px] leading-tight">
+              Pantau operasional terintegrasi secara real-time.
+            </p>
+          </div>
+          <div className="hidden md:block pb-1">
+             <div className="flex gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"/> System Active</span>
+                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-zinc-300"/> v1.0.4</span>
+             </div>
+          </div>
         </div>
       </div>
 
-      <main className="max-w-3xl mx-auto px-6 -mt-10 relative z-20">
+      <main className="max-w-3xl mx-auto px-6 -mt-6 relative z-20">
         {/* Search & Categories */}
-        <div className="bg-card rounded-[2.5rem] p-6 shadow-2xl border border-muted/50 space-y-6 mb-8">
+        <div className="bg-card rounded-3xl p-6 shadow-2xl border border-muted/50 space-y-6 mb-8">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <Input 
@@ -630,16 +701,17 @@ export default function GuestMenuPage({ user, tableFromQR }) {
             />
           </div>
 
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none no-scrollbar">
-            {['Semua', ...MENU_CATEGORIES].map(c => (
+          <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar -mx-6 px-6">
+            {[...new Set(['Semua', ...MENU_CATEGORIES])].map(c => (
               <button 
                 key={c} 
                 onClick={() => setCategory(c)}
-                className={`px-6 h-10 rounded-2xl whitespace-nowrap font-black text-xs transition-all duration-300 transform active:scale-95 ${
+                className={cn(
+                  "px-6 h-10 rounded-xl whitespace-nowrap font-black text-[10px] uppercase tracking-widest transition-all",
                   category === c 
-                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105' 
-                  : 'bg-muted text-muted-foreground hover:bg-muted-foreground/10'
-                }`}
+                  ? 'bg-amber-500 text-zinc-900 shadow-lg shadow-amber-500/20 scale-105' 
+                  : 'bg-zinc-100 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200'
+                )}
               >
                 {c}
               </button>
@@ -677,13 +749,13 @@ export default function GuestMenuPage({ user, tableFromQR }) {
                         <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">{item.category}</p>
                       </div>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="font-black text-lg text-primary">{formatRupiah(item.price)}</span>
+                        <span className="font-black text-lg text-zinc-900 data-mono">{formatRupiah(item.price)}</span>
                         
                         {qty === 0 ? (
                           <button 
                             id={`btn-tambah-${item.id}`}
                             onClick={() => addToCart(item)}
-                            className="w-10 h-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-primary/20"
+                            className="w-10 h-10 rounded-xl bg-amber-500 text-zinc-900 flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg shadow-amber-500/20"
                           >
                             <Plus size={20} />
                           </button>
@@ -707,27 +779,27 @@ export default function GuestMenuPage({ user, tableFromQR }) {
       {/* Persistent Floating Checkout Bar */}
       {totalItems > 0 && (
         <div className="fixed bottom-8 left-6 right-6 z-[500] animate-in slide-in-from-bottom-10 duration-500">
-          <div className="max-w-xl mx-auto bg-primary text-primary-foreground rounded-[2.5rem] p-4 flex items-center justify-between shadow-2xl shadow-primary/40 ring-4 ring-primary/20">
-            <div className="flex items-center gap-4 pl-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center relative">
-                <ShoppingBag size={24} />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-accent text-accent-foreground rounded-full text-[10px] font-black flex items-center justify-center border-2 border-primary">
+          <div className="max-w-xl mx-auto bg-zinc-900 text-zinc-50 rounded-[2.5rem] p-4 flex items-center justify-between shadow-2xl shadow-black/40 ring-4 ring-white/5">
+            <div className="flex items-center gap-2 md:gap-4 pl-2 md:pl-4 min-w-0">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-zinc-800 rounded-xl md:rounded-2xl flex items-center justify-center relative shrink-0">
+                <ShoppingBag size={20} className="md:w-6 md:h-6" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-amber-500 text-zinc-900 rounded-full text-[8px] md:text-[10px] font-black flex items-center justify-center border-2 border-zinc-900">
                   {totalItems}
                 </span>
               </div>
-              <div>
-                <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest leading-none mb-1">Total Pesanan</p>
-                <p className="text-xl font-black">{formatRupiah(cart.reduce((s, i) => s + i.price * i.qty, 0))}</p>
+              <div className="min-w-0">
+                <p className="text-[8px] md:text-[10px] font-bold opacity-60 uppercase tracking-widest leading-none mb-1 truncate">Total</p>
+                <p className="text-sm md:text-xl font-black data-mono text-zinc-50 truncate">{formatRupiah(cart.reduce((s, i) => s + i.price * i.qty, 0))}</p>
               </div>
             </div>
             
-            <div className="flex gap-2">
+            <div className="flex gap-1 md:gap-2">
               <Button 
                 onClick={() => setShowCart(true)} 
                 variant="ghost" 
-                className="rounded-2xl w-14 h-14 p-0 bg-white/10 hover:bg-white/20 border-none"
+                className="rounded-xl md:rounded-2xl w-10 h-10 md:w-14 md:h-14 p-0 bg-white/5 hover:bg-white/10 border-none shrink-0"
               >
-                <ShoppingBag size={24} />
+                <ShoppingBag size={20} className="md:w-6 md:h-6" />
               </Button>
               <Button 
                 onClick={() => {
@@ -735,10 +807,10 @@ export default function GuestMenuPage({ user, tableFromQR }) {
                   const total = subtotal + Math.round(subtotal * 0.1);
                   setCheckoutTotal(total);
                 }}
-                className="bg-accent hover:bg-accent/90 text-accent-foreground h-14 rounded-2xl px-8 font-black text-lg shadow-inner group"
+                className="bg-amber-500 hover:bg-amber-600 text-zinc-900 h-10 md:h-14 rounded-xl md:rounded-2xl px-4 md:px-8 font-black text-xs md:text-lg shadow-inner group shrink-0"
               >
-                Pesan Sekarang
-                <ChevronRight size={24} className="ml-2 group-hover:translate-x-1 transition-transform" />
+                Pesan <span className="hidden xs:inline ml-1">Sekarang</span>
+                <ChevronRight size={16} className="ml-1 md:ml-2 group-hover:translate-x-1 transition-transform md:w-6 md:h-6" />
               </Button>
             </div>
           </div>

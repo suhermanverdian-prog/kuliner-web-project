@@ -110,6 +110,7 @@ export default function InventoriPage() {
   const [locationFilter, setLocationFilter] = useState('Semua');
   const [showModal, setShowModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [bahan, setBahan] = useState([]);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -160,9 +161,18 @@ export default function InventoriPage() {
   const openEdit = (item) => { setEditItem(item); setShowModal(true); };
 
   const handleSave = async (formData) => {
-    await api.saveBahan({ ...formData, id: editItem?.id });
-    loadData();
-    setShowModal(false);
+    try {
+      setSaving(true);
+      await api.saveBahan({ ...formData, id: editItem?.id });
+      await loadData();
+      setShowModal(false);
+      setEditItem(null);
+    } catch (err) {
+      console.error(err);
+      alert('Gagal menyimpan barang: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleTransfer = async () => {
@@ -251,9 +261,9 @@ export default function InventoriPage() {
 
   const getStockStatus = (item) => {
     const ratio = item.stock / (item.minStock || 1);
-    if (item.stock === 0) return { label: 'HABIS', color: 'text-zinc-900', bg: 'bg-destructive', barCls: 'bg-destructive', pct: 0 };
-    if (ratio < 1) return { label: 'LOW', color: 'text-zinc-900', bg: 'active-state', barCls: 'bg-amber-500', pct: Math.min((ratio * 100), 100) };
-    return { label: 'AMAN', color: 'text-zinc-900', bg: 'bg-emerald-500', barCls: 'bg-emerald-500', pct: Math.min((ratio / 2 * 100), 100) };
+    if (item.stock === 0) return { label: 'HABIS', color: 'text-rose-600', bg: 'bg-rose-500/10 border-rose-500/20', barCls: 'bg-rose-500', pct: 0 };
+    if (ratio < 1) return { label: 'LOW', color: 'text-amber-600', bg: 'bg-amber-500/10 border-amber-500/20', barCls: 'bg-amber-500', pct: Math.min((ratio * 100), 100) };
+    return { label: 'AMAN', color: 'text-emerald-600', bg: 'bg-emerald-500/10 border-emerald-500/20', barCls: 'bg-emerald-500', pct: Math.min((ratio / 2 * 100), 100) };
   };
 
   if (loading && bahan.length === 0) return (
@@ -280,7 +290,7 @@ export default function InventoriPage() {
               <CheckCircle2 size={18} /> Simpan Hasil Opname
             </Button>
           )}
-          <Button className="h-11 font-black gap-2 bg-accent hover:bg-accent/90 shadow-xl shadow-accent/20" onClick={openAdd}>
+          <Button className="h-11 font-black gap-2 bg-amber-500 hover:bg-amber-600 text-zinc-900 shadow-xl shadow-amber-500/20" onClick={openAdd}>
             <Plus size={20} /> Tambah Barang Baru
           </Button>
           <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl border" onClick={() => setShowSettingsModal(true)}>
@@ -338,7 +348,7 @@ export default function InventoriPage() {
                                </div>
                                <div>
                                   <p className="text-sm font-black">{item.name}</p>
-                                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Min. Stok: <span className="data-mono">{getMediumQty({...item, stock: item.minStock})}</span> {getMediumUnit(item)}</p>
+                                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Min. Stok: <span className="data-mono">{getMediumQty({...item, stock: item.min_stock ?? item.minStock ?? 0})}</span> {getMediumUnit(item)}</p>
                                </div>
                             </div>
                          </td>
@@ -353,7 +363,7 @@ export default function InventoriPage() {
                                </div>
                             </div>
                          </td>
-                         <td className="px-6 py-4 font-bold text-sm data-mono">{formatRupiah(item.price)}</td>
+                         <td className="px-6 py-4 font-bold text-sm data-mono">{formatRupiah(item.cost || item.price || 0)}</td>
                          <td className="px-6 py-4">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase">
                                <MapPin size={12} className="text-accent" /> {item.location}
@@ -408,11 +418,12 @@ export default function InventoriPage() {
 
       <InventoryFormModal 
         isOpen={showModal} 
-        onClose={() => setShowModal(false)} 
+        onClose={() => { setShowModal(false); setEditItem(null); }} 
         onSave={handleSave} 
         initialData={editItem} 
         locations={locations}
         inventoryMeta={inventoryMeta}
+        isSaving={saving}
       />
       
       {showAdjModal && adjItem && (
@@ -461,7 +472,7 @@ export default function InventoriPage() {
             </CardContent>
             <CardFooter className="border-t pt-6 gap-2">
               <Button variant="outline" className="flex-1 font-bold" onClick={() => setShowAdjModal(false)}>Batal</Button>
-              <Button className="flex-1 font-black bg-amber-600 hover:bg-amber-700" onClick={handleAdjustment}>Simpan</Button>
+              <Button className="flex-1 font-black bg-amber-500 text-zinc-900 hover:bg-amber-600" onClick={handleAdjustment}>Simpan</Button>
             </CardFooter>
           </Card>
         </div>
@@ -520,7 +531,7 @@ export default function InventoriPage() {
             </CardContent>
             <CardFooter className="border-t pt-6 gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setShowTransferModal(false)}>Batal</Button>
-              <Button className="flex-[2] font-black bg-accent hover:bg-accent/90" onClick={handleTransfer}>Jalankan Transfer</Button>
+              <Button className="flex-[2] font-black bg-amber-500 text-zinc-900 hover:bg-amber-600 shadow-xl shadow-amber-500/20" onClick={handleTransfer}>Jalankan Transfer</Button>
             </CardFooter>
           </Card>
         </div>
@@ -564,7 +575,7 @@ export default function InventoriPage() {
                         <option>Fridge</option>
                      </select>
                   </div>
-                  <Button className="w-full h-11 font-black bg-primary" onClick={handleSaveLocation}>
+                  <Button className="w-full h-11 font-black bg-amber-500 text-zinc-900 hover:bg-amber-600 shadow-lg shadow-amber-500/20" onClick={handleSaveLocation}>
                      <Save size={18} className="mr-2" /> Simpan Lokasi
                   </Button>
                </div>
@@ -590,7 +601,7 @@ export default function InventoriPage() {
             </CardContent>
             <CardFooter className="border-t pt-6 gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setShowSettingsModal(false)}>Batal</Button>
-              <Button className="flex-[2] font-black bg-accent hover:bg-accent/90 shadow-lg shadow-accent/20" onClick={handleSaveMeta}>Simpan Perubahan</Button>
+              <Button className="flex-[2] font-black bg-amber-500 text-zinc-900 hover:bg-amber-600 shadow-xl shadow-amber-500/20" onClick={handleSaveMeta}>Simpan Perubahan</Button>
             </CardFooter>
           </Card>
         </div>

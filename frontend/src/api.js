@@ -109,6 +109,22 @@ export const api = new Proxy(apiBase, {
       };
     }
 
+    // Handle checkout (mapped to transactions)
+    if (prop === 'checkout') {
+      return async (data) => {
+        const res = await fetch(`${API_URL}/transactions`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || 'Gagal memproses checkout');
+        }
+        return res.json();
+      };
+    }
+
     return undefined;
   }
 });

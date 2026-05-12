@@ -157,6 +157,9 @@ export default function PengaturanPage() {
   const [toast, setToast] = useState({ msg: '', type: 'success' });
   const [savingSettings, setSavingSettings] = useState(false);
   const [loyaltyConfig, setLoyaltyConfig] = useState({ enabled: true, multiplier: 10000 });
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [showAddPayment, setShowAddPayment] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(null);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -167,6 +170,7 @@ export default function PengaturanPage() {
     fetchUsers();
     api.getSettings().then(s => { if (s) setSettings(s); }).catch(() => {});
     api.getSettingsLoyalty().then(l => { if (l) setLoyaltyConfig(l); }).catch(() => {});
+    api.getPaymentMethods().then(p => { if (p) setPaymentMethods(p); }).catch(() => {});
   }, []);
 
   const fetchUsers = async () => {
@@ -264,6 +268,7 @@ export default function PengaturanPage() {
         {[
           { key: 'users', label: 'Pengguna & Akses', icon: Users },
           { key: 'system', label: 'Pajak & Sistem', icon: Settings },
+          { key: 'payment', label: 'Pembayaran', icon: CreditCard },
           { key: 'branding', label: 'Branding', icon: Palette },
         ].map(t => (
           <button 
@@ -396,6 +401,184 @@ export default function PengaturanPage() {
               </div>
             )}
           </Card>
+        </div>
+      )}
+
+      {activeTab === 'payment' && (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+           <div className="flex items-center justify-between">
+              <div>
+                 <h3 className="text-xl font-bold">Metode Pembayaran Cashless</h3>
+                 <p className="text-sm text-muted-foreground">Atur rekening bank dan QRIS perusahaan untuk menerima pembayaran non-tunai.</p>
+              </div>
+              <Button className="font-black bg-accent" onClick={() => setShowAddPayment(true)}>
+                 <Plus size={18} className="mr-2" /> Tambah Rekening
+              </Button>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paymentMethods.map((m, i) => (
+                <Card key={i} className={cn("border-none shadow-xl bg-card overflow-hidden transition-all hover:scale-[1.02]", !m.is_active && "opacity-50 grayscale")}>
+                   <CardHeader className="bg-muted/10 pb-4">
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-background flex items-center justify-center shadow-sm">
+                               {m.type === 'qris' ? <CreditCard className="text-accent" /> : <Store className="text-blue-500" />}
+                            </div>
+                            <div>
+                               <CardTitle className="text-sm font-black">{m.name}</CardTitle>
+                               <CardDescription className="text-[10px] font-bold uppercase">{m.type === 'qris' ? 'QR Code' : 'Bank Transfer'}</CardDescription>
+                            </div>
+                         </div>
+                         <input 
+                           type="checkbox" 
+                           checked={m.is_active} 
+                           className="w-8 h-4 accent-accent cursor-pointer"
+                           onChange={async () => {
+                              const updated = { ...m, is_active: !m.is_active };
+                              await api.updatePaymentMethods(updated);
+                              setPaymentMethods(prev => prev.map(p => p.id === m.id ? updated : p));
+                           }}
+                         />
+                      </div>
+                   </CardHeader>
+                   <CardContent className="p-6 space-y-4">
+                      <div className="space-y-1">
+                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Nomor Rekening / ID</p>
+                         <p className="text-lg font-black data-mono text-primary">{m.account_number || '-'}</p>
+                      </div>
+                      <div className="space-y-1">
+                         <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Nama Pemilik</p>
+                         <p className="text-xs font-bold text-muted-foreground">{m.account_name || '-'}</p>
+                      </div>
+                      {m.instructions && (
+                        <div className="p-3 rounded-xl bg-accent/5 border border-accent/10">
+                           <p className="text-[10px] font-black text-accent uppercase tracking-widest mb-1">Instruksi Pembayaran</p>
+                           <p className="text-[10px] leading-relaxed text-muted-foreground font-medium italic">"{m.instructions}"</p>
+                        </div>
+                      )}
+                      {m.image_url && (
+                        <div className="aspect-square w-24 mx-auto border rounded-xl overflow-hidden bg-white shadow-sm mt-2">
+                           <img src={m.image_url} alt="QRIS" className="w-full h-full object-contain p-1" />
+                        </div>
+                      )}
+                   </CardContent>
+                   <CardFooter className="border-t p-3 bg-muted/5 flex gap-2">
+                      <Button variant="ghost" className="flex-1 text-xs font-bold" onClick={() => setEditingPayment(m)}>Edit</Button>
+                      <Button variant="ghost" className="flex-1 text-xs font-bold text-destructive hover:bg-destructive/10" onClick={async () => {
+                         if (window.confirm('Hapus metode pembayaran ini?')) {
+                            await api.deletePaymentMethods(m.id);
+                            setPaymentMethods(prev => prev.filter(p => p.id !== m.id));
+                         }
+                      }}>Hapus</Button>
+                   </CardFooter>
+                </Card>
+              ))}
+
+              {paymentMethods.length === 0 && (
+                <div className="col-span-full py-20 text-center opacity-30">
+                   <CreditCard size={64} className="mx-auto mb-4" />
+                   <p className="text-xl font-black">Belum Ada Rekening</p>
+                   <p className="text-sm">Tambahkan rekening bank atau QRIS untuk mulai menerima pembayaran non-tunai.</p>
+                </div>
+              )}
+           </div>
+
+           {(showAddPayment || editingPayment) && (
+             <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
+                <Card className="w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
+                   <CardHeader className="border-b">
+                      <CardTitle>{editingPayment ? 'Edit Rekening' : 'Tambah Rekening Baru'}</CardTitle>
+                      <CardDescription>Masukkan detail akun pembayaran Anda untuk ditampilkan ke pelanggan.</CardDescription>
+                   </CardHeader>
+                   <CardContent className="p-6 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Nama Bank / E-Wallet</label>
+                            <Input 
+                              placeholder="Contoh: BCA, GoPay, QRIS" 
+                              value={editingPayment ? editingPayment.name : (window._newPayment?.name || '')} 
+                              onChange={e => {
+                                 if (editingPayment) setEditingPayment({...editingPayment, name: e.target.value});
+                                 else window._newPayment = { ...window._newPayment, name: e.target.value };
+                              }}
+                            />
+                         </div>
+                         <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Tipe</label>
+                            <select 
+                              className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm font-bold"
+                              value={editingPayment ? editingPayment.type : (window._newPayment?.type || 'manual_transfer')}
+                              onChange={e => {
+                                 if (editingPayment) setEditingPayment({...editingPayment, type: e.target.value});
+                                 else window._newPayment = { ...window._newPayment, type: e.target.value };
+                              }}
+                            >
+                               <option value="manual_transfer">Transfer Bank Manual</option>
+                               <option value="qris">QRIS (QR Code)</option>
+                               <option value="digital_payment">E-Wallet / Digital</option>
+                            </select>
+                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Nomor Rekening / ID Akun</label>
+                         <Input 
+                           placeholder="0011-2233-44" 
+                           value={editingPayment ? editingPayment.account_number : (window._newPayment?.account_number || '')}
+                           onChange={e => {
+                              if (editingPayment) setEditingPayment({...editingPayment, account_number: e.target.value});
+                              else window._newPayment = { ...window._newPayment, account_number: e.target.value };
+                           }}
+                         />
+                      </div>
+
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Nama Pemilik Akun</label>
+                         <Input 
+                           placeholder="Nama sesuai buku tabungan" 
+                           value={editingPayment ? editingPayment.account_name : (window._newPayment?.account_name || '')}
+                           onChange={e => {
+                              if (editingPayment) setEditingPayment({...editingPayment, account_name: e.target.value});
+                              else window._newPayment = { ...window._newPayment, account_name: e.target.value };
+                           }}
+                         />
+                      </div>
+
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Instruksi Khusus (Optional)</label>
+                         <textarea 
+                           className="w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:ring-accent" 
+                           placeholder="Contoh: Lampirkan bukti transfer dan kirim ke WhatsApp 0812..."
+                           value={editingPayment ? editingPayment.instructions : (window._newPayment?.instructions || '')}
+                           onChange={e => {
+                              if (editingPayment) setEditingPayment({...editingPayment, instructions: e.target.value});
+                              else window._newPayment = { ...window._newPayment, instructions: e.target.value };
+                           }}
+                         />
+                      </div>
+                   </CardContent>
+                   <CardFooter className="border-t p-6 gap-3">
+                      <Button variant="ghost" className="flex-1 font-bold" onClick={() => { setShowAddPayment(false); setEditingPayment(null); }}>Batal</Button>
+                      <Button className="flex-[2] font-black bg-accent" onClick={async () => {
+                         try {
+                            if (editingPayment) {
+                               await api.updatePaymentMethods(editingPayment);
+                               setPaymentMethods(prev => prev.map(p => p.id === editingPayment.id ? editingPayment : p));
+                               setEditingPayment(null);
+                            } else {
+                               const newItem = await api.addPaymentMethods(window._newPayment || { type: 'manual_transfer' });
+                               setPaymentMethods(prev => [...prev, newItem]);
+                               setShowAddPayment(false);
+                               window._newPayment = null;
+                            }
+                            showToast('Data pembayaran berhasil disimpan!');
+                         } catch (e) { showToast('Gagal menyimpan data.', 'error'); }
+                      }}>Simpan Rekening</Button>
+                   </CardFooter>
+                </Card>
+             </div>
+           )}
         </div>
       )}
 

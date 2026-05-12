@@ -7,6 +7,7 @@ const multer = require('multer');
 const ExcelJS = require('exceljs');
 const { supabase } = require('./supabase');
 const app = express();
+const crypto = require('crypto');
 const PORT = process.env.PORT || 3001;
 const DB_PATH = path.join(__dirname, 'db', 'data.json');
 const DB_MODE = 'cloud'; // FORCE CLOUD MODE FOR PRODUCTION STABILITY
@@ -35,7 +36,25 @@ const resolveFeatures = (tenant) => {
   return resolved;
 };
 
-// ---- FASE 6: RBAC & Tenant Isolation Middleware ----
+// ---- FASE 10: LEGACY ID MAPPING (Stock Bridge) ----
+const OLD_ID_TO_NAME = {
+  '101': 'Biji Kopi Arabica',
+  '102': 'Susu Segar',
+  '103': 'Gula Aren',
+  '104': 'Cup Plastik',
+  '105': 'Air Mineral',
+  '108': 'Susu Kental Manis',
+  '117': 'Bubuk Matcha Premium',
+  '118': 'Whipped Cream',
+  '119': 'Sirup Vanilla',
+  '120': 'Adonan Croissant',
+  '121': 'Kentang Frozen',
+  '122': 'Roti Gandum',
+  '123': 'Bubuk Red Velvet',
+  '124': 'Oat Milk',
+  '125': 'Sirup Caramel'
+};
+
 const rbacMiddleware = async (req, res, next) => {
   const role = req.headers['x-user-role'] || 'guest';
   let tenantId = req.headers['x-tenant-id'];
@@ -330,8 +349,10 @@ app.post('/api/login', async (req, res) => {
   }
 
   const { password: _, ...safeUser } = user;
+  const features = resolveFeatures(user.tenant);
+  
   res.json({ 
-    user: safeUser, 
+    user: { ...safeUser, features }, 
     token: 'supabase-token-' + user.id 
   });
 });
@@ -368,7 +389,7 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 // ---- MENU ----
 app.get('/api/menu', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('menu').select('*').order('name');
+    const { data, error } = await supabase.from('menu').select('*, bom:menu_bom(*)').order('name');
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
@@ -436,7 +457,12 @@ app.get('/api/bahan', async (req, res) => {
 app.post('/api/bahan', async (req, res) => {
   if (DB_MODE === 'cloud') {
     try {
-      const saved = await saveToCloud('bahan', { ...req.body, tenant_id: req.headers['x-tenant-id'] });
+      const payload = { ...req.body, tenant_id: req.headers['x-tenant-id'] };
+      // Unified price/cost sync
+      const finalCost = payload.cost || payload.price || 0;
+      payload.cost = finalCost;
+      payload.price = finalCost;
+      const saved = await saveToCloud('bahan', payload);
       return res.json(saved);
     } catch (err) { return res.status(500).json({ error: err.message }); }
   }
@@ -716,21 +742,62 @@ app.get('/api/transactions', async (req, res) => {
   }
 });
 
+// ---- FASE 10: WEBHOOK SIMULATION & PAYMENT AUTOMATION ----
+app.post('/api/webhooks/simulate', async (req, res) => {
+  const { transactionId } = req.body;
+  try {
+    const { data: trx, error: fetchError } = await supabase.from('transactions').select('*').eq('id', transactionId).single();
+    if (fetchError || !trx) return res.status(404).json({ error: 'Transaksi tidak ditemukan' });
+
+    // Update status ke Lunas (Paid)
+    const { data: updated, error: updateError } = await supabase.from('transactions')
+      .update({ 
+        payment_status: 'paid',
+        status: 'Diproses' // Langsung masuk ke antrean dapur
+      })
+      .eq('id', transactionId)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    // Log Activity (Audit Trail)
+    await supabase.from('system_logs').insert([{
+      userName: 'SYSTEM (Payment Gateway)',
+      role: 'system',
+      activityType: 'PAYMENT_VERIFIED',
+      description: `Pembayaran otomatis terverifikasi untuk Trx #${transactionId} (Simulasi Webhook)`
+    }]);
+
+    res.json({ ok: true, message: 'Webhook simulasi berhasil!', transaction: updated });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/transactions', async (req, res) => {
   try {
     const body = req.body;
     const db = readDB();
+    const tenantId = req.headers['x-tenant-id'];
     
     // Generate ID unik
-    const trxId = 'TRX-' + String((db.transactions?.length || 0) + 1).padStart(4, '0') + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+    const readableId = 'TRX-' + String((db.transactions?.length || 0) + 1).padStart(4, '0') + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+    const supabaseId = crypto.randomUUID();
+    const trxId = (DB_MODE === 'cloud') ? supabaseId : readableId;
 
     const isSelfOrder = body.cashierName === 'Self Service';
     const paymentStatus = isSelfOrder ? 'pending_payment' : 'paid';
 
+    // ---- FASE 10: UNIQUE CODE LOGIC ----
+    const isManualTransfer = body.paymentMethod === 'Transfer Bank Manual';
+    const uniqueCode = isManualTransfer ? Math.floor(Math.random() * 900) + 100 : 0;
+    const finalTotal = Number(body.total || 0) + uniqueCode;
+
     const trxData = {
       id: trxId,
       createdAt: new Date().toISOString(),
-      total: Number(body.total || 0),
+      total: finalTotal,
       subtotal: Number(body.subtotal || 0),
       taxAmount: Number(body.taxAmount || 0),
       discountAmount: Number(body.discountAmount || 0),
@@ -740,14 +807,14 @@ app.post('/api/transactions', async (req, res) => {
       customerName: body.customerName || 'Tamu',
       tableType: body.tableType || 'Take Away',
       kdsStatus: 'new',
-      items: body.items || []
+      items: body.items || [],
+      uniqueCode: uniqueCode
     };
 
-    const tenantId = req.headers['x-tenant-id'];
-    
     if (DB_MODE === 'cloud') {
       const payload = {
-        id: trxId,
+        id: supabaseId,
+        order_number: readableId,
         tenant_id: tenantId,
         outlet_id: req.headers['x-outlet-id'] || null,
         total: trxData.total,
@@ -756,89 +823,113 @@ app.post('/api/transactions', async (req, res) => {
         payment_method: trxData.paymentMethod,
         payment_status: trxData.paymentStatus,
         customer_name: trxData.customerName,
-        items: {
-          subtotal: trxData.subtotal,
-          cashier_name: trxData.cashierName,
-          table_type: trxData.tableType,
-          kds_status: 'new'
-        }
+        unique_code: uniqueCode,
+        items: trxData.items
       };
 
-      const { data, error } = await supabase.from('transactions').insert([payload]).select();
+      const { error } = await supabase.from('transactions').insert([payload]);
       if (error) throw error;
 
       if (trxData.items && trxData.items.length > 0) {
         const itemsToInsert = trxData.items.map(i => ({
-          transaction_id: trxId,
+          transaction_id: supabaseId,
           menu_id: i.id,
           qty: i.qty,
           price: i.price
         })).filter(i => i.menu_id);
-        const { error: itemsErr } = await supabase.from('transaction_items').insert(itemsToInsert);
-        if (itemsErr) console.error('Supabase Sync Items Error:', itemsErr);
+        await supabase.from('transaction_items').insert(itemsToInsert);
       }
-      
-      return res.json(trxData);
     }
 
-    // --- LOGIKA LOKAL ---
-    db.transactions = db.transactions || [];
-    db.transactions.push(trxData);
-
-    // --- LOGIKA POTONG STOK (Local) ---
+    // --- LOGIKA POTONG STOK & HPP ---
     let totalHppSale = 0;
     if (!isSelfOrder && body.items) {
       for (const item of body.items) {
-        const menuIdx = db.menu?.findIndex(m => m.id == item.id);
-        if (menuIdx > -1) {
-          const m = db.menu[menuIdx];
-          if (m.bom) {
-            m.bom.forEach(b => {
-              const bIdx = db.bahan?.findIndex(bh => bh.id == b.bahanId);
-              if (bIdx > -1) {
-                const usedQty = Number(b.qty) * item.qty;
-                const unitCost = db.bahan[bIdx].cost || 0;
-                totalHppSale += usedQty * unitCost;
-                db.bahan[bIdx].stock -= usedQty;
+        if (DB_MODE === 'cloud') {
+          const { data: boms } = await supabase.from('menu_bom').select('bahan_id, qty').eq('menu_id', item.id);
+          if (boms) {
+            for (const b of boms) {
+              const usedQty = Number(b.qty) * item.qty;
+              let targetBahanId = b.bahan_id;
+
+              // Bridge: If bahan_id is an integer (legacy), find UUID by name
+              if (!String(targetBahanId).includes('-')) {
+                const legacyName = OLD_ID_TO_NAME[String(targetBahanId)];
+                if (legacyName) {
+                  const { data: bByName } = await supabase.from('bahan').select('id').eq('name', legacyName).single();
+                  if (bByName) targetBahanId = bByName.id;
+                }
               }
-            });
+
+              const { data: bInfo } = await supabase.from('bahan').select('id, stock, cost').eq('id', targetBahanId).single();
+              if (bInfo) {
+                totalHppSale += usedQty * (bInfo.cost || 0);
+                await supabase.from('bahan').update({ stock: Number(bInfo.stock) - usedQty }).eq('id', targetBahanId);
+              }
+            }
+          }
+        } else {
+          const menuIdx = db.menu?.findIndex(m => m.id == item.id);
+          if (menuIdx > -1) {
+            const m = db.menu[menuIdx];
+            if (m.bom) {
+              m.bom.forEach(b => {
+                const bIdx = db.bahan?.findIndex(bh => bh.id == b.bahanId);
+                if (bIdx > -1) {
+                  const usedQty = Number(b.qty) * item.qty;
+                  const unitCost = db.bahan[bIdx].cost || 0;
+                  totalHppSale += usedQty * unitCost;
+                  db.bahan[bIdx].stock -= usedQty;
+                }
+              });
+            }
           }
         }
       }
     }
 
-    // --- OTOMATISASI JURNAL AKUNTANSI (Double-Entry) ---
-    // Hanya untuk transaksi yang sudah dibayar (bukan self-order pending)
+    // --- OTOMATISASI JURNAL AKUNTANSI ---
     if (!isSelfOrder) {
       try {
         const journalLines = [
-          // 1. Kas/Bank bertambah (Debit)
           { accountCode: '1-1000', accountName: 'Kas & Bank',            debit: trxData.total,    credit: 0 },
-          // 2. Pendapatan Penjualan bertambah (Kredit)
           { accountCode: '4-1000', accountName: 'Pendapatan Penjualan',  debit: 0, credit: trxData.subtotal },
-          // 3. Pajak terutang (Kredit)
           ...(trxData.taxAmount > 0 ? [{ accountCode: '2-2000', accountName: 'Hutang Pajak', debit: 0, credit: trxData.taxAmount }] : []),
-          // 4. Diskon mengurangi pendapatan (Debit balik)
           ...(trxData.discountAmount > 0 ? [{ accountCode: '4-1000', accountName: 'Pendapatan Penjualan (Diskon)', debit: trxData.discountAmount, credit: 0 }] : []),
         ];
 
-        // Hanya tambahkan HPP jika ada data BOM
         if (totalHppSale > 0) {
           journalLines.push({ accountCode: '5-1000', accountName: 'Harga Pokok Penjualan', debit: totalHppSale, credit: 0 });
           journalLines.push({ accountCode: '1-2000', accountName: 'Persediaan Bahan Baku',  debit: 0, credit: totalHppSale });
         }
 
-        createJournalLocal(db, trxId, `Penjualan - ${trxData.customerName} - ${trxData.tableType}`, journalLines);
+        if (DB_MODE === 'cloud') {
+          const journalId = crypto.randomUUID();
+          await supabase.from('journals').insert([{
+            id: journalId, tenant_id: tenantId, date: new Date().toISOString(),
+            description: `Penjualan - ${trxData.customerName}`, reference: trxId
+          }]);
+          const lines = journalLines.map(l => ({
+            journal_id: journalId, account_code: l.accountCode, account_name: l.accountName, debit: l.debit, credit: l.credit
+          }));
+          await supabase.from('journal_lines').insert(lines);
+        } else {
+          createJournalLocal(db, trxId, `Penjualan - ${trxData.customerName}`, journalLines);
+        }
       } catch (jErr) {
-        console.error('⚠️ Journal auto-entry failed (non-fatal):', jErr.message);
+        console.error('⚠️ Journal failed:', jErr.message);
       }
     }
 
-    writeDB(db);
+    if (DB_MODE !== 'cloud') {
+      db.transactions = db.transactions || [];
+      db.transactions.push(trxData);
+      writeDB(db);
+    }
     res.json(trxData);
   } catch (err) {
     console.error('Checkout Error:', err);
-    res.status(500).json({ error: 'Gagal memproses transaksi' });
+    res.status(500).json({ error: err.message || 'Gagal memproses transaksi' });
   }
 });
 
@@ -1177,6 +1268,58 @@ app.put('/api/settings', async (req, res) => {
   const { data, error } = await supabase.from('settings').update(req.body).eq('id', 1).select().single();
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
+});
+
+// ---- FASE 10: PAYMENT METHODS CONFIG ----
+app.get('/api/payment_methods', async (req, res) => {
+  const tenantId = req.headers['x-tenant-id'];
+  try {
+    const { data, error } = await supabase.from('payment_methods')
+      .select('*')
+      .order('id', { ascending: true });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/payment_methods', async (req, res) => {
+  const tenantId = req.headers['x-tenant-id'];
+  try {
+    const { data, error } = await supabase.from('payment_methods')
+      .insert([{ ...req.body, tenant_id: tenantId }])
+      .select();
+    if (error) throw error;
+    res.json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/payment_methods/:id', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('payment_methods')
+      .update(req.body)
+      .eq('id', req.params.id)
+      .select();
+    if (error) throw error;
+    res.json(data[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/payment_methods/:id', async (req, res) => {
+  try {
+    const { error } = await supabase.from('payment_methods')
+      .delete()
+      .eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ---- CUSTOMERS ----
@@ -2595,6 +2738,17 @@ app.get('/api/ai/insights', async (req, res) => {
     const tenantId = req.headers['x-tenant-id'];
     const outletId = req.headers['x-outlet-id'];
     
+    // ---- FEATURE FLAG CHECK ----
+    const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).single();
+    const features = resolveFeatures(tenant);
+    if (!features.ai_insights) {
+      return res.status(403).json({ 
+        error: 'AI Business Intelligence adalah fitur premium.',
+        requires_upgrade: true 
+      });
+    }
+    // ----------------------------
+
     // 1. Ambil data mentah untuk dianalisis
     const [trx, inventory, po, auditLogs] = await Promise.all([
       supabase.from('transactions').select('total, items, created_at, payment_status').eq('tenant_id', tenantId).order('created_at', { ascending: false }).limit(100),

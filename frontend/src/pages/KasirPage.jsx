@@ -46,6 +46,22 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
     }
   };
 
+  const handleSimulateWebhook = async () => {
+    setLoading(true);
+    try {
+      await fetch(`${api.url}/webhooks/simulate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId: tx.id })
+      });
+      onSuccess();
+    } catch (e) {
+      alert('Simulasi gagal');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
       <Card className="w-full max-w-lg shadow-[0_32px_128px_-32px_rgba(0,0,0,0.3)] animate-in zoom-in-95 duration-200 border-none rounded-[2.5rem] overflow-hidden">
@@ -127,27 +143,44 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              <div className="p-6 bg-accent/5 border-2 border-accent/20 border-dashed rounded-3xl flex gap-4 items-start">
-                 <div className="w-10 h-10 bg-accent rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-accent/20">
-                    <Smartphone size={20} />
-                 </div>
-                 <p className="text-sm text-accent leading-relaxed font-bold">
-                   Pembayaran via {tx.paymentMethod}. Harap verifikasi status transaksi pada terminal EDC atau aplikasi m-banking sebelum memproses lebih lanjut.
-                 </p>
+              <div className="space-y-6">
+                <div className="p-6 bg-accent/5 border-2 border-accent/20 border-dashed rounded-3xl space-y-4">
+                   <div className="flex gap-4 items-start">
+                      <div className="w-10 h-10 bg-accent rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-accent/20">
+                         <Smartphone size={20} />
+                      </div>
+                      <div className="space-y-1">
+                         <p className="text-sm text-accent font-bold">
+                           Pembayaran via {tx.paymentMethod}.
+                         </p>
+                         {tx.unique_code > 0 && (
+                           <p className="text-xs text-muted-foreground font-medium">
+                             Pastikan nominal transfer tepat <span className="text-accent font-black">+{tx.unique_code}</span> (Kode Unik).
+                           </p>
+                         )}
+                      </div>
+                   </div>
+                   <Button 
+                     variant="outline" 
+                     className="w-full h-10 rounded-xl border-accent/30 text-accent font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-accent hover:text-white transition-all"
+                     onClick={handleSimulateWebhook}
+                     disabled={loading}
+                   >
+                     <Zap size={14} className="fill-current" /> Simulasi Webhook (Verifikasi Otomatis)
+                   </Button>
+                </div>
+                <Button 
+                  variant={confirmed ? "default" : "outline"} 
+                  className={cn(
+                    "w-full h-20 text-xl font-black gap-4 rounded-3xl border-2 transition-all",
+                    confirmed ? "bg-emerald-600 border-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-200 text-white" : "hover:border-accent hover:text-accent"
+                  )}
+                  onClick={() => setConfirmed(!confirmed)}
+                >
+                  {confirmed ? <CheckCircle2 size={32} /> : <div className="w-8 h-8 border-4 border-muted rounded-xl" />}
+                  Konfirmasi Manual Kasir
+                </Button>
               </div>
-              <Button 
-                variant={confirmed ? "default" : "outline"} 
-                className={cn(
-                  "w-full h-20 text-xl font-black gap-4 rounded-3xl border-2 transition-all",
-                  confirmed ? "bg-emerald-600 border-emerald-600 hover:bg-emerald-700 shadow-xl shadow-emerald-200 text-white" : "hover:border-accent hover:text-accent"
-                )}
-                onClick={() => setConfirmed(!confirmed)}
-              >
-                {confirmed ? <CheckCircle2 size={32} /> : <div className="w-8 h-8 border-4 border-muted rounded-xl" />}
-                Pembayaran Terverifikasi
-              </Button>
-            </div>
           )}
         </CardContent>
         <CardFooter className="p-8 border-t bg-muted/5 gap-4">
@@ -180,7 +213,19 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const taxAmount = Math.round(subtotal * 0.1);
   const discountAmount = Math.round(subtotal * (discount / 100));
-  const total = subtotal + taxAmount - discountAmount;
+  const baseTotal = subtotal + taxAmount - discountAmount;
+  
+  // FASE 10: PREVIEW KODE UNIK
+  const [uniqueCode, setUniqueCode] = useState(0);
+  useEffect(() => {
+    if (payMethod === 'Transfer') {
+      setUniqueCode(Math.floor(Math.random() * 900) + 100);
+    } else {
+      setUniqueCode(0);
+    }
+  }, [payMethod]);
+
+  const total = baseTotal + uniqueCode;
   const changeAmount = Number(cashReceived) - total;
 
   const handlePay = async () => {
@@ -202,7 +247,8 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
       });
       onSuccess(res);
     } catch (e) {
-      alert('Gagal memproses pembayaran: ' + e.message);
+      console.error('Checkout Error:', e);
+      alert(`⚠️ PEMBAYARAN GAGAL: ${e.message}\n\nKemungkinan kolom 'unique_code' belum ditambahkan ke database. Harap jalankan SQL ALTER TABLE.`);
     } finally {
       setLoading(false);
     }
@@ -246,6 +292,12 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                 <span>Pajak (10%)</span>
                 <span>{formatRupiah(taxAmount)}</span>
               </div>
+              {uniqueCode > 0 && (
+                <div className="flex justify-between text-[10px] font-bold text-amber-600 uppercase tracking-widest data-mono animate-in fade-in slide-in-from-right-2">
+                  <span>Kode Unik</span>
+                  <span>+{uniqueCode}</span>
+                </div>
+              )}
               <div className="flex justify-between items-end pt-1">
                 <span className="text-base font-black uppercase tracking-tighter">Total</span>
                 <span className="text-2xl font-black text-primary data-mono">{formatRupiah(total)}</span>
@@ -259,25 +311,36 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                  <div className="w-6 h-6 bg-muted rounded-lg flex items-center justify-center"><MapPin size={12} className="text-muted-foreground" /></div>
                  <h4 className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Tipe Pelayanan</h4>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { id: 'Dine-in', label: 'Makan Sini', icon: Coffee },
-                  { id: 'Take Away', label: 'Bawa Pulang', icon: ShoppingBag }
-                ].map(type => {
-                  const Icon = type.icon;
-                  return (
-                    <button 
-                      key={type.id} 
-                      onClick={() => setOrderType(type.id)}
-                      className={cn(
-                        "h-14 rounded-2xl border-2 transition-all flex items-center justify-center gap-3 font-black text-sm",
-                        orderType === type.id ? "bg-primary border-primary text-white shadow-xl shadow-primary/20 scale-[1.02]" : "bg-background border-muted hover:border-accent/40"
-                      )}
-                    >
-                      <Icon size={18} /> {type.label}
-                    </button>
-                  );
-                })}
+              <div className="grid grid-cols-2 gap-6">
+                <Button 
+                  type="button"
+                  variant={orderType === 'Dine-in' ? "default" : "outline"}
+                  onClick={() => setOrderType('Dine-in')}
+                  className={cn(
+                    "h-32 flex-col gap-3 rounded-[2rem] border-2 transition-all group",
+                    orderType === 'Dine-in' ? "bg-primary border-primary text-white shadow-2xl shadow-primary/30 scale-105" : "hover:border-primary/50 hover:bg-primary/5"
+                  )}
+                >
+                  <div className={cn("p-4 rounded-2xl transition-colors", orderType === 'Dine-in' ? "bg-white/20" : "bg-muted group-hover:bg-primary/10")}>
+                    <Coffee size={32} className={orderType === 'Dine-in' ? "text-white" : "text-muted-foreground group-hover:text-primary"} />
+                  </div>
+                  <span className="text-sm font-black uppercase tracking-widest">Makan Sini</span>
+                </Button>
+
+                <Button 
+                  type="button"
+                  variant={orderType === 'Take Away' ? "default" : "outline"}
+                  onClick={() => { setOrderType('Take Away'); setTableNum(''); }}
+                  className={cn(
+                    "h-32 flex-col gap-3 rounded-[2rem] border-2 transition-all group",
+                    orderType === 'Take Away' ? "bg-accent border-accent text-white shadow-2xl shadow-accent/30 scale-105" : "hover:border-accent/50 hover:bg-accent/5"
+                  )}
+                >
+                  <div className={cn("p-4 rounded-2xl transition-colors", orderType === 'Take Away' ? "bg-white/20" : "bg-muted group-hover:bg-accent/10")}>
+                    <ShoppingBag size={32} className={orderType === 'Take Away' ? "text-white" : "text-muted-foreground group-hover:text-accent"} />
+                  </div>
+                  <span className="text-sm font-black uppercase tracking-widest">Bawa Pulang</span>
+                </Button>
               </div>
               {orderType === 'Dine-in' && (
                 <div className="animate-in slide-in-from-top-4 duration-300">
@@ -433,7 +496,27 @@ export default function KasirPage({ user, onNavigate }) {
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-8 animate-in fade-in duration-700">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-8 animate-in fade-in duration-700 relative">
+      
+      {!activeShift && !loading && (
+        <div className="absolute inset-0 z-[50] flex items-center justify-center bg-background/60 backdrop-blur-md rounded-3xl border-2 border-dashed border-accent/20 m-1">
+          <Card className="max-w-sm w-full shadow-2xl border-none bg-card rounded-[3rem] overflow-hidden text-center p-10 space-y-6">
+            <div className="w-20 h-20 bg-accent/10 rounded-[2rem] flex items-center justify-center text-accent mx-auto">
+               <Lock size={40} />
+            </div>
+            <div>
+               <h2 className="text-2xl font-black">Kasir Terkunci</h2>
+               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mt-2">Buka shift untuk mulai berjualan</p>
+            </div>
+            <Button 
+              className="w-full h-14 bg-accent hover:bg-accent/90 text-lg font-black rounded-2xl shadow-xl shadow-accent/20"
+              onClick={() => onNavigate('shift')}
+            >
+              Buka Shift Sekarang
+            </Button>
+          </Card>
+        </div>
+      )}
       
       <div className="flex-1 flex flex-col min-w-0 space-y-6 overflow-hidden">
         
@@ -538,7 +621,7 @@ export default function KasirPage({ user, onNavigate }) {
                </div>
                <div className="text-right">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground block">Item</span>
-                  <span className="text-xl font-black text-accent">{cart.reduce((s, i) => s + i.qty, 0)}</span>
+                  <span className="text-xl font-black text-accent data-mono">{cart.reduce((s, i) => s + i.qty, 0)}</span>
                </div>
             </CardHeader>
 
@@ -586,7 +669,7 @@ export default function KasirPage({ user, onNavigate }) {
                            </div>
                            <div className="flex items-center bg-muted/50 rounded-lg p-0.5 border shadow-sm">
                               <button onClick={() => changeQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors text-muted-foreground"><Minus size={12} /></button>
-                              <span className="w-8 text-center text-xs font-bold">{item.qty}</span>
+                              <span className="w-8 text-center text-xs font-black data-mono">{item.qty}</span>
                               <button onClick={() => changeQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center hover:bg-background rounded-md transition-colors text-primary"><Plus size={12} /></button>
                            </div>
                         </div>
@@ -630,7 +713,7 @@ export default function KasirPage({ user, onNavigate }) {
       {showCheckout && <CheckoutModal cart={cart} onClose={() => setShowCheckout(false)} onSuccess={(tx) => { setLastTx(tx); setShowCheckout(false); setShowSuccess(true); setCart([]); fetchMenuAndOrders(); }} user={user} />}
       
       {showSuccess && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-primary/20 backdrop-blur-xl animate-in fade-in duration-500">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-zinc-950/40 backdrop-blur-xl animate-in fade-in duration-500">
           <Card className="w-full max-w-sm text-center p-12 space-y-8 shadow-[0_32px_128px_-32px_rgba(0,0,0,0.5)] bg-background border-none rounded-[3rem] relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-emerald-500" />
             <div className="w-24 h-24 bg-emerald-500 rounded-[2.5rem] mx-auto flex items-center justify-center shadow-2xl shadow-emerald-200 animate-bounce">
@@ -638,9 +721,16 @@ export default function KasirPage({ user, onNavigate }) {
             </div>
             <div className="space-y-2">
                <h2 className="text-3xl font-black tracking-tight">Sukses!</h2>
-               <p className="text-muted-foreground font-medium">Pesanan <span className="text-primary font-black">#{lastTx?.id?.slice(-6).toUpperCase()}</span> telah berhasil didaftarkan.</p>
+               <p className="text-muted-foreground font-medium">Pesanan <span className="text-primary font-black">#{lastTx?.id?.slice(-6).toUpperCase()}</span> telah didaftarkan.</p>
+               {lastTx?.unique_code > 0 && (
+                 <div className="mt-4 p-4 bg-amber-500/10 rounded-2xl border border-amber-500/20">
+                    <p className="text-[10px] font-black uppercase text-amber-700 tracking-widest">Total Bayar (+Kode Unik)</p>
+                    <p className="text-2xl font-black text-amber-600 data-mono">{formatRupiah(lastTx.total)}</p>
+                    <p className="text-[9px] font-bold text-amber-500 mt-1 italic">Tiga digit terakhir membantu verifikasi otomatis.</p>
+                 </div>
+               )}
             </div>
-            <Button className="w-full h-14 text-lg font-black bg-primary rounded-2xl shadow-xl hover:scale-105 transition-transform" onClick={() => setShowSuccess(false)}>
+            <Button className="w-full h-14 text-lg font-black bg-amber-500 text-zinc-900 rounded-2xl shadow-xl hover:scale-105 transition-transform" onClick={() => setShowSuccess(false)}>
                Transaksi Baru
             </Button>
           </Card>

@@ -18,6 +18,7 @@ import GuestMenuPage from './pages/GuestMenuPage';
 import ActivityLogPage from './pages/ActivityLogPage';
 import AkunPage from './pages/AkunPage';
 import OutletPage from './pages/OutletPage';
+import RegisterPage from './pages/RegisterPage';
 
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
@@ -104,11 +105,26 @@ function App() {
 
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 
-  const isGuestUrl = window.location.hash.includes('/guest');
+  const hash = window.location.hash;
+  const isGuestUrl = hash.includes('/guest');
+  const isMemberLogin = hash === '#/member-login';
+  const isRegister = hash === '#/register';
 
   if (loading) return null;
-  if (isGuestUrl) return <GuestMenuPage />;
-  if (!user) return <LoginPage onLogin={handleLogin} />;
+  
+  if (isGuestUrl) return <GuestMenuPage user={user} />;
+  
+  if (!user) {
+    if (isRegister) return <RegisterPage onSuccess={handleLogin} onGoLogin={() => window.location.hash = '#/member-login'} />;
+    return (
+      <LoginPage 
+        onLogin={handleLogin} 
+        memberOnly={isMemberLogin} 
+        onGoRegister={() => window.location.hash = '#/register'}
+        onBack={() => window.location.hash = '#/guest'}
+      />
+    );
+  }
 
   if (user && user.role === 'customer') {
     return <CustomerPortalPage user={user} onLogout={handleLogout} />;

@@ -173,21 +173,21 @@ export default function Dashboard({ user, onNavigate }) {
 
       {/* Low Stock Warning Banner */}
       {lowStockItems.length > 0 && (
-        <Card className="bg-amber-50 border-amber-200 border animate-in slide-in-from-top-4 duration-500 shadow-sm">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-amber-200/50 rounded-xl flex items-center justify-center text-amber-700">
-                <AlertTriangle className="animate-bounce" size={20} />
+        <Card className="bg-card border-l-4 border-l-amber-500 border-y-muted border-r-muted animate-in slide-in-from-top-4 duration-500 shadow-xl overflow-hidden">
+          <CardContent className="p-0 flex items-center justify-between">
+            <div className="flex items-center gap-4 p-6">
+              <div className="w-12 h-12 bg-amber-500 text-zinc-900 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                <AlertTriangle className="animate-bounce" size={24} />
               </div>
               <div>
-                <p className="text-sm font-black text-amber-800">PERINGATAN STOK KRITIS!</p>
-                <p className="text-xs text-amber-700/80 font-bold">Ada {lowStockItems.length} bahan baku di bawah stok minimum. Segera lakukan restock.</p>
+                <p className="text-sm font-black text-foreground tracking-tight">PERINGATAN STOK KRITIS!</p>
+                <p className="text-xs text-muted-foreground font-medium">Ada <span className="data-mono font-bold text-amber-600">{lowStockItems.length}</span> bahan baku di bawah stok minimum.</p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="bg-white border-amber-300 text-amber-800 font-black text-[10px] hover:bg-amber-100" onClick={() => onNavigate?.('inventori')}>LIHAT DAFTAR</Button>
+            <div className="flex gap-2 pr-6">
+              <Button size="sm" variant="outline" className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest" onClick={() => onNavigate?.('inventori')}>LIHAT DAFTAR</Button>
               {hasFeature(user, 'procurement') && (
-                <Button size="sm" className="bg-amber-500 text-white font-black text-[10px] hover:bg-amber-600 shadow-md shadow-amber-200" onClick={() => onNavigate?.('pembelian')}>BUAT PO</Button>
+                <Button size="sm" className="h-10 bg-amber-500 text-zinc-900 hover:bg-amber-600 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-amber-500/20" onClick={() => onNavigate?.('pembelian')}>BUAT PO</Button>
               )}
             </div>
           </CardContent>
@@ -198,37 +198,33 @@ export default function Dashboard({ user, onNavigate }) {
       {aiInsights.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in slide-in-from-bottom-4 duration-700">
           {aiInsights.map((insight, idx) => (
-            <Card key={idx} className={cn(
-              "border-none shadow-lg overflow-hidden relative group",
-              insight.type === 'warning' ? "bg-amber-500/10" : 
-              insight.type === 'success' ? "bg-emerald-500/10" : "bg-blue-500/10"
-            )}>
-              <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform duration-500">
-                <Zap size={80} />
+            <Card key={idx} className="bg-card border border-muted shadow-lg overflow-hidden relative group hover:border-amber-500/30 transition-all duration-500">
+              <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 group-hover:scale-110 transition-all duration-700">
+                <Zap size={100} />
               </div>
-              <CardContent className="p-6 relative z-10 flex flex-col gap-3">
-                <div className="flex items-center gap-3">
+              <CardContent className="p-6 relative z-10 flex flex-col gap-4">
+                <div className="flex items-center gap-4">
                   <div className={cn(
-                    "w-10 h-10 rounded-xl flex items-center justify-center shadow-sm",
-                    insight.type === 'warning' ? "bg-amber-500 text-white" : 
+                    "w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl transition-transform group-hover:scale-110",
+                    insight.type === 'warning' ? "bg-amber-500 text-zinc-900" : 
                     insight.type === 'success' ? "bg-emerald-500 text-white" : "bg-blue-500 text-white"
                   )}>
-                    {insight.type === 'warning' ? <AlertTriangle size={18} /> : 
-                     insight.type === 'success' ? <TrendingUp size={18} /> : <Zap size={18} />}
+                    {insight.type === 'warning' ? <AlertTriangle size={20} /> : 
+                     insight.type === 'success' ? <TrendingUp size={20} /> : <Zap size={20} />}
                   </div>
                   <div>
-                    <h4 className="text-sm font-black tracking-tight">{insight.title}</h4>
-                    <p className="text-[10px] font-bold uppercase opacity-60 tracking-widest">AI Business Insight</p>
+                    <h4 className="text-sm font-black tracking-tight group-hover:text-amber-600 transition-colors">{insight.title}</h4>
+                    <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] mt-1">AI Business Insight</p>
                   </div>
                 </div>
-                <p className="text-xs font-medium leading-relaxed opacity-80">{insight.message}</p>
+                <p className="text-xs font-medium leading-relaxed text-muted-foreground line-clamp-2">{insight.message}</p>
                 <Button 
                   size="sm" 
                   variant="ghost" 
-                  className="mt-2 w-fit h-8 rounded-lg text-[10px] font-black uppercase hover:bg-black/5"
+                  className="w-full h-10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-muted"
                   onClick={() => onNavigate?.(insight.action)}
                 >
-                  Lihat Detail <ChevronRight size={14} className="ml-1" />
+                  Detail Insight <ChevronRight size={14} className="ml-2" />
                 </Button>
               </CardContent>
             </Card>
