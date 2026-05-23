@@ -82,7 +82,13 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3001;
 const { startSyncDaemon } = require('./services/syncService');
 
-server.listen(PORT, () => {
-  console.log(`🚀 KEN ENTERPRISE CORE ACTIVE ON PORT ${PORT}`);
-  startSyncDaemon(); // 🔄 Start Background Auto-Reconciliation Engine
-});
+// Cegah listen manual saat dijalankan di Vercel Serverless
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`🚀 KEN ENTERPRISE CORE ACTIVE ON PORT ${PORT}`);
+    startSyncDaemon(); // 🔄 Start Background Auto-Reconciliation Engine
+  });
+}
+
+// WAJIB DIEKSPOR UNTUK VERCEL SERVERLESS
+module.exports = app;
