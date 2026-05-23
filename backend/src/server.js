@@ -1,16 +1,15 @@
 require('dotenv').config();
 const Sentry = require("@sentry/node");
 const { requireFeature } = require('./middleware/tierGuard');
-const { nodeProfilingIntegration } = require("@sentry/profiling-node");
+// MENCEGAH VERCEL CRASH:
+// const { nodeProfilingIntegration } = require("@sentry/profiling-node");
 
-// Ensure to call this before importing any other modules!
 Sentry.init({
   dsn: "https://d12d810e0ed1be3ceeb39ce32badf469@o4511436228067328.ingest.us.sentry.io/4511436240650240",
   integrations: [
-    nodeProfilingIntegration(),
+    // nodeProfilingIntegration(),
   ],
-  // Tracing
-  tracesSampleRate: 1.0, //  Capture 100% of the transactions
+  tracesSampleRate: 1.0,
 });
 
 const express = require('express');
