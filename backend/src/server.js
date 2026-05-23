@@ -16,7 +16,7 @@ try {
   const cors = require('cors');
   const path = require('path');
   const multer = require('multer');
-  const upload = multer({ dest: '/tmp/' }); // UBAH KE /tmp KARENA VERCEL READ-ONLY
+  const upload = multer({ storage: multer.memoryStorage() }); // Use memory storage for Supabase
   const http = require('http');
   const { Server } = require('socket.io');
 
@@ -51,9 +51,37 @@ try {
   app.use('/api/p', requireFeature('procurement'), require('./routes/procurementRoutes'));
   app.use('/api/laporan', require('./routes/reportRoutes'));
 
-  app.post('/api/upload', upload.single('image'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file' });
-    res.json({ url: `/uploads/${req.file.filename}` });
+  const supabase = require('./config/supabase');
+  app.post('/api/upload', upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) return res.status(400).json({ error: 'No file' });
+      
+      const fileExt = req.file.originalname.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `public/${fileName}`;
+      
+      // Upload ke Supabase Storage (bucket: 'uploads')
+      const { data, error } = await supabase.storage
+        .from('uploads')
+        .upload(filePath, req.file.buffer, {
+          contentType: req.file.mimetype,
+          upsert: true
+        });
+        
+      if (error) {
+        console.error('Supabase Storage Error:', error);
+        return res.status(500).json({ error: 'Gagal mengupload ke storage. Pastikan bucket "uploads" sudah dibuat dan public di Supabase Anda.' });
+      }
+      
+      const { data: publicUrlData } = supabase.storage
+        .from('uploads')
+        .getPublicUrl(filePath);
+        
+      res.json({ url: publicUrlData.publicUrl });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: err.message });
+    }
   });
 
   Sentry.setupExpressErrorHandler(app);

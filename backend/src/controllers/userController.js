@@ -185,6 +185,59 @@ class UserController {
     }
   }
 
+  async addPaymentMethod(req, res) {
+    try {
+      const { tenantId } = req.userContext;
+      const data = await UserService.addPaymentMethod(req.body, tenantId);
+      res.json(data);
+    } catch (err) {
+      console.error('❌ Add Payment Method Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  async updatePaymentMethod(req, res) {
+    try {
+      const { tenantId } = req.userContext;
+      const id = req.params.id || req.body.id;
+      if (!id) {
+        return res.status(400).json({ error: 'ID metode pembayaran wajib disertakan' });
+      }
+      
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        return res.status(400).json({ error: 'Format ID metode pembayaran tidak valid' });
+      }
+
+      const data = await UserService.updatePaymentMethod(id, req.body, tenantId);
+      res.json(data);
+    } catch (err) {
+      console.error('❌ Update Payment Method Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  async deletePaymentMethod(req, res) {
+    try {
+      const { tenantId } = req.userContext;
+      const { id } = req.params;
+      if (!id) {
+        return res.status(400).json({ error: 'ID metode pembayaran wajib disertakan' });
+      }
+
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(id)) {
+        return res.status(400).json({ error: 'Format ID metode pembayaran tidak valid' });
+      }
+
+      await UserService.deletePaymentMethod(id, tenantId);
+      res.json({ success: true, message: 'Metode pembayaran berhasil dihapus' });
+    } catch (err) {
+      console.error('❌ Delete Payment Method Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
   async logSystemActivity(req, res) {
     try {
       const context = req.userContext || {};

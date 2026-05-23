@@ -196,6 +196,27 @@ class UserService {
     return data || ['Cash', 'QRIS', 'Transfer'];
   }
 
+  async addPaymentMethod(payload, tenantId) {
+    if (!tenantId) throw new Error('Tenant ID required');
+    return await UserRepository.createPaymentMethod({
+      ...payload,
+      tenant_id: tenantId
+    });
+  }
+
+  async updatePaymentMethod(id, payload, tenantId) {
+    if (!tenantId) throw new Error('Tenant ID required');
+    const cleanPayload = { ...payload };
+    delete cleanPayload.id;
+    delete cleanPayload.tenant_id;
+    return await UserRepository.updatePaymentMethod(id, cleanPayload, tenantId);
+  }
+
+  async deletePaymentMethod(id, tenantId) {
+    if (!tenantId) throw new Error('Tenant ID required');
+    return await UserRepository.deletePaymentMethod(id, tenantId);
+  }
+
   async logSystemActivity(payload, context) {
     const logPayload = {
       tenant_id: context.tenantId || payload.tenantId || payload.tenant_id || '00000000-0000-0000-0000-000000000000',

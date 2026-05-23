@@ -135,6 +135,28 @@ class UserRepository {
     return { data, error };
   }
 
+  async createPaymentMethod(payload) {
+    const { data, error } = await supabase.from('payment_methods').insert([payload]).select();
+    if (error) throw error;
+    return data[0];
+  }
+
+  async updatePaymentMethod(id, payload, tenantId) {
+    let query = supabase.from('payment_methods').update(payload).eq('id', id);
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+    const { data, error } = await query.select();
+    if (error) throw error;
+    return data[0];
+  }
+
+  async deletePaymentMethod(id, tenantId) {
+    let query = supabase.from('payment_methods').delete().eq('id', id);
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+    const { error } = await query;
+    if (error) throw error;
+    return true;
+  }
+
   async logActivity(logPayload) {
     const { data, error } = await supabase.from('activity_logs').insert([logPayload]).select();
     if (error) throw error;

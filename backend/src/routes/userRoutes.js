@@ -87,6 +87,10 @@ router.get('/customers', userController.getCustomers);
  * @route GET /api/paymentmethods
  */
 router.get('/paymentmethods', userController.getPaymentMethods);
+router.post('/paymentmethods', userController.addPaymentMethod);
+router.put('/paymentmethods/:id', userController.updatePaymentMethod);
+router.put('/paymentmethods', userController.updatePaymentMethod);
+router.delete('/paymentmethods/:id', userController.deletePaymentMethod);
 
 /**
  * @route POST /api/system-logs
