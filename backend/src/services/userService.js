@@ -43,6 +43,10 @@ class UserService {
   }
 
   async getAllUsers(tenantId) {
+    // Superadmin bypass: fetch all users
+    if (tenantId === '00000000-0000-0000-0000-000000000000') {
+      return await UserRepository.getUsersByTenant(null);
+    }
     return await UserRepository.getUsersByTenant(tenantId);
   }
 
