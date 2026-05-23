@@ -51,7 +51,7 @@ try {
   app.use('/api/p', requireFeature('procurement'), require('./routes/procurementRoutes'));
   app.use('/api/laporan', require('./routes/reportRoutes'));
 
-  const supabase = require('./config/supabase');
+  const { supabase } = require('./supabase');
   app.post('/api/upload', upload.single('image'), async (req, res) => {
     try {
       if (!req.file) return res.status(400).json({ error: 'No file' });
