@@ -29,7 +29,7 @@ class MenuService {
       const boms = bomDataArray.map(b => ({
         tenant_id: tenantId,
         menu_id: newMenu.id,
-        bahan_id: b.bahan_id,
+        bahan_id: b.bahanId || b.bahan_id,
         qty_needed: Number(b.qty) || 0
       }));
       await MenuRepository.createMenuBom(boms);
@@ -48,7 +48,7 @@ class MenuService {
       const boms = bomDataArray.map(b => ({
         tenant_id: tenantId,
         menu_id: menuId,
-        bahan_id: b.bahan_id,
+        bahan_id: b.bahanId || b.bahan_id,
         qty_needed: Number(b.qty) || 0
       }));
       await MenuRepository.createMenuBom(boms);

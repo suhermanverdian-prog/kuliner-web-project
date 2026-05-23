@@ -1,6 +1,7 @@
-const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ? `http://${window.location.hostname}:3001/api`
-  : '/api';
+const API_URL = import.meta.env.VITE_API_URL || 
+  ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? `http://${window.location.hostname}:3001/api`
+    : '/api');
 
 import * as Sentry from '@sentry/react';
 
@@ -110,6 +111,8 @@ const getResource = (prop) => {
     'getLaporanWaste': 'laporan/waste',
     'getLaporanInsights': 'laporan/insights',
     'getAiInsights': 'ai/insights',
+    'getPricingSuggestions': 'ai/pricing-suggestions',
+    'getInventoryForecast': 'ai/inventory-forecast',
     
     // Inventory Intelligence
     'getInventoryPredictions': 'inventory/predictions',

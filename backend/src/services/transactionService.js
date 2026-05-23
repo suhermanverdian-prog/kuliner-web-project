@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const TransactionRepository = require('../repositories/transactionRepository');
+const { getConversion } = require('../utils/conversion');
 
 class TransactionService {
 
@@ -206,13 +207,16 @@ class TransactionService {
 
             if (!bInfo) continue;
 
-            const itemHpp = Math.round(usedQty * (bInfo.cost || 0));
+            const conv = getConversion(bInfo);
+            const baseUsedQty = usedQty / conv.ratio;
+
+            const itemHpp = Math.round(baseUsedQty * (bInfo.cost || 0));
             totalHpp += itemHpp;
 
-            const { error: updErr } = await TransactionRepository.decrementStockAtomic(bInfo.id, usedQty, tenantId);
+            const { error: updErr } = await TransactionRepository.decrementStockAtomic(bInfo.id, baseUsedQty, tenantId);
 
             if (updErr) {
-                const newStock = Number(bInfo.stock) - usedQty;
+                const newStock = Number(bInfo.stock) - baseUsedQty;
                 await TransactionRepository.updateStockDirect(bInfo.id, newStock, tenantId);
             }
             
@@ -222,9 +226,9 @@ class TransactionService {
                 bahan_id: bInfo.id,
                 bahan_name: bInfo.name,
                 type: 'Sales',
-                change_qty: -usedQty,
+                change_qty: -baseUsedQty,
                 prev_stock: Number(bInfo.stock),
-                next_stock: Number(bInfo.stock) - usedQty,
+                next_stock: Number(bInfo.stock) - baseUsedQty,
                 reference_id: readableId || 'Sales',
                 created_at: new Date().toISOString()
             });
@@ -338,6 +342,114 @@ class TransactionService {
 
     const oldTx = await TransactionRepository.getTransactionById(id);
     if (!oldTx) throw new Error('Not found');
+
+    if (oldTx.payment_status === 'void') return true;
+
+    const tenantId = oldTx.tenant_id;
+    let itemsForStock = [];
+    const items = await TransactionRepository.getTransactionItems(id);
+    if (items && items.length > 0) {
+        itemsForStock = items.map(i => ({ id: i.menu_id, qty: i.qty }));
+    } else if (oldTx.items && oldTx.items.items) {
+        itemsForStock = oldTx.items.items.map(i => ({ id: i.id, qty: i.qty }));
+    }
+
+    let totalHppReversed = 0;
+    for (const item of itemsForStock) {
+        const boms = await TransactionRepository.getMenuBOM(item.id, tenantId);
+        if (!boms || boms.length === 0) continue;
+
+        for (const b of boms) {
+            const usedQty = Number(b.qty_needed || 0) * item.qty;
+            let bahanId = b.bahan_id;
+            let bInfo = await TransactionRepository.getBahanByIdOrName(bahanId, null, tenantId);
+
+            if (!bInfo && typeof bahanId === 'number') {
+                const legacyMap = { 101: 'Biji Kopi Arabica', 102: 'Susu Segar', 103: 'Gula Aren' };
+                const legacyName = legacyMap[bahanId];
+                if (legacyName) {
+                    bInfo = await TransactionRepository.getBahanByIdOrName(null, legacyName, tenantId);
+                }
+            }
+            if (!bInfo) continue;
+
+            const conv = getConversion(bInfo);
+            const baseUsedQty = usedQty / conv.ratio;
+            totalHppReversed += Math.round(baseUsedQty * (bInfo.cost || 0));
+
+            const { error: updErr } = await TransactionRepository.decrementStockAtomic(bInfo.id, -baseUsedQty, tenantId);
+            if (updErr) {
+                const newStock = Number(bInfo.stock) + baseUsedQty;
+                await TransactionRepository.updateStockDirect(bInfo.id, newStock, tenantId);
+            }
+            await TransactionRepository.insertInventoryLog({
+                tenant_id: tenantId,
+                outlet_id: oldTx.outlet_id,
+                bahan_id: bInfo.id,
+                bahan_name: bInfo.name,
+                type: 'Restock_Void',
+                change_qty: baseUsedQty,
+                prev_stock: Number(bInfo.stock),
+                next_stock: Number(bInfo.stock) + baseUsedQty,
+                reference_id: oldTx.order_number || 'Void',
+                created_at: new Date().toISOString()
+            });
+        }
+    }
+
+    if (oldTx.payment_status === 'paid') {
+        const settings = await TransactionRepository.getSettings(tenantId);
+        const amap = settings?.accounting_map || {};
+        const codes = [
+            amap.cash || '1-1000', 
+            amap.sales || '4-1000', 
+            amap.hpp || '5-1000', 
+            amap.inventory || '1-2000',
+            amap.tax || '2-2000'
+        ];
+        const accounts = await TransactionRepository.getAccountsByCodes(codes);
+        const getAccountId = (code) => accounts?.find(a => a.code === code)?.id;
+
+        const journalId = crypto.randomUUID();
+        const totalAmount = Math.round(oldTx.total || 0);
+        const taxAmount = Math.round(oldTx.tax || 0);
+        const netRevenue = totalAmount - taxAmount;
+
+        const journalHeader = {
+            id: journalId,
+            tenant_id: tenantId,
+            date: new Date().toISOString(),
+            reference: 'VOID-' + oldTx.order_number,
+            description: `VOID Sales: ${oldTx.order_number}`,
+            total_amount: totalAmount
+        };
+
+        const lines = [
+            { journal_id: journalId, account_id: getAccountId(amap.cash || '1-1000'), account_code: amap.cash || '1-1000', account_name: 'Kas/Bank', debit: 0, credit: totalAmount, tenant_id: tenantId },
+            { journal_id: journalId, account_id: getAccountId(amap.sales || '4-1000'), account_code: amap.sales || '4-1000', account_name: 'Pendapatan', debit: netRevenue, credit: 0, tenant_id: tenantId }
+        ];
+
+        if (taxAmount > 0) {
+            lines.push({ journal_id: journalId, account_id: getAccountId(amap.tax || '2-2000'), account_code: amap.tax || '2-2000', account_name: 'Hutang Pajak (PPN)', debit: taxAmount, credit: 0, tenant_id: tenantId });
+        }
+
+        if (totalHppReversed > 0) {
+            lines.push(
+                { journal_id: journalId, account_id: getAccountId(amap.hpp || '5-1000'), account_code: amap.hpp || '5-1000', account_name: 'HPP', debit: 0, credit: Math.round(totalHppReversed), tenant_id: tenantId },
+                { journal_id: journalId, account_id: getAccountId(amap.inventory || '1-2000'), account_code: amap.inventory || '1-2000', account_name: 'Persediaan', debit: Math.round(totalHppReversed), credit: 0, tenant_id: tenantId }
+            );
+        }
+
+        const validLines = lines.filter(l => l.account_id);
+        if (validLines.length >= 2) {
+            try {
+                await TransactionRepository.insertJournalHeader(journalHeader);
+                await TransactionRepository.insertJournalLines(validLines);
+            } catch (err) {
+                console.warn("Gagal mencatat jurnal VOID:", err.message);
+            }
+        }
+    }
 
     await TransactionRepository.logAudit({
         action_type: 'APPROVE_VOID',

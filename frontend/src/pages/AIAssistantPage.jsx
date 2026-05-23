@@ -21,14 +21,43 @@ export default function AIAssistantPage() {
     handleSend
   } = useAIAssistantPage(user);
 
-  // Elite Markdown Parser
+  // Elite Markdown & Agentic Action Parser
   const renderContent = (content) => {
-    let formatted = content
+    let textContent = content;
+    let actionData = null;
+
+    // Ekstrak JSON block jika ada
+    const jsonMatch = textContent.match(/```json\s*(\{[\s\S]*?\})\s*```/);
+    if (jsonMatch) {
+      try {
+        actionData = JSON.parse(jsonMatch[1]);
+        textContent = textContent.replace(jsonMatch[0], '').trim();
+      } catch (e) {
+        console.error("Gagal parsing action JSON:", e);
+      }
+    }
+
+    let formatted = textContent
       .replace(/\*\*(.*?)\*\*/g, '<strong class="text-amber-600 dark:text-amber-400 font-bold">$1</strong>')
       .replace(/^\s*[-*]\s+(.*)/gm, '<li class="ml-4 list-disc">$1</li>')
       .replace(/\n/g, '<br />');
     
-    return <div dangerouslySetInnerHTML={{ __html: formatted }} />;
+    return (
+      <div className="space-y-4">
+        <div dangerouslySetInnerHTML={{ __html: formatted }} />
+        {actionData && actionData.action === 'CREATE_PO' && (
+          <div className="mt-4 p-4 bg-background border border-amber-500/30 rounded-lg shadow-lg flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-black uppercase text-amber-500 tracking-widest">Suggested Action</p>
+              <p className="text-xs font-bold text-foreground">Draft PO: {actionData.payload.qty} {actionData.payload.item}</p>
+            </div>
+            <Button size="sm" className="bg-amber-500 text-white hover:bg-amber-600" onClick={() => alert('Fitur Draft PO sedang diaktifkan!')}>
+              EXECUTE PO
+            </Button>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const suggestions = user?.role === 'super_admin' ? [

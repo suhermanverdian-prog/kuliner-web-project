@@ -11,12 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { cn } from "../lib/utils";
 import { formatRupiah } from '../utils/formatters';
-import { useRevenueIntelligencePage, pricingSuggestions } from '../hooks/useRevenueIntelligencePage';
+import { useRevenueIntelligencePage } from '../hooks/useRevenueIntelligencePage';
 
 export default function RevenueIntelligencePage() {
   const {
     loading,
-    analysisMode, setAnalysisMode
+    analysisMode, setAnalysisMode,
+    pricingSuggestions
   } = useRevenueIntelligencePage();
 
   if (loading) return (

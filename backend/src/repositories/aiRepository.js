@@ -71,6 +71,19 @@ class AIRepository {
     const { data } = await query;
     return data || [];
   }
+  async getMenuPrices(tenantId) {
+    let query = supabase.from('menu').select('id, name, price, category');
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+    const { data } = await query;
+    return data || [];
+  }
+
+  async getBahanPrices(tenantId) {
+    let query = supabase.from('bahan').select('id, name, price_per_unit, unit');
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+    const { data } = await query;
+    return data || [];
+  }
 }
 
 module.exports = new AIRepository();

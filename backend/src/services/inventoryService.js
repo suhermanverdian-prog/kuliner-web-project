@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const InventoryRepository = require('../repositories/inventoryRepository');
 const TransactionRepository = require('../repositories/transactionRepository');
 
@@ -190,6 +191,42 @@ class InventoryService {
           reference_id: `WASTE-${Date.now().toString().slice(-4)}`,
           created_at: new Date().toISOString()
       });
+
+      const wasteValue = Math.round(qty * (bInfo.cost || 0));
+      if (wasteValue > 0) {
+        try {
+          const settings = await TransactionRepository.getSettings(tenantId);
+          const amap = settings?.accounting_map || {};
+          const invCode = amap.inventory || '1-2000';
+          const wasteCode = amap.hpp || '5-1000'; // Defaulting waste to HPP if no specific waste account is set
+          
+          const accounts = await TransactionRepository.getAccountsByCodes([invCode, wasteCode]);
+          const getAccountId = (code) => accounts?.find(a => a.code === code)?.id;
+
+          const invAccId = getAccountId(invCode);
+          const wasteAccId = getAccountId(wasteCode);
+
+          if (invAccId && wasteAccId) {
+            const journalId = crypto.randomUUID();
+            await TransactionRepository.insertJournalHeader({
+                id: journalId,
+                tenant_id: tenantId,
+                date: new Date().toISOString(),
+                reference: `WASTE-${Date.now().toString().slice(-6)}`,
+                description: `Pencatatan Waste / Spoilage: ${bInfo.name}`,
+                total_amount: wasteValue
+            });
+
+            await TransactionRepository.insertJournalLines([
+                { journal_id: journalId, account_id: wasteAccId, account_code: wasteCode, account_name: 'Beban Penyusutan / Waste', debit: wasteValue, credit: 0, tenant_id: tenantId },
+                { journal_id: journalId, account_id: invAccId, account_code: invCode, account_name: 'Persediaan', debit: 0, credit: wasteValue, tenant_id: tenantId }
+            ]);
+          }
+        } catch (jErr) {
+          console.warn("Gagal mencatat jurnal waste:", jErr.message);
+        }
+      }
+
       return { success: true, message: 'Waste recorded' };
     } catch (err) {
       throw err;

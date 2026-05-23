@@ -126,7 +126,7 @@ class AIService {
     const topItems = Object.entries(itemMap).sort((a,b) => b[1] - a[1]).slice(0, 3).map(([k,v]) => `${k} (${v})`).join(', ');
 
     const trend = revenue >= revenueYesterday ? 'NAIK' : 'TURUN';
-    const systemPrompt = `Anda adalah KEN Intelligence v4.2, Executive Business Analyst. 
+    const systemPrompt = `Anda adalah KEN Intelligence v4.2, Executive Business Analyst dan Agentic Assistant. 
     DATA REAL-TIME (Tenant ID: ${tenantId}):
     - Revenue Today: Rp ${revenue.toLocaleString('id-ID')}
     - Revenue Yesterday: Rp ${revenueYesterday.toLocaleString('id-ID')} (${trend})
@@ -135,7 +135,13 @@ class AIService {
     - Best Sellers: ${topItems || 'Belum ada data'}
     - CRM Status: ${custCount || 0} pelanggan terdaftar
     
-    Analisis data di atas secara tajam. Berikan 1 saran strategis untuk meningkatkan profit hari ini. Bahasa: Profesional, padat, Markdown.`;
+    Instruksi:
+    1. Jawab pertanyaan pengguna secara ringkas, profesional, dan padat.
+    2. JIKA pengguna meminta untuk membuat Draft Purchase Order (PO) atau membeli bahan baku, lampirkan JSON block di akhir pesan Anda dengan format berikut:
+       \`\`\`json
+       {"action": "CREATE_PO", "payload": {"item": "Nama Bahan", "qty": "10kg"}}
+       \`\`\`
+    3. Jika bukan tindakan, jawab secara normal menggunakan Markdown.`;
 
     console.log(`🤖 [AI] Request from Tenant: ${tenantId}, Provider: ${provider}`);
     
@@ -234,6 +240,123 @@ class AIService {
       { title: 'Monitoring Omzet', message: `Omzet hari ini mencapai Rp ${revenue.toLocaleString('id-ID')}. Pantau terus performa sore ini.`, type: 'info' },
       { title: 'Alert Inventori', message: lowStock !== 'Semua stok aman' ? `Perhatian: ${lowStock} segera habis.` : 'Stok bahan baku terpantau stabil dan aman.', type: lowStock !== 'Semua stok aman' ? 'warning' : 'info' },
       { title: 'Saran Strategis', message: 'Pertimbangkan bundling menu terlaris untuk meningkatkan Average Order Value.', type: 'info' }
+    ];
+  }
+  static async generatePricingModel(tenantId, provider, apiKey) {
+    const [menuRes, bahanRes] = await Promise.all([
+      AIRepository.getMenuPrices(tenantId),
+      AIRepository.getBahanPrices(tenantId)
+    ]);
+
+    const menuData = (menuRes || []).map(m => `${m.name} (Rp ${m.price})`).join(', ');
+    const bahanData = (bahanRes || []).map(b => `${b.name} (Rp ${b.price_per_unit}/${b.unit})`).join(', ');
+
+    const systemPrompt = `Anda adalah KEN Intelligence v4.2, Neural Pricing Engine.
+    Tugas Anda adalah melakukan simulasi kenaikan biaya bahan baku (HPP) dan menyarankan perubahan harga menu untuk mempertahankan Margin 40-50%.
+    
+    DATA MENU:
+    ${menuData || 'Belum ada menu.'}
+    
+    DATA BAHAN BAKU:
+    ${bahanData || 'Belum ada bahan baku.'}
+    
+    INSTRUKSI:
+    1. Berikan 3-5 saran kenaikan harga menu berdasarkan asumsi bahwa HPP bahan baku (seperti Susu, Kopi) sedang naik 10-15%.
+    2. Format output WAJIB HANYA berupa JSON Array of Objects, tanpa markdown backticks, tanpa kata pengantar apapun.
+    3. Struktur objek: {"id": "uuid-string-atau-bebas", "item": "Nama Menu", "current": 25000, "suggested": 28000, "reason": "Susu naik", "impact": "+12% Margin"}
+    `;
+
+    let aiResponse;
+    let success = false;
+
+    // Utamakan Gemini API Key bawaan dari .env (Master Key)
+    const masterKey = process.env.GEMINI_API_KEY;
+    const activeKey = (apiKey && apiKey.length > 20) ? apiKey : masterKey;
+    const activeProvider = (apiKey && apiKey.length > 20 && provider) ? provider : 'gemini';
+
+    if (activeKey) {
+      try {
+        if (activeProvider === 'gemini') {
+          aiResponse = await this.callGemini(activeKey, systemPrompt, "Hasilkan model simulasi JSON sekarang.");
+        } else {
+          aiResponse = await this.callOpenAI(activeKey, systemPrompt, "Hasilkan model simulasi JSON sekarang.", activeProvider);
+        }
+        success = true;
+      } catch (err) {
+        console.warn(`⚠️ [AI Pricing] Gagal memanggil ${activeProvider}:`, err.message);
+      }
+    }
+
+    if (success && aiResponse) {
+      // Clean up markdown syntax if Gemini accidentally includes it
+      const cleanedResponse = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+      try {
+        return JSON.parse(cleanedResponse);
+      } catch (parseErr) {
+        console.warn('⚠️ [AI Pricing] Gagal memparsing JSON:', parseErr.message, cleanedResponse);
+      }
+    }
+
+    // Fallback Mock Data jika AI gagal atau tidak ada API Key
+    return [
+      { id: '1', item: 'Cafe Latte', current: 25000, suggested: 28000, reason: 'Harga Fresh Milk naik 15%', impact: '+12% Margin' },
+      { id: '2', item: 'Espresso', current: 18000, suggested: 20000, reason: 'Biji kopi robusta naik 8%', impact: '+11% Margin' },
+      { id: '3', item: 'Caramel Macchiato', current: 32000, suggested: 35000, reason: 'Harga Caramel Syrup naik', impact: '+9.3% Margin' }
+    ];
+  }
+  static async generateDemandForecast(tenantId, provider, apiKey) {
+    const [recentTransactions, bahanRes] = await Promise.all([
+      AIRepository.getRecentTransactions(tenantId, 100),
+      AIRepository.getBahanPrices(tenantId)
+    ]);
+
+    const bahanData = (bahanRes || []).map(b => `${b.name} (${b.unit})`).join(', ');
+    const txCount = recentTransactions ? recentTransactions.length : 0;
+
+    const systemPrompt = `Anda adalah KEN Intelligence v4.2, Inventory Forecasting Engine.
+    Berdasarkan ${txCount} transaksi terakhir, prediksikan kebutuhan stok bahan baku untuk 7 hari ke depan.
+    
+    DATA BAHAN BAKU:
+    ${bahanData || 'Belum ada bahan baku.'}
+    
+    INSTRUKSI:
+    1. Berikan 3-5 prediksi peringatan stok habis (Stock Out Warning) berdasarkan tren konsumsi.
+    2. Format output WAJIB HANYA berupa JSON Array of Objects, tanpa markdown backticks.
+    3. Struktur objek: {"id": "uuid-string", "item": "Nama Bahan", "status": "Kritis" atau "Peringatan", "stockOutDate": "Dalam 2 hari", "action": "PO 10kg sekarang"}
+    `;
+
+    let aiResponse;
+    let success = false;
+    const masterKey = process.env.GEMINI_API_KEY;
+    const activeKey = (apiKey && apiKey.length > 20) ? apiKey : masterKey;
+    const activeProvider = (apiKey && apiKey.length > 20 && provider) ? provider : 'gemini';
+
+    if (activeKey) {
+      try {
+        if (activeProvider === 'gemini') {
+          aiResponse = await this.callGemini(activeKey, systemPrompt, "Hasilkan JSON forecast sekarang.");
+        } else {
+          aiResponse = await this.callOpenAI(activeKey, systemPrompt, "Hasilkan JSON forecast sekarang.", activeProvider);
+        }
+        success = true;
+      } catch (err) {
+        console.warn(`⚠️ [AI Forecast] Gagal memanggil ${activeProvider}:`, err.message);
+      }
+    }
+
+    if (success && aiResponse) {
+      const cleanedResponse = aiResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+      try {
+        return JSON.parse(cleanedResponse);
+      } catch (parseErr) {
+        console.warn('⚠️ [AI Forecast] Gagal memparsing JSON:', parseErr.message, cleanedResponse);
+      }
+    }
+
+    // Fallback Mock Data
+    return [
+      { id: '1', item: 'Kopi Arabica', status: 'Kritis', stockOutDate: 'Dalam 2 Hari', action: 'PO 20Kg Sekarang' },
+      { id: '2', item: 'Susu Fresh Milk', status: 'Peringatan', stockOutDate: 'Dalam 4 Hari', action: 'PO 15 Liter' }
     ];
   }
 }

@@ -26,6 +26,29 @@ class AIController {
       res.status(500).json({ error: err.message });
     }
   }
+  async getPricingSuggestions(req, res) {
+    try {
+      const { provider, apiKey } = req.query;
+      const { tenantId } = req.userContext || {};
+      
+      const result = await AIService.generatePricingModel(tenantId, provider, apiKey);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  async getInventoryForecast(req, res) {
+    try {
+      const { provider, apiKey } = req.query;
+      const { tenantId } = req.userContext || {};
+      
+      const result = await AIService.generateDemandForecast(tenantId, provider, apiKey);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 }
 
 module.exports = new AIController();

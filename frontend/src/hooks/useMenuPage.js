@@ -37,7 +37,20 @@ export function useMenuPage() {
         api.getMenu().catch(err => { console.error('Menu Error:', err); return []; }),
         api.getBahan().catch(err => { console.error('Bahan Error:', err); return []; })
       ]);
-      setMenus(m); setBahanList(b);
+
+      const augmentedMenus = (m || []).map(menu => {
+        const cost = (menu.bom || []).reduce((sum, row) => {
+          const bahan = (b || []).find(x => String(x.id) === String(row.bahanId || row.bahan_id));
+          if (!bahan) return sum;
+          const conv = getConversion(bahan);
+          const materialCost = bahan.cost || bahan.price || 0;
+          return sum + (materialCost / conv.ratio) * Number(row.qty || row.qty_needed || 0);
+        }, 0);
+        return { ...menu, cost };
+      });
+
+      setMenus(augmentedMenus); 
+      setBahanList(b || []);
     } finally { setLoading(false); }
   };
 
@@ -52,10 +65,13 @@ export function useMenuPage() {
 
   const handleSave = async (data) => {
     try {
-      if (data.id) {
-        await api.updateMenu(data.id, data);
+      const payload = { ...data };
+      delete payload.cost; // cost dihitung dinamis, tidak ada di schema db
+
+      if (payload.id) {
+        await api.updateMenu(payload.id, payload);
       } else {
-        await api.addMenu(data);
+        await api.addMenu(payload);
       }
       await loadData();
       setShowModal(false);

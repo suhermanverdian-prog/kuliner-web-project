@@ -8,7 +8,7 @@ export function useInventoryIntelligencePage() {
   const loadPredictions = async () => {
     setLoading(true);
     try {
-      const res = await api.getInventoryPredictions();
+      const res = await api.getInventoryForecast();
       setPredictions(res || []);
     } catch (err) {
       console.error("AI Insight Fail:", err);

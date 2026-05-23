@@ -62,10 +62,11 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
   };
 
   const calcHPP = (bom) => bom.reduce((sum, row) => {
-    const b = bahanList?.find(x => String(x.id) === String(row.bahanId));
+    const b = bahanList?.find(x => String(x.id) === String(row.bahanId || row.bahan_id));
     if (!b) return sum;
     const conv = getConversion(b);
-    return sum + (b.price / conv.ratio) * Number(row.qty);
+    const materialCost = b.cost || b.price || 0;
+    return sum + (materialCost / conv.ratio) * Number(row.qty);
   }, 0);
 
   const hppOtomatis = calcHPP(form.bom || []);
@@ -96,7 +97,7 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 px-1">Kategori</label>
-                  <select className="flex h-10 w-full rounded-md border border-input bg-card text-foreground px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-amber-500/20" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                  <select className="flex h-10 w-full rounded-md border border-input bg-card text-foreground px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-amber-500/20" value={form.category || ""} onChange={e => setForm({ ...form, category: e.target.value })}>
                     {MENU_CATEGORIES.filter(c => c !== 'Semua').map(c => <option key={c} className="bg-card text-foreground">{c}</option>)}
                   </select>
                 </div>
@@ -210,7 +211,7 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
         </CardContent>
         <CardFooter className="border-t pt-6 gap-4">
           <Button variant="outline" className="flex-1 h-12 rounded-md" onClick={onClose}>Batal</Button>
-          <Button className="flex-[2] h-12 font-black " onClick={() => onSave(form)}>Simpan Produk</Button>
+          <Button className="flex-[2] h-12 font-black " onClick={() => onSave({ ...form, cost: hppOtomatis })}>Simpan Produk</Button>
         </CardFooter>
       </Card>
     </div>

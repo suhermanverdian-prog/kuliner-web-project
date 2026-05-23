@@ -9,17 +9,17 @@ const menuController = require('../controllers/menuController');
 // ====================================================================
 const menuBomItemSchema = z.object({
   bahan_id: z.string().uuid("ID Bahan Baku harus berupa UUID yang valid"),
-  qty: z.number().positive("Kuantitas bahan baku harus bernilai positif")
+  qty: z.number().min(0, "Kuantitas bahan baku tidak boleh negatif")
 });
 
 const menuSchema = z.object({
   name: z.string().min(1, "Nama menu wajib diisi"),
-  price: z.number().positive("Harga menu harus berupa bilangan positif"),
-  image: z.string().url("Format URL gambar tidak valid").optional().or(z.string().length(0)),
-  sku: z.string().optional(),
-  category: z.string().optional(),
+  price: z.number().min(0, "Harga menu tidak boleh negatif"),
+  image: z.string().optional().nullable(),
+  sku: z.string().optional().nullable(),
+  category: z.string().optional().nullable(),
   is_active: z.boolean().optional().default(true),
-  bom: z.array(menuBomItemSchema).optional()
+  bom: z.array(menuBomItemSchema).optional().nullable()
 });
 
 // ====================================================================
