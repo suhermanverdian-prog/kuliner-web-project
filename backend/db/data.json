@@ -1,0 +1,104 @@
+{
+  "transactions": [
+    {
+      "id": "6831f1dc-d5ff-454a-9c5f-ef56d7c0dd3f",
+      "order_number": "TRX-071392-U6ZA",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "outlet_id": null,
+      "total": 50000,
+      "tax": 0,
+      "discount": 0,
+      "payment_method": "Tunai",
+      "payment_status": "paid",
+      "customer_name": "John Kasir",
+      "created_at": "2026-05-23T09:21:11.393Z",
+      "items": {
+        "kds_status": "new",
+        "table_type": "Dine In",
+        "cashier_name": "Admin System",
+        "items": [
+          {
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "qty": 2,
+            "price": 25000
+          }
+        ]
+      }
+    },
+    {
+      "id": "0473b431-2ef2-470b-8edc-9b286661835c",
+      "order_number": "TRX-072109-V9VH",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "outlet_id": null,
+      "total": 50000,
+      "tax": 0,
+      "discount": 0,
+      "payment_method": "Transfer",
+      "payment_status": "paid",
+      "customer_name": "Jane Member",
+      "created_at": "2026-05-23T09:21:12.110Z",
+      "items": {
+        "kds_status": "new",
+        "table_type": "Dine In",
+        "cashier_name": "Admin System",
+        "items": [
+          {
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "qty": 2,
+            "price": 25000
+          }
+        ]
+      }
+    },
+    {
+      "id": "2cdabe54-8b78-412a-b0d6-aec0e8001ab7",
+      "order_number": "TRX-974059-X5UT",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "outlet_id": null,
+      "total": 50000,
+      "tax": 0,
+      "discount": 0,
+      "payment_method": "Tunai",
+      "payment_status": "paid",
+      "customer_name": "John Kasir",
+      "created_at": "2026-05-23T09:52:54.061Z",
+      "items": {
+        "kds_status": "new",
+        "table_type": "Dine In",
+        "cashier_name": "Admin System",
+        "items": [
+          {
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "qty": 2,
+            "price": 25000
+          }
+        ]
+      }
+    },
+    {
+      "id": "8359a8c8-949e-41cc-a23d-b7adc10384d8",
+      "order_number": "TRX-974846-ZDC6",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "outlet_id": null,
+      "total": 50000,
+      "tax": 0,
+      "discount": 0,
+      "payment_method": "Transfer",
+      "payment_status": "paid",
+      "customer_name": "Jane Member",
+      "created_at": "2026-05-23T09:52:54.847Z",
+      "items": {
+        "kds_status": "new",
+        "table_type": "Dine In",
+        "cashier_name": "Admin System",
+        "items": [
+          {
+            "id": "123e4567-e89b-12d3-a456-426614174000",
+            "qty": 2,
+            "price": 25000
+          }
+        ]
+      }
+    }
+  ]
+}

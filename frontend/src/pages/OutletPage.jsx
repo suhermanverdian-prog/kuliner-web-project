@@ -1,236 +1,258 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   Store, Plus, MapPin, Phone, Edit2, Trash2, 
-  ArrowRight, Globe, CheckCircle, XCircle, TrendingUp
+  ArrowRight, Globe, CheckCircle2, XCircle, 
+  TrendingUp, Activity, LayoutGrid, Search,
+  Filter, MoreHorizontal, Settings, Info,
+  Map, Server, ShieldCheck, RefreshCw, X
 } from 'lucide-react';
-import api from '../api';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
+import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
+import { cn } from "@/lib/utils";
+import { useOutletPage } from '../hooks/useOutletPage';
 
 const OutletPage = () => {
-  const [outlets, setOutlets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editingOutlet, setEditingOutlet] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    address: '',
-    phone: '',
-    is_active: true
-  });
+  const {
+    outlets,
+    loading,
+    showModal, setShowModal,
+    editingOutlet, setEditingOutlet,
+    search, setSearch,
+    formData, setFormData,
+    handleSubmit,
+    handleEdit,
+    handleDelete,
+    filtered
+  } = useOutletPage();
 
-  useEffect(() => {
-    fetchOutlets();
-  }, []);
-
-  const fetchOutlets = async () => {
-    try {
-      const data = await api.getOutlets();
-      setOutlets(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch outlets:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editingOutlet) {
-        await api.updateOutlet({ ...formData, id: editingOutlet.id });
-      } else {
-        await api.addOutlet(formData);
-      }
-      setShowModal(false);
-      setEditingOutlet(null);
-      setFormData({ name: '', address: '', phone: '', is_active: true });
-      fetchOutlets();
-    } catch (err) {
-      alert('Gagal menyimpan data outlet');
-    }
-  };
-
-  const handleEdit = (outlet) => {
-    setEditingOutlet(outlet);
-    setFormData({
-      name: outlet.name,
-      address: outlet.address || '',
-      phone: outlet.phone || '',
-      is_active: outlet.is_active
-    });
-    setShowModal(true);
-  };
+  if (loading && outlets.length === 0) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-4 font-mono tabular-nums">
+      <RefreshCw className="w-10 h-10 animate-spin text-amber-500" />
+      <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">Syncing Global Outlet Nodes...</p>
+    </div>
+  );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <Store className="w-8 h-8 text-indigo-600" />
-            Manajemen Cabang (Multi-Outlet)
-          </h1>
-          <p className="text-gray-500">Kelola dan pantau performa seluruh outlet Anda dari satu dashboard pusat.</p>
+    <div className="space-y-10 pb-10 animate-in fade-in duration-700">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="space-y-2">
+           <div className="flex items-center gap-4">
+              <span className="px-2.5 py-0.5 bg-amber-50 dark:bg-amber-950/30 text-amber-500 text-[10px] font-black uppercase tracking-wider rounded border border-amber-500/20">Multi-Outlet Master</span>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-lg bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">All Nodes Synced</span>
+              </div>
+           </div>
+           <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">Outlet <span className="text-amber-500 italic">Orchestrator</span></h2>
+           <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium max-w-2xl">Central command for managing physical locations, POS connectivity, and regional performance monitoring.</p>
         </div>
-        <button 
-          onClick={() => { setEditingOutlet(null); setFormData({ name: '', address: '', phone: '', is_active: true }); setShowModal(true); }}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-md"
-        >
-          <Plus className="w-5 h-5" />
-          Tambah Cabang Baru
-        </button>
+        <div className="flex gap-4">
+           <Button variant="outline" className="h-14 px-8 font-black uppercase tracking-widest text-[10px] bg-card border-border rounded-lg">
+              <Map size={18} className="mr-2" /> View Map Hub
+           </Button>
+           <Button 
+             onClick={() => { setEditingOutlet(null); setFormData({ name: '', address: '', phone: '', is_active: true }); setShowModal(true); }}
+             className="h-14 px-10 font-black uppercase tracking-widest text-white dark:text-zinc-900 rounded-lg"
+           >
+             <Plus size={18} className="mr-2" /> Add New Node
+           </Button>
+        </div>
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-          <div className="p-3 bg-indigo-100 rounded-lg">
-            <Store className="w-6 h-6 text-indigo-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Total Cabang</p>
-            <h3 className="text-xl font-bold text-gray-800">{outlets.length} Outlet</h3>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-          <div className="p-3 bg-green-100 rounded-lg">
-            <CheckCircle className="w-6 h-6 text-green-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Aktif</p>
-            <h3 className="text-xl font-bold text-gray-800">{outlets.filter(o => o.is_active).length} Cabang</h3>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4">
-          <div className="p-3 bg-blue-100 rounded-lg">
-            <TrendingUp className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Kapasitas SaaS</p>
-            <h3 className="text-xl font-bold text-gray-800 text-blue-600">Enterprise Mode</h3>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         {[
+           { label: 'Total Nodes', val: outlets.length, sub: 'Global Locations', icon: Store, color: 'text-foreground', bg: 'bg-background' },
+           { label: 'Operational', val: outlets.filter(o => o.is_active).length, sub: 'Active & Online', icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
+           { label: 'Network Mode', val: 'Enterprise', sub: 'Infinite Scalability', icon: ShieldCheck, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/30' },
+         ].map((s, i) => (
+           <Card key={i} className="group border-none bg-card shadow-sm hover:shadow-md transition-all rounded-lg overflow-hidden">
+             <CardContent className="p-8 flex items-center justify-between">
+                <div className="space-y-1">
+                   <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">{s.label}</p>
+                   <p className={cn("text-3xl font-black font-mono tabular-nums", s.color)}>{s.val}</p>
+                   <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100  uppercase">{s.sub}</p>
+                </div>
+                <div className={cn("w-16 h-16 rounded-lg flex items-center justify-center border border-border group-hover:scale-110 transition-transform", s.bg)}>
+                   <s.icon size={28} className={cn(s.color)} />
+                </div>
+             </CardContent>
+           </Card>
+         ))}
       </div>
 
-      {loading ? (
-        <div className="flex justify-center p-20 text-gray-400">Memuat data cabang...</div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {outlets.map(outlet => (
-            <div key={outlet.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-indigo-600">
-                      <Store className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-800">{outlet.name}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${outlet.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {outlet.is_active ? 'Aktif' : 'Nonaktif'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleEdit(outlet)} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-3 text-sm text-gray-600 border-t border-gray-50 pt-4">
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
-                    <span>{outlet.address || 'Alamat belum diatur'}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span>{outlet.phone || '-'}</span>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex gap-3">
-                  <button className="flex-1 bg-white border border-indigo-100 text-indigo-600 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    Lihat Laporan
-                  </button>
-                  <button className="flex-1 bg-indigo-50 text-indigo-700 py-2 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2">
-                    <Globe className="w-4 h-4" />
-                    Kelola POS
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+      {/* Main Control Panel */}
+      <Card className="border-none bg-card shadow-xl rounded-lg overflow-hidden">
+         <CardHeader className="p-10 border-b border-border bg-background">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+               <div className="space-y-1">
+                  <CardTitle className="text-2xl font-black tracking-tighter uppercase leading-none">Outlet Connectivity Hub</CardTitle>
+                  <CardDescription className="text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-100 ">Monitor & Configure Physical Edge Nodes</CardDescription>
+               </div>
+               <div className="relative group min-w-[350px]">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-100 group-focus-within:text-amber-500 transition-colors" size={18} />
+                  <Input 
+                    className="pl-12 h-12 bg-background/50 border-border rounded-lg font-medium" 
+                    placeholder="Search by location name or ID..." 
+                    value={search} onChange={e => setSearch(e.target.value)}
+                  />
+               </div>
             </div>
-          ))}
-        </div>
-      )}
+         </CardHeader>
+         <div className="p-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {filtered.map(outlet => (
+                <Card key={outlet.id} className="border-none bg-background hover:bg-background border border-border transition-all rounded-lg overflow-hidden group/item">
+                  <CardContent className="p-10 space-y-8">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-card rounded-lg flex items-center justify-center text-zinc-500 border border-border group-hover/item:text-amber-500 transition-colors">
+                          <Store size={28} />
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-black tracking-tighter uppercase leading-none group-hover/item:text-amber-500 transition-colors">{outlet.name}</h3>
+                          <div className={cn(
+                            "inline-flex items-center gap-2 mt-2 px-4 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border",
+                            outlet.is_active ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-200 dark:border-emerald-800" : "bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800"
+                          )}>
+                             <div className={cn("w-1.5 h-1.5 rounded-lg", outlet.is_active ? "bg-emerald-500 animate-pulse" : "bg-rose-500")} />
+                             {outlet.is_active ? 'Online' : 'Offline'}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(outlet)} className="h-12 w-12 rounded-lg hover:bg-amber-500/10 hover:text-amber-500 transition-colors">
+                          <Edit2 size={18} />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => handleDelete(outlet.id)} className="h-12 w-12 rounded-lg hover:bg-rose-50 dark:bg-rose-950/30 hover:text-rose-600 dark:text-rose-400 transition-colors">
+                          <Trash2 size={18} />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                       <div className="space-y-4">
+                          <div className="flex items-start gap-4">
+                             <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                             <p className="text-xs font-bold text-zinc-500 dark:text-zinc-100 leading-relaxed uppercase tracking-tight">{outlet.address || 'No Address Data'}</p>
+                          </div>
+                          <div className="flex items-center gap-4">
+                             <Phone className="w-4 h-4 text-amber-500 shrink-0" />
+                             <p className="text-xs font-black font-mono tabular-nums">{outlet.phone || 'N/A'}</p>
+                          </div>
+                       </div>
+                       <div className="p-6 bg-card rounded-lg border border-border flex flex-col justify-center items-center text-center">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 mb-1">POS Health</p>
+                          <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">100%</p>
+                       </div>
+                    </div>
+
+                    <div className="flex gap-4 pt-4">
+                      <Button variant="outline" className="flex-1 h-14 bg-card border-border text-[10px] font-black uppercase tracking-[0.2em] rounded-lg hover:bg-background group/btn">
+                        <TrendingUp size={16} className="mr-3 group-hover/btn:scale-110 transition-transform" /> ANALYTICS
+                      </Button>
+                      <Button className="flex-1 h-14 font-black uppercase tracking-[0.2em] rounded-lg">
+                        <Globe size={16} className="mr-3 group-hover/btn:rotate-12 transition-transform" /> MANAGE POS <ArrowRight size={14} className="ml-2" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {filtered.length === 0 && (
+                <div className="col-span-full py-32 text-center  space-y-6">
+                   <Server size={80} className="mx-auto text-zinc-500 dark:text-zinc-100" strokeWidth={1} />
+                   <div className="space-y-2">
+                      <p className="text-sm font-black uppercase tracking-[0.4em] text-zinc-500 dark:text-zinc-100">No Outlet Node Detected</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-100">Try adjusting your search filter or add a new node.</p>
+                   </div>
+                </div>
+              )}
+            </div>
+         </div>
+         <CardFooter className="p-10 border-t border-border bg-background justify-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 dark:text-zinc-100 animate-pulse">Scanning Global Multi-Outlet Network Configuration...</p>
+         </CardFooter>
+      </Card>
+
+      {/* Feature Promo: Centralized Procurement */}
+      <Card className="border-none bg-background shadow-2xl rounded-lg overflow-hidden relative group">
+         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent opacity-20 group-hover:opacity-50 transition-opacity duration-1000" />
+         <CardContent className="p-16 flex flex-col md:flex-row items-center gap-16 relative z-10">
+            <div className="w-24 h-24 bg-amber-500/10 text-amber-500 flex items-center justify-center rounded-lg">
+               <LayoutGrid size={48} />
+            </div>
+            <div className="flex-1 space-y-4">
+               <h3 className="text-4xl font-black tracking-tighter uppercase leading-none">Centralized <span className="text-amber-500">Procurement</span> Hub</h3>
+               <p className="text-zinc-500 dark:text-zinc-400 text-lg font-medium leading-relaxed max-w-3xl">
+                  Kelola pengadaan bahan baku untuk seluruh cabang dari satu pintu. Hemat biaya operasional hingga <span className="text-amber-500 font-black">15%</span> dengan pembelian massal terpusat dan logistik terintegrasi.
+               </p>
+            </div>
+            <Button className="h-16 px-12 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800">ENABLE HUB</Button>
+         </CardContent>
+      </Card>
 
       {/* Modal Form */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="p-6 bg-indigo-600 text-white flex justify-between items-center">
-              <h2 className="text-xl font-bold">{editingOutlet ? 'Edit Cabang' : 'Tambah Cabang Baru'}</h2>
-              <button onClick={() => setShowModal(false)} className="hover:bg-white/20 p-1 rounded-full"><XCircle className="w-6 h-6" /></button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nama Cabang</label>
-                <input 
-                  type="text" required
-                  className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Contoh: BrewMaster Coffee - Sudirman"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
-                <textarea 
-                  rows="3"
-                  className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Alamat lengkap cabang..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">No. Telepon / WhatsApp</label>
-                <input 
-                  type="text"
-                  className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="0812..."
-                />
-              </div>
-              <div className="flex items-center gap-3 py-2">
-                <input 
-                  type="checkbox" id="is_active"
-                  className="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500"
-                  checked={formData.is_active}
-                  onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                />
-                <label htmlFor="is_active" className="text-sm font-medium text-gray-700 cursor-pointer">Cabang Aktif / Beroperasi</label>
-              </div>
-              <div className="pt-4 flex gap-3">
-                <button 
-                  type="button" onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
-                >
-                  Batal
-                </button>
-                <button 
-                  type="submit"
-                  className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-bold shadow-lg"
-                >
-                  {editingOutlet ? 'Update Cabang' : 'Simpan Cabang'}
-                </button>
-              </div>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <Card className="w-full max-w-xl shadow-2xl bg-card border-none rounded-lg overflow-hidden">
+            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between p-10">
+               <div className="space-y-1">
+                  <CardTitle className="text-2xl font-black uppercase tracking-tighter">{editingOutlet ? 'Modify Node' : 'Initialize New Node'}</CardTitle>
+                  <CardDescription className="uppercase font-black tracking-[0.2em] text-[10px] text-amber-500">Outlet Infrastructure Setup</CardDescription>
+               </div>
+               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg hover:bg-background" onClick={() => setShowModal(false)}><X size={20} /></Button>
+            </CardHeader>
+            <form onSubmit={handleSubmit}>
+               <CardContent className="p-10 space-y-6">
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 ml-1">Node Identification Name</label>
+                     <Input 
+                       required
+                       className="h-14 bg-background border-border rounded-lg font-bold px-6 focus:ring-amber-500"
+                       value={formData.name}
+                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                       placeholder="e.g. BrewMaster - Central Sudirman"
+                     />
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 ml-1">Physical Coordinates (Address)</label>
+                     <textarea 
+                       rows="3"
+                       className="w-full bg-background border border-border rounded-lg p-6 font-medium focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                       value={formData.address}
+                       onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                       placeholder="Complete building, floor, and city details..."
+                     />
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 ml-1">Secure Contact Line</label>
+                     <Input 
+                       className="h-14 bg-background border-border rounded-lg font-black font-mono tabular-nums px-6"
+                       value={formData.phone}
+                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                       placeholder="+62 812 XXXX"
+                     />
+                  </div>
+                  <div className="flex items-center gap-4 p-4 bg-background rounded-lg border border-border">
+                     <input 
+                       type="checkbox" id="is_active"
+                       className="w-6 h-6 rounded-lg border-border text-amber-500 focus:ring-amber-500 transition-all cursor-pointer"
+                       checked={formData.is_active}
+                       onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                     />
+                     <label htmlFor="is_active" className="text-xs font-black uppercase tracking-widest text-foreground cursor-pointer">Operational Readiness Active</label>
+                  </div>
+               </CardContent>
+               <CardFooter className="bg-background p-8 border-t border-border flex gap-4">
+                  <Button type="button" variant="ghost" className="flex-1 h-14 font-black uppercase tracking-widest text-[10px] rounded-lg" onClick={() => setShowModal(false)}>Cancel</Button>
+                  <Button type="submit" className="flex-1 h-14 font-black uppercase tracking-[0.2em] text-[10px] rounded-lg">
+                     {editingOutlet ? 'UPDATE INFRASTRUCTURE' : 'INITIALIZE NODE'}
+                  </Button>
+               </CardFooter>
             </form>
-          </div>
+          </Card>
         </div>
       )}
     </div>

@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { api } from '../api';
+import React, { useState, useEffect } from 'react';
 import { 
   ChefHat, Clock, CheckCircle2, Flame, 
   Utensils, ClipboardList, AlertCircle, 
@@ -11,11 +10,39 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
+import { useKDSPage } from '../hooks/useKDSPage';
 
 const STATUS_CONFIG = {
-  new:     { label: 'Pesanan Baru', color: 'text-blue-600', bg: 'bg-blue-600/10', border: 'border-blue-600/20', icon: Bell, btnLabel: 'Mulai Masak', btnIcon: Flame, next: 'cooking' },
-  cooking: { label: 'Sedang Dimasak', color: 'text-amber-600', bg: 'bg-amber-600/10', border: 'border-amber-600/20', icon: Flame, btnLabel: 'Selesaikan', btnIcon: CheckCircle2, next: 'ready' },
-  ready:   { label: 'Siap Saji', color: 'text-emerald-600', bg: 'bg-emerald-600/10', border: 'border-emerald-600/20', icon: CheckCircle2, btnLabel: 'Sudah Disajikan', btnIcon: Utensils, next: 'served' },
+  new:     { 
+    label: 'Pesanan Baru', 
+    color: 'text-amber-500 dark:text-amber-400', 
+    bg: 'bg-amber-50 dark:bg-amber-950/30', 
+    border: 'border-amber-200 dark:border-amber-800', 
+    icon: Bell, 
+    btnLabel: 'Mulai Masak', 
+    btnIcon: Flame, 
+    next: 'cooking' 
+  },
+  cooking: { 
+    label: 'Sedang Dimasak', 
+    color: 'text-amber-600 dark:text-amber-400', 
+    bg: 'bg-amber-50 dark:bg-amber-950/30', 
+    border: 'border-amber-200 dark:border-amber-800', 
+    icon: Flame, 
+    btnLabel: 'Selesaikan', 
+    btnIcon: CheckCircle2, 
+    next: 'ready' 
+  },
+  ready:   { 
+    label: 'Siap Saji', 
+    color: 'text-emerald-600 dark:text-emerald-400', 
+    bg: 'bg-emerald-50 dark:bg-emerald-950/30', 
+    border: 'border-emerald-200 dark:border-emerald-800', 
+    icon: CheckCircle2, 
+    btnLabel: 'Sudah Disajikan', 
+    btnIcon: Utensils, 
+    next: 'served' 
+  },
 };
 
 function WaitTime({ since }) {
@@ -27,100 +54,79 @@ function WaitTime({ since }) {
     return () => clearInterval(t);
   }, [since]);
   
-  const color = mins < 5 ? "text-emerald-500" : mins < 10 ? "text-amber-500" : "text-destructive";
+  const color = mins < 5 ? "text-amber-500 dark:text-amber-400" : mins < 10 ? "text-amber-600 dark:text-amber-500" : "text-rose-600 dark:text-rose-400 dark:text-rose-400";
   
   return (
-    <div className={cn("flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-background/50 border backdrop-blur-sm", color)}>
-      <Timer size={12} className="animate-pulse" />
-      <span className="text-[10px] font-black uppercase tracking-widest">{mins}m</span>
+    <div className={cn("flex items-center gap-2 px-4 py-1.5 rounded-lg glass-quantum border border-white/10 shadow-lg", color)}>
+      <Timer size={14} className="animate-pulse font-mono tabular-nums" />
+      <span className="font-mono tabular-nums text-[11px] font-black uppercase tracking-[0.2em]">{mins}m</span>
     </div>
   );
 }
 
 export default function KDSPage() {
-  const [orders, setOrders] = useState([]);
-  const [filter, setFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchOrders();
-    const interval = setInterval(fetchOrders, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchOrders = async () => {
-    try {
-      const txData = await api.getTransactions().catch(() => []);
-      const tx = Array.isArray(txData) ? txData : [];
-      const activeOrders = tx
-        .filter(t => t && t.kdsStatus && t.kdsStatus !== 'served' && t.items && t.items.length > 0)
-        .sort((a, b) => new Date(a.paidAt || a.createdAt) - new Date(b.paidAt || b.createdAt));
-      setOrders(activeOrders);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const advance = async (id) => {
-    const order = orders.find(o => o.id === id);
-    if (!order) return;
-    const next = STATUS_CONFIG[order.kdsStatus]?.next;
-    
-    // Optimistic UI
-    setOrders(prev => (Array.isArray(prev) ? prev : []).map(o => {
-      if (o?.id !== id) return o;
-      if (next === 'served') return null;
-      return { ...o, kdsStatus: next };
-    }).filter(Boolean));
-    
-    await api.updateKdsStatus(id, next);
-  };
-
-  const safeOrders = Array.isArray(orders) ? orders : [];
-  const filtered = filter === 'all' ? safeOrders : safeOrders.filter(o => o?.kdsStatus === filter);
-  const counts = {
-    new:     safeOrders.filter(o => o?.kdsStatus === 'new').length,
-    cooking: safeOrders.filter(o => o?.kdsStatus === 'cooking').length,
-    ready:   safeOrders.filter(o => o?.kdsStatus === 'ready').length
-  };
+  const {
+    orders: safeOrders,
+    filter, setFilter,
+    loading,
+    filtered,
+    counts,
+    advance
+  } = useKDSPage();
 
   if (loading && safeOrders.length === 0) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-      <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-      <p className="text-muted-foreground animate-pulse font-medium">Sinkronisasi pesanan dapur...</p>
+      <div className="w-10 h-10 border-4 border-amber-500 dark:border-amber-400 border-t-transparent rounded-lg animate-spin" />
+      <p className="text-zinc-500 dark:text-zinc-100 animate-pulse font-medium">Sinkronisasi pesanan dapur...</p>
     </div>
   );
 
   return (
-    <div className="space-y-8 pb-10 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+    <div className="space-y-8 pb-20 animate-quantum-fade quantum-noise min-h-screen">
+      {/* Header - Sleek Premium Omnichannel Style */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Kitchen Display System</h2>
-          <p className="text-muted-foreground mt-1">Monitor antrian pesanan & efisiensi penyajian · FIFO.</p>
+           <div className="flex items-center gap-4 mb-2">
+              <span className="px-2.5 py-1 bg-amber- border border-amber-500/20 rounded-sm text-[9px] font-black text-amber-500 uppercase tracking-widest">Kitchen Operations</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">FIFO Engine Active</span>
+              </div>
+           </div>
+           <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">Kitchen <span className="text-amber-500 italic">Display</span></h2>
+           <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium">High-velocity preparation matrix & real-time FIFO culinary orchestration.</p>
         </div>
-        
-        <div className="flex flex-wrap items-center gap-2 bg-muted/20 p-1 rounded-2xl border w-fit">
-          {[
-            { key: 'all', label: `Semua`, count: orders.length },
-            { key: 'new', label: `🆕 Baru`, count: counts.new, color: 'text-blue-600' },
-            { key: 'cooking', label: `🔥 Masak`, count: counts.cooking, color: 'text-amber-600' },
-            { key: 'ready', label: `✅ Siap`, count: counts.ready, color: 'text-emerald-600' },
-          ].map(f => (
-            <Button 
-              key={f.key} variant={filter === f.key ? "secondary" : "ghost"} 
-              className={cn("h-10 px-4 font-bold rounded-xl", filter === f.key && "bg-background shadow-sm")}
-              onClick={() => setFilter(f.key)}
-            >
-              {f.label} <span className={cn("ml-2 px-2 py-0.5 rounded-full bg-muted text-[10px]", f.color)}>{f.count}</span>
-            </Button>
-          ))}
-        </div>
+      </div>
+      
+      {/* Filter Navigation Row - Full Width with Horizontal Scroll Prevention */}
+      <div className="flex flex-row items-center justify-start overflow-x-auto flex-nowrap gap-2 bg-background p-1.5 rounded-lg border border-border backdrop-blur-2xl custom-scrollbar">
+        {[
+          { key: 'all', label: `Semua`, count: safeOrders.length },
+          { key: 'new', label: `🆕 Baru`, count: counts.new, color: 'text-amber-500 dark:text-amber-400' },
+          { key: 'cooking', label: `🔥 Masak`, count: counts.cooking, color: 'text-amber-600 dark:text-amber-400' },
+          { key: 'ready', label: `✅ Siap`, count: counts.ready, color: 'text-emerald-600 dark:text-emerald-400' },
+        ].map(f => (
+          <Button 
+            key={f.key}
+            className={cn(
+              "h-10 px-4 font-bold rounded-md transition-all border-none bg-transparent shadow-none shrink-0",
+              filter === f.key 
+                ? "bg-card text-foreground shadow-sm border border-border" 
+                : "text-zinc-500 dark:text-zinc-100 hover:text-foreground hover:bg-background"
+            )}
+            onClick={() => setFilter(f.key)}
+          >
+            {f.label}{" "}
+            <span className={cn("ml-2 px-2 py-0.5 rounded-lg bg-background text-[10px] font-black font-mono tabular-nums", f.color)}>
+              {f.count}
+            </span>
+          </Button>
+        ))}
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 text-center space-y-6 opacity-40">
-           <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center text-4xl">🎉</div>
+        <div className="flex flex-col items-center justify-center py-32 text-center space-y-6 ">
+           <div className="w-24 h-24 bg-background rounded-lg flex items-center justify-center text-4xl">🎉</div>
            <div>
               <p className="text-2xl font-black">Antrian Bersih!</p>
               <p className="text-sm font-medium">Semua pesanan telah disajikan kepada pelanggan.</p>
@@ -136,13 +142,13 @@ export default function KDSPage() {
             
             return (
               <Card key={order.id} className={cn(
-                "border-none shadow-xl overflow-hidden flex flex-col transition-all duration-300 hover:scale-[1.02]",
-                order.kdsStatus === 'new' ? "bg-card ring-2 ring-blue-500/20" : "bg-card"
+                "border border-border shadow-xl overflow-hidden flex flex-col transition-all duration-300 rounded-lg hover:scale-[1.02] active:scale-[0.98]",
+                order.kdsStatus === 'new' ? "bg-card ring-2 ring-primary/20" : "bg-card"
               )}>
                 {/* Status Header */}
                 <div className={cn("p-4 flex items-center justify-between border-b", cfg.bg)}>
                    <div className="flex items-center gap-2">
-                      <div className={cn("p-1.5 rounded-lg bg-background/80 shadow-sm", cfg.color)}>
+                      <div className={cn("p-2 rounded-md bg-background/80 shadow-sm", cfg.color)}>
                          <Icon size={16} />
                       </div>
                       <span className={cn("text-[10px] font-black uppercase tracking-widest", cfg.color)}>{cfg.label}</span>
@@ -151,26 +157,26 @@ export default function KDSPage() {
                 </div>
 
                 {/* Order Meta */}
-                <div className="p-4 border-b bg-muted/5 space-y-3">
+                <div className="p-4 border-b bg-background space-y-3">
                    <div className="flex justify-between items-start">
                       <div>
-                         <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-none">Order ID</p>
-                         <h4 className="text-lg font-black mt-1">#{order.id.toString().slice(-4)}</h4>
+                         <p className="text-[9px] text-zinc-500 dark:text-zinc-100 font-black uppercase tracking-widest leading-none">Order Reference</p>
+                         <h4 className="font-mono tabular-nums text-xl font-black mt-2 text-foreground uppercase italic">#{order.id.toString().slice(-4)}</h4>
                       </div>
                       <div className="text-right">
-                         <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-none">Lokasi</p>
-                         <h4 className="text-lg font-black mt-1 text-accent">{order.tableType || 'T. Away'}</h4>
+                         <p className="text-[9px] text-zinc-500 dark:text-zinc-100 font-black uppercase tracking-widest leading-none">Zone</p>
+                         <h4 className="text-xl font-black mt-2 text-primary uppercase italic tracking-tighter">{order.tableType || 'T. Away'}</h4>
                       </div>
                    </div>
                    
-                   <div className="flex items-center justify-between p-2 rounded-xl bg-background border shadow-sm">
+                   <div className="flex items-center justify-between p-2 rounded-lg bg-background border shadow-inner">
                       <div className="flex items-center gap-2 min-w-0">
-                         <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center shrink-0">
-                            <User size={12} className="text-muted-foreground" />
+                         <div className="w-6 h-6 rounded-lg bg-background flex items-center justify-center shrink-0">
+                            <User size={12} className="text-zinc-500 dark:text-zinc-100" />
                          </div>
                          <p className="text-xs font-bold truncate">{order.customerName || 'Pelanggan'}</p>
                       </div>
-                      <span className="text-[8px] font-black px-1.5 py-0.5 rounded-full bg-muted uppercase text-muted-foreground tracking-tighter shrink-0">
+                      <span className="font-mono tabular-nums text-[8px] font-black px-2.5 py-1 rounded-sm bg-background uppercase text-zinc-500 dark:text-zinc-100 tracking-tighter shrink-0">
                          {order.type === 'Self Order' ? 'Ditempat' : 'Kasir'}
                       </span>
                    </div>
@@ -179,14 +185,14 @@ export default function KDSPage() {
                 {/* Items List */}
                 <CardContent className="p-4 flex-1 space-y-3 max-h-[300px] overflow-y-auto custom-scrollbar">
                    {order.items.map((item, i) => (
-                     <div key={i} className="flex gap-3 items-start animate-in slide-in-from-left-2 duration-200" style={{ animationDelay: `${i * 50}ms` }}>
-                        <div className="w-6 h-6 rounded-lg bg-accent text-white flex items-center justify-center text-xs font-black shrink-0">
+                     <div key={i} className="flex gap-4 items-start animate-in slide-in-from-left-2 duration-200" style={{ animationDelay: `${i * 50}ms` }}>
+                        <div className="font-mono tabular-nums w-6 h-6 rounded-md bg-primary text-zinc-900 dark:text-zinc-100 dark:text-zinc-950 flex items-center justify-center text-xs font-black shrink-0">
                            {item.qty}
                         </div>
                         <div className="flex-1 min-w-0">
-                           <p className="text-sm font-black leading-tight text-primary">{item.name}</p>
+                           <p className="text-sm font-black leading-tight text-foreground">{item.name}</p>
                            {item.note && (
-                             <p className="text-[10px] text-amber-600 font-bold italic mt-1 flex items-center gap-1 bg-amber-500/5 px-2 py-0.5 rounded border border-amber-500/10">
+                             <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-1 flex items-center gap-1 bg-amber- px-2.5 py-1 rounded border border-amber-500/10">
                                 <ClipboardList size={10} /> {item.note}
                              </p>
                            )}
@@ -195,21 +201,21 @@ export default function KDSPage() {
                    ))}
 
                    {order.note && (
-                      <div className="mt-4 p-3 rounded-2xl bg-muted/40 border border-dashed border-muted-foreground/20">
-                         <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1">Catatan Pesanan</p>
-                         <p className="text-[11px] font-bold italic text-primary leading-relaxed">{order.note}</p>
+                      <div className="mt-4 p-4 rounded-lg bg-background border border-dashed border-border">
+                         <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest mb-1">Catatan Pesanan</p>
+                         <p className="text-[11px] font-bold italic text-foreground leading-relaxed">{order.note}</p>
                       </div>
                    )}
                 </CardContent>
 
                 {/* Action Footer */}
-                <CardFooter className="p-4 border-t bg-muted/5">
+                <CardFooter className="p-4 border-t bg-background">
                    <Button 
                     className={cn(
-                      "w-full h-11 font-black shadow-lg transition-all active:scale-95 gap-2",
-                      order.kdsStatus === 'new' ? "bg-blue-600 hover:bg-blue-700 shadow-blue-500/20" :
-                      order.kdsStatus === 'cooking' ? "bg-amber-500 hover:bg-amber-600 shadow-amber-500/20 text-white" :
-                      "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
+                      "w-full h-12 font-black shadow-lg transition-all active:scale-95 gap-2 rounded-lg",
+                      order.kdsStatus === 'new' && "bg-amber-500 hover:bg-amber-600 text-white dark:bg-amber-400 dark:hover:bg-amber-500 dark:text-zinc-900 shadow-amber-500/20",
+                      order.kdsStatus === 'cooking' && "bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:text-zinc-900 shadow-emerald-500/20",
+                      order.kdsStatus === 'ready' && "bg-zinc-900 hover:bg-amber-500 text-white dark:bg-zinc-100 dark:hover:bg-amber-400 dark:text-zinc-900 shadow-zinc-900/20"
                     )}
                     onClick={() => advance(order.id)}
                    >

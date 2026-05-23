@@ -40,7 +40,7 @@ async function run() {
           ratio = 1000;
         }
         const unitCost = (b.cost || b.price || 0) / ratio;
-        totalCost += unitCost * row.qty;
+        totalCost += unitCost * (row.qty_needed || row.qty || 0);
       }
     }
     

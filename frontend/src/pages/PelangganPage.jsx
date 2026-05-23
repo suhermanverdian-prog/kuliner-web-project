@@ -1,409 +1,359 @@
-import { useState } from 'react';
-import { formatRupiah } from '../data';
+import { formatRupiah } from '../utils/formatters';
 import { 
   Users, UserPlus, Gift, Star, 
   Crown, QrCode, Search, Filter, 
   MoreHorizontal, Download, Phone, 
   Mail, Calendar, History, TrendingUp,
   CreditCard, ChevronRight, X, Save,
-  CheckCircle2, Bell
+  CheckCircle2, Bell, AlertTriangle,
+  Zap, Heart, Target, Sparkles, Globe
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
-
-const MOCK_CUSTOMERS = [
-  { id: 1, name: 'Rina Marlina', phone: '081234567890', email: 'rina@email.com', points: 450, totalSpend: 1250000, visits: 18, lastVisit: '2026-05-01', status: 'member', joinDate: '2026-01-15' },
-  { id: 2, name: 'Doni Pratama', phone: '082198765432', email: 'doni@email.com', points: 120, totalSpend: 380000, visits: 5, lastVisit: '2026-04-28', status: 'member', joinDate: '2026-03-10' },
-  { id: 3, name: 'Sari Dewi', phone: '085311223344', email: 'sari@email.com', points: 890, totalSpend: 3200000, visits: 42, lastVisit: '2026-05-02', status: 'vip', joinDate: '2025-12-01' },
-  { id: 4, name: 'Budi Cahyo', phone: '087765432100', email: '', points: 0, totalSpend: 95000, visits: 2, lastVisit: '2026-04-20', status: 'guest', joinDate: '2026-04-20' },
-  { id: 5, name: 'Fitri Handayani', phone: '089900112233', email: 'fitri@email.com', points: 320, totalSpend: 890000, visits: 12, lastVisit: '2026-04-30', status: 'member', joinDate: '2026-02-14' },
-];
-
-const MOCK_HISTORY = [
-  { id: 'TRX-042', date: '2026-05-01', items: 'Latte, Croissant', total: 57000, points: '+57', type: 'Dine-in' },
-  { id: 'TRX-038', date: '2026-04-29', items: 'Americano x2', total: 56000, points: '+56', type: 'Take Away' },
-  { id: 'TRX-031', date: '2026-04-25', items: 'Nasi Goreng, Latte', total: 70000, points: '+70', type: 'Dine-in' },
-];
+import { usePelangganPage } from '../hooks/usePelangganPage';
 
 const STATUS_BADGE = {
-  vip: { bg: 'bg-amber-500/10', text: 'text-amber-600', label: 'VIP', icon: Crown },
-  member: { bg: 'bg-blue-500/10', text: 'text-blue-600', label: 'MEMBER', icon: UserPlus },
-  guest: { bg: 'bg-slate-500/10', text: 'text-slate-600', label: 'GUEST', icon: Users },
+  vip: { bg: 'bg-amber-', text: 'text-amber-600', label: 'VIP', icon: Crown },
+  member: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-600', label: 'MEMBER', icon: UserPlus },
+  guest: { bg: 'bg-amber-500/10', text: 'text-primary', label: 'GUEST', icon: Users },
 };
 
 export default function PelangganPage() {
-  const [customers, setCustomers] = useState(MOCK_CUSTOMERS);
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState(null);
-  const [activeTab, setActiveTab] = useState('list');
-  const [rewardEnabled, setRewardEnabled] = useState(true);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newForm, setNewForm] = useState({ name: '', phone: '', email: '' });
+  const {
+    customers,
+    search, setSearch,
+    selected, setSelected,
+    activeTab, setActiveTab,
+    rewardEnabled, setRewardEnabled,
+    showAddModal, setShowAddModal,
+    newForm, setNewForm,
+    loading,
+    filtered,
+    totalPoints,
+    totalMembers,
+    vipCount,
+    handleAdd
+  } = usePelangganPage();
 
-  const filtered = customers.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone.includes(search)
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center h-[60vh] gap-4 font-mono tabular-nums">
+      <RefreshCw className="w-10 h-10 animate-spin text-amber-500" />
+      <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">Syncing Customer Intelligence...</p>
+    </div>
   );
-
-  const totalPoints = customers.reduce((s, c) => s + c.points, 0);
-  const totalMembers = customers.filter(c => c.status !== 'guest').length;
-  const vipCount = customers.filter(c => c.status === 'vip').length;
-
-  const handleAdd = () => {
-    if (!newForm.name || !newForm.phone) return alert('Nama dan nomor HP wajib diisi!');
-    setCustomers(prev => [...prev, {
-      id: Date.now(), ...newForm, points: 0, totalSpend: 0, visits: 0,
-      lastVisit: '-', status: 'member', joinDate: new Date().toISOString().split('T')[0]
-    }]);
-    setShowAddModal(false);
-    setNewForm({ name: '', phone: '', email: '' });
-  };
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Data Pelanggan & CRM</h2>
-          <p className="text-muted-foreground mt-1">Kelola data member, program loyalitas, dan analitik pelanggan.</p>
+           <div className="flex items-center gap-4 mb-2">
+              <span className="px-2 py-1 bg-amber- border border-amber-500/20 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Predictive CRM</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">AI Analysis Online</span>
+              </div>
+           </div>
+           <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">CRM & LOYALTY <span className="text-amber-500 italic">COCKPIT</span></h2>
+           <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium">Data-driven behavioral analytics & automated engagement engine.</p>
         </div>
-        <Button size="lg" className="h-12 px-8 font-bold gap-2 shadow-xl shadow-accent/20" onClick={() => setShowAddModal(true)}>
-          <UserPlus size={20} strokeWidth={3} /> Tambah Member
+        <Button size="lg" className="h-14 px-10 font-black gap-4 " onClick={() => setShowAddModal(true)}>
+          <UserPlus size={20} strokeWidth={3} /> REGISTRASI MEMBER
         </Button>
       </div>
 
-      {/* Stats Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      {/* Advanced KPI Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Pelanggan', val: customers.length, icon: Users, color: 'text-primary', bg: 'bg-muted/30' },
-          { label: 'Total Member', val: totalMembers, icon: UserPlus, color: 'text-blue-600', bg: 'bg-blue-600/10' },
-          { label: 'Pelanggan VIP', val: vipCount, icon: Crown, color: 'text-amber-600', bg: 'bg-amber-600/10' },
-          { label: 'Poin Beredar', val: totalPoints.toLocaleString('id-ID'), icon: Gift, color: 'text-emerald-600', bg: 'bg-emerald-600/10' },
+          { label: 'Market Reach', val: customers.length, sub: 'Global Entities', icon: Globe, color: 'text-foreground', bg: 'bg-background' },
+          { label: 'Active Retention', val: `${((totalMembers/customers.length)*100).toFixed(1)}%`, sub: 'Member Conversion', icon: Target, color: 'text-amber-500', bg: 'bg-amber-' },
+          { label: 'VIP Network', val: vipCount, sub: 'Top Tier Spenders', icon: Crown, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
+          { label: 'Loyalty Points', val: totalPoints.toLocaleString('id-ID'), sub: 'Redeemable Assets', icon: Gift, color: 'text-amber-600', bg: 'bg-amber-' },
         ].map((s, i) => (
-          <Card key={i} className="border-none shadow-md bg-card transition-all hover:scale-[1.02]">
-            <CardContent className="p-6 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{s.label}</p>
-                <h3 className={cn("text-2xl font-black mt-1 data-mono", s.color)}>{s.val}</h3>
-              </div>
-              <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner", s.bg)}>
-                <s.icon className={s.color} size={24} />
-              </div>
+          <Card key={i} className="group border-none bg-card shadow-sm hover:shadow-md transition-all rounded-lg overflow-hidden">
+            <CardContent className="p-8 flex items-center justify-between">
+               <div className="space-y-1">
+                  <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">{s.label}</p>
+                  <p className={cn("text-3xl font-black font-mono tabular-nums", s.color)}>{s.val}</p>
+                  <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100  uppercase">{s.sub}</p>
+               </div>
+               <div className={cn("w-14 h-14 rounded-lg flex items-center justify-center border border-border group-hover:scale-110 transition-transform", s.bg)}>
+                  <s.icon size={24} className={cn(s.color)} />
+               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Reward Settings Card */}
-      <Card className="border-none shadow-xl bg-card overflow-hidden border-l-4 border-l-accent">
-        <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-           <div className="flex gap-4 items-center text-center md:text-left">
-              <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center text-accent shrink-0">
-                 <Gift size={32} />
-              </div>
-              <div>
-                <h4 className="text-lg font-black leading-tight">Program Loyalitas & Reward</h4>
-                <p className="text-xs text-muted-foreground mt-1 max-w-md font-medium">Aktifkan akumulasi poin otomatis untuk setiap transaksi pelanggan guna meningkatkan retensi dan kunjungan ulang.</p>
-              </div>
-           </div>
-           <div className="flex items-center gap-4 bg-muted/20 p-2 rounded-2xl border">
-              <span className={cn("text-[10px] font-black uppercase tracking-widest px-3", rewardEnabled ? "text-emerald-600" : "text-destructive")}>
-                 {rewardEnabled ? "AKTIF" : "NONAKTIF"}
-              </span>
-              <button 
-                onClick={() => setRewardEnabled(!rewardEnabled)}
-                className={cn(
-                  "w-14 h-7 rounded-full transition-all relative p-1",
-                  rewardEnabled ? "bg-accent" : "bg-muted-foreground/30"
-                )}
-              >
-                <div className={cn(
-                  "w-5 h-5 bg-white rounded-full transition-all shadow-sm",
-                  rewardEnabled ? "translate-x-7" : "translate-x-0"
-                )} />
-              </button>
-           </div>
-        </CardContent>
+      {/* AI Behavioral Overview */}
+      <Card className="border-none ">
+         <div className="absolute top-0 right-0 p-8 ">
+            <Sparkles size={160} />
+         </div>
+         <CardContent className="p-10 flex flex-col md:flex-row items-center justify-between gap-10 relative z-10">
+            <div className="flex gap-6 items-center">
+               <div className="w-16 h-16 ">
+                  <Zap size={40} />
+               </div>
+               <div className="space-y-1">
+                  <h4 className="text-2xl font-black tracking-tighter uppercase">AI Behavioral <span className="text-amber-500">Segmentation</span></h4>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-lg font-medium leading-relaxed">
+                     Sistem secara otomatis mendeteksi anomali kunjungan dan risiko *churn*. Saat ini terdeteksi <span className="text-amber-500 font-bold">12 pelanggan</span> berisiko tinggi yang belum berkunjung dalam 14 hari terakhir.
+                  </p>
+               </div>
+            </div>
+            <div className="flex gap-4">
+               <div className="text-center px-6 border-r border-white/10">
+                  <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Avg Spend</p>
+                  <p className="text-xl font-black font-mono tabular-nums text-amber-500">Rp 125K</p>
+               </div>
+               <div className="text-center px-6">
+                  <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Churn Risk</p>
+                  <p className="text-xl font-black font-mono tabular-nums text-rose-600 dark:text-rose-400">8.4%</p>
+               </div>
+               <Button className="bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800">RE-ENGAGE ALL</Button>
+            </div>
+         </CardContent>
       </Card>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 bg-subtle/50 p-1 rounded-xl border border-border-subtle w-fit">
-        {[
-          { key: 'list', label: 'Daftar Pelanggan', icon: Users },
-          { key: 'qr', label: 'QR Self-Order', icon: QrCode },
-        ].map(t => (
-          <button 
-            key={t.key} 
-            className={cn(
-              "h-8 px-4 text-[11px] font-bold uppercase tracking-wider rounded-md transition-all flex items-center gap-2", 
-              activeTab === t.key ? "active-state shadow-sm" : "text-text-tertiary hover:text-text-secondary"
-            )}
-            onClick={() => setActiveTab(t.key)}
-          >
-            <t.icon size={14} /> {t.label}
-          </button>
-        ))}
-      </div>
-
-      {activeTab === 'list' && (
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
-          {/* Main List */}
-          <div className="flex-1 space-y-4 w-full">
-            <div className="flex flex-col sm:flex-row gap-4">
-               <div className="relative flex-1">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                  <Input 
-                    className="pl-12 h-12 rounded-2xl shadow-sm border-none bg-card focus:ring-accent" 
-                    placeholder="Cari nama, email atau nomor WhatsApp..." 
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                  />
-               </div>
-               <Button variant="outline" className="h-12 px-6 font-bold gap-2 bg-card border-none shadow-sm hover:bg-muted/50">
-                  <Filter size={18} /> Filter
-               </Button>
-            </div>
-
-            <Card className="border-none shadow-xl bg-card overflow-hidden">
-               <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                     <thead>
-                        <tr className="bg-muted/40 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-b">
-                           <th className="px-6 py-4">Pelanggan</th>
-                           <th className="px-6 py-4">Kontak</th>
-                           <th className="px-6 py-4">Status</th>
-                           <th className="px-6 py-4">Poin</th>
-                           <th className="px-6 py-4">Total Belanja</th>
-                           <th className="px-6 py-4 text-right">Aksi</th>
-                        </tr>
-                     </thead>
-                     <tbody className="divide-y">
-                        {filtered.map(c => (
-                          <tr key={c.id} className="hover:bg-muted/20 transition-colors group">
-                             <td className="px-6 py-4">
-                                <div className="flex items-center gap-4">
-                                   <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center text-accent font-black group-hover:scale-110 transition-transform shadow-sm">
-                                      {c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                   </div>
-                                   <div>
-                                      <p className="text-sm font-black group-hover:text-accent transition-colors">{c.name}</p>
-                                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Join: {c.joinDate}</p>
-                                   </div>
-                                </div>
-                             </td>
-                             <td className="px-6 py-4">
-                                <p className="text-xs font-bold text-primary">{c.phone}</p>
-                                <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">{c.email || '-'}</p>
-                             </td>
-                             <td className="px-6 py-4">
-                                <span className={cn(
-                                  "px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border",
-                                  STATUS_BADGE[c.status].bg, STATUS_BADGE[c.status].text, "border-transparent"
-                                )}>
-                                   {STATUS_BADGE[c.status].label}
-                                </span>
-                             </td>
-                             <td className="px-6 py-4">
-                                <div className="flex items-center gap-1.5 font-bold text-sm text-accent data-mono">
-                                   <Star size={14} fill="currentColor" /> {c.points}
-                                </div>
-                             </td>
-                             <td className="px-6 py-4 font-bold text-sm data-mono">{formatRupiah(c.totalSpend)}</td>
-                             <td className="px-6 py-4 text-right">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-accent" onClick={() => setSelected(c)}>
-                                   <ChevronRight size={20} />
-                                </Button>
-                             </td>
-                          </tr>
-                        ))}
-                     </tbody>
-                  </table>
-               </div>
-            </Card>
+      {/* Main Layout Grid */}
+      <div className="flex flex-col xl:flex-row gap-8 items-start">
+        {/* Left Side: Search & Table */}
+        <div className="flex-1 space-y-6 w-full">
+          <div className="flex flex-col sm:flex-row gap-4">
+             <div className="relative flex-1 group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-100 group-focus-within:text-amber-500 transition-colors" size={20} />
+                <Input 
+                  className="pl-12 h-14 rounded-lg border-none bg-card shadow-sm font-medium focus:ring-amber-500" 
+                  placeholder="Cari identitas pelanggan atau nomor WhatsApp..." 
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+             </div>
+             <Button variant="outline" className="h-14 px-8 font-black uppercase tracking-widest text-[10px] bg-card border-none shadow-sm hover:bg-background rounded-lg">
+                <Filter size={18} className="mr-2" /> Filter Database
+             </Button>
           </div>
 
-          {/* Profile Sidebar */}
-          <Card className={cn(
-            "w-full lg:w-[350px] border-none shadow-xl bg-card shrink-0 overflow-hidden transition-all duration-500",
-            !selected && "opacity-50 grayscale pointer-events-none"
-          )}>
-            {selected ? (
-              <div className="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
-                 <div className="p-8 bg-muted/10 border-b flex flex-col items-center text-center relative">
-                    <Button variant="ghost" size="icon" className="absolute top-4 right-4" onClick={() => setSelected(null)}>
-                       <X size={20} />
-                    </Button>
-                    <div className="w-24 h-24 rounded-3xl bg-accent shadow-xl shadow-accent/20 flex items-center justify-center text-white text-3xl font-black mb-4">
-                       {selected.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                    </div>
-                    <h3 className="text-2xl font-black">{selected.name}</h3>
-                    <div className="flex gap-2 mt-2">
-                       <span className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest", STATUS_BADGE[selected.status].bg, STATUS_BADGE[selected.status].text)}>
-                          {STATUS_BADGE[selected.status].label}
-                       </span>
-                    </div>
-                 </div>
-
-                 <CardContent className="p-8 space-y-8 flex-1 overflow-y-auto max-h-[600px] custom-scrollbar">
-                    <div className="grid grid-cols-2 gap-4">
-                       <div className="p-4 bg-muted/30 rounded-2xl space-y-1">
-                          <p className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Total Belanja</p>
-                          <p className="text-sm font-bold text-primary data-mono">{formatRupiah(selected.totalSpend)}</p>
-                       </div>
-                       <div className="p-4 bg-accent/5 rounded-2xl space-y-1 border border-accent/10">
-                          <p className="text-[9px] font-black text-accent uppercase tracking-widest">Saldo Poin</p>
-                          <p className="text-sm font-bold text-accent flex items-center gap-1 data-mono"><Star size={12} fill="currentColor" /> {selected.points}</p>
-                       </div>
-                    </div>
-
-                    <div className="space-y-4">
-                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b pb-2">Informasi Kontak</p>
-                       <div className="space-y-4">
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground"><Phone size={14} /></div>
-                             <p className="text-sm font-bold">{selected.phone}</p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground"><Mail size={14} /></div>
-                             <p className="text-sm font-bold truncate">{selected.email || 'Email belum ditautkan'}</p>
-                          </div>
-                          <div className="flex items-center gap-3">
-                             <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground"><Calendar size={14} /></div>
-                             <p className="text-sm font-bold data-mono">Terdaftar: {selected.joinDate}</p>
-                          </div>
-                       </div>
-                    </div>
-
-                    <div className="space-y-4">
-                       <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b pb-2">Riwayat Terakhir</p>
-                       <div className="space-y-3">
-                          {MOCK_HISTORY.map(h => (
-                            <div key={h.id} className="p-3 bg-card border rounded-2xl space-y-2 hover:border-accent/40 transition-colors shadow-sm">
-                               <div className="flex justify-between items-center">
-                                  <span className="text-[10px] font-bold text-accent data-mono">{h.id}</span>
-                                  <span className="text-[10px] font-bold text-muted-foreground data-mono">{h.date}</span>
-                               </div>
-                               <p className="text-xs font-black truncate">{h.items}</p>
-                               <div className="flex justify-between items-center pt-2 border-t border-dashed">
-                                  <p className="text-xs font-bold data-mono">{formatRupiah(h.total)}</p>
-                                  <span className="text-[10px] font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full data-mono">{h.points} Poin</span>
-                               </div>
-                            </div>
-                          ))}
-                       </div>
-                    </div>
-                 </CardContent>
-                 
-                 <CardFooter className="p-6 border-t bg-muted/5 gap-3">
-                    <Button variant="outline" className="flex-1 h-11 font-bold">Edit Profil</Button>
-                    <Button className="flex-1 h-11 font-black bg-accent">Kirim Promo</Button>
-                 </CardFooter>
-              </div>
-            ) : (
-              <div className="p-20 text-center space-y-6 opacity-30">
-                 <Users size={80} strokeWidth={1} />
-                 <div>
-                    <p className="text-lg font-black">Detail Profil</p>
-                    <p className="text-[10px] font-bold uppercase tracking-widest">Pilih pelanggan dari daftar</p>
-                 </div>
-              </div>
-            )}
+          <Card className="border-none shadow-xl bg-card rounded-lg overflow-hidden">
+             <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[1000px]">
+                   <thead>
+                      <tr className="bg-background text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 border-b border-border">
+                         <th className="px-10 py-6">Identity</th>
+                         <th className="px-10 py-6">Engagement</th>
+                         <th className="px-10 py-6">Tier Status</th>
+                         <th className="px-10 py-6">Balance</th>
+                         <th className="px-10 py-6">Churn Risk</th>
+                         <th className="px-10 py-6 text-right">Action</th>
+                      </tr>
+                   </thead>
+                   <tbody className="divide-y divide-border">
+                      {filtered.map(c => (
+                        <tr key={c.id} className={cn("hover:bg-background transition-all group cursor-pointer", selected?.id === c.id && "bg-amber-")} onClick={() => setSelected(c)}>
+                           <td className="px-10 py-8">
+                              <div className="flex items-center gap-4">
+                                  <div className="w-14 h-14 rounded-lg bg-background flex items-center justify-center text-white font-black group-hover:scale-110 group-hover:">
+                                    {c.avatar ? (
+                                      <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                                    )}
+                                  </div>
+                                 <div>
+                                    <p className="text-base font-black text-foreground group-hover:text-amber-500 transition-colors">{c.name}</p>
+                                    <p className="text-[10px] text-zinc-500 dark:text-zinc-100 font-bold uppercase tracking-widest mt-1">Join: {c.joinDate}</p>
+                                 </div>
+                              </div>
+                           </td>
+                           <td className="px-10 py-8">
+                              <p className="text-xs font-black text-foreground uppercase">{c.phone}</p>
+                              <p className="text-[10px] text-zinc-500 dark:text-zinc-100 font-bold uppercase ">Visits: {c.visits}</p>
+                           </td>
+                           <td className="px-10 py-8">
+                              <span className={cn(
+                                "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border border-transparent",
+                                STATUS_BADGE[c.status].bg, STATUS_BADGE[c.status].text
+                              )}>
+                                 {STATUS_BADGE[c.status].label}
+                              </span>
+                           </td>
+                           <td className="px-10 py-8">
+                              <div className="flex items-center gap-2 font-black text-sm text-amber-500 font-mono tabular-nums">
+                                 <Star size={16} fill="currentColor" /> {c.points}
+                              </div>
+                              <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase  mt-1 font-mono tabular-nums">{formatRupiah(c.totalSpend)}</p>
+                           </td>
+                           <td className="px-10 py-8">
+                              <div className={cn(
+                                "inline-flex items-center gap-2 px-4 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border",
+                                c.churnRisk === 'Low' ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-200 dark:border-emerald-800" : 
+                                (c.churnRisk === 'Medium' ? "bg-amber- text-amber-600 border-amber-500/20" : "bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800")
+                              )}>
+                                 <div className={cn("w-1.5 h-1.5 rounded-lg", c.churnRisk === 'Low' ? "bg-emerald-500" : (c.churnRisk === 'Medium' ? "bg-amber-500" : "bg-rose-500 animate-pulse"))} />
+                                 {c.churnRisk} Risk
+                              </div>
+                           </td>
+                           <td className="px-10 py-8 text-right">
+                              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg text-white hover:">
+                                 <ChevronRight size={20} />
+                              </Button>
+                           </td>
+                        </tr>
+                      ))}
+                   </tbody>
+                </table>
+             </div>
           </Card>
         </div>
-      )}
 
-      {activeTab === 'qr' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-           <Card className="border-none shadow-xl bg-card overflow-hidden">
-              <CardHeader className="bg-muted/10 border-b">
-                 <CardTitle className="text-xl">QR Code Digital Menu</CardTitle>
-                 <CardDescription>Akses langsung untuk pelanggan mandiri (Guest Mode).</CardDescription>
-              </CardHeader>
-              <CardContent className="p-12 flex flex-col items-center text-center space-y-8">
-                 <div className="relative group cursor-pointer">
-                    <div className="absolute inset-0 bg-accent rounded-[32px] blur-2xl opacity-10 group-hover:opacity-20 transition-opacity" />
-                    <div className="w-56 h-56 bg-white rounded-[32px] shadow-2xl border-2 border-muted flex items-center justify-center p-6 relative">
-                       <QrCode size={180} strokeWidth={1.5} className="text-primary" />
-                       <div className="absolute inset-0 flex items-center justify-center bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity rounded-[32px]">
-                          <Button className="font-black bg-accent shadow-xl shadow-accent/20 gap-2">
-                             <Download size={18} /> Unduh QR
-                          </Button>
-                       </div>
-                    </div>
-                 </div>
-                 <div className="max-w-sm space-y-2">
-                    <h4 className="text-lg font-black leading-tight">Berikan kemudahan memesan dari meja pelanggan</h4>
-                    <p className="text-xs text-muted-foreground font-medium">Pelanggan dapat memindai kode ini untuk melihat menu digital, memesan mandiri, dan membayar tanpa harus antri di kasir.</p>
-                 </div>
-              </CardContent>
-           </Card>
-
-           <Card className="border-none shadow-xl bg-card">
-              <CardHeader className="bg-muted/10 border-b">
-                 <CardTitle className="text-xl">Konfigurasi Mode Pelanggan</CardTitle>
-                 <CardDescription>Atur kebijakan interaksi pelanggan pada digital menu.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-8 space-y-6">
-                 {[
-                   { id: '1', title: 'Tampilkan Harga Menu', desc: 'Sembunyikan jika ingin harga hanya terlihat di kasir.', active: true },
-                   { id: '2', title: 'Wajib Verifikasi WA', desc: 'Pelanggan harus memasukkan OTP WhatsApp sebelum pesan.', active: false },
-                   { id: '3', title: 'Izinkan Catatan Kustom', desc: 'Berikan kolom catatan untuk setiap item pesanan.', active: true },
-                   { id: '4', title: 'Pembayaran Ditempat', desc: 'Izinkan pelanggan membayar langsung via QRIS mandiri.', active: true },
-                 ].map(opt => (
-                   <div key={opt.id} className="flex justify-between items-start gap-4 p-4 rounded-2xl hover:bg-muted/20 transition-all border border-transparent hover:border-muted-foreground/10 group">
-                      <div className="space-y-1">
-                         <p className="text-sm font-black group-hover:text-accent transition-colors">{opt.title}</p>
-                         <p className="text-[10px] text-muted-foreground font-medium">{opt.desc}</p>
-                      </div>
-                      <input type="checkbox" className="w-5 h-5 accent-accent cursor-pointer" defaultChecked={opt.active} />
+        {/* Right Side: Deep Analytics Profile */}
+        <div className="w-full xl:w-[450px] shrink-0 sticky top-24">
+           {selected ? (
+             <Card className="border-none shadow-2xl bg-card rounded-lg overflow-hidden animate-in slide-in-from-right-8 duration-500">
+                <div className="p-10 bg-background border-b border-border flex flex-col items-center text-center relative overflow-hidden">
+                   <div className="absolute top-0 right-0 p-4  pointer-events-none">
+                      <Zap size={120} className="rotate-12" />
                    </div>
-                 ))}
-                 <div className="pt-6 border-t">
-                    <Button className="w-full h-12 font-black shadow-lg shadow-accent/20">
-                       <Save size={18} className="mr-2" /> Simpan Pengaturan
-                    </Button>
-                 </div>
-              </CardContent>
-           </Card>
-        </div>
-      )}
+                   <Button variant="ghost" size="icon" className="absolute top-6 right-6 h-10 w-10 rounded-lg hover:bg-background" onClick={() => setSelected(null)}>
+                      <X size={20} />
+                   </Button>
+                   <div className="w-28 h-28 rounded-lg ">
+                      {selected.avatar ? (
+                        <img src={selected.avatar} alt={selected.name} className="w-full h-full object-cover" />
+                      ) : (
+                        selected.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                      )}
+                      <div className="absolute bottom-0 inset-x-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent" />
+                   </div>
+                   <h3 className="text-3xl font-black tracking-tighter uppercase">{selected.name}</h3>
+                   <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest mt-2">Executive Loyalty ID: <span className="text-amber-500 font-mono tabular-nums">#{selected.id.slice(-6)}</span></p>
+                </div>
 
-      {/* Add Member Modal */}
+                <div className="p-10 space-y-10">
+                   {/* Metrics Drills */}
+                   <div className="grid grid-cols-2 gap-6">
+                      <div className="p-4 bg-background rounded-lg space-y-1 border border-border">
+                         <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-[0.2em]">LTV (Lifetime Value)</p>
+                         <p className="text-lg font-black text-foreground font-mono tabular-nums">{formatRupiah(selected.totalSpend)}</p>
+                      </div>
+                      <div className="p-4 bg-amber- rounded-lg space-y-1 border border-amber-500/10">
+                         <p className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em]">Reward Assets</p>
+                         <p className="text-lg font-black text-amber-500 flex items-center gap-1.5 font-mono tabular-nums"><Star size={16} fill="currentColor" /> {selected.points}</p>
+                      </div>
+                   </div>
+
+                   {/* Behavioral Tags */}
+                   <div className="space-y-4">
+                      <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest border-b border-border pb-4 flex items-center gap-2">
+                        <Zap size={12} className="text-amber-500" /> AI Behavioral Insight
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                         <div className="px-4 py-2 bg-background rounded-lg text-[10px] font-black uppercase text-foreground border border-border">Loyal Customer</div>
+                         <div className="px-4 py-2 bg-amber- rounded-lg text-[10px] font-black uppercase text-amber-500 border border-amber-500/20">High Ticket Spender</div>
+                         <div className="px-4 py-2 bg-background rounded-lg text-[10px] font-black uppercase text-foreground border border-border">Morning Regular</div>
+                      </div>
+                   </div>
+
+                   {/* Favorites Section */}
+                   <div className="space-y-4">
+                      <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest border-b border-border pb-4 flex items-center gap-2">
+                        <Heart size={12} className="text-rose-600 dark:text-rose-400" /> Menu Favorites
+                      </p>
+                      <div className="space-y-3">
+                         {selected.favorites.map((fav, i) => (
+                           <div key={i} className="flex items-center justify-between p-4 bg-background border border-border rounded-lg group/item hover:bg-background transition-all">
+                              <span className="text-xs font-black uppercase text-foreground group-hover/item:text-amber-500 transition-colors">{fav}</span>
+                              <div className="px-4 py-1 bg-background rounded-lg text-[9px] font-bold text-zinc-500 dark:text-zinc-100">Top Choice</div>
+                           </div>
+                         ))}
+                      </div>
+                   </div>
+
+                   {/* Predictive Action */}
+                   <div className="p-6 ">
+                      <div className="absolute -top-4 -right-4  group-hover/promo:scale-110 transition-transform">
+                        <Sparkles size={80} />
+                      </div>
+                      <div className="relative z-10">
+                        <p className="text-[10px] font-black uppercase tracking-widest ">Recommended AI Action</p>
+                        <p className="text-sm font-black mt-1 leading-tight uppercase">Kirim Promo "Personalized Reserve" untuk meningkatkan kunjungan minggu ini.</p>
+                      </div>
+                      <Button className="w-full h-12 ">
+                         EKSEKUSI PROMO SEKARANG
+                      </Button>
+                   </div>
+                </div>
+             </Card>
+           ) : (
+             <Card className="h-[600px] border-dashed border-2 border-border bg-background rounded-lg flex flex-col items-center justify-center p-12 text-center ">
+                <Users size={120} strokeWidth={0.5} className="mb-8" />
+                <h4 className="text-xl font-black uppercase tracking-tighter">Deep Analytics Cockpit</h4>
+                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-100 uppercase mt-2 tracking-widest leading-loose">Pilih pelanggan untuk membedah data perilaku dan menjalankan kampanye presisi.</p>
+             </Card>
+           )}
+        </div>
+      </div>
+
+      {/* Add Member Modal (Redesigned) */}
       {showAddModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
-           <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-              <CardHeader className="border-b pb-4">
-                 <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                       <UserPlus className="text-accent" /> Registrasi Member
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 ">
+           <Card className="w-full max-w-md shadow-2xl border-none rounded-lg overflow-hidden animate-in zoom-in-95 duration-200 bg-card">
+              <CardHeader className="bg-background border-b border-border p-10">
+                 <div className="flex items-center justify-between mb-2">
+                    <CardTitle className="text-2xl font-black uppercase tracking-tighter">
+                       <span className="text-amber-500">MEMBER</span> REGISTRATION
                     </CardTitle>
-                    <Button variant="ghost" size="icon" onClick={() => setShowAddModal(false)}><X size={20} /></Button>
+                    <Button variant="ghost" size="icon" className="rounded-lg hover:bg-background" onClick={() => setShowAddModal(false)}><X size={20} /></Button>
                  </div>
-                 <CardDescription>Berikan pengalaman eksklusif untuk pelanggan setia.</CardDescription>
+                 <CardDescription className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 ">Build your elite loyalist network</CardDescription>
               </CardHeader>
-              <CardContent className="pt-6 space-y-4">
+              <CardContent className="p-10 space-y-6">
                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Nama Lengkap *</label>
-                    <Input value={newForm.name} onChange={e => setNewForm({ ...newForm, name: e.target.value })} placeholder="cth: Rina Marlina" />
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 px-1">Nama Lengkap Identity</label>
+                    <Input className="h-14 rounded-lg bg-background border-border font-bold" value={newForm.name} onChange={e => setNewForm({ ...newForm, name: e.target.value })} placeholder="cth: Rina Marlina" />
                  </div>
                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Nomor WhatsApp (Aktif) *</label>
-                    <Input value={newForm.phone} onChange={e => setNewForm({ ...newForm, phone: e.target.value })} placeholder="cth: 081234567890" />
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 px-1">WhatsApp Activation Node</label>
+                    <Input className="h-14 rounded-lg bg-background border-border font-bold" value={newForm.phone} onChange={e => setNewForm({ ...newForm, phone: e.target.value })} placeholder="cth: 081234567890" />
                  </div>
                  <div className="space-y-2">
-                    <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground px-1">Email (Opsional)</label>
-                    <Input value={newForm.email} onChange={e => setNewForm({ ...newForm, email: e.target.value })} placeholder="cth: rina@email.com" />
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 px-1">Digital Correspondence (Optional)</label>
+                    <Input className="h-14 rounded-lg bg-background border-border font-bold" value={newForm.email} onChange={e => setNewForm({ ...newForm, email: e.target.value })} placeholder="cth: rina@email.com" />
                  </div>
               </CardContent>
-              <CardFooter className="border-t pt-6 gap-3">
-                 <Button variant="outline" className="flex-1 h-12" onClick={() => setShowAddModal(false)}>Batal</Button>
-                 <Button className="flex-[2] h-12 font-black bg-accent hover:bg-accent/90" onClick={handleAdd}>Daftarkan Sekarang</Button>
+              <CardFooter className="p-10 bg-background border-t border-border flex flex-col gap-4">
+                 <Button className="w-full h-14 font-black uppercase tracking-[0.3em] text-white " onClick={handleAdd}>AKTIFKAN MEMBER</Button>
+                 <Button variant="ghost" className="w-full h-10 font-black uppercase tracking-widest text-[9px] text-zinc-500 dark:text-zinc-100" onClick={() => setShowAddModal(false)}>BATALKAN</Button>
               </CardFooter>
            </Card>
         </div>
       )}
     </div>
   );
+}
+
+function RefreshCw({ className, ...props }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={cn("animate-in spin-in duration-700", className)}
+      {...props}
+    >
+      <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+      <path d="M21 3v5h-5" />
+      <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+      <path d="M3 21v-5h5" />
+    </svg>
+  )
 }

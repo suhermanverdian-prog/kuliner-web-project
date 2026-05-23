@@ -1,52 +1,79 @@
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAppStore } from '@/store/useAppStore';
 import { 
-  LayoutDashboard, ShoppingCart, Coffee, ChefHat, 
-  Clock, PackageOpen, ShoppingBag, BarChart3, 
-  Users, Settings, ShieldCheck, LogOut, Armchair,
-  ChevronLeft, ChevronRight, BookOpen, Store
+  LayoutDashboard, ShoppingCart, Box, ChefHat, 
+  Clock, Layers, ShoppingBag, BarChart3, 
+  Users, Settings, Lock, LogOut, Armchair,
+  ChevronLeft, ChevronRight, Scale, Building2,
+  BrainCircuit, Command, TrendingUp, FileStack, Landmark, 
+  Trash2, Truck
 } from 'lucide-react';
 import { hasFeature, PAGE_FEATURE_MAP } from '../lib/featureFlags';
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
 
-export default function Sidebar({ 
-  user, activePage, onNavigate, onLogout, isOpen, onClose, 
-  isCollapsed, onToggleCollapse 
-}) {
-  const ROLE_LABELS = { admin:'Admin', owner:'Owner', kasir:'Kasir', koki:'Koki/Barista', gudang:'Gudang', akuntan:'Akuntan' };
+export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }) {
+  const rawUser = useAppStore(state => state.user);
+  // SELF-CORRECTION: Peeling the nested data if it exists
+  const user = (rawUser && rawUser.user && rawUser.token) ? rawUser.user : rawUser;
+  
+  const logout = useAppStore(state => state.logout);
+  const navigate = useNavigate();
 
+  const ROLE_LABELS = { 
+    owner: 'Owner', 
+    manager: 'Manager', 
+    accounting: 'Accounting', 
+    chef: 'Chef/Kitchen', 
+    staff: 'Service/Staff',
+    hrd: 'HRD Admin'
+  };
+  
   const allNav = [
     { group: 'Utama', items: [
-      { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard',      roles: ['admin','owner','akuntan'], perm: 'akses_keuangan' },
-      { id: 'kasir',     icon: ShoppingCart,    label: 'Kasir / POS',    roles: ['admin','kasir'],           perm: 'akses_kasir' },
-      { id: 'meja',      icon: Armchair,        label: 'Manajemen Meja', roles: ['admin','kasir','koki'],    perm: 'akses_kasir' },
-      { id: 'kds',       icon: ChefHat,         label: 'Dapur (KDS)',    roles: ['admin','koki','kasir'],    perm: 'akses_dapur' },
-      { id: 'shift',     icon: Clock,           label: 'Shift Kasir',    roles: ['admin','kasir','owner'],   perm: 'akses_kasir' },
+      { id: '/',     icon: LayoutDashboard, label: 'Dashboard',      roles: ['owner','manager','accounting','hrd'], perm: 'akses_keuangan' },
+      { id: '/kasir',     icon: ShoppingCart,    label: 'Kasir / POS',    roles: ['owner','manager','staff'],           perm: 'akses_kasir' },
+      { id: '/tables',    icon: Armchair,        label: 'Meja',           roles: ['owner','manager','staff','chef'],    perm: 'akses_kasir' },
+      { id: '/kds',       icon: ChefHat,         label: 'Dapur (KDS)',    roles: ['owner','manager','chef'],            perm: 'akses_dapur' },
+      { id: '/shifts',    icon: Clock,           label: 'Shift Kasir',    roles: ['owner','manager','staff'],           perm: 'akses_kasir' },
     ]},
     { group: 'Produk & Stok', items: [
-      { id: 'inventori', icon: PackageOpen,     label: 'Bahan Baku',     roles: ['admin','gudang','owner'],  perm: 'akses_gudang' },
-      { id: 'pembelian', icon: ShoppingBag,     label: 'Pengadaan (PO)', roles: ['admin','gudang','owner'],  perm: 'akses_gudang' },
-      { id: 'menu',      icon: Coffee,          label: 'Menu & Produk',  roles: ['admin','owner'],           perm: 'akses_gudang' },
+      { id: '/inventory', icon: Layers,          label: 'Bahan Baku',     roles: ['owner','manager','chef','accounting','staff'],            perm: 'akses_gudang' },
+      { id: '/inventory-intel', icon: BrainCircuit, label: 'Stock Intelligence', roles: ['owner','manager','chef','accounting'], perm: 'akses_gudang' },
+      { id: '/waste-monitoring', icon: Trash2,   label: 'Zero-Waste',     roles: ['owner','manager','chef'],            perm: 'akses_gudang' },
+      { id: '/logistics-hub',    icon: Truck,    label: 'Logistics Hub',  roles: ['owner','manager'],                   perm: 'akses_gudang' },
+      { id: '/procurement', icon: ShoppingBag,    label: 'Pengadaan',      roles: ['owner','manager','accounting','chef'],  perm: 'akses_gudang' },
+      { id: '/menu',      icon: Box,             label: 'Menu Produk',    roles: ['owner','manager'],                   perm: 'akses_gudang' },
     ]},
     { group: 'Bisnis', items: [
-      { id: 'laporan',    icon: BarChart3,  label: 'Laporan',       roles: ['admin','owner','akuntan'], perm: 'lihat_laba' },
-      { id: 'akuntansi',  icon: BookOpen,   label: 'Akuntansi',     roles: ['admin','owner','akuntan'], perm: 'lihat_laba',  feature: 'accounting' },
-      { id: 'outlets',    icon: Store,      label: 'Multi-Outlet',  roles: ['admin','owner'],           perm: 'atur_user',   feature: 'multi_outlet' },
-      { id: 'pelanggan',  icon: Users,      label: 'Pelanggan',     roles: ['admin','owner'],           perm: 'atur_user' },
+      { id: '/marketplace', icon: ShoppingBag,    label: 'Omnichannel',   roles: ['owner','manager'],                   perm: 'akses_gudang' },
+      { id: '/reports',   icon: BarChart3,  label: 'Laporan',       roles: ['owner','manager','accounting'],      perm: 'lihat_laba' },
+      { id: '/revenue-intel', icon: TrendingUp, label: 'Revenue Intel', roles: ['owner','manager'],                   perm: 'lihat_laba' },
+      { id: '/tax-report', icon: Landmark,      label: 'Laporan Pajak', roles: ['owner','manager','accounting'],      perm: 'lihat_laba' },
+      { id: '/report-builder', icon: FileStack, label: 'FlexReport',   roles: ['owner','manager'],                   perm: 'lihat_laba' },
+      { id: '/consolidated-finance', icon: Landmark, label: 'Global Finance', roles: ['owner','manager'],             perm: 'lihat_laba', feature: 'multi_outlet' },
+      { id: '/accounting',icon: Scale,      label: 'Akuntansi',     roles: ['owner','manager','accounting'],      perm: 'lihat_laba',  feature: 'accounting' },
+      { id: '/outlets',   icon: Building2,  label: 'Multi-Outlet',  roles: ['owner','manager'],                   perm: 'atur_user',   feature: 'multi_outlet' },
+      { id: '/customers', icon: Users,      label: 'Pelanggan',     roles: ['owner','manager'],                   perm: 'atur_user' },
     ]},
     { group: 'Sistem', items: [
-      { id: 'pengaturan', icon: Settings,       label: 'Pengaturan',     roles: ['admin','owner'],           perm: 'atur_user' },
-      { id: 'superadmin', icon: ShieldCheck,    label: 'SuperAdmin',     roles: [],                          perm: 'superadmin' },
+      { id: '/settings',  icon: Settings,       label: 'Pengaturan',     roles: ['owner','manager'],                   perm: 'atur_user' },
+      { id: '/hrd',       icon: Users,          label: 'HRD Portal',     roles: ['owner','hrd'],                       perm: 'atur_user' },
+      { id: '/ai-assistant', icon: BrainCircuit, label: 'AI Assistant',   roles: ['owner','manager'],                   perm: 'akses_keuangan' },
+      { id: '/command-center', icon: Command,    label: 'Command Center', roles: [],                                    perm: 'superadmin' },
+      { id: '/superadmin', icon: Lock,           label: 'SuperAdmin',     roles: [],                                    perm: 'superadmin' },
     ]},
   ];
 
   const hasAccess = (item) => {
-    // SuperAdmin check
-    if (item.perm === 'superadmin') return user.is_superadmin === true;
-    if (user.is_superadmin) return true;
-
-    // Layer 1: Feature Flag check
-    const requiredFlag = PAGE_FEATURE_MAP[item.id];
+    if (!user) return false;
+    // SuperAdmin bypass
+    if (user.role === 'superadmin' || user.is_superadmin === true) return true;
+    
+    if (item.perm === 'superadmin') return false; // Already handled by bypass above
+    
+    const requiredFlag = PAGE_FEATURE_MAP[item.id.replace('/', '')];
     if (requiredFlag && !hasFeature(user, requiredFlag)) return false;
-
-    // Layer 2: Role-based access check
     if (user.permissions && user.permissions.all) return true;
     if (item.roles.includes(user.role)) return true;
     if (user.permissions && user.permissions[item.perm]) return true;
@@ -58,55 +85,86 @@ export default function Sidebar({
     items: g.items.filter(hasAccess)
   })).filter(g => g.items.length > 0);
 
-  return (
-    <>
-      <div className={`sidebar-overlay ${isOpen ? 'show' : ''}`} onClick={onClose} />
-      <aside className={`sidebar ${isOpen ? 'open' : ''} ${isCollapsed ? 'collapsed' : ''}`}>
-        <div className="sidebar-brand">
-          <div className="brand-logo">
-            <div style={{width:'28px',height:'28px',background:'white',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'900',fontSize:'14px',color:'#6366f1',flexShrink:0}}>K</div>
-            {!isCollapsed && <span>KEN<span style={{color:'#6366f1'}}>.</span></span>}
-          </div>
-          <button className="toggle-sidebar-btn" onClick={onToggleCollapse}>
-            {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-          </button>
-        </div>
-        
-        <div className="nav-section">
-          {navs.map((group, i) => (
-            <div key={i}>
-              <div className="nav-group-title">{group.group}</div>
-              {group.items.map(item => {
-                const Icon = item.icon;
-                return (
-                  <button 
-                    key={item.id}
-                    className={`nav-link ${activePage === item.id ? 'active' : ''}`}
-                    onClick={() => onNavigate(item.id)}
-                    title={isCollapsed ? item.label : ''}
-                  >
-                    <Icon size={20} />
-                    <span>{item.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
-        <div className="user-profile">
-          <div className="avatar-circle">{user.name?.[0] || 'U'}</div>
-          <div className="user-meta">
-            <div className="user-meta-name">{user.name}</div>
-            <div className="user-meta-role">
-              {user.is_superadmin ? 'Super Admin' : ROLE_LABELS[user.role] || user.role}
-            </div>
+  return (
+    <div className={cn(
+      "h-full flex flex-col transition-all duration-300",
+      "bg-background border-r border-border", 
+      "dark:bg-zinc-950 dark:border-zinc-900",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
+      {/* Brand */}
+      <div className="h-16 flex items-center justify-between px-4 shrink-0">
+        {!isCollapsed ? (
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-amber-500 text-zinc-950 rounded-lg flex items-center justify-center font-black text-lg">K</div>
+            <span className="font-black text-lg tracking-tighter text-foreground uppercase">Enterprise</span>
           </div>
-          <button className="btn-new-ghost" style={{ padding: '8px' }} onClick={onLogout} title="Keluar">
-            <LogOut size={16} />
-          </button>
-        </div>
-      </aside>
-    </>
+        ) : (
+          <div className="w-8 h-8 bg-amber-500 text-zinc-950 rounded-lg flex items-center justify-center font-black text-lg mx-auto">K</div>
+        )}
+        {!isCollapsed && (
+          <Button variant="ghost" size="xs" onClick={onToggleCollapse} className="text-muted-foreground hover:text-foreground">
+            <ChevronLeft size={16} />
+          </Button>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-6 custom-scrollbar">
+        {navs.map((group, i) => (
+          <div key={i} className="space-y-1">
+            {!isCollapsed && (
+              <p className="px-4 text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-2">{group.group}</p>
+            )}
+            {group.items.map(item => {
+              const Icon = item.icon;
+              return (
+                <NavLink 
+                  key={item.id}
+                  to={item.id}
+                  className={({ isActive }) => cn(
+                    "flex items-center gap-4 px-4 py-2.5 rounded-2xl transition-all group",
+                    isActive 
+                      ? "bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-950 font-bold shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  )}
+                  onClick={onClose}
+                >
+                  <Icon size={20} className={cn(isCollapsed && "mx-auto")} />
+                  {!isCollapsed && <span className="text-sm tracking-tight">{item.label}</span>}
+                </NavLink>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* User Section */}
+      <div className="p-4 border-t border-border bg-background/50 dark:bg-zinc-950/50 dark:border-zinc-900">
+        {!isCollapsed ? (
+          <div className="flex items-center gap-4 p-2 rounded-2xl bg-muted/50 border border-border dark:bg-zinc-900/50 dark:border-zinc-900">
+             <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-foreground font-black dark:bg-zinc-800">
+                {user?.name?.[0] || 'U'}
+             </div>
+             <div className="flex-1 min-w-0">
+                <p className="text-xs font-black text-foreground truncate">{user?.name}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase">{user?.role}</p>
+             </div>
+             <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 text-muted-foreground hover:text-rose-600 dark:text-rose-400">
+                <LogOut size={16} />
+             </Button>
+          </div>
+        ) : (
+          <Button variant="ghost" size="xs" onClick={onToggleCollapse} className="w-full h-10 text-muted-foreground hover:text-foreground">
+            <ChevronRight size={16} />
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

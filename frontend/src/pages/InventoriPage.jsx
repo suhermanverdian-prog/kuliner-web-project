@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { formatRupiah } from '../data';
-import { api } from '../api';
+import React from 'react';
+import { formatRupiah } from '../utils/formatters';
+import { useInventori } from '../hooks/useInventori';
 import InventoryFormModal from '../components/InventoryFormModal';
 import { 
   Package, Search, Filter, Plus, 
@@ -10,602 +10,504 @@ import {
   PackageOpen, Warehouse, Archive, Box,
   ArrowRightLeft, MoreVertical, 
   ArrowUpRight, ArrowDownRight, Scale,
-  History, ClipboardCheck, X, Save
+  History, ClipboardCheck, X, Save,
+  Sparkles, Zap, BrainCircuit, Timer,
+  TrendingUp, Truck, FileText, ShoppingCart
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
 
+// ... (Helper functions getConversion, getMediumUnit, getMediumQty tetap sama)
 function getConversion(bahan) {
   if (!bahan) return { ratio: 1, unit: 'Unit' };
   const u = (bahan.unit || '').toLowerCase();
   const name = (bahan.name || '').toLowerCase();
-  
-  if (u === 'kg' || u === 'kilogram' || name.includes('kopi') || name.includes('bubuk')) 
-    return { ratio: u === 'kg' ? 1000 : 1, unit: 'Gram' };
-    
-  if (u === 'liter' || u === 'l' || name.includes('susu') || name.includes('sirup') || name.includes('cair')) 
-    return { ratio: u === 'liter' ? 1000 : 1, unit: 'ml' };
-
-  if (u === 'dus' || u === 'karton' || u === 'pack')
-    return { ratio: 1, unit: 'Pcs/Gram' };
-    
+  if (u === 'kg' || u === 'kilogram' || name.includes('kopi') || name.includes('bubuk')) return { ratio: u === 'kg' ? 1000 : 1, unit: 'Gram' };
+  if (u === 'liter' || u === 'l' || name.includes('susu') || name.includes('sirup') || name.includes('cair')) return { ratio: u === 'liter' ? 1000 : 1, unit: 'ml' };
+  if (u === 'dus' || u === 'karton' || u === 'pack') return { ratio: 1, unit: 'Pcs/Gram' };
   return { ratio: 1, unit: bahan.unit || 'Pcs' };
 }
-
 function getMediumUnit(item) {
   const name = (item.name || '').toLowerCase();
   const unit = (item.unit || '').toUpperCase();
-  
   if (unit === 'DUS' || unit === 'KARTON' || unit === 'PACK') {
     if (name.includes('kopi') || name.includes('gula') || name.includes('bubuk')) return 'KG';
     if (name.includes('susu') || name.includes('oat') || name.includes('sirup')) return 'LITER';
     if (name.includes('cup') || name.includes('sedotan')) return 'PACK';
     if (name.includes('air') || name.includes('mineral')) return 'BOTOL';
   }
-  
   if (unit === 'GRAM' && item.stock >= 1000) return 'KG';
   if (unit === 'ML' && item.stock >= 1000) return 'LITER';
-  
   return item.unit;
 }
-
 function getMediumQty(item) {
   const mUnit = getMediumUnit(item);
   const unit = (item.unit || '').toUpperCase();
-  
   if (unit === 'GRAM' && mUnit === 'KG') return item.stock / 1000;
   if (unit === 'ML' && mUnit === 'LITER') return item.stock / 1000;
-  
-  if ((unit === 'DUS' || unit === 'KARTON') && (mUnit === 'KG' || mUnit === 'LITER')) {
-    return item.stock * 12; 
-  }
-  
+  if ((unit === 'DUS' || unit === 'KARTON') && (mUnit === 'KG' || mUnit === 'LITER')) return item.stock * 12; 
   return item.stock;
 }
 
 const TagInput = ({ label, tags, onChange }) => {
   const [inputValue, setInputValue] = useState('');
-  
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const val = inputValue.trim();
-      if (val && !tags.includes(val)) onChange([...tags, val]);
-      setInputValue('');
-    }
-  };
-
-  const removeTag = (indexToRemove) => {
-    onChange(tags.filter((_, index) => index !== indexToRemove));
-  };
-
+  const handleKeyDown = (e) => { if (e.key === 'Enter') { e.preventDefault(); const val = inputValue.trim(); if (val && !tags.includes(val)) onChange([...tags, val]); setInputValue(''); } };
   return (
-    <div className="space-y-3 p-4 bg-muted/20 rounded-2xl border">
-      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">{label}</label>
-      <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-background rounded-xl border border-dashed">
-        {tags.length === 0 && <span className="text-[10px] text-muted-foreground italic p-2">Belum ada data</span>}
+    <div className="space-y-3 p-4 bg-background rounded-lg border font-mono tabular-nums">
+      <label className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 px-1">{label}</label>
+      <div className="flex flex-wrap gap-2 min-h-[40px] p-2 bg-background rounded-lg border border-dashed">
+        {tags.length === 0 && <span className="text-[10px] text-zinc-500 dark:text-zinc-100 italic p-2">Belum ada data</span>}
         {tags.map((tag, index) => (
-          <span key={index} className="px-3 py-1 active-state text-[10px] uppercase tracking-widest rounded-lg flex items-center gap-2 border border-primary/20 shadow-sm">
-            {tag}
-            <button onClick={() => removeTag(index)} className="hover:text-error transition-colors"><X size={12} /></button>
+          <span key={index} className="px-4 py-1 active-state text-[10px] uppercase tracking-widest rounded-lg flex items-center gap-2 border border-primary/20 shadow-sm">
+            {tag} <button onClick={() => onChange(tags.filter((_, i) => i !== index))} className="hover:text-destructive"><X size={12} /></button>
           </span>
         ))}
       </div>
-      <Input 
-        className="h-10 text-xs border-none bg-background shadow-inner" 
-        value={inputValue} 
-        onChange={e => setInputValue(e.target.value)} 
-        onKeyDown={handleKeyDown} 
-        placeholder="Ketik & Enter untuk menambah..." 
-      />
+      <Input className="h-10 text-xs border-none bg-background shadow-inner" value={inputValue} onChange={e => setInputValue(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ketik & Enter..." />
     </div>
   );
 };
 
 export default function InventoriPage() {
-  const [user] = useState(() => JSON.parse(localStorage.getItem('user') || '{"name":"Admin"}'));
-  const [search, setSearch] = useState('');
-  const [locationFilter, setLocationFilter] = useState('Semua');
-  const [showModal, setShowModal] = useState(false);
-  const [editItem, setEditItem] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [bahan, setBahan] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showTransferModal, setShowTransferModal] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [inventoryMeta, setInventoryMeta] = useState({ categories: [], packageUnits: [], itemUnits: [] });
-  const [transferForm, setTransferForm] = useState({ bahanName: '', fromLocation: '', toLocation: '', qty: 0 });
-  const [locForm, setLocForm] = useState({ name: '', type: 'Warehouse' });
-  const [showAdjModal, setShowAdjModal] = useState(false);
-  const [adjItem, setAdjItem] = useState(null);
-  const [adjForm, setAdjForm] = useState({ type: 'Pengurangan', reason: 'Waste/Basi', qty: 0 });
-  const [isOpnameMode, setIsOpnameMode] = useState(false);
-  const [opnameData, setOpnameData] = useState({});
-  const [metaForm, setMetaForm] = useState({ categories: [], packageUnits: [], itemUnits: [] });
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [bahanData, locData, metaData] = await Promise.all([api.getBahan(), api.getLocations(), api.getInventoryMeta()]);
-      setBahan(bahanData);
-      setLocations(locData);
-      setInventoryMeta(metaData);
-      setMetaForm({
-        categories: metaData.categories || [],
-        packageUnits: metaData.packageUnits || [],
-        itemUnits: metaData.itemUnits || []
-      });
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadData(); }, []);
-
-  const safeBahan = Array.isArray(bahan) ? bahan : [];
-  const safeLocations = Array.isArray(locations) ? locations : [];
-
-  const filtered = safeBahan.filter(b => {
-    const matchSearch = (b.name || '').toLowerCase().includes(search.toLowerCase());
-    const matchLoc = locationFilter === 'Semua' || b.location === locationFilter;
-    return matchSearch && matchLoc;
-  });
-
-  const openAdd = () => { setEditItem(null); setShowModal(true); };
-  const openEdit = (item) => { setEditItem(item); setShowModal(true); };
-
-  const handleSave = async (formData) => {
-    try {
-      setSaving(true);
-      await api.saveBahan({ ...formData, id: editItem?.id });
-      await loadData();
-      setShowModal(false);
-      setEditItem(null);
-    } catch (err) {
-      console.error(err);
-      alert('Gagal menyimpan barang: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleTransfer = async () => {
-    const sourceBahan = safeBahan.find(b => b.name === transferForm.bahanName && b.location === transferForm.fromLocation);
-    if (!sourceBahan || !transferForm.toLocation || transferForm.qty <= 0) return alert('Data transfer tidak lengkap atau stok tidak ditemukan');
-    await api.transferStock({ ...transferForm, bahanId: sourceBahan.id });
-    loadData();
-    setShowTransferModal(false);
-  };
-
-  const handleSaveMeta = async () => {
-    await api.saveInventoryMeta(metaForm);
-    loadData();
-    setShowSettingsModal(false);
-  };
-
-  const handleSaveLocation = async () => {
-    if (!locForm.name) return alert('Nama lokasi wajib diisi');
-    await api.saveLocation(locForm);
-    loadData();
-    setShowLocationModal(false);
-    setLocForm({ name: '', type: 'Warehouse' });
-  };
-
-  const handleDeleteLocation = async (id) => {
-    if (window.confirm('Hapus lokasi ini?')) {
-      await api.deleteLocation(id);
-      loadData();
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Hapus bahan ini?')) {
-      await api.deleteBahan(id);
-      loadData();
-    }
-  };
-
-  const handleAdjustment = async () => {
-    if (adjForm.qty <= 0) return alert('Jumlah harus lebih dari 0');
-    try {
-      setLoading(true);
-      await fetch(`${api.url}/inventory/adjust`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          bahanId: adjItem.id,
-          changeQty: adjForm.type === 'Penambahan' ? adjForm.qty : -adjForm.qty,
-          type: 'Adjustment',
-          reason: adjForm.reason,
-          userName: user?.name
-        })
-      });
-      loadData();
-      setShowAdjModal(false);
-      setAdjForm({ type: 'Pengurangan', reason: 'Waste/Basi', qty: 0 });
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
-
-  const handleFinalizeOpname = async () => {
-    if (!window.confirm('Finalisasi Stock Opname? Stok akan diperbarui sesuai input fisik.')) return;
-    setLoading(true);
-    try {
-      const promises = Object.keys(opnameData).map(id => {
-        const item = safeBahan.find(b => b.id === Number(id));
-        if (!item) return null;
-        return fetch(`${api.url}/inventory/adjust`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            bahanId: item.id,
-            nextStock: Number(opnameData[id]),
-            type: 'Opname',
-            reason: 'Stock Opname Rutin',
-            userName: user?.name
-          })
-        });
-      }).filter(Boolean);
-      await Promise.all(promises);
-      setIsOpnameMode(false);
-      setOpnameData({});
-      loadData();
-    } finally { setLoading(false); }
-  };
+  const {
+    user,
+    search, setSearch,
+    showModal, setShowModal,
+    editItem, setEditItem,
+    saving,
+    bahan,
+    locations,
+    isOpnameMode, setIsOpnameMode,
+    opnameData, setOpnameData,
+    showSettingsModal, setShowSettingsModal,
+    inventoryMeta,
+    showAdjModal, setShowAdjModal,
+    adjItem, setAdjItem,
+    adjForm, setAdjForm,
+    aiPredictions,
+    openEdit,
+    handleSave,
+    handleAdjustment,
+    handleOpnameSave,
+    filtered
+  } = useInventori();
 
   const getStockStatus = (item) => {
-    const ratio = item.stock / (item.minStock || 1);
-    if (item.stock === 0) return { label: 'HABIS', color: 'text-rose-600', bg: 'bg-rose-500/10 border-rose-500/20', barCls: 'bg-rose-500', pct: 0 };
-    if (ratio < 1) return { label: 'LOW', color: 'text-amber-600', bg: 'bg-amber-500/10 border-amber-500/20', barCls: 'bg-amber-500', pct: Math.min((ratio * 100), 100) };
-    return { label: 'AMAN', color: 'text-emerald-600', bg: 'bg-emerald-500/10 border-emerald-500/20', barCls: 'bg-emerald-500', pct: Math.min((ratio / 2 * 100), 100) };
+    const ratio = item.stock / (item.minStock || item.min_stock || 1);
+    if (item.stock === 0) {
+      return { 
+        label: 'HABIS', 
+        color: 'text-rose-700 dark:text-rose-400', 
+        bg: 'bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/80', 
+        barCls: 'bg-rose-500', 
+        pct: 0 
+      };
+    }
+    if (ratio < 1) {
+      return { 
+        label: 'LOW', 
+        color: 'text-amber-700 dark:text-amber-400', 
+        bg: 'bg-amber-50 dark:bg-amber- border border-amber-200 dark:border-amber-800/80', 
+        barCls: 'bg-amber-500', 
+        pct: Math.min((ratio * 100), 100) 
+      };
+    }
+    return { 
+      label: 'AMAN', 
+      color: 'text-emerald-700 dark:text-emerald-400', 
+      bg: 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/80', 
+      barCls: 'bg-emerald-500', 
+      pct: Math.min((ratio / 2 * 100), 100) 
+    };
   };
 
-  if (loading && bahan.length === 0) return (
-    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-      <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-      <p className="text-muted-foreground animate-pulse font-medium">Sinkronisasi gudang & stok...</p>
-    </div>
-  );
-
   return (
-    <div className="space-y-8 pb-10 animate-in fade-in duration-500">
+    <div className="space-y-10 pb-10 animate-in fade-in duration-700">
+      {/* 👑 Header Section (Preserved Original Color & Structure) */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Inventori & Bahan Baku</h2>
-          <p className="text-muted-foreground mt-1">Kelola pergerakan stok, gudang, dan ambang batas ketersediaan.</p>
+           <div className="flex items-center gap-4 mb-2">
+              <span className="px-2 py-1 bg-amber- border border-amber-500/20 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Inventory Node</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">Real-time Stock Ingestion</span>
+              </div>
+           </div>
+           <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">Inventory <span className="text-amber-500 italic">Orchestrator</span></h2>
+           <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium">Global stock visibility, neural forecasting, and automated supply chain management.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant={isOpnameMode ? "destructive" : "outline"} className="h-11 font-black gap-2 border-accent text-accent" onClick={() => setIsOpnameMode(!isOpnameMode)}>
-            {isOpnameMode ? <Trash2 size={18} /> : <ClipboardCheck size={18} />}
-            {isOpnameMode ? 'Batal Opname' : 'Stock Opname'}
-          </Button>
-          {isOpnameMode && (
-            <Button className="h-11 font-black gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-200" onClick={handleFinalizeOpname}>
-              <CheckCircle2 size={18} /> Simpan Hasil Opname
-            </Button>
-          )}
-          <Button className="h-11 font-black gap-2 bg-amber-500 hover:bg-amber-600 text-zinc-900 shadow-xl shadow-amber-500/20" onClick={openAdd}>
-            <Plus size={20} /> Tambah Barang Baru
-          </Button>
-          <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl border" onClick={() => setShowSettingsModal(true)}>
-            <Settings size={20} />
-          </Button>
+        <div className="flex gap-4">
+           <Button variant="outline" className="h-14 px-8 font-black uppercase tracking-widest text-white bg-card border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-md hover:" onClick={() => setShowSettingsModal(true)}>
+              <Settings size={18} className="mr-2 text-amber-500" /> Master Config
+           </Button>
+           <Button 
+             className="h-14 px-10 font-black uppercase tracking-widest text-white "
+             onClick={() => { setEditItem(null); setShowModal(true); }}
+           >
+             <Plus size={18} className="mr-2" /> Add New Material
+           </Button>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center bg-card p-4 rounded-2xl shadow-sm border border-muted/20">
-         <div className="relative flex-1 w-full">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-            <Input 
-              className="pl-12 h-12 rounded-xl border-none bg-muted/20 focus:ring-accent" 
-              placeholder="Cari nama bahan baku..." 
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-         </div>
-         <select 
-          className="h-12 px-4 rounded-xl border-none bg-muted/20 font-bold text-sm min-w-[180px] w-full sm:w-auto"
-          value={locationFilter} 
-          onChange={e => setLocationFilter(e.target.value)}
-         >
-           <option value="Semua">Semua Lokasi</option>
-           {locations.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
-         </select>
-         <Button variant="outline" className="h-12 w-full sm:w-auto font-black gap-2 border-accent text-accent hover:bg-accent/5" onClick={() => setShowTransferModal(true)}>
-            <ArrowRightLeft size={18} /> Transfer Stok
-         </Button>
-      </div>
+      {/* Main Content Area */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+         <div className="xl:col-span-8 space-y-8">
+            {/* AI Predictions Hub (Luxury Glass Gradient Card - Upgraded Contrast) */}
+            <Card className="border-border bg-card text-card-foreground rounded-lg overflow-hidden shadow-lg relative group">
+               <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+                  <BrainCircuit size={160} />
+               </div>
+               <CardHeader className="p-10 pb-0 relative z-10 flex flex-row items-center justify-between">
+                  <div className="space-y-1">
+                     <div className="flex items-center gap-4">
+                        <Sparkles className="text-amber-500 animate-pulse" size={20} />
+                        <CardTitle className="text-2xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">
+                          Neural Stock <span className="text-amber-500 italic">Forecaster</span>
+                        </CardTitle>
+                     </div>
+                     <CardDescription className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-400">
+                       Predictive analysis based on consumption trends
+                     </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-1.5 bg-amber- dark:bg-amber- border border-amber-500/20 dark:border-amber-400/20 text-amber-400 dark:text-amber-300 rounded-lg font-bold shadow-sm">
+                     <Zap size={12} className="text-amber-500 fill-current animate-pulse" />
+                     <span className="text-[9px] font-black uppercase tracking-widest">AI ACTIVE</span>
+                  </div>
+               </CardHeader>
+               <CardContent className="p-10 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {aiPredictions.length === 0 ? (
+                    <div className="col-span-3 py-10 text-center text-zinc-500 text-xs font-black uppercase tracking-widest border border-dashed border-border rounded-lg">
+                       Need more transaction data for accurate prediction
+                    </div>
+                  ) : aiPredictions.map((pred, i) => (
+                    <div key={i} className="p-6 ">
+                       <div className="flex justify-between items-start mb-4">
+                          <p className="text-xs font-black uppercase tracking-tight text-zinc-800 dark:text-zinc-200">{pred.name}</p>
+                          <Timer size={14} className={cn(pred.status === 'Kritis' ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400")} />
+                       </div>
+                       <div className="space-y-1">
+                          <p className="text-2xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">{pred.daysLeft} DAYS</p>
+                          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Estimated stockout</p>
+                       </div>
+                       <div className="mt-6 pt-4 border-t border-zinc-800/50 flex items-center justify-between">
+                          <span className={cn(
+                            "px-4 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border",
+                            pred.status === 'Kritis' ? "bg-rose-50 dark:bg-rose-950/30 text-rose-400 border-rose-200 dark:border-rose-800" : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                          )}>{pred.recommendation}</span>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-900 dark:text-zinc-100 hover:"><ArrowUpRight size={16} /></Button>
+                       </div>
+                    </div>
+                  ))}
+               </CardContent>
+            </Card>
 
-      <Card className="border-none shadow-xl bg-card overflow-hidden">
-         <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-               <thead>
-                  <tr className="bg-subtle text-[11px] font-semibold uppercase tracking-wider text-text-secondary border-b border-border-subtle">
-                     <th className="px-6 py-3">Bahan Baku</th>
-                     <th className="px-6 py-3">Satuan</th>
-                     <th className="px-6 py-3">Ketersediaan</th>
-                     <th className="px-6 py-3">Modal / Unit</th>
-                     <th className="px-6 py-3">Lokasi</th>
-                     <th className="px-6 py-3">Status</th>
-                     <th className="px-6 py-3 text-right">Aksi</th>
-                  </tr>
-               </thead>
-               <tbody className="divide-y">
-                  {filtered.map(item => {
-                    const st = getStockStatus(item);
-                    return (
-                      <tr key={item.id} className="hover:bg-muted/10 transition-colors group">
-                         <td className="px-6 py-4">
-                            <div className="flex items-center gap-4">
-                               <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground group-hover:text-accent transition-colors shadow-sm">
-                                  <Package size={20} />
-                               </div>
-                               <div>
-                                  <p className="text-sm font-black">{item.name}</p>
-                                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">Min. Stok: <span className="data-mono">{getMediumQty({...item, stock: item.min_stock ?? item.minStock ?? 0})}</span> {getMediumUnit(item)}</p>
-                               </div>
-                            </div>
-                         </td>
-                         <td className="px-6 py-4">
-                            <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest rounded border border-amber-200">{getMediumUnit(item)}</span>
-                         </td>
-                         <td className="px-6 py-4">
-                            <div className="space-y-2 max-w-[120px]">
-                               <p className="text-sm font-black data-mono">{getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] text-muted-foreground ml-1 font-sans">{getMediumUnit(item)}</span></p>
-                               <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner">
-                                  <div className={cn("h-full transition-all duration-1000", st.barCls)} style={{ width: `${st.pct}%` }} />
-                               </div>
-                            </div>
-                         </td>
-                         <td className="px-6 py-4 font-bold text-sm data-mono">{formatRupiah(item.cost || item.price || 0)}</td>
-                         <td className="px-6 py-4">
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase">
-                               <MapPin size={12} className="text-accent" /> {item.location}
-                            </div>
-                         </td>
-                         <td className="px-6 py-4">
-                            <span className={cn(
-                              "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-transparent shadow-sm",
-                              st.bg, st.color
-                            )}>
-                               {st.label}
-                            </span>
-                         </td>
-                         <td className="px-6 py-4 text-right">
-                             <div className="flex justify-end gap-2">
-                                {isOpnameMode ? (
-                                   <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-lg border border-accent/20">
-                                      <span className="text-[10px] font-black px-2">FISIK:</span>
-                                      <input 
-                                        type="number" 
-                                        className="w-20 h-8 bg-background border rounded px-2 text-sm font-bold focus:ring-1 ring-accent outline-none"
-                                        placeholder={item.stock}
-                                        value={opnameData[item.id] ?? ''}
-                                        onChange={e => setOpnameData({...opnameData, [item.id]: e.target.value})}
-                                      />
-                                   </div>
-                                ) : (
-                                  <>
-                                    <Button variant="ghost" size="icon" title="Penyesuaian / Waste" className="h-8 w-8 text-amber-600 hover:bg-amber-50" onClick={() => { setAdjItem(item); setShowAdjModal(true); }}><Scale size={14} /></Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-accent/10" onClick={() => openEdit(item)}><Edit3 size={14} /></Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10" onClick={() => handleDelete(item.id)}><Trash2 size={14} /></Button>
-                                  </>
-                                )}
-                             </div>
-                         </td>
-                      </tr>
-                    );
-                  })}
-                  {filtered.length === 0 && (
-                    <tr>
-                       <td colSpan="7" className="py-24 text-center opacity-30">
-                          <PackageOpen size={64} className="mx-auto mb-4" strokeWidth={1} />
-                          <p className="font-black text-xl">Stok Tidak Ditemukan</p>
-                          <p className="text-xs uppercase tracking-widest font-bold">Coba ubah kata kunci atau lokasi filter</p>
-                       </td>
-                    </tr>
-                  )}
-               </tbody>
-            </table>
-         </div>
-      </Card>
+            {/* Main Inventory Table (Luxury Zinc Panel) */}
+            <Card className="border border-border bg-card text-card-foreground shadow-lg rounded-lg overflow-hidden">
+               <CardHeader className="p-10 border-b border-zinc-200/80 dark:border-zinc-800/50 bg-background">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+                     <div className="space-y-1">
+                        <CardTitle className="text-2xl font-black tracking-tighter uppercase leading-none text-zinc-900 dark:text-zinc-100">Global Ledger Node</CardTitle>
+                        <CardDescription className="text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-100 ">Monitor & Adjust Material Availability</CardDescription>
+                     </div>
+                     <div className="flex items-center gap-4">
+                        <div className="relative group min-w-[250px]">
+                           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-100 group-focus-within:text-amber-500 transition-colors" size={18} />
+                           <Input 
+                             className="pl-12 h-12 bg-background border-zinc-200 dark:border-zinc-800 rounded-md font-medium focus-visible:ring-amber-500/20" 
+                             placeholder="Filter materials..." 
+                             value={search} onChange={e => setSearch(e.target.value)}
+                           />
+                        </div>
+                        <Button variant={isOpnameMode ? "destructive" : "outline"} className="h-12 px-6 font-black uppercase tracking-widest text-[9px] rounded-md border-zinc-200 dark:border-zinc-800" onClick={() => setIsOpnameMode(!isOpnameMode)}>
+                           {isOpnameMode ? <X size={16} className="mr-2" /> : <ClipboardCheck size={16} className="mr-2 text-amber-500" />}
+                           {isOpnameMode ? 'CANCEL OPNAME' : 'STOCK OPNAME'}
+                        </Button>
+                     </div>
+                  </div>
+               </CardHeader>
+               <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                     <thead>
+                        <tr className="bg-background text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 border-b border-zinc-200/80 dark:border-zinc-800/50">
+                           <th className="px-10 py-6">Material Node</th>
+                           <th className="px-10 py-6 text-center">Availability</th>
+                           <th className="px-10 py-6">Unit Cost</th>
+                           <th className="px-10 py-6">Status</th>
+                           <th className="px-10 py-6 text-right">Actions</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-zinc-200/80 dark:divide-zinc-800/50">
+                        {filtered.map(item => {
+                          const st = getStockStatus(item);
+                          return (
+                            <tr key={item.id} className="hover:bg-background transition-all group">
+                               <td className="px-10 py-8">
+                                  <div className="flex items-center gap-6">
+                                     <div className="w-12 h-12 bg-background">
+                                        <Package size={24} />
+                                     </div>
+                                     <div>
+                                        <p className="text-base font-black tracking-tight uppercase text-zinc-900 dark:text-zinc-100 group-hover:text-amber-500 transition-colors">{item.name}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                           <Truck size={10} className="text-zinc-500 dark:text-zinc-100" />
+                                           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 ">{item.supplier?.name || 'No Supplier'}</span>
+                                        </div>
+                                     </div>
+                                  </div>
+                               </td>
+                               <td className="px-10 py-8">
+                                  <div className="flex flex-col items-center gap-2">
+                                     <p className="text-lg font-black font-mono tabular-nums leading-none text-zinc-900 dark:text-zinc-100">
+                                       {getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase">{getMediumUnit(item)}</span>
+                                     </p>
+                                     <div className="h-1.5 w-32 bg-background">
+                                        <div className={cn("h-full transition-all duration-1000", st.barCls)} style={{ width: `${st.pct}%` }} />
+                                     </div>
+                                  </div>
+                               </td>
+                               <td className="px-10 py-8 text-sm font-black font-mono tabular-nums text-zinc-800 dark:text-zinc-200">{formatRupiah(item.cost || 0)}</td>
+                               <td className="px-10 py-8">
+                                  <span className={cn(
+                                    "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border",
+                                    st.bg, st.color
+                                  )}>
+                                     {st.label}
+                                  </span>
+                               </td>
+                               <td className="px-10 py-8 text-right">
+                                  {isOpnameMode ? (
+                                    <Input 
+                                      type="number" 
+                                      className="w-24 h-10 bg-background border-amber-500/50 rounded-md text-center font-black font-mono tabular-nums focus:ring-amber-500 focus:border-amber-500"
+                                      placeholder={item.stock}
+                                      value={opnameData[item.id] ?? ''}
+                                      onChange={e => setOpnameData({...opnameData, [item.id]: e.target.value})}
+                                    />
+                                  ) : (
+                                    <div className="flex justify-end gap-2">
+                                       <Button variant="ghost" size="icon" className="h-10 w-10 rounded-md hover:bg-amber- hover:text-amber-500 text-zinc-500 hover:text-amber-600" onClick={() => { setAdjItem(item); setShowAdjModal(true); }}><Scale size={18} /></Button>
+                                       <Button variant="ghost" size="icon" className="h-10 w-10 rounded-md hover:bg-background text-zinc-500" onClick={() => openEdit(item)}><Edit3 size={18} /></Button>
+                                    </div>
+                                  )}
+                                </td>
+                             </tr>
+                           );
+                         })}
+                      </tbody>
+                   </table>
+                </div>
+             </Card>
+          </div>
 
-      <InventoryFormModal 
-        isOpen={showModal} 
-        onClose={() => { setShowModal(false); setEditItem(null); }} 
-        onSave={handleSave} 
-        initialData={editItem} 
-        locations={locations}
-        inventoryMeta={inventoryMeta}
-        isSaving={saving}
-      />
-      
-      {showAdjModal && adjItem && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <Card className="w-full max-w-sm shadow-2xl animate-in zoom-in-95">
-            <CardHeader className="border-b pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Scale className="text-amber-600" /> Penyesuaian Stok
-              </CardTitle>
-              <CardDescription>{adjItem.name} ({adjItem.location})</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              <div className="grid grid-cols-2 gap-2 p-1 bg-muted rounded-xl">
-                {['Pengurangan', 'Penambahan'].map(t => (
-                  <button key={t} onClick={() => setAdjForm({...adjForm, type: t})} className={cn("py-2 rounded-lg text-[11px] font-bold uppercase transition-all flex-1", adjForm.type === t ? "active-state shadow-sm" : "text-text-tertiary hover:bg-subtle")}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Alasan</label>
-                <select className="w-full h-11 bg-transparent border rounded-xl px-4 text-sm font-bold" value={adjForm.reason} onChange={e => setAdjForm({...adjForm, reason: e.target.value})}>
-                  <option>Waste/Basi</option>
-                  <option>Barang Rusak</option>
-                  <option>Kesalahan Input</option>
-                  <option>Pemberian Gratis</option>
-                  <option>Lainnya</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                  Koreksi Stok / Waste ({getConversion(adjItem).unit})
-                </label>
-                <Input 
-                  type="number" 
-                  value={adjForm.qty} 
-                  onChange={e => setAdjForm({...adjForm, qty: Number(e.target.value)})} 
-                  className="h-12 font-black text-2xl focus:ring-accent bg-muted/10 border-none rounded-2xl" 
-                  placeholder={`0 ${getConversion(adjItem).unit}`}
-                />
-                <p className="text-[10px] text-muted-foreground font-medium px-1">
-                  * Masukkan angka dalam satuan <strong>{getConversion(adjItem).unit}</strong>. <br/>
-                  Contoh: Jika tumpah sedikit, masukkan 10 atau 20.
-                </p>
-              </div>
-            </CardContent>
-            <CardFooter className="border-t pt-6 gap-2">
-              <Button variant="outline" className="flex-1 font-bold" onClick={() => setShowAdjModal(false)}>Batal</Button>
-              <Button className="flex-1 font-black bg-amber-500 text-zinc-900 hover:bg-amber-600" onClick={handleAdjustment}>Simpan</Button>
-            </CardFooter>
-          </Card>
-        </div>
-      )}
+          {/* Right Sidebar Activity */}
+          <div className="xl:col-span-4 space-y-8 sticky top-24">
+             <Card className="border border-border bg-card text-card-foreground shadow-lg rounded-lg overflow-hidden">
+                <CardHeader className="p-8 border-b border-zinc-200/80 dark:border-zinc-800/50 bg-background">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-background">
+                         <History size={20} className="text-zinc-800 dark:text-zinc-200" />
+                      </div>
+                      <div>
+                         <CardTitle className="text-lg font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">Stock Ledger</CardTitle>
+                         <CardDescription className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 ">Recent Movement History</CardDescription>
+                      </div>
+                   </div>
+                </CardHeader>
+                <CardContent className="p-8">
+                   <div className="space-y-8">
+                      {[
+                        { label: 'Stock Adjustment', sub: 'Waste Monitoring', val: '-500g', time: '12m ago', icon: Scale, color: 'text-rose-600 dark:text-rose-400' },
+                        { label: 'Procurement In', sub: 'Supplier Log', val: '+25kg', time: '1h ago', icon: Truck, color: 'text-emerald-600 dark:text-emerald-400' },
+                        { label: 'System Sync', sub: 'Auto Balance', val: '12L', time: '3h ago', icon: RefreshCw, color: 'text-amber-600 dark:text-amber-400' },
+                      ].map((l, i) => (
+                        <div key={i} className="flex gap-4 group relative">
+                           <div className="w-12 h-12 bg-background">
+                              <l.icon size={20} />
+                           </div>
+                           <div className="flex-1 pt-1">
+                              <div className="flex justify-between items-start">
+                                 <p className="text-sm font-black uppercase tracking-tight leading-none text-zinc-800 dark:text-zinc-200">{l.label}</p>
+                                 <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100">{l.time}</span>
+                              </div>
+                              <p className="text-[11px] text-zinc-500 dark:text-zinc-100 mt-1 font-medium italic">{l.sub}</p>
+                              <p className={cn("text-xs font-black font-mono tabular-nums mt-1", l.color)}>{l.val}</p>
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+                </CardContent>
+             </Card>
 
-      {showTransferModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-            <CardHeader className="border-b pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2"><ArrowRightLeft className="text-accent" /> Transfer Stok</CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => setShowTransferModal(false)}><X size={20} /></Button>
-              </div>
-              <CardDescription>Pindahkan bahan baku antar lokasi penyimpanan.</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-               <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Pilih Bahan Baku</label>
-                  <select 
-                    className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 text-sm font-bold shadow-sm"
-                    value={transferForm.bahanName} 
-                    onChange={e => setTransferForm({...transferForm, bahanName: e.target.value, fromLocation: ''})}
+             {/* Dynamic Luxury Obsidian Pearl Card (Smart Suggestion) */}
+             <div className="p-10 bg-card text-card-foreground border border-border rounded-lg shadow-lg relative overflow-hidden group/promo">
+                {/* Glowing neon backdrop blob */}
+                <div className="absolute -right-8 -top-8 w-40 h-40 bg-amber- dark:bg-amber- rounded-lg blur-3xl group-hover/promo:scale-150 transition-all duration-1000" />
+                
+                <div className="absolute top-0 right-0 p-8 text-zinc-700/30 dark:text-zinc-600/20  group-hover/promo:rotate-12 transition-transform duration-500">
+                   <ShoppingCart size={120} />
+                </div>
+                
+                <div className="relative z-10 space-y-4">
+                   <div className="inline-flex items-center gap-2 px-4 py-1 bg-amber- dark:bg-amber- border border-amber-500/20 dark:border-amber-400/20 text-amber-400 dark:text-amber-300 rounded-lg text-[9px] font-black uppercase tracking-widest">
+                     <Sparkles size={10} className="text-amber-500" /> Smart Suggestion
+                   </div>
+                   <div className="space-y-1">
+                      <h4 className="text-2xl font-black uppercase tracking-tighter leading-none text-zinc-900 dark:text-zinc-100">
+                        Automated <span className="text-amber-500 italic">Procurement</span>
+                      </h4>
+                      <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-relaxed uppercase tracking-wider">
+                        Berdasarkan tren penjualan terakhir, sistem menyarankan pengadaan bahan baku segera untuk menjaga stok aman.
+                      </p>
+                   </div>
+                </div>
+                
+                <Button className="w-full h-14 mt-6 ">
+                   GENERATE PURCHASE ORDER
+                </Button>
+             </div>
+          </div>
+       </div>
+
+       <InventoryFormModal isOpen={showModal} onClose={() => { setShowModal(false); setEditItem(null); }} onSave={handleSave} initialData={editItem} locations={locations} inventoryMeta={inventoryMeta} isSaving={saving} />
+
+       {/* Adjustment Modal */}
+       {showAdjModal && adjItem && (
+         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 ">
+            <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 border border-border rounded-lg bg-card text-card-foreground overflow-hidden">
+               <CardHeader className="border-b border-zinc-200/80 dark:border-zinc-800/50 p-8 bg-[#fafaf9]/85/85 dark:bg-zinc-800/85">
+                  <CardTitle className="text-xl font-black uppercase tracking-tighter flex items-center gap-4 text-zinc-900 dark:text-zinc-100">
+                     <Scale className="text-amber-500" /> Stock Adjustment
+                  </CardTitle>
+                  <CardDescription className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100">{adjItem.name}</CardDescription>
+               </CardHeader>
+               <CardContent className="p-8 space-y-6">
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Type</label>
+                     <select className="w-full h-12 bg-background border border-border rounded-md px-4 text-xs font-black text-foreground outline-none appearance-none cursor-pointer focus:ring-1 ring-amber-500/30" value={adjForm.type} onChange={e => setAdjForm({...adjForm, type: e.target.value})}>
+                        <option>Penambahan</option>
+                        <option>Pengurangan</option>
+                     </select>
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Reason</label>
+                     <Input className="h-12 bg-background border-border text-sm font-black rounded-md focus:ring-amber-500 shadow-inner text-foreground" value={adjForm.reason} onChange={e => setAdjForm({...adjForm, reason: e.target.value})} placeholder="e.g. Expired, Spilled..." />
+                  </div>
+                  <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Quantity ({adjItem.unit})</label>
+                     <Input type="number" className="h-12 bg-background border-border text-sm font-black rounded-md focus:ring-amber-500 shadow-inner text-foreground font-mono tabular-nums" value={adjForm.qty} onChange={e => setAdjForm({...adjForm, qty: e.target.value})} />
+                  </div>
+               </CardContent>
+               <CardFooter className="p-8 pt-0 gap-4">
+                  <Button variant="ghost" className="flex-1 h-12 font-black uppercase tracking-widest text-[9px]" onClick={() => setShowAdjModal(false)}>Cancel</Button>
+                  <Button 
+                    className="flex-1 h-12 font-black uppercase tracking-widest text-white " 
+                    onClick={handleAdjustment} 
+                    disabled={saving}
                   >
-                    <option value="">-- Pilih Bahan --</option>
-                    {[...new Set(bahan.map(b => b.name))].map(name => (
-                      <option key={name} value={name}>{name}</option>
-                    ))}
-                  </select>
-               </div>
-               
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Asal</label>
-                     <select className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 text-sm font-bold" value={transferForm.fromLocation} onChange={e => setTransferForm({...transferForm, fromLocation: e.target.value})}>
-                        <option value="">-- Asal --</option>
-                        {bahan.filter(b => b.name === transferForm.bahanName && b.stock > 0).map(b => (
-                          <option key={b.id} value={b.location}>{b.location} ({b.stock})</option>
-                        ))}
-                     </select>
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Tujuan</label>
-                     <select className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 text-sm font-bold" value={transferForm.toLocation} onChange={e => setTransferForm({...transferForm, toLocation: e.target.value})}>
-                        <option value="">-- Tujuan --</option>
-                        {locations.filter(l => l.name !== transferForm.fromLocation).map(l => (
-                          <option key={l.id} value={l.name}>{l.name}</option>
-                        ))}
-                     </select>
-                  </div>
-               </div>
-
-               <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Jumlah Transfer</label>
-                  <Input type="number" className="h-12 font-black text-lg text-center" value={transferForm.qty} onChange={e => setTransferForm({...transferForm, qty: Number(e.target.value)})} />
-               </div>
-            </CardContent>
-            <CardFooter className="border-t pt-6 gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowTransferModal(false)}>Batal</Button>
-              <Button className="flex-[2] font-black bg-amber-500 text-zinc-900 hover:bg-amber-600 shadow-xl shadow-amber-500/20" onClick={handleTransfer}>Jalankan Transfer</Button>
-            </CardFooter>
-          </Card>
-        </div>
-      )}
-
-      {showLocationModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200">
-            <CardHeader className="border-b pb-4">
-               <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2"><MapPin className="text-accent" /> Lokasi Penyimpanan</CardTitle>
-                  <Button variant="ghost" size="icon" onClick={() => setShowLocationModal(false)}><X size={20} /></Button>
-               </div>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-               <div className="space-y-2">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-widest border-b pb-2 flex items-center gap-2">
-                    <Warehouse size={12} /> Daftar Lokasi Aktif
-                  </label>
-                  <div className="flex flex-wrap gap-2 pt-2">
-                    {locations.map(l => (
-                      <span key={l.id} className="px-3 py-1.5 bg-muted rounded-xl flex items-center gap-2 text-[10px] font-black group shadow-sm border">
-                        {l.name} <span className="opacity-40">{l.type}</span>
-                        <button onClick={() => handleDeleteLocation(l.id)} className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity"><X size={12} /></button>
-                      </span>
-                    ))}
-                  </div>
-               </div>
-
-               <div className="space-y-4 pt-4 border-t">
-                  <div className="space-y-2">
-                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Nama Lokasi Baru</label>
-                     <Input value={locForm.name} onChange={e => setLocForm({...locForm, name: e.target.value})} placeholder="cth: Gudang Beku" />
-                  </div>
-                  <div className="space-y-2">
-                     <label className="text-xs font-black uppercase tracking-widest text-muted-foreground px-1">Tipe Lokasi</label>
-                     <select className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 text-sm font-bold shadow-sm" value={locForm.type} onChange={e => setLocForm({...locForm, type: e.target.value})}>
-                        <option>Warehouse</option>
-                        <option>Kitchen</option>
-                        <option>Outlet</option>
-                        <option>Fridge</option>
-                     </select>
-                  </div>
-                  <Button className="w-full h-11 font-black bg-amber-500 text-zinc-900 hover:bg-amber-600 shadow-lg shadow-amber-500/20" onClick={handleSaveLocation}>
-                     <Save size={18} className="mr-2" /> Simpan Lokasi
+                     {saving ? 'Processing...' : 'Save Adjust'}
                   </Button>
-               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+               </CardFooter>
+            </Card>
+         </div>
+       )}
 
-      {showSettingsModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-300">
-          <Card className="w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-200">
-            <CardHeader className="border-b pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2"><Settings className="text-accent" /> Master Konfigurasi</CardTitle>
-                <Button variant="ghost" size="icon" onClick={() => setShowSettingsModal(false)}><X size={20} /></Button>
-              </div>
-              <CardDescription>Atur metadata global untuk kategorisasi inventori.</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-              <TagInput label="Kategori Produk" tags={metaForm.categories} onChange={tags => setMetaForm({...metaForm, categories: tags})} />
-              <TagInput label="Satuan Kemasan (Bulk)" tags={metaForm.packageUnits} onChange={tags => setMetaForm({...metaForm, packageUnits: tags})} />
-              <TagInput label="Satuan Eceran (Retail)" tags={metaForm.itemUnits} onChange={tags => setMetaForm({...metaForm, itemUnits: tags})} />
-            </CardContent>
-            <CardFooter className="border-t pt-6 gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowSettingsModal(false)}>Batal</Button>
-              <Button className="flex-[2] font-black bg-amber-500 text-zinc-900 hover:bg-amber-600 shadow-xl shadow-amber-500/20" onClick={handleSaveMeta}>Simpan Perubahan</Button>
-            </CardFooter>
-          </Card>
-        </div>
-      )}
+       {/* Floating Opname Save */}
+       {isOpnameMode && Object.keys(opnameData).length > 0 && (
+         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-10">
+            <Button 
+              className="h-16 px-12 bg-emerald-500 hover:bg-emerald-600 text-zinc-900 dark:text-zinc-100 dark:bg-emerald-400 dark:text-zinc-900 dark:hover:bg-emerald-500 rounded-md shadow-2xl shadow-emerald-500/30 font-black uppercase tracking-[0.2em] text-[10px] flex items-center gap-4 transition-all active:scale-95" 
+              onClick={handleOpnameSave} 
+              disabled={saving}
+            >
+               {saving ? <RefreshCw className="animate-spin" /> : <Save />}
+               {saving ? 'SYNCING DATA...' : 'SAVE STOCK OPNAME'}
+            </Button>
+         </div>
+       )}
+
+       {/* ⚙️ Master Config Overview Modal */}
+       {showSettingsModal && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 ">
+             <Card className="w-full max-w-lg shadow-2xl animate-in zoom-in-95 border border-border rounded-lg bg-card text-card-foreground overflow-hidden">
+                <CardHeader className="border-b border-zinc-200/80 dark:border-zinc-800/50 p-8 bg-[#fafaf9]/85/85 dark:bg-zinc-800/85">
+                  <div className="flex items-center gap-4">
+                     <Settings className="text-amber-500 animate-spin-slow" size={24} />
+                     <div>
+                        <CardTitle className="text-xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">
+                           Master Configuration
+                        </CardTitle>
+                        <CardDescription className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100">
+                           Metadata schema, active categories, and unit registers.
+                        </CardDescription>
+                     </div>
+                  </div>
+               </CardHeader>
+               <CardContent className="p-8 space-y-8">
+                  {/* Category Node List */}
+                  <div className="space-y-4">
+                     <h5 className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                        <Package size={14} className="text-amber-500" /> Active Categories
+                     </h5>
+                     <div className="grid grid-cols-2 gap-4 max-h-[160px] overflow-y-auto pr-2">
+                        {inventoryMeta.categories && inventoryMeta.categories.length > 0 ? (
+                           inventoryMeta.categories.map((cat, idx) => {
+                              const count = bahan.filter(item => item.category?.trim().toUpperCase() === cat).length;
+                              return (
+                                 <div key={idx} className="p-4 bg-[#f5f5f3] dark:bg-zinc-800">
+                                    <span className="text-xs font-bold uppercase text-zinc-800 dark:text-zinc-200">{cat}</span>
+                                    <span className="text-[10px] font-mono tabular-nums font-black px-2 py-0.5 bg-amber- text-amber-600 dark:text-amber-400 rounded-lg">
+                                       {count} {count === 1 ? 'Item' : 'Items'}
+                                    </span>
+                                 </div>
+                              );
+                           })
+                        ) : (
+                           <div className="col-span-2 text-center py-6 text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                              No categories found
+                           </div>
+                        )}
+                     </div>
+                  </div>
+
+                  {/* Unit Node List */}
+                  <div className="space-y-4">
+                     <h5 className="text-xs font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                        <Scale size={14} className="text-amber-500" /> Active Units
+                     </h5>
+                     <div className="grid grid-cols-2 gap-4 max-h-[160px] overflow-y-auto pr-2">
+                        {inventoryMeta.units && inventoryMeta.units.length > 0 ? (
+                           inventoryMeta.units.map((unit, idx) => {
+                              const count = bahan.filter(item => item.unit?.trim().toUpperCase() === unit).length;
+                              return (
+                                 <div key={idx} className="p-4 bg-[#f5f5f3] dark:bg-zinc-800">
+                                    <span className="text-xs font-bold uppercase text-zinc-800 dark:text-zinc-200">{unit}</span>
+                                    <span className="text-[10px] font-mono tabular-nums font-black px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                                       {count} {count === 1 ? 'Item' : 'Items'}
+                                    </span>
+                                 </div>
+                              );
+                           })
+                        ) : (
+                           <div className="col-span-2 text-center py-6 text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                              No units found
+                           </div>
+                        )}
+                     </div>
+                  </div>
+               </CardContent>
+               <CardFooter className="p-8 pt-0">
+                  <Button 
+                    className="w-full h-12 "
+                    onClick={() => setShowSettingsModal(false)}
+                  >
+                     Close Configuration
+                  </Button>
+               </CardFooter>
+            </Card>
+         </div>
+       )}
     </div>
   );
 }

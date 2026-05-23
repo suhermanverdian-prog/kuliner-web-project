@@ -1,161 +1,55 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import { 
-  LayoutDashboard, ShoppingCart, Coffee, ChefHat, 
-  Clock, PackageOpen, ShoppingBag, BarChart3, 
-  Users, Settings, LogOut, Armchair, Menu,
-  ChevronLeft, ChevronRight, Moon, Sun, Bell,
-  ShieldCheck, Sparkles, Command, MoreVertical,
-  BookOpen, Store
+  Coffee, Menu, Moon, Sun, Bell
 } from 'lucide-react';
-import { cn } from "../lib/utils";
-import { Button } from "./ui/Button";
-import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "./ui/Sheet";
-import { hasFeature, PAGE_FEATURE_MAP } from '../lib/featureFlags';
+import { useAppStore } from '@/store/useAppStore';
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/Button";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/Sheet";
+import Sidebar from "@/components/Sidebar";
+import { AnimatePresence } from "framer-motion";
+import PageTransition from "@/components/PageTransition";
 
-const navItems = [
-  { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard',    group: 'Utama' },
-  { id: 'kasir',     icon: ShoppingCart,    label: 'Kasir / POS',  group: 'Utama' },
-  { id: 'meja',      icon: Armchair,        label: 'Meja',         group: 'Utama' },
-  { id: 'kds',       icon: ChefHat,         label: 'Dapur (KDS)',  group: 'Utama' },
-  { id: 'shift',     icon: Clock,           label: 'Shift Kasir',  group: 'Utama' },
-  { id: 'inventori', icon: PackageOpen,     label: 'Master Stok',  group: 'Gudang' },
-  { id: 'menu',      icon: Coffee,          label: 'Menu Kopi',    group: 'Gudang' },
-  { id: 'pembelian', icon: ShoppingBag,     label: 'Procurement',  group: 'Pengadaan' },
-  { id: 'laporan',   icon: BarChart3,       label: 'Analitik',     group: 'Bisnis' },
-  { id: 'pelanggan', icon: Users,           label: 'Loyalty CRM',  group: 'Bisnis' },
-  { id: 'akuntansi', icon: BookOpen,        label: 'Akuntansi',    group: 'Enterprise' },
-  { id: 'outlets',   icon: Store,           label: 'Multi-Outlet', group: 'Enterprise' },
-  { id: 'pengaturan', icon: Settings,       label: 'Pengaturan',   group: 'Sistem' },
-  { id: 'activity-log', icon: ShieldCheck,  label: 'Monitor Aktivitas', group: 'Sistem', role: 'superadmin' },
-  { id: 'superadmin', icon: Command,        label: 'SuperAdmin',   group: 'Sistem', role: 'superadmin' },
-];
-
-// Komponen Sidebar dipisah dari MainLayout agar tidak menyebabkan infinite re-render
-function Sidebar({ user, activePage, onNavigate, onLogout, isCollapsed, setIsCollapsed, isMobile }) {
-  const visibleNavItems = navItems.filter(item => {
-    // Role-based check (SuperAdmin only items)
-    if (item.role && item.role !== user?.role && !user?.is_superadmin) return false;
-    // Feature flag check
-    const flag = PAGE_FEATURE_MAP[item.id];
-    if (flag && !hasFeature(user, flag)) return false;
-    return true;
-  });
-
-  return (
-    <div className="flex flex-col h-full bg-muted border-r border-border/50">
-      {/* Brand Header - Precise h-16 */}
-      <div className={cn(
-        "h-16 flex items-center border-b border-border/50 transition-all duration-300",
-        isCollapsed && !isMobile ? "justify-center px-0" : "px-6 justify-between"
-      )}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 shrink-0">
-            <span className="text-sm font-black text-white">K</span>
-          </div>
-          {(!isCollapsed || isMobile) && (
-            <div className="transition-all duration-300">
-              <h1 className="text-sm font-black tracking-tighter text-foreground leading-none">KEN</h1>
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Enterprise</p>
-            </div>
-          )}
-        </div>
-        {!isMobile && !isCollapsed && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsCollapsed(true)}
-            className="h-7 w-7 rounded-md hover:bg-background"
-          >
-            <ChevronLeft size={14} className="text-muted-foreground" />
-          </Button>
-        )}
-        {!isMobile && isCollapsed && (
-           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsCollapsed(false)}
-            className="h-7 w-7 rounded-md hover:bg-background"
-          >
-            <ChevronRight size={14} className="text-muted-foreground" />
-          </Button>
-        )}
-      </div>
-
-      <div className="flex-1 overflow-y-auto py-6 px-3 space-y-8 no-scrollbar">
-        {['Utama', 'Gudang', 'Pengadaan', 'Bisnis', 'Enterprise', 'Sistem'].map(group => {
-          const items = visibleNavItems.filter(item => item.group === group);
-          if (items.length === 0) return null;
-          return (
-            <div key={group} className="space-y-1">
-              {(!isCollapsed || isMobile) && (
-                <h4 className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                  {group}
-                </h4>
-              )}
-              {items.map(item => {
-                const Icon = item.icon;
-                const isActive = activePage === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onNavigate(item.id)}
-                    title={isCollapsed && !isMobile ? item.label : ''}
-                    className={cn(
-                      "w-full flex items-center gap-3 h-9 rounded-md transition-all duration-200 px-3 text-left relative",
-                      isActive
-                        ? "bg-amber-500 text-zinc-900 dark:bg-amber-400 dark:text-zinc-950 font-semibold shadow-sm"
-                        : "text-muted-foreground hover:bg-background/50 hover:text-foreground",
-                      isCollapsed && !isMobile && "justify-center px-0 w-9 mx-auto"
-                    )}
-                  >
-                    <Icon size={18} strokeWidth={isActive ? 2.2 : 1.8} className={cn("shrink-0", isActive ? "text-zinc-900 dark:text-zinc-950" : "text-muted-foreground")} />
-                    {(!isCollapsed || isMobile) && (
-                      <span className="text-sm truncate">{item.label}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* User Profile */}
-      <div className="p-4 border-t border-border/50 bg-background/20">
-        <div className={cn(
-          "flex items-center gap-3 p-1.5 rounded-lg border border-transparent transition-all",
-          isCollapsed && !isMobile && "justify-center"
-        )}>
-          <div className="relative shrink-0">
-            <div className="w-8 h-8 rounded-md bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 text-xs font-bold">
-              {user?.name?.[0] || 'U'}
-            </div>
-            <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-muted" />
-          </div>
-          {(!isCollapsed || isMobile) && (
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold truncate text-foreground">{user?.name}</p>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wider truncate font-medium">{user?.role}</p>
-            </div>
-          )}
-          {(!isCollapsed || isMobile) && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-md shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              onClick={onLogout}
-            >
-              <LogOut size={14} />
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function MainLayout({ children, user, activePage, onNavigate, onLogout, theme, onToggleTheme }) {
+export default function MainLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const location = useLocation();
+  const user = useAppStore(state => state.user);
+  
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifications = [
+    { id: 1, type: 'error', title: 'Stok Kritis Terdeteksi', desc: 'Biji Arabica Toraja tersisa 1.5 kg (Batas: 5 kg)', time: '5m ago' },
+    { id: 2, type: 'success', title: 'Shift Kasir Berhasil Dibuka', desc: 'Sesi Shift Pagi telah diverifikasi dan dibuka oleh Suherman.', time: '1h ago' },
+    { id: 3, type: 'info', title: 'Sinkronisasi Node Selesai', desc: '42 jurnal akuntansi berhasil dicadangkan ke Supabase.', time: 'Just now' }
+  ];
+  
+  // Theme Management (Internalized)
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // Dynamic Page Title - Elite Detection
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === '/') return 'Executive Dashboard';
+    
+    return path
+      .split('/')
+      .filter(Boolean)
+      .pop()
+      ?.split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ') || 'KEN Enterprise';
+  };
+
+  // Sync Browser Title (SEO & UX)
+  useEffect(() => {
+    const title = getPageTitle();
+    document.title = `${title} | KEN Enterprise`;
+  }, [location.pathname]);
 
   return (
     <div className="flex min-h-screen bg-background font-sans">
@@ -165,13 +59,10 @@ export default function MainLayout({ children, user, activePage, onNavigate, onL
         isCollapsed ? "w-16" : "w-64"
       )}>
         <Sidebar
-          user={user}
-          activePage={activePage}
-          onNavigate={onNavigate}
-          onLogout={onLogout}
+          isOpen={true}
+          onClose={() => {}}
           isCollapsed={isCollapsed}
-          setIsCollapsed={setIsCollapsed}
-          isMobile={false}
+          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         />
       </aside>
 
@@ -181,13 +72,13 @@ export default function MainLayout({ children, user, activePage, onNavigate, onL
         "lg:ml-64",
         isCollapsed && "lg:ml-16"
       )}>
-        {/* Topbar - Precise h-16 */}
-        <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-40 bg-background/80 backdrop-blur-md border-b border-border/50">
+        {/* Topbar */}
+        <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-[60] bg-background/80 backdrop-blur-md border-b border-border/50">
           <div className="flex items-center gap-4">
             {/* Mobile menu */}
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden h-9 w-9">
+                <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8">
                   <Menu size={20} />
                 </Button>
               </SheetTrigger>
@@ -195,53 +86,95 @@ export default function MainLayout({ children, user, activePage, onNavigate, onL
                 <SheetTitle className="sr-only">Menu Navigasi</SheetTitle>
                 <SheetDescription className="sr-only">Akses cepat ke seluruh modul KEN</SheetDescription>
                 <Sidebar
-                  user={user}
-                  activePage={activePage}
-                  onNavigate={onNavigate}
-                  onLogout={onLogout}
-                  isCollapsed={false}
-                  setIsCollapsed={() => {}}
-                  isMobile={true}
+                   isOpen={true}
+                   onClose={() => {}}
+                   isCollapsed={false}
+                   onToggleCollapse={() => {}}
                 />
               </SheetContent>
             </Sheet>
 
-            {/* Page title - Enterprise Heading/M */}
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-foreground capitalize tracking-tight">
-                {activePage.replace('-', ' ').replace('_', ' ')}
-              </h2>
+            <div className="flex items-center gap-4">
+              <h1 className="text-lg font-black text-foreground tracking-tight uppercase">
+                {getPageTitle()}
+              </h1>
+              <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800" />
+              <span className="px-2 py-0.5 rounded-sm bg-amber-500/10 text-amber-600 dark:bg-amber-400/10 dark:text-amber-400 text-[9px] font-black uppercase tracking-widest">
+                Node-01
+              </span>
             </div>
           </div>
 
-          {/* Right side controls */}
-          <div className="flex items-center gap-3">
-            {/* System status */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-500/5 rounded-full border border-emerald-500/10 text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-500/5 rounded-sm border border-emerald-200 dark:border-emerald-800/80 text-[9px] text-emerald-600 font-black uppercase tracking-widest">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse" />
-              Nodes Active
+              Enterprise Nodes Active
             </div>
 
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-md border border-transparent hover:border-border hover:bg-muted">
-              <Bell size={18} className="text-muted-foreground" />
-              <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full border border-background" />
-            </Button>
+            <div className="relative">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative h-8 w-8 rounded-lg border border-transparent hover:border-border hover:bg-muted"
+              >
+                <Bell size={18} className="text-muted-foreground" />
+                <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full border border-background" />
+              </Button>
 
-            <Button variant="ghost" size="icon" onClick={onToggleTheme} className="h-9 w-9 rounded-md border border-transparent hover:border-border hover:bg-muted">
+              {showNotifications && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                  <div className="absolute right-0 mt-2 w-80 bg-card border border-border rounded-lg shadow-xl p-4 z-[70] animate-quantum-fade">
+                    <div className="flex justify-between items-center pb-2 border-b border-border mb-3">
+                      <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Pemberitahuan Sistem</span>
+                      <span className="text-[9px] font-black text-primary cursor-pointer hover:underline" onClick={() => setShowNotifications(false)}>TUTUP</span>
+                    </div>
+                    <div className="space-y-3 max-h-[280px] overflow-y-auto no-scrollbar">
+                      {notifications.map(n => (
+                        <div key={n.id} className="flex gap-4 text-left border-b border-border/40 pb-2.5 last:border-0 last:pb-0">
+                          <div className={cn(
+                            "w-2 h-2 rounded-full mt-1.5 shrink-0",
+                            n.type === 'error' && "bg-rose-600",
+                            n.type === 'success' && "bg-emerald-600",
+                            n.type === 'info' && "bg-sky-500"
+                          )} />
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-black text-foreground leading-snug">{n.title}</p>
+                            <p className="text-[10px] text-muted-foreground leading-normal">{n.desc}</p>
+                            <span className="text-[8px] font-bold text-muted-foreground/60 block pt-0.5 font-mono">{n.time}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <Button 
+               variant="ghost" 
+               size="icon" 
+               onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} 
+               className="h-8 w-8 rounded-lg border border-transparent hover:border-border hover:bg-muted"
+            >
               {theme === 'light' ? <Moon size={18} className="text-muted-foreground" /> : <Sun size={18} className="text-muted-foreground" />}
             </Button>
           </div>
         </header>
 
-        {/* Page Content - SaaS Compact but Breathable */}
-        <main className="flex-1 p-6 lg:p-8 max-w-7xl w-full mx-auto animate-in fade-in duration-500">
-          {children}
+        {/* Page Content injected by Router with Premium Transitions */}
+        <main className="flex-1 p-4 lg:p-8 max-w-[1600px] w-full mx-auto">
+           <AnimatePresence mode="wait">
+              <PageTransition key={location.pathname}>
+                 <Outlet />
+              </PageTransition>
+           </AnimatePresence>
         </main>
 
-        {/* Footer */}
-        <footer className="px-6 py-3 border-t text-[10px] text-muted-foreground/40 flex items-center justify-between">
-          <span className="flex items-center gap-1.5"><Coffee size={10} /> KEN v1.0</span>
-          <span>Build 2.0.4</span>
+        <footer className="px-6 py-2 border-t text-[10px] text-muted-foreground/40 flex items-center justify-between">
+          <span className="flex items-center gap-1.5"><Coffee size={10} /> KEN ENTERPRISE v4.0</span>
+          <span>BUILD-ELITE-NODE-01</span>
         </footer>
       </div>
     </div>

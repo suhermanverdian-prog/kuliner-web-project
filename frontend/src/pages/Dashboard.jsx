@@ -1,49 +1,81 @@
-import { useState, useEffect } from 'react';
-import { formatRupiah } from '../data';
-import { api } from '../api';
+import { formatRupiah } from '../utils/formatters';
 import { 
-  DollarSign, ReceiptText, Coffee, Armchair, 
+  DollarSign, ReceiptText, Box, Armchair, 
   TrendingUp, TrendingDown, Package, Activity,
   Star, Puzzle, Carrot, SearchX, BarChart3,
   Trophy, Zap, Users, Bookmark, ArrowUpRight, ArrowDownRight,
-  Clock, CheckCircle2, ChevronRight, AlertTriangle
+  Clock, CheckCircle2, ChevronRight, AlertTriangle, BrainCircuit, Bot, Command, Coffee
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { cn } from "../lib/utils";
-import { hasFeature } from '../lib/featureFlags';
+import { Skeleton } from "../components/ui/Skeleton";
+import { useNavigate } from 'react-router-dom';
+import { useDashboard } from '../hooks/useDashboard';
 
-/* ── Komponen Grafik Bar SVG ─────────────────────────────── */
+/* ── Komponen Grafik Bar SVG (KEN Enterprise Style) ─────────────────────────────── */
 function BarChart({ data }) {
   const maxVal = Math.max(...data.map(d => d.value), 1);
-  const W = 500, H = 150, BAR_W = 32, GAP = (W - data.length * BAR_W) / (data.length + 1);
+  const W = 500, H = 150, BAR_W = 12, GAP = (W - data.length * BAR_W) / (data.length + 1);
+
+  // Proses data secara cerdas untuk menyelaraskan label per jam atau per hari
+  const processedData = data.map((d, i) => {
+    let label = d.label;
+    if (!label) {
+      if (d.hour !== undefined) {
+        // Tampilkan label jam kelipatan 4 saja agar tidak menumpuk di layar
+        label = d.hour % 4 === 0 ? `${String(d.hour).padStart(2, '0')}:00` : '';
+      } else {
+        label = '';
+      }
+    }
+    return { ...d, label };
+  });
 
   return (
-    <div className="w-full h-[200px] mt-4">
+    <div className="w-full h-[200px] mt-6 font-mono tabular-nums">
       <svg viewBox={`0 0 ${W} ${H + 40}`} className="w-full h-full overflow-visible">
-        {data.map((d, i) => {
+        <defs>
+          <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--amber)" stopOpacity="1" />
+            <stop offset="100%" stopColor="var(--amber)" stopOpacity="0.4" />
+          </linearGradient>
+        </defs>
+        {processedData.map((d, i) => {
           const x = GAP + i * (BAR_W + GAP);
-          const barH = maxVal > 0 ? (d.value / maxVal) * H : 4;
-          const y = H - barH;
-          const isToday = i === data.length - 1;
+          const barH = maxVal > 0 ? (d.value / maxVal) * H : 0;
+          // Tinggi fallback 6px jika data 0 agar visual bar tetap teraba
+          const displayH = Math.max(barH, 6);
+          const y = H - displayH;
+          const isToday = i === processedData.length - 1;
+
           return (
             <g key={i} className="group">
+              {/* Area Hover Interaktif */}
+              <rect
+                x={x - GAP/4} y={0} width={BAR_W + GAP/2} height={H} rx="4"
+                className="fill-white/0 hover:fill-black/5 dark:hover:fill-white/5 transition-colors duration-200"
+              />
               <rect 
-                x={x} y={y} width={BAR_W} height={barH} rx="4"
+                x={x} y={y} width={BAR_W} height={displayH} rx="4"
+                fill={isToday || d.value > 0 ? "url(#barGrad)" : "currentColor"}
                 className={cn(
-                  "transition-all duration-500 ease-out",
-                  isToday ? "fill-accent" : "fill-muted hover:fill-muted-foreground/30"
+                  "transition-all duration-300",
+                  isToday || d.value > 0 ? "" : "text-zinc-200 dark:text-zinc-800 group-hover:text-zinc-300 dark:group-hover:text-zinc-700"
                 )}
               />
-              <text 
-                x={x + BAR_W / 2} y={H + 20} textAnchor="middle" 
-                className={cn(
-                  "text-[10px] font-mono font-medium",
-                  isToday ? "fill-accent font-bold" : "fill-muted-foreground"
-                )}
-              >
-                {d.label}
-              </text>
+              {d.label && (
+                <text 
+                  x={x + BAR_W / 2} y={H + 24} textAnchor="middle" 
+                  fill="currentColor"
+                  className={cn(
+                    "text-[9px] font-black uppercase tracking-widest",
+                    isToday ? "text-amber-500" : "text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-300"
+                  )}
+                >
+                  {d.label}
+                </text>
+              )}
             </g>
           );
         })}
@@ -52,321 +84,226 @@ function BarChart({ data }) {
   );
 }
 
-/* ── Komponen Donat Mini ─────────────────────────────────────────── */
-function DonutMini({ pct, color }) {
-  const R = 20, C = 2 * Math.PI * R;
+/* ── Komponen Donat Mini (KEN Enterprise Style) ─────────────────────────────────────────── */
+function DonutChart({ pct, label, subLabel, color = "var(--amber)" }) {
+  const R = 45, C = 2 * Math.PI * R;
   return (
-    <svg width="44" height="44" viewBox="0 0 52 52" className="drop-shadow-sm">
-      <circle cx="26" cy="26" r={R} fill="none" className="stroke-muted" strokeWidth="6" />
-      <circle cx="26" cy="26" r={R} fill="none" stroke={color} strokeWidth="6"
-        strokeDasharray={`${C * pct / 100} ${C}`}
-        strokeLinecap="round"
-        className="transition-all duration-1000 ease-in-out -rotate-90 origin-center"
-      />
-    </svg>
+    <div className="flex flex-col items-center space-y-4">
+      <div className="relative flex items-center justify-center w-28 h-28">
+        <svg width="112" height="112" viewBox="0 0 104 104" className="w-full h-full">
+          <circle cx="52" cy="52" r={R} fill="none" className="stroke-zinc-100 dark:stroke-zinc-800/80" strokeWidth="8" />
+          <circle cx="52" cy="52" r={R} fill="none" stroke={color} strokeWidth="8"
+            strokeDasharray={`${C * pct / 100} ${C}`}
+            strokeLinecap="round"
+            className="transition-all duration-1000 -rotate-90 origin-center"
+          />
+        </svg>
+        <div className="absolute flex flex-col items-center">
+          <span className="text-lg font-black font-mono tabular-nums text-foreground">{Math.round(pct)}%</span>
+        </div>
+      </div>
+      <div className="text-center">
+        <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">{label}</p>
+        <p className="text-xs font-black text-foreground mt-0.5">{subLabel}</p>
+      </div>
+    </div>
   );
 }
 
-export default function Dashboard({ user, onNavigate }) {
-  const [transactions, setTransactions] = useState([]);
-  const [menu, setMenu] = useState([]);
-  const [tables, setTables] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [salesAnalytics, setSalesAnalytics] = useState(null);
-  const [financialAnalytics, setFinancialAnalytics] = useState(null);
-  const [inventoryAnalytics, setInventoryAnalytics] = useState(null);
-  const [pos, setPos] = useState([]);
-  const [invoices, setInvoices] = useState([]);
-  const [grns, setGrns] = useState([]);
-  const [accountingSummary, setAccountingSummary] = useState(null);
-  const [lowStockItems, setLowStockItems] = useState([]);
-  const [aiInsights, setAiInsights] = useState([]);
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-12 animate-in fade-in duration-500">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <div className="flex gap-4">
+          <Skeleton className="h-12 w-32 rounded-md" />
+          <Skeleton className="h-12 w-48 rounded-md" />
+        </div>
+      </header>
 
-  const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') 
-    ? 'http://localhost:3001/api' 
-    : 'https://kuliner-web-project.vercel.app/api';
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-4">
+        {[1, 2, 3, 4].map(i => (
+          <Skeleton key={i} className="h-32 w-full rounded-lg" />
+        ))}
+      </div>
 
-  useEffect(() => {
-    const u = user || {};
-    const headers = { 'x-user-role': u.role || 'guest', 'x-tenant-id': u.tenant?.id || '' };
-    Promise.all([
-      api.getTransactions().catch(() => []), 
-      api.getMenu().catch(() => []), 
-      api.getTables().catch(() => []),
-      hasFeature(user, 'reporting_pdf') ? api.getAnalyticsSales('month').catch(() => null) : Promise.resolve(null),
-      hasFeature(user, 'accounting') ? api.getAnalyticsFinancial('month').catch(() => null) : Promise.resolve(null),
-      hasFeature(user, 'inventory') ? api.getAnalyticsInventory('month').catch(() => null) : Promise.resolve(null),
-      hasFeature(user, 'procurement') ? api.getPO().catch(() => []) : Promise.resolve([]),
-      hasFeature(user, 'procurement') ? api.getGRN().catch(() => []) : Promise.resolve([]),
-      hasFeature(user, 'procurement') ? api.getPurchaseInvoices().catch(() => []) : Promise.resolve([]),
-      fetch(`${API_URL}/accounting/summary?period=today`, { headers }).then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(`${API_URL}/inventory/low-stock`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch(`${API_URL}/ai/insights`, { headers }).then(r => r.ok ? r.json() : []).catch(() => []),
-    ]).then(([txData, menuData, tblData, salesData, finData, invData, poData, grnData, invoiceData, accSum, lowStock, aiData]) => {
-      setTransactions(Array.isArray(txData) ? txData : []);
-      setMenu(Array.isArray(menuData) ? menuData : []);
-      setTables(Array.isArray(tblData) ? tblData : []);
-      setPos(Array.isArray(poData) ? poData : []);
-      setGrns(Array.isArray(grnData) ? grnData : []);
-      setInvoices(Array.isArray(invoiceData) ? invoiceData : []);
-      setLowStockItems(Array.isArray(lowStock) ? lowStock : []);
-      setAiInsights(Array.isArray(aiData) ? aiData : []);
-      if (salesData) setSalesAnalytics(salesData);
-      if (finData) setFinancialAnalytics(finData);
-      if (invData) setInventoryAnalytics(invData);
-      if (accSum) setAccountingSummary(accSum);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
-
-  const safeTransactions = Array.isArray(transactions) ? transactions : [];
-  const safeTables = Array.isArray(tables) ? tables : [];
-  const safeMenu = Array.isArray(menu) ? menu : [];
-
-  const today = new Date().toISOString().split('T')[0];
-  const todayTx = safeTransactions.filter(t => t?.createdAt?.startsWith(today));
-  const todayRevenue = todayTx.reduce((s, t) => s + (t?.total || 0), 0);
-  const totalTx = safeTransactions.length;
-  const activeTables = safeTables.filter(t => t?.status === 'occupied').length;
-
-  const totalUnpaid = invoices.filter(inv => inv.status === 'unpaid').reduce((s, inv) => s + (inv.amount || 0), 0);
-  const totalSpendMonth = invoices.reduce((s, inv) => s + (inv.amount || 0), 0);
-  const pendingPOs = pos.filter(p => p.status === 'Pending').length;
-
-  const is = accountingSummary?.incomeStatement || {};
-
-  const stats = [
-    { label: 'Pendapatan Hari Ini', value: formatRupiah(todayRevenue), icon: DollarSign, trend: '+12.5%', isUp: true, description: 'vs kemarin' },
-    accountingSummary && { label: 'Laba Bersih (Hari Ini)', value: formatRupiah(is.netProfit || todayRevenue), icon: TrendingUp, trend: `Margin ${is.grossMargin || '—'}%`, isUp: (is.netProfit||0) >= 0, description: 'net income' },
-    hasFeature(user, 'procurement') && { label: 'Hutang Supplier', value: formatRupiah(totalUnpaid), icon: TrendingDown, trend: `${invoices.filter(i => i.status === 'unpaid').length} Tagihan`, isUp: false, description: 'belum dibayar' },
-    hasFeature(user, 'procurement') && { label: 'Belanja Bulan Ini', value: formatRupiah(totalSpendMonth), icon: Package, trend: 'Aktif', isUp: true, description: 'total pengadaan' },
-    hasFeature(user, 'procurement') && { label: 'PO Pending', value: pendingPOs.toString(), icon: Clock, trend: 'Draft/Open', isUp: true, description: 'pesanan aktif' },
-    !hasFeature(user, 'procurement') && { label: 'Total Transaksi', value: totalTx.toString(), icon: ReceiptText, trend: 'Bulan ini', isUp: true, description: 'semua pesanan' },
-    !hasFeature(user, 'procurement') && { label: 'Meja Terisi', value: activeTables.toString(), icon: Armchair, trend: 'Live', isUp: true, description: 'dari ' + tables.length + ' meja' },
-  ].filter(Boolean);
-
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-      <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-      <p className="text-muted-foreground font-medium animate-pulse">Menyiapkan dashboard Anda...</p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4">
+        <Skeleton className="lg:col-span-8 h-[400px] rounded-lg" />
+        <Skeleton className="lg:col-span-4 h-[400px] rounded-lg" />
+      </div>
     </div>
   );
+}
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const {
+    loading,
+    aiInsights,
+    lowStockItems,
+    tenant,
+    trendData,
+    safeTransactions,
+    safeMenu,
+    todayRevenue,
+    is,
+    totalUnpaid,
+    totalSpendMonth,
+    occupiedTables,
+    totalTables,
+    tableOccupancyPct,
+    activeOrdersCount,
+    kitchenLoadPct
+  } = useDashboard();
+
+  const stats = [
+    { label: 'Revenue (Today)', value: formatRupiah(todayRevenue), icon: DollarSign, trend: '+12.5%', isUp: true },
+    { label: 'Net Profit', value: formatRupiah(is.netProfit || todayRevenue), icon: TrendingUp, trend: `Margin ${Number(is.grossMargin || 0).toFixed(1)}%`, isUp: true },
+    (tenant?.tier === 'enterprise') && { label: 'Account Payables', value: formatRupiah(totalUnpaid), icon: AlertTriangle, trend: 'Unpaid', isUp: false },
+    (tenant?.tier === 'enterprise') && { label: 'Procurement', value: formatRupiah(totalSpendMonth), icon: Package, trend: 'Active', isUp: true },
+  ].filter(Boolean);
+
+  if (loading) return <DashboardSkeleton />;
 
   return (
-    <div className="space-y-8 pb-10">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 pb-16">
+      {/* Header Section - Sleek Premium Omnichannel Style */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 p-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Dashboard Overview</h2>
-          <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <span className="data-mono">{new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}</span> · Selamat datang kembali, {user?.name?.split(' ')[0] || 'User'} · <span className="text-zinc-950 font-bold">KEN</span>
-            <span className="ml-2 px-2 py-0.5 rounded-full bg-green-100 text-green-800 border border-green-200 text-[9px] font-black tracking-widest flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" /> NODES ACTIVE
-            </span>
-          </p>
+           <div className="flex items-center gap-4 mb-2">
+              <span className="px-2.5 py-1 bg-amber- border border-amber-500/20 rounded-sm text-[9px] font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">
+                Tier: {tenant?.tier?.toUpperCase() || 'ENTERPRISE'}
+              </span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">System Status: Active</span>
+              </div>
+           </div>
+           <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">Executive <span className="text-amber-600 dark:text-amber-400 italic">Cockpit</span></h2>
+           <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium uppercase font-mono tabular-nums tracking-widest mt-1">
+             {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
+           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => onNavigate?.('laporan')}>Unduh Laporan</Button>
-          <Button size="sm" onClick={() => onNavigate?.('kasir')}>Transaksi Baru</Button>
+        <div className="flex items-center gap-4">
+          <Button className="h-12 rounded-md font-black uppercase tracking-widest" onClick={() => navigate('/reports')}>Export Data</Button>
+          <Button className="h-12 rounded-md font-black uppercase tracking-widest" onClick={() => navigate('/kasir')}>New Transaction</Button>
         </div>
       </div>
 
-      {/* Low Stock Warning Banner */}
-      {lowStockItems.length > 0 && (
-        <Card className="bg-card border-l-4 border-l-amber-500 border-y-muted border-r-muted animate-in slide-in-from-top-4 duration-500 shadow-xl overflow-hidden">
-          <CardContent className="p-0 flex items-center justify-between">
-            <div className="flex items-center gap-4 p-6">
-              <div className="w-12 h-12 bg-amber-500 text-zinc-900 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
-                <AlertTriangle className="animate-bounce" size={24} />
-              </div>
-              <div>
-                <p className="text-sm font-black text-foreground tracking-tight">PERINGATAN STOK KRITIS!</p>
-                <p className="text-xs text-muted-foreground font-medium">Ada <span className="data-mono font-bold text-amber-600">{lowStockItems.length}</span> bahan baku di bawah stok minimum.</p>
-              </div>
-            </div>
-            <div className="flex gap-2 pr-6">
-              <Button size="sm" variant="outline" className="h-10 rounded-xl font-black text-[10px] uppercase tracking-widest" onClick={() => onNavigate?.('inventori')}>LIHAT DAFTAR</Button>
-              {hasFeature(user, 'procurement') && (
-                <Button size="sm" className="h-10 bg-amber-500 text-zinc-900 hover:bg-amber-600 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-amber-500/20" onClick={() => onNavigate?.('pembelian')}>BUAT PO</Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      {/* AI Insights Bar */}
+      {aiInsights.length > 0 && (
+        <div className="mx-4 mb-6 p-4 ">
+           <BrainCircuit size={20} className="animate-pulse" />
+           <p className="text-[10px] font-black uppercase tracking-[0.2em]">{aiInsights[0].message}</p>
+        </div>
       )}
 
-      {/* AI Business Insights Widget */}
-      {aiInsights.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in slide-in-from-bottom-4 duration-700">
-          {aiInsights.map((insight, idx) => (
-            <Card key={idx} className="bg-card border border-muted shadow-lg overflow-hidden relative group hover:border-amber-500/30 transition-all duration-500">
-              <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:opacity-10 group-hover:scale-110 transition-all duration-700">
-                <Zap size={100} />
+      {/* Critical Alert */}
+      {lowStockItems.length > 0 && (
+        <div className="mx-4 p-6 bg-amber- border border-amber-500/20 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-amber- rounded-lg flex items-center justify-center text-amber-500">
+                <AlertTriangle size={24} />
               </div>
-              <CardContent className="p-6 relative z-10 flex flex-col gap-4">
-                <div className="flex items-center gap-4">
-                  <div className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl transition-transform group-hover:scale-110",
-                    insight.type === 'warning' ? "bg-amber-500 text-zinc-900" : 
-                    insight.type === 'success' ? "bg-emerald-500 text-white" : "bg-blue-500 text-white"
-                  )}>
-                    {insight.type === 'warning' ? <AlertTriangle size={20} /> : 
-                     insight.type === 'success' ? <TrendingUp size={20} /> : <Zap size={20} />}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-black tracking-tight group-hover:text-amber-600 transition-colors">{insight.title}</h4>
-                    <p className="text-[9px] font-black uppercase text-muted-foreground tracking-[0.2em] mt-1">AI Business Insight</p>
-                  </div>
-                </div>
-                <p className="text-xs font-medium leading-relaxed text-muted-foreground line-clamp-2">{insight.message}</p>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="w-full h-10 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-muted"
-                  onClick={() => onNavigate?.(insight.action)}
-                >
-                  Detail Insight <ChevronRight size={14} className="ml-2" />
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+              <div>
+                 <p className="text-lg font-black text-foreground uppercase tracking-tighter">Stock Shortage Detected</p>
+                 <p className="text-xs text-zinc-500 dark:text-zinc-100 font-bold uppercase tracking-widest">{lowStockItems.length} items require attention.</p>
+              </div>
+           </div>
+           <Button size="sm" className="w-full sm:w-auto" onClick={() => navigate('/inventory-intel')}>Audit Stock</Button>
         </div>
       )}
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 px-4">
         {stats.map((s, i) => {
           const Icon = s.icon;
           return (
-            <Card key={i} className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{s.label}</CardTitle>
-                <div className="h-8 w-8 flex items-center justify-center">
-                  <Icon className="h-5 w-5 text-zinc-500" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-[30px] font-bold data-mono tracking-tighter leading-none mb-2">{s.value}</div>
-                <div className="flex items-center gap-1.5 mt-1">
-                  {s.isUp ? <ArrowUpRight className="h-3 w-3 text-emerald-500" /> : <ArrowDownRight className="h-3 w-3 text-error" />}
-                  <span className={cn("text-xs font-bold data-mono", s.isUp ? "text-emerald-500" : "text-error")}>{s.trend}</span>
-                  <span className="text-xs text-muted-foreground font-medium">{s.description}</span>
-                </div>
-              </CardContent>
+            <Card key={i} className="p-6 group hover:border-amber-500/30 transition-all">
+              <div className="flex justify-between items-center mb-4">
+                 <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">{s.label}</p>
+                 <Icon size={18} className="text-amber-500 group-hover:text-amber-500 transition-colors" />
+              </div>
+              <div className="text-2xl font-black font-mono tabular-nums tracking-tighter mb-4 text-foreground">{s.value}</div>
+              <div className={s.isUp ? "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" : "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800"}>
+                {s.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                <span>{s.trend}</span>
+              </div>
             </Card>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-7 gap-4">
-        {/* Sales Chart */}
-        <Card className="lg:col-span-4">
-          <CardHeader>
-            <CardTitle>Ikhtisar Penjualan</CardTitle>
-            <CardDescription>Visualisasi pendapatan harian dalam 7 hari terakhir.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BarChart data={Array.from({ length: 7 }, (_, i) => {
-              const d = new Date(); d.setDate(d.getDate() - (6 - i));
-              const key = d.toISOString().split('T')[0];
-              const rev = safeTransactions.filter(t => t?.createdAt?.startsWith(key)).reduce((s, t) => s + (t?.total || 0), 0);
-              return { label: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'][d.getDay()], value: rev };
-            })} />
-          </CardContent>
+      {/* Charts & Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4">
+        <Card className="lg:col-span-8 p-8" variant="premium">
+           <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-black uppercase tracking-tighter text-[var(--text-primary)]">Market Trajectory</h3>
+              <BarChart3 className="text-amber-500 " size={20} aria-label="Market Trajectory chart" role="img" />
+           </div>
+           <BarChart data={trendData.length > 0 ? trendData : Array.from({ length: 7 }, (_, i) => ({ label: ['S','M','T','W','T','F','S'][i], value: 0 }))} />
         </Card>
 
-        {/* Recent Activity */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Aktivitas Terbaru</CardTitle>
-            <CardDescription>Pesanan terbaru dan pembaruan status.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {safeTransactions.slice(-5).reverse().map((tx, i) => (
-              <div key={i} className="flex items-center gap-4 group">
-                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0 group-hover:bg-accent/10 transition-colors">
-                  <Clock className="h-5 w-5 text-muted-foreground group-hover:text-accent transition-colors" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate data-mono tracking-tight">ID:{tx?.id?.slice(-6).toUpperCase() || '????'}</p>
-                  <p className="text-xs text-muted-foreground font-medium">{tx?.tableType} · {tx?.items?.length || 0} items</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold data-mono text-primary">{formatRupiah(tx?.total || 0)}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase data-mono">{tx?.createdAt ? new Date(tx.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</p>
-                </div>
+        <Card className="lg:col-span-4 p-8 space-y-6">
+           <h3 className="text-lg font-black uppercase tracking-tighter text-foreground">Live Activity</h3>
+           <div className="space-y-4">
+            {safeTransactions.slice(-4).reverse().map((tx, i) => (
+              <div key={i} className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-4 last:border-0">
+                  <div>
+                    <p className="text-xs font-black font-mono tabular-nums text-foreground">TX-{tx?.id?.slice(-4).toUpperCase() || 'NODE'}</p>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-100 font-bold uppercase tracking-widest">{tx?.payment_method || 'CASH'}</p>
+                  </div>
+                  <p className="text-sm font-black font-mono tabular-nums text-amber-500">{formatRupiah(tx?.total || 0)}</p>
               </div>
             ))}
-            <Button variant="ghost" className="w-full text-xs h-8 text-muted-foreground hover:text-accent" onClick={() => window.location.hash = '#/laporan'}>
-              Lihat Semua Transaksi <ChevronRight size={14} className="ml-1" />
-            </Button>
-          </CardContent>
+           </div>
+           <Button variant="ghost" className="w-full text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 font-black text-[10px] uppercase tracking-widest" onClick={() => navigate('/activity-log')}>View Audit Log</Button>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Table Status */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Status Meja Live</CardTitle>
-            <CardDescription>Okupansi waktu-nyata di seluruh area.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-center gap-8 py-4">
-              <div className="text-center">
-                <DonutMini pct={(activeTables / (tables.length || 1)) * 100} color="hsl(var(--accent))" />
-                <p className="mt-2 text-xl font-bold data-mono">{activeTables}</p>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Terisi</p>
-              </div>
-              <div className="text-center">
-                <DonutMini pct={((tables.length - activeTables) / (tables.length || 1)) * 100} color="hsl(var(--muted))" />
-                <p className="mt-2 text-xl font-bold data-mono">{tables.length - activeTables}</p>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Tersedia</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mt-6">
-              {safeTables.slice(0, 12).map((t, i) => (
-                <div 
-                  key={i} 
-                  className={cn(
-                    "aspect-square rounded-lg flex flex-col items-center justify-center gap-1 border transition-all",
-                    t?.status === 'occupied' ? "bg-accent/5 border-accent/20 text-accent" : "bg-muted/30 border-transparent text-muted-foreground"
-                  )}
-                >
-                  <Armchair size={14} />
-                  <span className="text-[10px] font-bold data-mono">{t?.name?.split(' ')[1] || '??'}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
+      {/* Node Performance */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4">
+        <Card className="p-8">
+           <h3 className="text-lg font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50 mb-8 text-center lg:text-left">Node Occupancy</h3>
+           <div className="flex flex-col sm:flex-row justify-center gap-10 sm:gap-16 py-4">
+              <DonutChart 
+                pct={tableOccupancyPct} 
+                label="Meja Terisi" 
+                subLabel={`${occupiedTables} dari ${totalTables} Meja`} 
+                color="var(--amber)" 
+              />
+              <DonutChart 
+                pct={kitchenLoadPct} 
+                label="Beban Dapur" 
+                subLabel={`${activeOrdersCount} Pesanan Aktif`} 
+                color={kitchenLoadPct > 70 ? "var(--error)" : "var(--success)"} 
+              />
+           </div>
         </Card>
 
-        {/* Top Products */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Produk Terlaris</CardTitle>
-            <CardDescription>Item paling populer minggu ini.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {safeMenu.slice(0, 4).map((item, i) => (
+        <Card className="p-8">
+           <h3 className="text-lg font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50 mb-8">Peak Performance</h3>
+           <div className="space-y-6">
+            {safeMenu.slice(0, 3).map((item, i) => (
               <div key={i} className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-xl shrink-0">
-                  {item?.icon || '☕'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-bold truncate">{item?.name || 'Item'}</p>
-                    <p className="text-xs text-muted-foreground font-medium">Terjual <span className="data-mono font-bold text-accent">{42 - i * 5}</span></p>
+                  <div className="w-10 h-10 bg-amber- dark:bg-amber- rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                    <Coffee size={18} />
                   </div>
-                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-accent rounded-full transition-all duration-1000" 
-                      style={{ width: `${85 - i * 15}%` }} 
-                    />
+                  <div className="flex-1">
+                    <div className="flex justify-between mb-1.5">
+                        <p className="text-xs font-black text-zinc-900 dark:text-zinc-50">{item?.name}</p>
+                        <p className="text-xs font-mono tabular-nums text-amber-500">85%</p>
+                    </div>
+                    <div className="h-1.5 w-full ">
+                        <div className="h-full " />
+                    </div>
                   </div>
-                </div>
               </div>
             ))}
-          </CardContent>
+           </div>
         </Card>
       </div>
     </div>

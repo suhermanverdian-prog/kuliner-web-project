@@ -1,60 +1,64 @@
 @echo off
 SETLOCAL EnableDelayedExpansion
-
-:: ==========================================================
-:: KEN ERP - SYSTEM BOOTSTRAPPER (PROFESSIONAL EDITION)
-:: ==========================================================
-:: Author: KEN Developer Team
-:: Version: 1.2.0
-:: ==========================================================
-
-title KEN ERP - Enterprise Resource Planning
+title KEN ENTERPRISE — Global ERP Node
 mode con: cols=100 lines=30
-color 0B
+color 0E
 
+:: ASCII Art for KEN (Enterprise Standard)
 echo.
-echo  ##########################################################
-echo  #                                                        #
-echo  #         KEN ERP SYSTEM - STARTING BOOT SEQUENCE        #
-echo  #                                                        #
-echo  ##########################################################
+echo    _  _________ _   _ 
+echo   ^| ^|/ /_   ___^| \ ^| ^|
+echo   ^| ' /  ^| ^|_  ^|  \^| ^|
+echo   ^|  \  ^|  _^| ^| ^|\  ^|
+echo   ^|_^|\_\^|_____^|_^| \_^|
+echo.
+echo   [ ELITE ENTERPRISE - SYSTEM BOOTSTRAPPER ]
 echo.
 
-:: 1. Backend Initialization
-echo  [SYSTEM] Checking Backend Services...
-echo  [SYSTEM] Initializing Node.js API Server on Port 3001...
-start "KEN-BACKEND" /min cmd /k "echo KEN BACKEND IS RUNNING... && cd backend && node src/server.js"
+:: 1. Cleanup stale processes
+echo  [SYSTEM] Terminating stale services on Port 3001 ^& 5173...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3001') do taskkill /F /PID %%a 2>nul
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5173') do taskkill /F /PID %%a 2>nul
+echo  [SYSTEM] Environment cleaned.
+echo.
 
-:: 2. Frontend Initialization
-echo  [SYSTEM] Preparing Frontend UI Engine...
-echo  [SYSTEM] Initializing Vite Development Server on Port 5173...
-start "KEN-FRONTEND" /min cmd /k "echo KEN FRONTEND IS RUNNING... && cd frontend && npm run dev"
-
-:: 3. Waiting Sequence
-echo  [SYSTEM] Synchronizing services...
-set "spinner=/-\|"
-for /L %%i in (1,1,15) do (
-    set /a "idx=%%i %% 4"
-    for /L %%n in (!idx!,1,!idx!) do (
-        <nul set /p "= [BOOT] Loading !spinner:~%%n,1! Please wait...  "
-        timeout /t 1 /nobreak > nul
-        echo | set /p "= "
-    )
+:: 2. Dependency Check
+echo  [SYSTEM] Verifying system dependencies...
+if not exist "backend\node_modules" (
+    echo  [!] Backend node_modules missing. Rebuilding...
+    cd backend && call npm install && cd ..
 )
-echo.
+if not exist "frontend\node_modules" (
+    echo  [!] Frontend node_modules missing. Rebuilding...
+    cd frontend && call npm install && cd ..
+)
 
-:: 4. Final Launch
+:: 3. Service Initialization
+echo  [SYSTEM] Initializing KEN API Server (Development Mode)...
+start "KEN-BACKEND" /min cmd /k "title KEN API && cd backend && npm run dev"
+
+echo  [SYSTEM] Initializing KEN UI Engine (Development Mode)...
+start "KEN-FRONTEND" /min cmd /k "title KEN UI && cd frontend && npm run dev"
+
+:: 4. Sync Sequence
+echo.
+echo  [SYSTEM] Synchronizing enterprise nodes...
+timeout /t 5 /nobreak > nul
+
+:: 5. Launch
 echo.
 echo  [SYSTEM] Boot sequence complete.
-echo  [SYSTEM] Backend  : http://localhost:3001
-echo  [SYSTEM] Frontend : http://localhost:5173
+echo  [SERVICES] ---------------------------------------------
+echo  [API]      : http://localhost:3001
+echo  [FRONTEND] : http://localhost:5173
+echo  [STATUS]   : ACTIVE
+echo  --------------------------------------------------------
 echo.
-echo  [ACTION] Opening Browser...
+echo  [ACTION] Launching Global Dashboard...
 start http://localhost:5173
 
-echo  [OK] KEN ERP is now active.
-echo  [OK] Keep the minimized windows open to maintain connectivity.
 echo.
-echo  Press any key to close this bootstrapper...
+echo  [SUCCESS] KEN Enterprise is now online.
+echo  Press any key to exit bootstrapper...
 pause > nul
 exit

@@ -30,6 +30,8 @@ export const TIER_DEFAULTS = {
     white_label: false,
     api_access: false,
     ai_insights: false,
+    omnichannel: false,
+    hrd: false,
   },
   pro: {
     pos: true,
@@ -52,6 +54,8 @@ export const TIER_DEFAULTS = {
     white_label: false,
     api_access: false,
     ai_insights: false,
+    omnichannel: true,
+    hrd: false,
   },
   enterprise: {
     pos: true,
@@ -74,6 +78,8 @@ export const TIER_DEFAULTS = {
     white_label: true,
     api_access: true,
     ai_insights: true,
+    omnichannel: true,
+    hrd: true,
   },
 };
 
@@ -99,6 +105,8 @@ export const FEATURE_CATALOG = [
   { key: 'white_label',      label: 'White Label',              group: 'Enterprise',  icon: '🏷️', description: 'Custom branding tenant' },
   { key: 'api_access',       label: 'API Access',               group: 'Enterprise',  icon: '🔌', description: 'REST API untuk integrasi' },
   { key: 'ai_insights',      label: 'AI Insights',              group: 'Enterprise',  icon: '🤖', description: 'Prediksi & rekomendasi AI' },
+  { key: 'omnichannel',      label: 'Omnichannel Marketplace',  group: 'Bisnis',      icon: '🛒', description: 'GoFood, GrabFood, ShopeeFood' },
+  { key: 'hrd',              label: 'Manajemen HRD & Payroll',  group: 'Enterprise',  icon: '👨‍💼', description: 'Absensi GPS, Selfie AI & Gaji' },
 ];
 
 /**
@@ -127,11 +135,11 @@ export function resolveFeatures(tenant) {
  */
 export function hasFeature(user, flag) {
   // SuperAdmin always has access to everything
-  if (user?.is_superadmin) return true;
+  if (user?.is_superadmin || user?.role === 'superadmin') return true;
 
-  const tenant = user?.tenant;
-  if (!tenant) {
-    // Fallback: if no tenant, use local data.json mode (all features on)
+  const tenant = user?.tenant || user; // Fallback if tenant is flattened into user
+  if (!tenant || (!tenant.tier && !tenant.feature_overrides)) {
+    // If no tenant context at all, allow as safe default
     return true;
   }
 
@@ -140,18 +148,26 @@ export function hasFeature(user, flag) {
 }
 
 // Map sidebar page IDs to feature flags
+// MUST MATCH Sidebar.jsx IDs exactly (without leading slash)
 export const PAGE_FEATURE_MAP = {
-  dashboard:   null,          // always visible
-  kasir:       'pos',
-  meja:        'table_management',
-  kds:         'kds',
-  shift:       'shift',
-  inventori:   'inventory',
-  pembelian:   'procurement',
-  menu:        'recipe_bom',
-  laporan:     'reporting_pdf',
-  akuntansi:   'accounting',  // Enterprise only
-  pelanggan:   'crm',
-  pengaturan:  null,          // always visible for admin/owner
-  superadmin:  null,          // controlled by is_superadmin flag
+  '':              null,          // dashboard
+  'kasir':         'pos',
+  'tables':        'table_management',
+  'kds':           'kds',
+  'shifts':        'shift',
+  'inventory':     'inventory',
+  'procurement':   'procurement',
+  'waste-monitoring': 'waste_management',
+  'logistics-hub': 'stock_transfer',
+  'menu':          'recipe_bom',
+  'reports':       'reporting_pdf',
+  'revenue-intel': 'ai_insights',
+  'report-builder':'reporting_excel',
+  'accounting':    'accounting',
+  'customers':     'crm',
+  'outlets':       'multi_outlet',
+  'marketplace':   'omnichannel',
+  'settings':      null,
+  'ai-assistant':  'ai_insights',
+  'superadmin':    'superadmin',
 };

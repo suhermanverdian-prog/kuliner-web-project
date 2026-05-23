@@ -1,132 +1,247 @@
-const hostname = window.location.hostname;
-const port = window.location.port;
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? `http://${window.location.hostname}:3001/api`
-  : 'https://kuliner-web-project.vercel.app/api';
+  : '/api';
+
+import * as Sentry from '@sentry/react';
 
 const getHeaders = () => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const currentOutletId = localStorage.getItem('currentOutletId') || '';
-  return {
-    'Content-Type': 'application/json',
-    'x-user-role': user.role || 'guest',
-    'x-tenant-id': user.tenant?.id || '',
-    'x-outlet-id': currentOutletId
-  };
+  let token = null;
+  let tenantId = null;
+
+  // 1. Try to get from Zustand Storage (Primary)
+  const storageStr = localStorage.getItem('ken-enterprise-storage');
+  if (storageStr) {
+    try {
+      const storage = JSON.parse(storageStr);
+      const state = storage.state || storage;
+      const user = state.user || state;
+      if (user) {
+        token = user.token;
+        const innerUser = user.user || user;
+        tenantId = innerUser.tenant_id || user.tenant_id;
+      }
+    } catch (e) {}
+  }
+
+  // 2. Fallback to Direct Keys (if direct login/bypass is used)
+  token = token || localStorage.getItem('token');
+  tenantId = tenantId || localStorage.getItem('tenantId');
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (token && token !== 'null' && token !== 'undefined') {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (tenantId && tenantId !== 'null' && tenantId !== 'undefined') {
+    headers['x-tenant-id'] = tenantId;
+  }
+  
+  return headers;
 };
 
-const getResource = (p) => {
-  let r = p.replace('get', '').replace('add', '').replace('update', '').replace('save', '').replace('delete', '').toLowerCase();
-  let result = r;
-  // Mapping khusus
-  if (r === 'shift') result = 'shifts';
-  else if (r === 'transaction') result = 'transactions';
-  else if (r === 'table') result = 'tables';
-  else if (r === 'outlet') result = 'outlets';
-  else if (r === 'grn') result = 'grns';
-  else if (r === 'purchaseinvoices') result = 'purchase_invoices';
-  else if (r === 'purchasepayments') result = 'purchase_payments';
-  else if (r === 'bahan') result = 'bahan';
-  else if (r === 'settingsloyalty') result = 'settings/loyalty';
-  else if (r === 'inventorymetas' || r === 'inventorymeta') result = 'inventorymeta';
-  else if (r === 'activeshifts' || r === 'activeshift') result = 'activeshift';
-  else if (r === 'analyticsinventory') result = 'v1/analytics/inventory';
-  else if (r === 'analyticssales') result = 'v1/analytics/sales';
-  else if (r === 'analyticsfinancial') result = 'v1/analytics/financial';
-  else if (!r.endsWith('s') && r !== 'po' && r !== 'grn' && r !== 'menu') result = r + 's';
-  
-  console.log(`[API Proxy] ${p} -> /api/${result}`);
-  return result;
+// --- ELITE PROXY ENGINE ---
+const getResource = (prop) => {
+  const map = {
+    // Inventory
+    'getBahan': 'inventory',
+    'saveBahan': 'inventory',
+    'updateBahan': 'inventory',
+    'getInventory': 'inventory',
+    'getLowStock': 'inventory/low-stock',
+    'getInventoryMeta': 'inventory/meta',
+    'getInventoryPredictions': 'inventory/predictions',
+    'getInventoryLogs': 'inventory/logs',
+    'getInventoryLogistics': 'inventory/logistics',
+    
+    // System & Shifts
+    'getShifts': 'shifts',
+    'addShift': 'shifts',
+    'getActiveShift': 'shifts/active',
+    'closeShift': 'shifts',
+    'getTables': 'system/tables',
+    'saveTable': 'system/tables',
+    'deleteTable': 'system/tables',
+    'getLocations': 'system/locations',
+    'getOutlets': 'system/outlets',
+    'addOutlet': 'system/outlets',
+    'updateOutlet': 'system/outlets',
+    'deleteOutlet': 'system/outlets',
+    'getSettings': 'system/settings',
+    'saveSettings': 'system/settings',
+    'getOutletInfo': 'system/outletinfos',
+    'getSettingsLoyalty': 'system/settings/loyalty',
+    'saveSettingsLoyalty': 'system/settings/loyalty',
+    
+    // Menu
+    'getMenu': 'menu',
+    'addMenu': 'menu',
+    'updateMenu': 'menu',
+    
+    // Transactions
+    'getTransactions': 'transactions',
+    'checkout': 'transactions',
+    'confirmPayment': 'transactions', // Will append /id/confirm in logic
+    'updateKdsStatus': 'transactions',
+    
+    // User Management
+    'saveUser': 'users',
+    'deleteUser': 'users',
+    'getUsers': 'users',
+    'getRolePermissions': 'roles/permissions',
+    'saveRolePermissions': 'roles/permissions',
+    'updateTenantFeatures': 'tenant/me/features',
+    
+    // Procurement
+    'getPOs': 'p/pos',
+    'addPO': 'p/pos',
+    'getInvoices': 'p/invoices',
+    'getPurchaseInvoices': 'p/invoices',
+    'updatePurchaseInvoice': 'p/invoices',
+    'getSuppliers': 'p/suppliers',
+    'addSupplier': 'p/suppliers',
+    'getConversions': 'p/conversions',
+    'addGRN': 'p/grns',
+    
+    // Laporan (Reports)
+    'getLaporanSummary': 'laporan/summary',
+    'getLaporanTrend': 'laporan/trend',
+    'getLaporanPaymentMethods': 'laporan/payment-methods',
+    'getLaporanTopProducts': 'laporan/top-products',
+    'getLaporanCriticalStock': 'laporan/critical-stock',
+    'getLaporanWaste': 'laporan/waste',
+    'getLaporanInsights': 'laporan/insights',
+    'getAiInsights': 'ai/insights',
+    
+    // Inventory Intelligence
+    'getInventoryPredictions': 'inventory/predictions',
+    'getInventoryLogs': 'inventory/logs',
+    'getInventoryWaste': 'inventory/waste',
+    
+    // Accounting
+    'getAccountingSummary': 'accounting/summary',
+    'getAccounts': 'accounting/accounts',
+    'getJournals': 'accounting/journals'
+  };
+  return map[prop] || prop.replace(/get|add|update|delete|save/i, '').toLowerCase();
 };
 
 const apiBase = {
   url: API_URL,
-  // Fungsi manual jika dibutuhkan
-  async login(credentials) {
-    const res = await fetch(`${API_URL}/login`, {
+  
+  // Generic Request Handler
+  async request(url, method = 'GET', data = null) {
+    const options = {
+      method,
+      headers: getHeaders(),
+    };
+    if (data) options.body = JSON.stringify(data);
+    
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        const finalError = new Error(error.message || `API Error ${response.status}`);
+        Sentry.captureException(finalError, { extra: { url, method, data } });
+        throw finalError;
+      }
+      return await response.json();
+    } catch (err) {
+      // Tangkap network error (misal: ERR_CONNECTION_REFUSED)
+      Sentry.captureException(err, { extra: { url, method, data } });
+      throw err;
+    }
+  },
+
+  async uploadImage(file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    const headers = getHeaders();
+    delete headers['Content-Type'];
+    const res = await fetch(`${API_URL}/upload`, { 
+      method: 'POST', 
+      headers, 
+      body: formData 
+    });
+    return res.json();
+  },
+
+  async paySalary(employeeId, data) {
+    const res = await fetch(`${API_URL}/accounting/payroll`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(credentials)
+      headers: getHeaders(),
+      body: JSON.stringify({ employeeId, ...data })
+    });
+    return res.json();
+  },
+
+  async closeShift(id, data = {}) {
+    const res = await fetch(`${API_URL}/shifts/${id}/close`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data)
     });
     return res.json();
   }
 };
 
-export const api = new Proxy(apiBase, {
+const apiProxy = new Proxy(apiBase, {
   get(target, prop) {
     if (prop in target) return target[prop];
-    if (typeof prop !== 'string') return undefined;
-
-    // Handle GET
-    if (prop.startsWith('get')) {
+    
+    // Dynamic Method Generator
+    return async (idOrData = null, optionalData = null) => {
       const resource = getResource(prop);
-      return async () => {
-        const res = await fetch(`${API_URL}/${resource}`, { headers: getHeaders() });
-        if (!res.ok) throw new Error(`Gagal mengambil data ${resource}`);
-        return res.json();
-      };
-    }
+      let url = `${API_URL}/${resource}`;
+      let method = 'GET';
+      let payload = null;
 
-    // Handle POST (add/save)
-    if (prop.startsWith('add') || prop.startsWith('save')) {
-      const resource = getResource(prop);
-      return async (data) => {
-        const res = await fetch(`${API_URL}/${resource}`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify(data)
-        });
-        if (!res.ok) throw new Error(`Gagal menyimpan data ${resource}`);
-        return res.json();
-      };
-    }
+      // 1. Detect Method
+      if (prop.startsWith('get')) method = 'GET';
+      else if (prop.startsWith('add') || prop.startsWith('post') || prop === 'login' || prop === 'closeShift') method = 'POST';
+      else if (prop.startsWith('update') || prop.startsWith('put') || prop === 'confirmPayment') method = 'PUT';
+      else if (prop.startsWith('delete')) method = 'DELETE';
+      else if (prop === 'checkout') method = 'POST';
+      else if (prop.startsWith('save')) {
+         // Custom logic for saveXXX(data). If data has an 'id', use PUT, otherwise POST.
+         method = idOrData?.id ? 'PUT' : 'POST';
+      }
 
-    // Handle PUT (update)
-    if (prop.startsWith('update')) {
-      const resource = getResource(prop);
-      return async (data) => {
-        const id = data.id || data.code || '';
-        const res = await fetch(`${API_URL}/${resource}/${id}`, {
-          method: 'PUT',
-          headers: getHeaders(),
-          body: JSON.stringify(data)
-        });
-        if (!res.ok) throw new Error(`Gagal memperbarui data ${resource}`);
-        return res.json();
-      };
-    }
-
-    // Handle DELETE
-    if (prop.startsWith('delete')) {
-      const resource = getResource(prop);
-      return async (id) => {
-        const res = await fetch(`${API_URL}/${resource}/${id}`, {
-          method: 'DELETE',
-          headers: getHeaders()
-        });
-        if (!res.ok) throw new Error(`Gagal menghapus data ${resource}`);
-        return res.json();
-      };
-    }
-
-    // Handle checkout (mapped to transactions)
-    if (prop === 'checkout') {
-      return async (data) => {
-        const res = await fetch(`${API_URL}/transactions`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify(data)
-        });
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.error || 'Gagal memproses checkout');
+      // 2. Argument & Action Handling
+      if (prop.startsWith('save')) {
+        // Pattern: save(data) -> /resource or /resource/id
+        payload = idOrData;
+        if (idOrData?.id) url += `/${idOrData.id}`;
+      } else if (optionalData !== null) {
+        // Pattern: method(id, data) -> /resource/id/action
+        url += `/${idOrData}`;
+        payload = optionalData;
+        if (prop === 'updateKdsStatus') {
+          payload = { status: optionalData };
         }
-        return res.json();
-      };
-    }
+      } else {
+        // Pattern: method(data) -> /resource
+        payload = idOrData;
+        if (method === 'DELETE' && idOrData && typeof idOrData !== 'object') {
+           url += `/${idOrData}`;
+           payload = null;
+        }
+      }
 
-    return undefined;
+      // Add Action Suffixes
+      if (prop.startsWith('close') && prop.endsWith('Shift')) url += '/close';
+      if (prop === 'confirmPayment') url += '/confirm';
+      if (prop === 'updateKdsStatus') url += '/kds';
+
+      // --- ENTERPRISE QUERY ENGINE ---
+      if (method === 'GET' && payload && typeof payload === 'object') {
+        const params = new URLSearchParams(payload).toString();
+        if (params) url += (url.includes('?') ? '&' : '?') + params;
+        payload = null; // GET requests don't have bodies
+      }
+
+      return target.request(url, method, payload);
+    };
   }
 });
 
-export default api;
+export default apiProxy;
+export { apiProxy as api };
