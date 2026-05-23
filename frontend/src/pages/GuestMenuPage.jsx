@@ -321,6 +321,67 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
     orderType: defaultOrderType || 'Dine-in',
     paymentMethod: 'Tunai'
   });
+  const [dynamicMethods, setDynamicMethods] = useState([]);
+
+  useEffect(() => {
+    api.getPaymentMethods({ active: true })
+      .then(res => {
+        if (Array.isArray(res) && res.length > 0) {
+          const mapped = res.map(m => {
+            if (typeof m === 'string') {
+              let icon = <Wallet size={20} />;
+              let desc = 'Bayar Elektronik';
+              if (m.toLowerCase().includes('tunai') || m.toLowerCase().includes('cash')) {
+                icon = <Banknote size={20} />;
+                desc = 'Bayar ke kasir';
+              } else if (m.toLowerCase().includes('qris')) {
+                icon = <QrCode size={20} />;
+                desc = 'Scan QR Code';
+              } else if (m.toLowerCase().includes('debit') || m.toLowerCase().includes('kartu') || m.toLowerCase().includes('card')) {
+                icon = <CreditCard size={20} />;
+                desc = 'Bayar dengan kartu';
+              } else if (m.toLowerCase().includes('transfer')) {
+                icon = <Landmark size={20} />;
+                desc = 'Transfer ke Rekening';
+              }
+              return { key: m, label: m, icon, desc, is_active: true };
+            } else {
+              let icon = <Wallet size={20} />;
+              let desc = m.instructions || 'Selesaikan pembayaran';
+              const nameLower = (m.name || '').toLowerCase();
+              const typeLower = (m.type || '').toLowerCase();
+              if (typeLower === 'cash' || nameLower.includes('tunai') || nameLower.includes('cash')) {
+                icon = <Banknote size={20} />;
+                desc = m.instructions || 'Bayar ke kasir';
+              } else if (typeLower === 'qris' || nameLower.includes('qris')) {
+                icon = <QrCode size={20} />;
+                desc = m.instructions || 'Scan QR Code';
+              } else if (typeLower === 'card' || typeLower === 'debit' || nameLower.includes('debit') || nameLower.includes('kartu') || nameLower.includes('card')) {
+                icon = <CreditCard size={20} />;
+                desc = m.instructions || 'Bayar dengan kartu';
+              } else if (typeLower === 'transfer' || nameLower.includes('transfer')) {
+                icon = <Landmark size={20} />;
+                desc = m.instructions || 'Transfer ke Rekening';
+              }
+              return { key: m.name, label: m.name, icon, desc, is_active: m.is_active };
+            }
+          });
+          const filtered = mapped.filter(m => m.is_active !== false);
+          if (filtered.length > 0) {
+            setDynamicMethods(filtered);
+            setForm(f => ({ ...f, paymentMethod: filtered[0].key }));
+          }
+        }
+      })
+      .catch(err => console.error('Failed to load active payment methods for guest:', err));
+  }, []);
+
+  const availableMethods = dynamicMethods.length > 0 ? dynamicMethods : [
+    { key: 'Tunai',         label: 'Tunai',        icon: <Banknote size={20} />, desc: 'Bayar ke kasir' },
+    { key: 'QRIS',          label: 'QRIS',         icon: <QrCode size={20} />, desc: 'Scan QR Code' },
+    { key: 'Transfer',      label: 'Transfer Bank', icon: <Landmark size={20} />, desc: 'Transfer ke Rekening' },
+    { key: 'E-Wallet',      label: 'E-Wallet',     icon: <Wallet size={20} />, desc: 'GoPay / OVO / Dana' },
+  ];
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -435,7 +496,7 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
               <h2 className="text-lg font-black">Metode Pembayaran</h2>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              {PAYMENT_METHODS.map(pm => (
+              {availableMethods.map(pm => (
                 <button
                   type="button"
                   key={pm.key}

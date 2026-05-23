@@ -178,7 +178,8 @@ class UserController {
   async getPaymentMethods(req, res) {
     try {
       const { tenantId } = req.userContext;
-      const data = await UserService.getPaymentMethods(tenantId);
+      const { active } = req.query;
+      const data = await UserService.getPaymentMethods(tenantId, active === 'true');
       res.json(data);
     } catch (err) {
       res.json(['Cash', 'QRIS', 'Transfer']);

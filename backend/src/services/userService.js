@@ -190,10 +190,14 @@ class UserService {
     return data || [];
   }
 
-  async getPaymentMethods(tenantId) {
+  async getPaymentMethods(tenantId, activeOnly = false) {
     const { data, error } = await UserRepository.getPaymentMethods(tenantId);
     if (error) return ['Cash', 'QRIS', 'Transfer'];
-    return data || ['Cash', 'QRIS', 'Transfer'];
+    let list = data || [];
+    if (activeOnly) {
+      list = list.filter(m => m.is_active !== false);
+    }
+    return list;
   }
 
   async addPaymentMethod(payload, tenantId) {

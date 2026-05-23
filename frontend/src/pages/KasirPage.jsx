@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useKasir } from '../hooks/useKasir';
 import { formatRupiah } from '../utils/formatters';
 import { MENU_CATEGORIES } from '../utils/constants';
@@ -190,11 +190,45 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
   const [orderType, setOrderType] = useState('Dine-in');
   const [loading, setLoading] = useState(false);
   const [cashReceived, setCashReceived] = useState('');
+  const [dynamicMethods, setDynamicMethods] = useState([]);
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const taxAmount = Math.round(subtotal * 0.11);
   const total = subtotal + taxAmount;
   const changeAmount = Number(cashReceived) - total;
+
+  useEffect(() => {
+    api.getPaymentMethods({ active: true })
+      .then(res => {
+        if (Array.isArray(res) && res.length > 0) {
+          const mapped = res.map(m => {
+            if (typeof m === 'string') {
+              let icon = Wallet;
+              if (m.toLowerCase().includes('tunai') || m.toLowerCase().includes('cash')) icon = Banknote;
+              else if (m.toLowerCase().includes('qris')) icon = Wallet;
+              else if (m.toLowerCase().includes('debit') || m.toLowerCase().includes('kartu') || m.toLowerCase().includes('card')) icon = CreditCard;
+              else if (m.toLowerCase().includes('transfer')) icon = Landmark;
+              return { id: m, name: m, icon, is_active: true };
+            } else {
+              let icon = Wallet;
+              const nameLower = (m.name || '').toLowerCase();
+              const typeLower = (m.type || '').toLowerCase();
+              if (typeLower === 'cash' || nameLower.includes('tunai') || nameLower.includes('cash')) icon = Banknote;
+              else if (typeLower === 'qris' || nameLower.includes('qris')) icon = Wallet;
+              else if (typeLower === 'card' || typeLower === 'debit' || nameLower.includes('debit') || nameLower.includes('kartu') || nameLower.includes('card')) icon = CreditCard;
+              else if (typeLower === 'transfer' || nameLower.includes('transfer')) icon = Landmark;
+              return { id: m.name, name: m.name, icon, is_active: m.is_active };
+            }
+          });
+          const filtered = mapped.filter(m => m.is_active !== false);
+          if (filtered.length > 0) {
+            setDynamicMethods(filtered);
+            setPayMethod(filtered[0].id);
+          }
+        }
+      })
+      .catch(err => console.error('Failed to load active payment methods for cashier:', err));
+  }, []);
 
   const handlePay = async () => {
     if (payMethod === 'Tunai' && Number(cashReceived) < total) return alert('Uang kurang!');
@@ -218,7 +252,12 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
     }
   };
 
-  const methods = [{ id: 'Tunai', icon: Banknote }, { id: 'QRIS', icon: Wallet }, { id: 'Kartu Debit', icon: CreditCard }, { id: 'Transfer', icon: Landmark }];
+  const methods = dynamicMethods.length > 0 ? dynamicMethods : [
+    { id: 'Tunai', icon: Banknote },
+    { id: 'QRIS', icon: Wallet },
+    { id: 'Kartu Debit', icon: CreditCard },
+    { id: 'Transfer', icon: Landmark }
+  ];
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50">
