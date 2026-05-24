@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const permissionGuard = require('../middlewares/permissionGuard');
-const journalGuard = require('../middlewares/journalGuard');
+const permissionGuard = require('../middleware/permissionGuard');
+const journalGuard = require('../middleware/journalGuard');
 const procurementController = require('../controllers/procurementController');
 
 // 1. GET ALL POS
@@ -36,7 +36,7 @@ router.patch('/pos/:id/cancel', permissionGuard('procurement', 'update'), async 
   try {
     const { tenantId } = req.userContext || {};
     const { id } = req.params;
-    const supabase = require('../config/supabase');
+    const { supabase } = require('../supabase');
 
     // Validasi: hanya PO dengan status pending/partially_received yang bisa dibatalkan
     const { data: po, error: fetchErr } = await supabase

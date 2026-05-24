@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const permissionGuard = require('../middlewares/permissionGuard');
+const permissionGuard = require('../middleware/permissionGuard');
 const { z } = require('zod');
 const { validateBody } = require('../middleware/validate');
 const inventoryController = require('../controllers/inventoryController');

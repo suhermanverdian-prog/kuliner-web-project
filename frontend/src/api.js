@@ -159,12 +159,22 @@ const apiBase = {
     formData.append('image', file);
     const headers = getHeaders();
     delete headers['Content-Type'];
-    const res = await fetch(`${API_URL}/upload`, { 
-      method: 'POST', 
-      headers, 
-      body: formData 
-    });
-    return res.json();
+    
+    try {
+      const res = await fetch(`${API_URL}/upload`, { 
+        method: 'POST', 
+        headers, 
+        body: formData 
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.message || `Upload failed with status ${res.status}`);
+      }
+      return await res.json();
+    } catch (err) {
+      console.error("🚨 [UploadError] Image upload failed:", err);
+      throw err;
+    }
   },
 
   async paySalary(employeeId, data) {

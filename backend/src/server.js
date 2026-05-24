@@ -38,7 +38,7 @@ try {
   const authMiddleware = require('./middleware/authMiddleware');
   app.use(authMiddleware);
 
-  const activityLog = require('./middlewares/activityLog');
+  const activityLog = require('./middleware/activityLog');
   app.use(activityLog);
 
   app.use('/api', require('./routes/userRoutes'));

@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "build": "echo 'Building backend...'",
-    "dev": "powershell -Command \"Get-NetTCPConnection -LocalPort 3001 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }\" ; node --watch src/server.js"
+    "dev": "node --watch src/server.js"
   },
   "dependencies": {
     "@sentry/node": "^10.53.1",
@@ -27,6 +27,6 @@
     "pg": "^8.20.0",
     "redis": "^5.12.1",
     "socket.io": "^4.8.3",
-    "zod": "^4.4.3"
+    "zod": "^3.23.8"
   }
 }
