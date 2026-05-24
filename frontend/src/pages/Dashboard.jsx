@@ -222,7 +222,7 @@ export default function Dashboard() {
         {stats.map((s, i) => {
           const Icon = s.icon;
           return (
-            <Card key={i} className="p-6 group hover:border-amber-500/30 transition-all">
+            <Card key={i} className="p-6" variant="premium">
               <div className="flex justify-between items-center mb-4">
                  <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">{s.label}</p>
                  <Icon size={18} className="text-amber-500 group-hover:text-amber-500 transition-colors" />
@@ -247,7 +247,7 @@ export default function Dashboard() {
            <BarChart data={trendData.length > 0 ? trendData : Array.from({ length: 7 }, (_, i) => ({ label: ['S','M','T','W','T','F','S'][i], value: 0 }))} />
         </Card>
 
-        <Card className="lg:col-span-4 p-8 space-y-6">
+        <Card className="lg:col-span-4 p-8 space-y-6" variant="premium">
            <h3 className="text-lg font-black uppercase tracking-tighter text-foreground">Live Activity</h3>
            <div className="space-y-4">
             {safeTransactions.slice(-4).reverse().map((tx, i) => (
@@ -266,7 +266,7 @@ export default function Dashboard() {
 
       {/* Node Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 px-4">
-        <Card className="p-8">
+        <Card className="p-8" variant="premium">
            <h3 className="text-lg font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50 mb-8 text-center lg:text-left">Node Occupancy</h3>
            <div className="flex flex-col sm:flex-row justify-center gap-10 sm:gap-16 py-4">
               <DonutChart 
@@ -284,7 +284,7 @@ export default function Dashboard() {
            </div>
         </Card>
 
-        <Card className="p-8">
+        <Card className="p-8" variant="premium">
            <h3 className="text-lg font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50 mb-8">Peak Performance</h3>
            <div className="space-y-6">
             {safeMenu.slice(0, 3).map((item, i) => (
