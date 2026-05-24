@@ -8,7 +8,7 @@ const Card = React.forwardRef(({ className, variant = "default", ...props }, ref
       "rounded-lg border transition-all duration-500",
       variant === "glass" && "glass-quantum quantum-noise border-white/5",
       variant === "quantum" && "glass-quantum quantum-noise shadow-2xl border-white/5",
-      variant === "premium" && "bg-white dark:bg-zinc-950 border-amber-500/30 dark:border-amber-500/20 text-[var(--text-primary)] shadow-none dark:shadow-none hover:shadow-[0_0_40px_rgba(245,158,11,0.08)] dark:hover:shadow-[0_0_50px_rgba(245,158,11,0.15)] hover:border-amber-500/40 dark:hover:border-amber-500/30 transition-all duration-300",
+      variant === "premium" && "bg-white dark:bg-zinc-950 border-amber-500/30 dark:border-amber-500/20 text-[var(--text-primary)] shadow-none dark:shadow-none hover:border-amber-500/40 dark:hover:border-amber-500/30 transition-all duration-300",
       variant === "default" && "bg-[var(--bg-card)] border-[var(--border-subtle)] text-[var(--text-primary)] shadow-xl",
       className
     )}
