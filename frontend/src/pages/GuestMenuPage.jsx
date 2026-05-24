@@ -52,7 +52,10 @@ const printReceipt = (order) => {
 
 function ProductImage({ src, alt, icon, className }) {
   const [error, setError] = useState(false);
-  const imageUrl = src && !src.startsWith('http') ? `http://localhost:3001${src}` : src;
+  const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? `http://${window.location.hostname}:3001/api`
+    : '/api';
+  const imageUrl = src && !src.startsWith('http') ? `${apiBase}${src}` : src;
 
   if (imageUrl && !error) {
     return <img src={imageUrl} alt={alt} onError={() => setError(true)} className={`w-full h-full object-cover transition-transform duration-500 hover:scale-110 ${className}`} />;

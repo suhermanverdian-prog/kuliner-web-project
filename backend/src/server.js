@@ -27,6 +27,7 @@ try {
   app.set('io', io);
   app.use(cors());
   app.use(express.json());
+  app.use('/api/uploads', express.static(path.join(__dirname, '../public/uploads')));
   
   // Public route test
   app.get('/api/health', (req, res) => res.json({ status: 'ok', source: 'vercel' }));

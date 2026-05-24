@@ -17,6 +17,15 @@ import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
 import { Skeleton } from "../components/ui/Skeleton";
 
+const getImgUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  const apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? `http://${window.location.hostname}:3001/api`
+    : '/api';
+  return `${apiBase}${url}`;
+};
+
 const parseItems = (items) => {
   if (!items) return [];
   let parsed = items;
@@ -475,7 +484,7 @@ export default function KasirPage({ user }) {
             <div key={item.id} className="group cursor-pointer bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-amber-500/50 hover:shadow-md transition-all duration-300 flex flex-col h-[220px] overflow-hidden relative" onClick={() => addToCart(item)}>
               <div className="w-full h-[140px] bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center overflow-hidden relative shrink-0 border-b border-zinc-100 dark:border-zinc-800">
                 <img
-                  src={item.image ? (item.image.startsWith('http') ? item.image : `http://localhost:3001${item.image}`) : 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1000&auto=format&fit=crop'}
+                  src={getImgUrl(item.image) || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1000&auto=format&fit=crop'}
                   alt={item.name}
                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1000&auto=format&fit=crop'; }}
@@ -550,7 +559,7 @@ export default function KasirPage({ user }) {
                   <div key={item.id} className="p-4 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                     <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center overflow-hidden shrink-0 border border-zinc-200 dark:border-zinc-700">
                       {item.image ? (
-                        <img src={item.image.startsWith('http') ? item.image : `http://localhost:3001${item.image}`} alt={item.name} className="w-full h-full object-cover" />
+                        <img src={getImgUrl(item.image)} alt={item.name} className="w-full h-full object-cover" />
                       ) : (
                         <span className="text-xl">{item.icon || '☕'}</span>
                       )}
