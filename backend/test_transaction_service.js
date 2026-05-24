@@ -98,6 +98,12 @@ TransactionRepository.logAudit = async (payload) => {
   return { data: payload, error: null };
 };
 
+TransactionRepository.getMenuNames = async (menuIds, tenantId) => {
+  return [
+    { id: 'menu-kopi-susu', name: 'Kopi Susu Ken' }
+  ];
+};
+
 // ==========================================
 // TEST SUITE (EXCELLENT ASSURANCE)
 // ==========================================
@@ -134,6 +140,7 @@ async function runTests() {
     assert.strictEqual(result.total, 37623, 'Kalkulasi total transaksi di backend harus tepat (37623)');
     assert.strictEqual(mockDb.transactions.length, 1, 'Header transaksi harus tersimpan di repository');
     assert.strictEqual(mockDb.transactionItems.length, 1, 'Item transaksi detail harus tersimpan');
+    assert.strictEqual(mockDb.transactions[0].items.items[0].name, 'Kopi Susu Ken', 'Nama menu harus ter-enrichment dengan benar');
     
     console.log("  ✓ createTransaction successfully completed and validated calculations.");
 

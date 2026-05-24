@@ -161,7 +161,7 @@ export default function KDSPage() {
                    <div className="flex justify-between items-start">
                       <div>
                          <p className="text-[9px] text-zinc-500 dark:text-zinc-100 font-black uppercase tracking-widest leading-none">Order Reference</p>
-                         <h4 className="font-mono tabular-nums text-xl font-black mt-2 text-foreground uppercase italic">#{order.id.toString().slice(-4)}</h4>
+                         <h4 className="font-mono tabular-nums text-xl font-black mt-2 text-zinc-900 dark:text-zinc-100 uppercase italic">#{order.id.toString().slice(-4)}</h4>
                       </div>
                       <div className="text-right">
                          <p className="text-[9px] text-zinc-500 dark:text-zinc-100 font-black uppercase tracking-widest leading-none">Zone</p>
@@ -174,7 +174,7 @@ export default function KDSPage() {
                          <div className="w-6 h-6 rounded-lg bg-background flex items-center justify-center shrink-0">
                             <User size={12} className="text-zinc-500 dark:text-zinc-100" />
                          </div>
-                         <p className="text-xs font-bold truncate">{order.customerName || 'Pelanggan'}</p>
+                         <p className="text-xs font-bold truncate text-zinc-900 dark:text-zinc-100">{order.customerName || 'Pelanggan'}</p>
                       </div>
                       <span className="font-mono tabular-nums text-[8px] font-black px-2.5 py-1 rounded-sm bg-background uppercase text-zinc-500 dark:text-zinc-100 tracking-tighter shrink-0">
                          {order.type === 'Self Order' ? 'Ditempat' : 'Kasir'}
@@ -190,7 +190,7 @@ export default function KDSPage() {
                            {item.qty}
                         </div>
                         <div className="flex-1 min-w-0">
-                           <p className="text-sm font-black leading-tight text-foreground">{item.name}</p>
+                           <p className="text-sm font-black leading-tight text-zinc-900 dark:text-zinc-100">{item.name}</p>
                            {item.note && (
                              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-1 flex items-center gap-1 bg-amber- px-2.5 py-1 rounded border border-amber-500/10">
                                 <ClipboardList size={10} /> {item.note}
@@ -203,7 +203,7 @@ export default function KDSPage() {
                    {order.note && (
                       <div className="mt-4 p-4 rounded-lg bg-background border border-dashed border-border">
                          <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest mb-1">Catatan Pesanan</p>
-                         <p className="text-[11px] font-bold italic text-foreground leading-relaxed">{order.note}</p>
+                         <p className="text-[11px] font-bold italic text-zinc-900 dark:text-zinc-100 leading-relaxed">{order.note}</p>
                       </div>
                    )}
                 </CardContent>

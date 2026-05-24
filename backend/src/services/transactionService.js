@@ -45,6 +45,23 @@ class TransactionService {
         console.warn(`⚠️ [FinancialAudit] Total mismatch on ${readableId}. Client: ${total} | Server: ${calculatedTotal}`);
     }
 
+    // Auto-enrich items with menu names if missing or for absolute KDS visibility
+    const menuIds = items.map(item => item.id).filter(Boolean);
+    let menuNamesMap = {};
+    try {
+        const menus = await TransactionRepository.getMenuNames(menuIds, tenantId);
+        menus.forEach(m => {
+            menuNamesMap[m.id] = m.name;
+        });
+    } catch (err) {
+        console.warn('⚠️ [POS-Enrichment] Failed to fetch menu names for KDS enrichment:', err.message);
+    }
+
+    const enrichedItems = items.map(item => ({
+        ...item,
+        name: item.name || menuNamesMap[item.id] || 'Menu Item'
+    }));
+
     const trxPayload = {
         id: supabaseId,
         order_number: readableId,
@@ -61,7 +78,7 @@ class TransactionService {
             kds_status: 'new',
             table_type: tableType,
             cashier_name: cashierName,
-            items: items
+            items: enrichedItems
         }
     };
 
@@ -129,16 +146,16 @@ class TransactionService {
             }
 
         } catch (rollbackErr) {
-            console.error(`🚨 [StrictRollback] Kegagalan kritis dalam transaksi ${readableId}: ${rollbackErr.message}`);
+            console.error(`🚨 [StrictRollback] Kegagalan kritis dalam transaksi ${readableId}:`, rollbackErr);
             
             // Rollback
             try {
               await TransactionRepository.deleteTransactionHeader(supabaseId);
             } catch (delErr) {
-              console.error('🚨 [StrictRollback] GAGAL total saat menghapus Header Transaksi:', delErr.message);
+              console.error('🚨 [StrictRollback] GAGAL total saat menghapus Header Transaksi:', delErr);
             }
 
-            throw new Error(`Transaksi dibatalkan demi konsistensi database: ${rollbackErr.message}`);
+            throw new Error(`Transaksi dibatalkan demi konsistensi database: ${rollbackErr.message || rollbackErr}`);
         }
     }
 
