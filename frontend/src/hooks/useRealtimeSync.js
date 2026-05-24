@@ -9,6 +9,12 @@ export function useRealtimeSync(events) {
   const socketRef = useRef(null);
 
   useEffect(() => {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocal) {
+      console.log('ℹ️ [RealTime] WebSockets disabled in production Vercel environment.');
+      return;
+    }
+
     // Inisialisasi koneksi
     socketRef.current = io(SOCKET_URL, {
       reconnectionAttempts: 5,

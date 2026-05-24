@@ -47,8 +47,14 @@ export function useCommandCenterPage() {
   useEffect(() => {
     fetchGlobalData();
     
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocal) {
+      console.log('ℹ️ [RealTime] WebSockets disabled in production Vercel environment.');
+      return;
+    }
+
     // Initialize Real-time Socket
-    const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin;
+    const socketUrl = 'http://localhost:3001';
     socketRef.current = io(socketUrl);
 
     socketRef.current.on('connect', () => {
