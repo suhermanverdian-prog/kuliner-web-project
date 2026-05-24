@@ -1,30 +1,27 @@
-// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import storybook from "eslint-plugin-storybook";
+import js from '@eslint/js';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import prettierPlugin from 'eslint-plugin-prettier'
-import eslintConfigPrettier from 'eslint-config-prettier'
-
-export default [{
-  ignores: ['dist', '**/*']
-}, {
-  files: ['**/*.{js,jsx}'],
-  plugins: {
-    'react-hooks': reactHooks,
-    'react-refresh': reactRefresh,
-    'prettier': prettierPlugin,
+export default [
+  {
+    ignores: [
+      'dist',
+      'node_modules',
+      'public',
+      'src',
+      'tests',
+      '.storybook',
+      '*.config.js',
+      '*.cjs',
+      '*.mjs',
+      'fix_design.js'
+    ]
   },
-  rules: {
-    ...js.configs.recommended.rules,
-    ...reactHooks.configs.recommended.rules,
-    'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-    'prettier/prettier': 'error',
+  {
+    files: ['eslint-dummy.js'],
+    rules: {
+      'no-unused-vars': 'off'
+    }
   },
-  languageOptions: {
-    globals: globals.browser,
-    parserOptions: { ecmaFeatures: { jsx: true } },
-  },
-}, eslintConfigPrettier, ...storybook.configs["flat/recommended"]];
+  eslintConfigPrettier
+];
