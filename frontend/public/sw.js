@@ -3,7 +3,7 @@ const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/favicon.svg',
-  '/logo-ken.png'
+  '/logo-ken.webp'
 ];
 
 // Install Event: Cache Shell Assets

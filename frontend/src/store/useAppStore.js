@@ -37,7 +37,7 @@ export const useAppStore = create(
 
       // --- BRANDING & SETTINGS ---
       branding: {
-        logo: '/logo-ken.png',
+        logo: '/logo-ken.webp',
         storeName: 'KEN Enterprise Node',
       },
       setBranding: (branding) => set((state) => ({ 

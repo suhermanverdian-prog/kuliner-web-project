@@ -22,7 +22,7 @@ export function usePengaturan() {
   const [toast, setToast] = useState({ msg: '', type: 'success' });
   const [savingSettings, setSavingSettings] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
-  const [logoPreview, setLogoPreview] = useState('/logo-ken.png');
+  const [logoPreview, setLogoPreview] = useState('/logo-ken.webp');
   const [loyaltyConfig, setLoyaltyConfig] = useState({ enabled: true, multiplier: 10000 });
   const [geofence, setGeofence] = useState({ latitude: 0, longitude: 0, radius: 100 });
   const [paymentMethods, setPaymentMethods] = useState([]);
