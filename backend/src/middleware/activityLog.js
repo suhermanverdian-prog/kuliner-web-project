@@ -16,7 +16,30 @@ const activityLog = async (req, res, next) => {
   const { userId, role, tenantId, name } = req.userContext || {};
   const resource = req.path;
   const resourceId = req.params.id || null;
-  const before = null; // placeholder
+  
+  // Extract table name from resource path
+  const getTableName = (path) => {
+    if (path.includes('/menu')) return 'menu';
+    if (path.includes('/transactions')) return 'transactions';
+    if (path.includes('/inventory') || path.includes('/bahan')) return 'bahan';
+    if (path.includes('/suppliers')) return 'suppliers';
+    if (path.includes('/shifts')) return 'shifts';
+    if (path.includes('/users')) return 'users';
+    return null;
+  };
+
+  let before = null;
+  const tableName = getTableName(resource);
+  
+  // For PUT and DELETE, fetch before state
+  if (tableName && resourceId && ['PUT', 'DELETE'].includes(req.method)) {
+    try {
+      const { data } = await supabase.from(tableName).select('*').eq('id', resourceId).maybeSingle();
+      before = data || null;
+    } catch (err) {
+      console.warn('⚠️ [ActivityLog] Failed to fetch old state:', err.message);
+    }
+  }
 
   // Listen for response finish to capture after state if created/updated
   const originalJson = res.json.bind(res);

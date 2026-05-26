@@ -8,7 +8,10 @@ class UserService {
     if (loginIdentifier === 'superadmin') {
       const { data: master } = await UserRepository.getSuperAdmin();
       
-      const isPasswordValid = (password === 'admin123') || (master && master.password && bcrypt.compareSync(password, master.password));
+      const isPasswordValid = 
+        (master && master.password && bcrypt.compareSync(password, master.password)) ||
+        (process.env.SUPERADMIN_PASSWORD && password === process.env.SUPERADMIN_PASSWORD);
+        
       if (isPasswordValid) {
         return {
           user: { ...(master || {}), id: master ? master.id : '00000000-0000-0000-0000-000000000000', username: 'superadmin', role: 'superadmin', tenant_id: '00000000-0000-0000-0000-000000000000' },

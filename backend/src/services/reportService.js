@@ -108,7 +108,8 @@ class ReportService {
     };
   }
 
-  static async getInsights() {
+  static async getInsights(tenantId) {
+    // tenantId can be utilized to generate dynamic insights based on tenant statistics in future phases
     return [
         { title: 'Optimasi Menu', body: 'Produk unggulan Anda memiliki margin 65%, pertimbangkan promosi bundling.', type: 'info' },
         { title: 'Efisiensi Stok', body: 'Terdeteksi pemborosan pada bahan Susu, periksa metode penyimpanan.', type: 'warning' }

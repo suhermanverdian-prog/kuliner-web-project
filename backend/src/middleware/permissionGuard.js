@@ -1,4 +1,5 @@
 const { supabase } = require('../supabase');
+const cache = require('../utils/cache');
 
 /**
  * @middleware permissionGuard
@@ -25,25 +26,45 @@ const permissionGuard = (featureKey, action = 'view') => {
             // 1. MASTER BYPASS: Superadmin has absolute power
             if (role === 'superadmin') return next();
 
-            // 1.5 CHECK USER-SPECIFIC PERMISSIONS (Overrides role)
+            // 1.5 CHECK USER-SPECIFIC PERMISSIONS (Overrides role - Cached for 5 min)
             if (activeId) {
-                const { data: userPerm } = await supabase.from('users').select('permissions').eq('id', activeId).maybeSingle();
+                const cacheKey = `user_perms_${activeId}`;
+                let userPerm = cache.get(cacheKey);
+                
+                if (!userPerm) {
+                    const { data } = await supabase.from('users').select('permissions').eq('id', activeId).maybeSingle();
+                    userPerm = data || { permissions: null };
+                    cache.set(cacheKey, userPerm, 300); // 5 min TTL
+                }
+                
                 if (userPerm && userPerm.permissions) {
-                   if (userPerm.permissions.all) return next();
-                   if (userPerm.permissions[featureKey] === true) return next();
+                    if (userPerm.permissions.all) {
+                       if (!tenantId) {
+                         return res.status(403).json({ error: 'Akses Ditolak: Konteks Tenant tidak ditemukan.' });
+                       }
+                       return next();
+                    }
+                    if (userPerm.permissions[featureKey] === true) return next();
                 }
             }
 
-            // 2. QUERY DYNAMIC PERMISSIONS
-            const { data: perm, error } = await supabase
-                .from('role_permissions')
-                .select('*')
-                .eq('tenant_id', tenantId)
-                .eq('role', role)
-                .eq('feature_key', featureKey)
-                .maybeSingle();
+            // 2. QUERY DYNAMIC PERMISSIONS (Cached for 5 min)
+            const roleCacheKey = `role_perm_${tenantId}_${role}_${featureKey}`;
+            let perm = cache.get(roleCacheKey);
+            
+            if (perm === undefined) {
+                const { data, error } = await supabase
+                    .from('role_permissions')
+                    .select('*')
+                    .eq('tenant_id', tenantId)
+                    .eq('role', role)
+                    .eq('feature_key', featureKey)
+                    .maybeSingle();
 
-            if (error) throw error;
+                if (error) throw error;
+                perm = data || null;
+                cache.set(roleCacheKey, perm, 300); // 5 min TTL
+            }
 
             // 3. VALIDATE ACTION
             const actionMap = {

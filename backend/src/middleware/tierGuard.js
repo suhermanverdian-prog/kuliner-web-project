@@ -1,4 +1,5 @@
 const supabase = require('../supabase');
+const cache = require('../utils/cache');
 
 const TIER_DEFAULTS = {
   lite: {
@@ -47,10 +48,16 @@ const requireFeature = (featureKey) => {
 
       if (!tenantId) return res.status(403).json({ error: 'Akses ditolak: Tenant ID tidak valid' });
 
-      // Check cache if necessary, or fetch from DB
-      const { data: tenant } = await supabase.from('tenants').select('tier, feature_overrides').eq('id', tenantId).single();
+      // Check cache first, or fetch from DB
+      const cacheKey = `tenant_tier_${tenantId}`;
+      let tenant = cache.get(cacheKey);
       
-      if (!tenant) return res.status(403).json({ error: 'Akses ditolak: Tenant tidak ditemukan' });
+      if (!tenant) {
+        const { data } = await supabase.from('tenants').select('tier, feature_overrides').eq('id', tenantId).single();
+        if (!data) return res.status(403).json({ error: 'Akses ditolak: Tenant tidak ditemukan' });
+        tenant = data;
+        cache.set(cacheKey, tenant, 600); // 10 min TTL
+      }
 
       const features = resolveFeatures(tenant);
       if (!features[featureKey]) {

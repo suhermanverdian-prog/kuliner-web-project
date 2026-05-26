@@ -4,26 +4,7 @@ class UserController {
   async login(req, res) {
     try {
       const { email, username, password } = req.body;
-      const loginIdentifier = username || email;
-
-      // ----- Superadmin shortcut (development & fallback) -----
-      if (loginIdentifier === 'superadmin' && password === 'admin123') {
-        const jwt = require('jsonwebtoken');
-        const token = jwt.sign({
-          id: '00000000-0000-0000-0000-000000000000',
-          role: 'superadmin',
-          tenantId: '00000000-0000-0000-0000-000000000000',
-          name: 'Master System'
-        }, process.env.JWT_SECRET || 'ken_enterprise_secret_2024', { expiresIn: '24h' });
-        return res.json({
-          user: { id: '00000000-0000-0000-0000-000000000000', username: 'superadmin', role: 'superadmin' },
-          tenant: { id: '00000000-0000-0000-0000-000000000000', name: 'KEN GLOBAL HQ' },
-          settings: { store_name: 'KEN ENTERPRISE' },
-          primaryOutlet: { id: '11111111-1111-1111-1111-111111111111', name: 'HQ-NODE' },
-          token,
-        });
-      }
-      
+      const loginIdentifier = username || email;      
       const result = await UserService.login(loginIdentifier, password);
       res.json(result);
     } catch (err) {

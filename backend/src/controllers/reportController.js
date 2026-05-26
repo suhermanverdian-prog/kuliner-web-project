@@ -65,7 +65,8 @@ class ReportController {
 
   async getInsights(req, res) {
     try {
-      const result = await ReportService.getInsights();
+      const { tenantId } = req.userContext || {};
+      const result = await ReportService.getInsights(tenantId);
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });

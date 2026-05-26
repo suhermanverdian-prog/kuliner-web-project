@@ -1,3 +1,4 @@
+const { z } = require('zod');
 const TransactionService = require('../services/transactionService');
 const TransactionRepository = require('../repositories/transactionRepository');
 
@@ -84,11 +85,18 @@ class TransactionController {
       const { id } = req.params;
       const { status } = req.body;
       
-      await TransactionService.updateKdsStatus(id, status);
+      const kdsStatusSchema = z.enum(['pending', 'cooking', 'ready', 'served']);
+      const parsedStatus = kdsStatusSchema.safeParse(status);
+      
+      if (!parsedStatus.success) {
+        return res.status(400).json({ error: 'Status KDS tidak valid. Pilih antara pending, cooking, ready, atau served.' });
+      }
+      
+      await TransactionService.updateKdsStatus(id, parsedStatus.data);
       
       const io = req.app.get('io');
       if (io) {
-          io.emit('KDS_UPDATE', { id, status });
+          io.emit('KDS_UPDATE', { id, status: parsedStatus.data });
           console.log(`📡 [RealTime] Broadcast KDS_UPDATE for ${id}`);
       }
 
