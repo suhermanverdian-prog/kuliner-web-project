@@ -56,14 +56,8 @@ export function usePengaturan() {
     }
   }, []);
 
-  // Guard: only run once (or when tenant id actually changes)
-  const hasFetched = useRef(false);
-  const tenantId = tenant?.id;
-
+  // Run once on mount to prevent infinite loops from unstable localStorage parses
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-
     fetchUsers();
     fetchRolePermissions();
     api.getSettings().then(s => { if (s) setSettings(s); }).catch(() => {});
@@ -78,7 +72,7 @@ export function usePengaturan() {
     if (tenant?.feature_overrides) {
       setFeatureOverrides(tenant.feature_overrides);
     }
-  }, [tenantId]);
+  }, []);
 
   const toggleRolePerm = useCallback((roleId, permKey) => {
     if (!selectedRole) return;
