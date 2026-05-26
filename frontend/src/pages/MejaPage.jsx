@@ -14,7 +14,7 @@ import { useMejaPage } from '../hooks/useMejaPage';
 const STATUS_STYLE = {
   available: { bg: 'bg-emerald-50 dark:bg-emerald-950/30 dark:bg-emerald-500/20', border: 'border-emerald-200 dark:border-emerald-800', color: 'text-emerald-600 dark:text-emerald-400', label: 'Kosong', icon: Armchair },
   occupied:  { bg: 'bg-rose-50 dark:bg-rose-950/30 dark:bg-rose-500/20',  border: 'border-rose-200 dark:border-rose-800',  color: 'text-rose-600 dark:text-rose-400',  label: 'Terisi', icon: Users },
-  reserved:  { bg: 'bg-amber- dark:bg-amber-', border: 'border-amber-500/20', color: 'text-amber-600 dark:text-amber-400', label: 'Reservasi', icon: Bookmark },
+  reserved:  { bg: 'bg-amber-50 dark:bg-amber-950/30', border: 'border-amber-500/20', color: 'text-amber-600 dark:text-amber-400', label: 'Reservasi', icon: Bookmark },
 };
 
 export default function MejaPage() {
@@ -44,7 +44,7 @@ export default function MejaPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
            <div className="flex items-center gap-4 mb-2">
-              <span className="px-2.5 py-1 bg-amber- border border-amber-500/20 rounded-sm text-[9px] font-black text-amber-500 uppercase tracking-widest">Layout & Booking</span>
+              <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 rounded-sm text-[9px] font-black text-amber-500 uppercase tracking-widest">Layout & Booking</span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">Live Occupability</span>
@@ -67,7 +67,7 @@ export default function MejaPage() {
         {[
           { key:'available', label:'Meja Kosong', count: counts.available, color:'text-emerald-600 dark:text-emerald-400', bg:'bg-emerald-50 dark:bg-emerald-950/30 dark:bg-emerald-500/20' },
           { key:'occupied',  label:'Meja Terisi',   count: counts.occupied,  color:'text-rose-600 dark:text-rose-400', bg:'bg-rose-50 dark:bg-rose-950/30 dark:bg-rose-500/20' },
-          { key:'reserved',  label:'Reservasi',count: counts.reserved,  color:'text-amber-600 dark:text-amber-400', bg:'bg-amber- dark:bg-amber-' },
+          { key:'reserved',  label:'Reservasi',count: counts.reserved,  color:'text-amber-600 dark:text-amber-400', bg:'bg-amber-50 dark:bg-amber-950/30' },
         ].map(s => (
           <Card key={s.key} className="border border-border shadow-md bg-card rounded-lg group transition-all hover:scale-[1.02]">
             <CardContent className="p-6 flex items-center justify-between">
@@ -193,7 +193,7 @@ export default function MejaPage() {
                 </div>
 
                 {selected.order && (
-                  <div className="p-4 bg-amber- border border-amber-500/10 rounded-lg space-y-2">
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/10 rounded-lg space-y-2">
                     <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                       <Coffee size={16} />
                       <p className="text-xs font-black uppercase tracking-widest">Pesanan Aktif</p>

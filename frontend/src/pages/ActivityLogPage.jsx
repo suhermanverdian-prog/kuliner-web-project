@@ -48,7 +48,7 @@ export default function ActivityLogPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
            <div className="flex items-center gap-4 mb-2">
-              <span className="px-2 py-1 bg-amber- border border-amber-500/20 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Immutable Vault</span>
+              <span className="px-2 py-1 bg-card border border-border rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Immutable Vault</span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">Blockchain Verified</span>
@@ -58,13 +58,13 @@ export default function ActivityLogPage() {
            <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium">Global activity monitoring & security compliance engine.</p>
         </div>
         <div className="flex items-center gap-4">
-           <Button variant="outline" className="h-12 px-6 font-black uppercase tracking-widest text-[9px] bg-card border-border rounded-lg" onClick={() => downloadCSV('activity-log', 'month')}>
+           <Button variant="outline" className="h-12 px-6 font-black uppercase tracking-widest text-[9px] bg-card border-border text-foreground hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg" onClick={() => downloadCSV('activity-log', 'month')}>
              <FileText size={16} className="mr-2" /> EXCEL
            </Button>
-           <Button variant="outline" className="h-12 px-6 font-black uppercase tracking-widest text-[9px] bg-card border-border rounded-lg" onClick={() => downloadPDF('activity-log', 'month')}>
+           <Button variant="outline" className="h-12 px-6 font-black uppercase tracking-widest text-[9px] bg-card border-border text-foreground hover:bg-zinc-50 dark:hover:bg-zinc-800 rounded-lg" onClick={() => downloadPDF('activity-log', 'month')}>
              <Download size={16} className="mr-2" /> PDF
            </Button>
-           <Button className="h-12 px-8 font-black uppercase tracking-widest text-white " onClick={() => printReport('activity-log', 'month')}>
+           <Button variant="default" className="h-12 px-8 font-black uppercase tracking-widest" onClick={() => printReport('activity-log', 'month')}>
              <Printer size={16} className="mr-2" /> PRINT AUDIT
            </Button>
         </div>
@@ -75,7 +75,7 @@ export default function ActivityLogPage() {
         {[
           { label: 'Total Events', val: (Array.isArray(logs) ? logs : []).length, icon: Activity, color: 'text-foreground', bg: 'bg-background' },
           { label: 'Security Alerts', val: (Array.isArray(logs) ? logs : []).filter(l => getSeverity(l.activity_type) === 'high').length, icon: ShieldAlert, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/30' },
-          { label: 'Neural Watchdog', val: 'Active', icon: Sparkles, color: 'text-amber-500', bg: 'bg-amber-' },
+          { label: 'Neural Watchdog', val: 'Active', icon: Sparkles, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/30' },
           { label: 'Uptime Node', val: '99.98%', icon: ShieldCheck, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
         ].map((s, i) => (
           <Card key={i} className="group border-none bg-card shadow-sm hover:shadow-md transition-all rounded-lg overflow-hidden">
@@ -97,7 +97,7 @@ export default function ActivityLogPage() {
          <div className="relative flex-1 w-full group px-2">
             <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-100 group-focus-within:text-amber-500 transition-colors" size={20} />
             <Input 
-              className="pl-14 h-14 rounded-lg border-none bg-background/50 font-medium focus:ring-amber-500" 
+              className="pl-14 h-14 rounded-lg border border-border bg-card font-medium text-foreground placeholder:text-zinc-400 focus-visible:ring-amber-500/20" 
               placeholder="Search by identity, action, or event description..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -105,7 +105,7 @@ export default function ActivityLogPage() {
          </div>
          <div className="flex items-center gap-4 px-2 w-full xl:w-auto">
             <select 
-              className="h-14 px-8 rounded-lg border-none bg-background/50 font-black text-[10px] uppercase tracking-widest min-w-[220px] outline-none focus:ring-2 ring-amber-500/20"
+              className="h-14 px-8 rounded-lg border border-border bg-card text-foreground font-black text-[10px] uppercase tracking-widest min-w-[220px] outline-none focus:ring-2 focus:ring-amber-500/20"
               value={filter} 
               onChange={e => setFilter(e.target.value)}
             >
@@ -115,7 +115,7 @@ export default function ActivityLogPage() {
               <option value="ORDER_DELETE">Structural Deletion</option>
               <option value="NAVIGATE">Navigation Pulse</option>
             </select>
-            <Button variant="ghost" size="icon" className="h-14 w-14 rounded-lg bg-background/50 hover:" onClick={loadLogs}>
+            <Button variant="ghost" size="icon" className="h-14 w-14 rounded-lg bg-card border border-border hover:bg-zinc-50 dark:hover:bg-zinc-800" onClick={loadLogs}>
                <RefreshCw size={20} />
             </Button>
          </div>

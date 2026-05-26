@@ -57,7 +57,7 @@ function WaitTime({ since }) {
   const color = mins < 5 ? "text-amber-500 dark:text-amber-400" : mins < 10 ? "text-amber-600 dark:text-amber-500" : "text-rose-600 dark:text-rose-400 dark:text-rose-400";
   
   return (
-    <div className={cn("flex items-center gap-2 px-4 py-1.5 rounded-lg glass-quantum border border-white/10 shadow-lg", color)}>
+    <div className={cn("flex items-center gap-2 px-4 py-1.5 rounded-lg bg-card border border-border shadow-lg", color)}>
       <Timer size={14} className="animate-pulse font-mono tabular-nums" />
       <span className="font-mono tabular-nums text-[11px] font-black uppercase tracking-[0.2em]">{mins}m</span>
     </div>
@@ -82,12 +82,12 @@ export default function KDSPage() {
   );
 
   return (
-    <div className="space-y-8 pb-20 animate-quantum-fade quantum-noise min-h-screen">
+    <div className="space-y-8 pb-20 min-h-screen">
       {/* Header - Sleek Premium Omnichannel Style */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
            <div className="flex items-center gap-4 mb-2">
-              <span className="px-2.5 py-1 bg-amber- border border-amber-500/20 rounded-sm text-[9px] font-black text-amber-500 uppercase tracking-widest">Kitchen Operations</span>
+              <span className="px-2.5 py-1 bg-card border border-border rounded-sm text-[9px] font-black text-amber-500 uppercase tracking-widest">Kitchen Operations</span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">FIFO Engine Active</span>
@@ -192,7 +192,7 @@ export default function KDSPage() {
                         <div className="flex-1 min-w-0">
                            <p className="text-sm font-black leading-tight text-zinc-900 dark:text-zinc-100">{item.name}</p>
                            {item.note && (
-                             <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-1 flex items-center gap-1 bg-amber- px-2.5 py-1 rounded border border-amber-500/10">
+                             <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-1 flex items-center gap-1 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 rounded border border-amber-500/10">
                                 <ClipboardList size={10} /> {item.note}
                              </p>
                            )}

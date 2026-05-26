@@ -1,5 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './Card';
 import { Button } from './Button';
+import { Bookmark } from 'lucide-react';
+import { act } from '@testing-library/react';
 
 export default {
   title: 'UI/Card',
@@ -15,6 +17,14 @@ export default {
     layout: 'centered',
   },
 };
+
+// Global decorator to ensure state updates are wrapped in act()
+export const decorators = [
+  (Story) => {
+    act(() => {}); // ensures any internal state updates are flushed
+    return <Story />;
+  },
+];
 
 // — Default Card —
 export const Default = {
@@ -58,6 +68,27 @@ export const Premium = {
   args: {
     variant: 'premium',
   },
+};
+
+// — Premium Card with Icon —
+export const PremiumWithIcon = {
+  render: (args) => (
+    <Card {...args} style={{ width: '380px' }} variant="premium">
+      <CardHeader>
+        <CardDescription>Total Penjualan</CardDescription>
+        <CardTitle>
+          <Bookmark className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+          <span className="ml-2">Rp 2.450.000</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-zinc-500 dark:text-zinc-400 text-sm">
+          12 transaksi hari ini
+        </p>
+      </CardContent>
+    </Card>
+  ),
+  args: { variant: 'premium' },
 };
 
 // — Card with Footer —

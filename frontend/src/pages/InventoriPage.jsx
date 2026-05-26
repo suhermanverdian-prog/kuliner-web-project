@@ -109,7 +109,7 @@ export default function InventoriPage() {
       return { 
         label: 'LOW', 
         color: 'text-amber-700 dark:text-amber-400', 
-        bg: 'bg-amber-50 dark:bg-amber- border border-amber-200 dark:border-amber-800/80', 
+        bg: 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80', 
         barCls: 'bg-amber-500', 
         pct: Math.min((ratio * 100), 100) 
       };
@@ -124,12 +124,12 @@ export default function InventoriPage() {
   };
 
   return (
-    <div className="space-y-10 pb-10 animate-in fade-in duration-700">
+    <div className="space-y-8 pb-8 animate-in fade-in duration-700">
       {/* 👑 Header Section (Preserved Original Color & Structure) */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
            <div className="flex items-center gap-4 mb-2">
-              <span className="px-2 py-1 bg-amber- border border-amber-500/20 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Inventory Node</span>
+               <span className="px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Inventory Node</span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">Real-time Stock Ingestion</span>
@@ -139,15 +139,12 @@ export default function InventoriPage() {
            <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium">Global stock visibility, neural forecasting, and automated supply chain management.</p>
         </div>
         <div className="flex gap-4">
-           <Button variant="outline" className="h-14 px-8 font-black uppercase tracking-widest text-white bg-card border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-md hover:" onClick={() => setShowSettingsModal(true)}>
-              <Settings size={18} className="mr-2 text-amber-500" /> Master Config
-           </Button>
-           <Button 
-             className="h-14 px-10 font-black uppercase tracking-widest text-white "
-             onClick={() => { setEditItem(null); setShowModal(true); }}
-           >
-             <Plus size={18} className="mr-2" /> Add New Material
-           </Button>
+            <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
+                <Settings size={18} className="mr-2 text-amber-500" /> Master Config
+            </Button>
+            <Button variant="default" onClick={() => { setEditItem(null); setShowModal(true); }}>
+                <Plus size={18} className="mr-2" /> Add New Material
+            </Button>
         </div>
       </div>
 
@@ -155,11 +152,11 @@ export default function InventoriPage() {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
          <div className="xl:col-span-8 space-y-8">
             {/* AI Predictions Hub (Luxury Glass Gradient Card - Upgraded Contrast) */}
-            <Card className="border-border bg-card text-card-foreground rounded-lg overflow-hidden shadow-lg relative group">
+            <Card className="border border-zinc-200 dark:border-zinc-800 bg-card text-card-foreground rounded-lg shadow-lg overflow-hidden group">
                <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                   <BrainCircuit size={160} />
                </div>
-               <CardHeader className="p-10 pb-0 relative z-10 flex flex-row items-center justify-between">
+               <CardHeader className="p-8 pb-0 relative z-10 flex flex-row items-center justify-between">
                   <div className="space-y-1">
                      <div className="flex items-center gap-4">
                         <Sparkles className="text-amber-500 animate-pulse" size={20} />
@@ -171,14 +168,14 @@ export default function InventoriPage() {
                        Predictive analysis based on consumption trends
                      </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-1.5 bg-amber- dark:bg-amber- border border-amber-500/20 dark:border-amber-400/20 text-amber-400 dark:text-amber-300 rounded-lg font-bold shadow-sm">
+                   <div className="flex items-center gap-2 px-4 py-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 dark:border-amber-400/20 text-amber-600 dark:text-amber-400 rounded-lg font-bold shadow-sm">
                      <Zap size={12} className="text-amber-500 fill-current animate-pulse" />
                      <span className="text-[9px] font-black uppercase tracking-widest">AI ACTIVE</span>
                   </div>
                </CardHeader>
-               <CardContent className="p-10 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+               <CardContent className="p-8 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
                   {aiPredictions.length === 0 ? (
-                    <div className="col-span-3 py-10 text-center text-zinc-500 text-xs font-black uppercase tracking-widest border border-dashed border-border rounded-lg">
+                     <div className="col-span-3 py-8 text-center text-zinc-500 text-xs font-black uppercase tracking-widest border border-dashed border-border rounded-lg">
                        Need more transaction data for accurate prediction
                     </div>
                   ) : aiPredictions.map((pred, i) => (
@@ -196,7 +193,7 @@ export default function InventoriPage() {
                             "px-4 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border",
                             pred.status === 'Kritis' ? "bg-rose-50 dark:bg-rose-950/30 text-rose-400 border-rose-200 dark:border-rose-800" : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-400 border-emerald-200 dark:border-emerald-800"
                           )}>{pred.recommendation}</span>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-900 dark:text-zinc-100 hover:"><ArrowUpRight size={16} /></Button>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800"><ArrowUpRight size={16} /></Button>
                        </div>
                     </div>
                   ))}
@@ -205,7 +202,7 @@ export default function InventoriPage() {
 
             {/* Main Inventory Table (Luxury Zinc Panel) */}
             <Card className="border border-border bg-card text-card-foreground shadow-lg rounded-lg overflow-hidden">
-               <CardHeader className="p-10 border-b border-zinc-200/80 dark:border-zinc-800/50 bg-background">
+               <CardHeader className="p-8 border-b border-zinc-200/80 dark:border-zinc-800/50 bg-background">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                      <div className="space-y-1">
                         <CardTitle className="text-2xl font-black tracking-tighter uppercase leading-none text-zinc-900 dark:text-zinc-100">Global Ledger Node</CardTitle>
@@ -231,11 +228,11 @@ export default function InventoriPage() {
                   <table className="w-full text-left border-collapse">
                      <thead>
                         <tr className="bg-background text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 border-b border-zinc-200/80 dark:border-zinc-800/50">
-                           <th className="px-10 py-6">Material Node</th>
-                           <th className="px-10 py-6 text-center">Availability</th>
-                           <th className="px-10 py-6">Unit Cost</th>
-                           <th className="px-10 py-6">Status</th>
-                           <th className="px-10 py-6 text-right">Actions</th>
+                           <th className="px-8 py-4">Material Node</th>
+                            <th className="px-8 py-4 text-center">Availability</th>
+                            <th className="px-8 py-4">Unit Cost</th>
+                            <th className="px-8 py-4">Status</th>
+                            <th className="px-8 py-4 text-right">Actions</th>
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-zinc-200/80 dark:divide-zinc-800/50">
@@ -243,7 +240,7 @@ export default function InventoriPage() {
                           const st = getStockStatus(item);
                           return (
                             <tr key={item.id} className="hover:bg-background transition-all group">
-                               <td className="px-10 py-8">
+                               <td className="px-8 py-6">
                                   <div className="flex items-center gap-6">
                                      <div className="w-12 h-12 bg-background">
                                         <Package size={24} />
@@ -257,7 +254,7 @@ export default function InventoriPage() {
                                      </div>
                                   </div>
                                </td>
-                               <td className="px-10 py-8">
+                               <td className="px-8 py-6">
                                   <div className="flex flex-col items-center gap-2">
                                      <p className="text-lg font-black font-mono tabular-nums leading-none text-zinc-900 dark:text-zinc-100">
                                        {getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase">{getMediumUnit(item)}</span>
@@ -267,8 +264,8 @@ export default function InventoriPage() {
                                      </div>
                                   </div>
                                </td>
-                               <td className="px-10 py-8 text-sm font-black font-mono tabular-nums text-zinc-800 dark:text-zinc-200">{formatRupiah(item.cost || 0)}</td>
-                               <td className="px-10 py-8">
+                               <td className="px-8 py-6 text-sm font-black font-mono tabular-nums text-zinc-800 dark:text-zinc-200">{formatRupiah(item.cost || 0)}</td>
+                               <td className="px-8 py-6">
                                   <span className={cn(
                                     "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border",
                                     st.bg, st.color
@@ -276,7 +273,7 @@ export default function InventoriPage() {
                                      {st.label}
                                   </span>
                                </td>
-                               <td className="px-10 py-8 text-right">
+                               <td className="px-8 py-6 text-right">
                                   {isOpnameMode ? (
                                     <Input 
                                       type="number" 
@@ -287,7 +284,7 @@ export default function InventoriPage() {
                                     />
                                   ) : (
                                     <div className="flex justify-end gap-2">
-                                       <Button variant="ghost" size="icon" className="h-10 w-10 rounded-md hover:bg-amber- hover:text-amber-500 text-zinc-500 hover:text-amber-600" onClick={() => { setAdjItem(item); setShowAdjModal(true); }}><Scale size={18} /></Button>
+                                       <Button variant="ghost" size="icon" className="h-10 w-10 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-500 text-zinc-500 dark:text-zinc-400" onClick={() => { setAdjItem(item); setShowAdjModal(true); }}><Scale size={18} /></Button>
                                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-md hover:bg-background text-zinc-500" onClick={() => openEdit(item)}><Edit3 size={18} /></Button>
                                     </div>
                                   )}
@@ -341,16 +338,16 @@ export default function InventoriPage() {
              </Card>
 
              {/* Dynamic Luxury Obsidian Pearl Card (Smart Suggestion) */}
-             <div className="p-10 bg-card text-card-foreground border border-border rounded-lg shadow-lg relative overflow-hidden group/promo">
+             <div className="p-8 bg-card text-card-foreground border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg relative group/promo active:scale-[0.98]">
                 {/* Glowing neon backdrop blob */}
-                <div className="absolute -right-8 -top-8 w-40 h-40 bg-amber- dark:bg-amber- rounded-lg blur-3xl group-hover/promo:scale-150 transition-all duration-1000" />
+                <div className="absolute -right-8 -top-8 w-40 h-40 bg-amber-500/10 dark:bg-amber-400/10 rounded-lg blur-3xl group-hover/promo:scale-150 transition-all duration-1000" />
                 
                 <div className="absolute top-0 right-0 p-8 text-zinc-700/30 dark:text-zinc-600/20  group-hover/promo:rotate-12 transition-transform duration-500">
                    <ShoppingCart size={120} />
                 </div>
                 
                 <div className="relative z-10 space-y-4">
-                   <div className="inline-flex items-center gap-2 px-4 py-1 bg-amber- dark:bg-amber- border border-amber-500/20 dark:border-amber-400/20 text-amber-400 dark:text-amber-300 rounded-lg text-[9px] font-black uppercase tracking-widest">
+                   <div className="inline-flex items-center gap-2 px-4 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 dark:border-amber-400/20 text-amber-600 dark:text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest">
                      <Sparkles size={10} className="text-amber-500" /> Smart Suggestion
                    </div>
                    <div className="space-y-1">
@@ -363,9 +360,9 @@ export default function InventoriPage() {
                    </div>
                 </div>
                 
-                <Button className="w-full h-14 mt-6 ">
-                   GENERATE PURCHASE ORDER
-                </Button>
+                <Button variant="default" className="w-full h-14 mt-6 font-black uppercase tracking-widest">
+                    GENERATE PURCHASE ORDER
+                 </Button>
              </div>
           </div>
        </div>
@@ -402,7 +399,7 @@ export default function InventoriPage() {
                <CardFooter className="p-8 pt-0 gap-4">
                   <Button variant="ghost" className="flex-1 h-12 font-black uppercase tracking-widest text-[9px]" onClick={() => setShowAdjModal(false)}>Cancel</Button>
                   <Button 
-                    className="flex-1 h-12 font-black uppercase tracking-widest text-white " 
+                    className="flex-1 h-12 font-black uppercase tracking-widest bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all rounded-md" 
                     onClick={handleAdjustment} 
                     disabled={saving}
                   >
@@ -457,7 +454,7 @@ export default function InventoriPage() {
                               return (
                                  <div key={idx} className="p-4 bg-[#f5f5f3] dark:bg-zinc-800">
                                     <span className="text-xs font-bold uppercase text-zinc-800 dark:text-zinc-200">{cat}</span>
-                                    <span className="text-[10px] font-mono tabular-nums font-black px-2 py-0.5 bg-amber- text-amber-600 dark:text-amber-400 rounded-lg">
+                                    <span className="text-[10px] font-mono tabular-nums font-black px-2 py-0.5 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-lg">
                                        {count} {count === 1 ? 'Item' : 'Items'}
                                     </span>
                                  </div>
@@ -498,16 +495,14 @@ export default function InventoriPage() {
                   </div>
                </CardContent>
                <CardFooter className="p-8 pt-0">
-                  <Button 
-                    className="w-full h-12 "
-                    onClick={() => setShowSettingsModal(false)}
-                  >
+                  <Button variant="ghost" className="w-full h-12 font-black uppercase tracking-widest text-[9px]" onClick={() => setShowSettingsModal(false)}>
                      Close Configuration
                   </Button>
                </CardFooter>
-            </Card>
-         </div>
-       )}
-    </div>
-  );
+             </Card>
+          </div>
+        )}
+
+      </div>
+   );
 }

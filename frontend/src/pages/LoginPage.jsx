@@ -162,10 +162,10 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
               )}
 
               <div className="pt-2 flex flex-col gap-4">
-                <Button 
+                <Button variant="primary"
                   type="submit" 
                   disabled={loading}
-                  className="w-full h-16 text-white font-black shadow-xl shadow-amber-500/40 rounded-lg group relative overflow-hidden "
+                  className="w-full h-16 font-black rounded-lg group relative overflow-hidden "
                 >
                   <span className="relative z-10 flex items-center justify-center gap-4">
                     {loading ? 'INITIALIZING...' : 'AUTHORIZE ACCESS'}

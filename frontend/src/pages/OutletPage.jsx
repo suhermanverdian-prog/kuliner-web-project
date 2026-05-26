@@ -52,9 +52,9 @@ const OutletPage = () => {
            <Button variant="outline" className="h-14 px-8 font-black uppercase tracking-widest text-[10px] bg-card border-border rounded-lg">
               <Map size={18} className="mr-2" /> View Map Hub
            </Button>
-           <Button 
+           <Button variant="primary"
              onClick={() => { setEditingOutlet(null); setFormData({ name: '', address: '', phone: '', is_active: true }); setShowModal(true); }}
-             className="h-14 px-10 font-black uppercase tracking-widest text-white dark:text-zinc-900 rounded-lg"
+             className="h-14 px-10 font-black uppercase tracking-widest rounded-lg"
            >
              <Plus size={18} className="mr-2" /> Add New Node
            </Button>
@@ -153,7 +153,7 @@ const OutletPage = () => {
                       <Button variant="outline" className="flex-1 h-14 bg-card border-border text-[10px] font-black uppercase tracking-[0.2em] rounded-lg hover:bg-background group/btn">
                         <TrendingUp size={16} className="mr-3 group-hover/btn:scale-110 transition-transform" /> ANALYTICS
                       </Button>
-                      <Button className="flex-1 h-14 font-black uppercase tracking-[0.2em] rounded-lg">
+                      <Button variant="primary" className="flex-1 h-14 font-black uppercase tracking-[0.2em] rounded-lg">
                         <Globe size={16} className="mr-3 group-hover/btn:rotate-12 transition-transform" /> MANAGE POS <ArrowRight size={14} className="ml-2" />
                       </Button>
                     </div>
@@ -247,7 +247,7 @@ const OutletPage = () => {
                </CardContent>
                <CardFooter className="bg-background p-8 border-t border-border flex gap-4">
                   <Button type="button" variant="ghost" className="flex-1 h-14 font-black uppercase tracking-widest text-[10px] rounded-lg" onClick={() => setShowModal(false)}>Cancel</Button>
-                  <Button type="submit" className="flex-1 h-14 font-black uppercase tracking-[0.2em] text-[10px] rounded-lg">
+                  <Button variant="primary" type="submit" className="flex-1 h-14 font-black uppercase tracking-[0.2em] text-[10px] rounded-lg">
                      {editingOutlet ? 'UPDATE INFRASTRUCTURE' : 'INITIALIZE NODE'}
                   </Button>
                </CardFooter>

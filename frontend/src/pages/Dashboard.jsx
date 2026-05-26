@@ -8,81 +8,13 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { Badge } from "../components/ui/Badge";
 import { cn } from "../lib/utils";
 import { Skeleton } from "../components/ui/Skeleton";
+import { ChartWrapper } from "../components/charts/ChartWrapper";
 import { useNavigate } from 'react-router-dom';
 import { useDashboard } from '../hooks/useDashboard';
 
-/* ── Komponen Grafik Bar SVG (KEN Enterprise Style) ─────────────────────────────── */
-function BarChart({ data }) {
-  const maxVal = Math.max(...data.map(d => d.value), 1);
-  const W = 500, H = 150, BAR_W = 12, GAP = (W - data.length * BAR_W) / (data.length + 1);
-
-  // Proses data secara cerdas untuk menyelaraskan label per jam atau per hari
-  const processedData = data.map((d, i) => {
-    let label = d.label;
-    if (!label) {
-      if (d.hour !== undefined) {
-        // Tampilkan label jam kelipatan 4 saja agar tidak menumpuk di layar
-        label = d.hour % 4 === 0 ? `${String(d.hour).padStart(2, '0')}:00` : '';
-      } else {
-        label = '';
-      }
-    }
-    return { ...d, label };
-  });
-
-  return (
-    <div className="w-full h-[200px] mt-6 font-mono tabular-nums">
-      <svg viewBox={`0 0 ${W} ${H + 40}`} className="w-full h-full overflow-visible">
-        <defs>
-          <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--amber)" stopOpacity="1" />
-            <stop offset="100%" stopColor="var(--amber)" stopOpacity="0.4" />
-          </linearGradient>
-        </defs>
-        {processedData.map((d, i) => {
-          const x = GAP + i * (BAR_W + GAP);
-          const barH = maxVal > 0 ? (d.value / maxVal) * H : 0;
-          // Tinggi fallback 6px jika data 0 agar visual bar tetap teraba
-          const displayH = Math.max(barH, 6);
-          const y = H - displayH;
-          const isToday = i === processedData.length - 1;
-
-          return (
-            <g key={i} className="group">
-              {/* Area Hover Interaktif */}
-              <rect
-                x={x - GAP/4} y={0} width={BAR_W + GAP/2} height={H} rx="4"
-                className="fill-white/0 hover:fill-black/5 dark:hover:fill-white/5 transition-colors duration-200"
-              />
-              <rect 
-                x={x} y={y} width={BAR_W} height={displayH} rx="4"
-                fill={isToday || d.value > 0 ? "url(#barGrad)" : "currentColor"}
-                className={cn(
-                  "transition-all duration-300",
-                  isToday || d.value > 0 ? "" : "text-zinc-200 dark:text-zinc-800 group-hover:text-zinc-300 dark:group-hover:text-zinc-700"
-                )}
-              />
-              {d.label && (
-                <text 
-                  x={x + BAR_W / 2} y={H + 24} textAnchor="middle" 
-                  fill="currentColor"
-                  className={cn(
-                    "text-[9px] font-black uppercase tracking-widest",
-                    isToday ? "text-amber-500" : "text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-300"
-                  )}
-                >
-                  {d.label}
-                </text>
-              )}
-            </g>
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
 
 /* ── Komponen Donat Mini (KEN Enterprise Style) ─────────────────────────────────────────── */
 function DonutChart({ pct, label, subLabel, color = "var(--amber)" }) {
@@ -161,9 +93,9 @@ export default function Dashboard() {
 
   const stats = [
     { label: 'Revenue (Today)', value: formatRupiah(todayRevenue), icon: DollarSign, trend: '+12.5%', isUp: true },
-    { label: 'Net Profit', value: formatRupiah(is.netProfit || todayRevenue), icon: TrendingUp, trend: `Margin ${Number(is.grossMargin || 0).toFixed(1)}%`, isUp: true },
+    { label: 'Net Profit (30d)', value: formatRupiah(is.netProfit !== undefined ? is.netProfit : todayRevenue), icon: is.netProfit >= 0 ? TrendingUp : TrendingDown, trend: `Margin ${Number(is.grossMargin || 0).toFixed(1)}%`, isUp: (is.netProfit !== undefined ? is.netProfit : todayRevenue) >= 0 },
     (tenant?.tier === 'enterprise') && { label: 'Account Payables', value: formatRupiah(totalUnpaid), icon: AlertTriangle, trend: 'Unpaid', isUp: false },
-    (tenant?.tier === 'enterprise') && { label: 'Procurement', value: formatRupiah(totalSpendMonth), icon: Package, trend: 'Active', isUp: true },
+    (tenant?.tier === 'enterprise') && { label: 'Procurement (30d)', value: formatRupiah(totalSpendMonth), icon: Package, trend: 'Active', isUp: true },
   ].filter(Boolean);
 
   if (loading) return <DashboardSkeleton />;
@@ -173,23 +105,20 @@ export default function Dashboard() {
       {/* Header Section - Sleek Premium Omnichannel Style */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 p-4">
         <div>
-           <div className="flex items-center gap-4 mb-2">
-              <span className="px-2.5 py-1 bg-amber- border border-amber-500/20 rounded-sm text-[9px] font-black text-zinc-900 dark:text-zinc-100 uppercase tracking-widest">
-                Tier: {tenant?.tier?.toUpperCase() || 'ENTERPRISE'}
-              </span>
-              <div className="flex items-center gap-2">
+             <Badge variant="primary" className="text-[9px] font-black uppercase tracking-widest">
+              Tier: {tenant?.tier?.toUpperCase() || 'ENTERPRISE'}
+            </Badge>
+              <div className="flex items-center gap-2 mt-2">
                 <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">System Status: Active</span>
               </div>
-           </div>
-           <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">Executive <span className="text-amber-600 dark:text-amber-400 italic">Cockpit</span></h2>
            <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium uppercase font-mono tabular-nums tracking-widest mt-1">
              {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
            </p>
         </div>
         <div className="flex items-center gap-4">
-          <Button className="h-12 rounded-md font-black uppercase tracking-widest" onClick={() => navigate('/reports')}>Export Data</Button>
-          <Button className="h-12 rounded-md font-black uppercase tracking-widest" onClick={() => navigate('/kasir')}>New Transaction</Button>
+          <Button variant="primary" aria-label="Export data" onClick={() => navigate('/reports')}>Export Data</Button>
+          <Button variant="primary" aria-label="New transaction" onClick={() => navigate('/kasir')}>New Transaction</Button>
         </div>
       </div>
 
@@ -203,9 +132,9 @@ export default function Dashboard() {
 
       {/* Critical Alert */}
       {lowStockItems.length > 0 && (
-        <div className="mx-4 p-6 bg-amber- border border-amber-500/20 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="mx-4 p-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4">
            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber- rounded-lg flex items-center justify-center text-amber-500">
+              <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-500">
                 <AlertTriangle size={24} />
               </div>
               <div>
@@ -213,7 +142,7 @@ export default function Dashboard() {
                  <p className="text-xs text-zinc-500 dark:text-zinc-100 font-bold uppercase tracking-widest">{lowStockItems.length} items require attention.</p>
               </div>
            </div>
-           <Button size="sm" className="w-full sm:w-auto" onClick={() => navigate('/inventory-intel')}>Audit Stock</Button>
+            <Button variant="primary" size="sm" onClick={() => navigate('/inventory-intel')}>Audit Stock</Button>
         </div>
       )}
 
@@ -244,7 +173,12 @@ export default function Dashboard() {
               <h3 className="text-lg font-black uppercase tracking-tighter text-[var(--text-primary)]">Market Trajectory</h3>
               <BarChart3 className="text-amber-500 " size={20} aria-label="Market Trajectory chart" role="img" />
            </div>
-           <BarChart data={trendData.length > 0 ? trendData : Array.from({ length: 7 }, (_, i) => ({ label: ['S','M','T','W','T','F','S'][i], value: 0 }))} />
+           <ChartWrapper 
+             data={trendData.length > 0 ? trendData : Array.from({ length: 7 }, (_, i) => ({ label: ['S','M','T','W','T','F','S'][i], value: 0 }))} 
+             height={200}
+             valueFormatter={(val) => formatRupiah(val)}
+             className="mt-6"
+           />
         </Card>
 
         <Card className="lg:col-span-4 p-8 space-y-6" variant="premium">
@@ -289,7 +223,7 @@ export default function Dashboard() {
            <div className="space-y-6">
             {safeMenu.slice(0, 3).map((item, i) => (
               <div key={i} className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-amber- dark:bg-amber- rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                  <div className="w-10 h-10 bg-amber-50 dark:bg-amber-950/30 rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
                     <Coffee size={18} />
                   </div>
                   <div className="flex-1">
@@ -297,8 +231,8 @@ export default function Dashboard() {
                         <p className="text-xs font-black text-zinc-900 dark:text-zinc-50">{item?.name}</p>
                         <p className="text-xs font-mono tabular-nums text-amber-500">85%</p>
                     </div>
-                    <div className="h-1.5 w-full ">
-                        <div className="h-full " />
+                    <div className="h-1.5 w-full bg-background rounded-full overflow-hidden">
+                        <div className="h-full bg-amber-500 w-[85%] rounded-full" />
                     </div>
                   </div>
               </div>

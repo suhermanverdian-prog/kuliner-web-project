@@ -4,6 +4,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { api } from '@/api';
 import { AlertTriangle, Zap, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
 // Components (Direct imports only for core layout)
 import MainLayout from '@/components/MainLayout';
@@ -47,7 +48,7 @@ const InventoryIntelligencePage = lazy(() => import('@/pages/InventoryIntelligen
 const PageLoader = () => (
   <div className="fixed inset-0 bg-background flex flex-col items-center justify-center z-[9999] animate-in fade-in duration-500">
     <div className="relative">
-      <div className="w-20 h-20 bg-amber-500 rounded-2xl flex items-center justify-center text-zinc-950 font-black text-4xl shadow-2xl shadow-amber-500/20 animate-pulse">
+      <div className="w-20 h-20 bg-amber-50 rounded-lg border border-amber-500/30 flex items-center justify-center text-zinc-950 font-black text-4xl shadow-2xl shadow-amber-500/20 animate-pulse">
         K
       </div>
       <div className="absolute -inset-4 border-2 border-amber-500/20 rounded-[2.5rem] animate-ping duration-[3s]" />
@@ -78,12 +79,11 @@ class ErrorBoundary extends React.Component {
               </p>
             </div>
             <div className="flex flex-col gap-4 pt-4">
-              <Button 
-                onClick={() => window.location.reload()} 
-                className="w-full h-14 bg-foreground text-background rounded-2xl font-black shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all"
-              >
-                MULAI ULANG SISTEM
-              </Button>
+              <PrimaryButton
+  onClick={() => window.location.reload()}
+>
+  MULAI ULANG SISTEM
+</PrimaryButton>
             </div>
           </div>
         </div>

@@ -98,7 +98,7 @@ export default function ShiftPage({ user, onNavigate }) {
           <Button
             onClick={() => setShowOpenModal(true)}
             size="lg"
-            className="rounded-lg h-14 px-10"
+            className="rounded-lg h-14 px-10 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95"
           >
             <Plus size={20} className="mr-2 group-hover:rotate-90 transition-transform" /> Buka Shift Baru
           </Button>
@@ -173,7 +173,7 @@ export default function ShiftPage({ user, onNavigate }) {
                 >
                   <LayoutDashboard size={16} className="mr-2" /> Menuju POS
                 </Button>
-                <Button onClick={() => setShowCloseModal(true)} className="flex-1 h-10">
+                <Button onClick={() => setShowCloseModal(true)} className="flex-1 h-10 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95">
                   <Lock size={16} className="mr-2" /> Tutup Sesi Shift
                 </Button>
               </div>
@@ -264,19 +264,19 @@ export default function ShiftPage({ user, onNavigate }) {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 animate-in fade-in zoom-in-95 duration-700">
-          <div className="w-32 h-32 bg-card rounded-lg flex items-center justify-center mb-8 relative border-2 border-dashed border-muted-foreground/30">
+          <div className="w-32 h-32 bg-card rounded-lg flex items-center justify-center mb-8 relative border-2 border-dashed border-border">
             <Lock className="text-zinc-500 dark:text-zinc-400" size={48} />
-            <div className="absolute -top-2 -right-2 w-8 h-8 bg-background border-2 border-muted-foreground/30 rounded-lg flex items-center justify-center">
+            <div className="absolute -top-2 -right-2 w-8 h-8 bg-background border-2 border-border rounded-lg flex items-center justify-center">
               <AlertCircle size={16} className="text-zinc-500 dark:text-zinc-400" />
             </div>
           </div>
-          <h3 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 mb-2 font-serif">
+          <h3 className="text-2xl font-black text-foreground mb-2 font-serif">
             Kasir Sedang Terkunci
           </h3>
           <p className="text-zinc-500 dark:text-zinc-400 font-medium max-w-sm text-center leading-relaxed">
             Sistem memerlukan sesi shift aktif untuk memproses transaksi. Silakan buka shift baru untuk memulai operasional hari ini.
           </p>
-          <Button onClick={() => setShowOpenModal(true)} className="mt-8 h-14 px-12">
+          <Button onClick={() => setShowOpenModal(true)} className="mt-8 h-14 px-12 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95">
             Buka Shift Sekarang <Plus className="ml-2" />
           </Button>
         </div>
@@ -289,7 +289,7 @@ export default function ShiftPage({ user, onNavigate }) {
             <div className="w-10 h-10 rounded-lg bg-background flex items-center justify-center text-amber-500 dark:text-amber-400">
               <History size={20} />
             </div>
-            <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-50 font-serif">Log Aktivitas Shift</h3>
+            <h3 className="text-xl font-black text-foreground font-serif">Log Aktivitas Shift</h3>
           </div>
           <Button variant="ghost" size="sm" onClick={() => refetch()} isLoading={isLoading}>
             <RefreshCw size={14} className="mr-2" /> Segarkan
@@ -319,7 +319,7 @@ export default function ShiftPage({ user, onNavigate }) {
                             {getInitials(getKasirName(s))}
                           </div>
                           <div>
-                            <span className="font-black text-sm text-zinc-900 dark:text-zinc-100 block">
+                            <span className="font-black text-sm text-foreground block">
                               {getKasirName(s)}
                             </span>
                             <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-widest font-mono">
@@ -453,7 +453,7 @@ export default function ShiftPage({ user, onNavigate }) {
               </Button>
               <Button
                 onClick={handleOpenShift}
-                className="flex-1 uppercase tracking-widest text-xs"
+                className="flex-1 uppercase tracking-widest text-xs bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95"
                 isLoading={isAdding}
               >
                 {!isAdding && (

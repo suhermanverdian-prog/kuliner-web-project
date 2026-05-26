@@ -26,9 +26,9 @@ const PERIODS = [
 function KPICard({ label, value, sub, icon: Icon, delta, colorClass }) {
   const isUp = delta >= 0;
   return (
-    <Card className="border-none shadow-2xl  font-mono tabular-nums">
+    <Card className="bg-card border border-border shadow-sm font-mono tabular-nums">
       <CardContent className="p-8 relative">
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber- blur-3xl rounded-lg  group-hover: transition-opacity duration-700" />
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/5 blur-3xl rounded-lg group-hover: transition-opacity duration-700" />
         
         <div className="flex justify-between items-start relative z-10">
           <div className="space-y-3">
@@ -48,7 +48,7 @@ function KPICard({ label, value, sub, icon: Icon, delta, colorClass }) {
           <div className="mt-6 flex items-center gap-4 relative z-10">
             <div className={cn(
               "flex items-center gap-1.5 px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
-              isUp ? "bg-amber- text-amber-500" : "bg-amber-500 text-zinc-400"
+              isUp ? "bg-amber-500/10 text-amber-500" : "bg-amber-500/10 text-zinc-400"
             )}>
               {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
               <span className="font-mono tabular-nums">{Math.abs(delta)}%</span>
@@ -80,8 +80,8 @@ function MiniChart({ data, prev }) {
             <stop offset="100%" stopColor="var(--amber)" stopOpacity="0" />
           </linearGradient>
           <filter id="glow">
-             <feGaussianBlur stdDeviation="3" result="blur" />
-             <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            {/* Using amber drop‑shadow with 40% opacity for consistent branding */}
+            <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="var(--amber)" flood-opacity="0.4" />
           </filter>
         </defs>
         
@@ -94,7 +94,16 @@ function MiniChart({ data, prev }) {
         <path d={prevPath} fill="none" stroke="currentColor" className="text-muted/20" strokeWidth="2" strokeDasharray="8,6" />
         
         {/* Current Period - Glowing Amber */}
-        <path d={currentPath} fill="none" stroke="var(--amber)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" filter="url(#glow)" className="animate-in fade-in duration-1000" />
+          <path
+            d={currentPath}
+            fill="none"
+            stroke="var(--amber)"
+            strokeWidth={5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            filter="url(#glow)"
+            className="animate-in fade-in duration-1000 dark:stroke-amber-400"
+          />
         <path d={`${currentPath} L ${xScale(23)},${H - PAD} L ${xScale(0)},${H - PAD} Z`} fill="url(#chartGrad)" />
         
         {/* Interactive Points */}
@@ -170,7 +179,7 @@ export default function LaporanPage({ onNavigate }) {
   );
 
   return (
-    <div className="space-y-16 pb-20 animate-quantum-fade quantum-noise min-h-screen">
+    <div className="space-y-16 pb-20 min-h-screen">
       {/* Header & Filter - Enterprise Grade */}
       <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-12">
         <div className="space-y-6">
@@ -180,14 +189,14 @@ export default function LaporanPage({ onNavigate }) {
           </div>
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.5em] max-w-lg leading-loose ">Quantum Financial Intelligence & Velocity Matrix</p>
         </div>
-        <div className="flex flex-wrap items-center gap-6 glass-quantum p-4 rounded-lg border border-white/10 shadow-2xl">
+        <div className="flex flex-wrap items-center gap-6 bg-card p-4 rounded-lg border border-border shadow-sm">
           <div className="flex p-1 gap-1">
             {PERIODS.map(p => (
               <button 
                 key={p.key} 
                 className={cn(
                   "h-10 px-6 text-[10px] font-black uppercase tracking-[0.2em] rounded-lg transition-all duration-300", 
-                  period === p.key ? "active-state shadow-lg" : "text-zinc-500 dark:text-zinc-100 hover:bg-background/5"
+                  period === p.key ? "bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-lg shadow-amber-500/20" : "text-zinc-500 dark:text-zinc-100 hover:bg-background/50"
                 )}
                 onClick={() => setPeriod(p.key)}
               >
@@ -207,7 +216,7 @@ export default function LaporanPage({ onNavigate }) {
           )}
           
           <div className="relative">
-            <Button className="h-12 px-8 font-black gap-4 " onClick={() => setShowExport(!showExport)}>
+            <Button variant="primary" className="h-12 px-8 font-black gap-4 " onClick={() => setShowExport(!showExport)}>
               <Download size={18} /> EXPORT CENTER
             </Button>
             {showExport && (
@@ -226,8 +235,8 @@ export default function LaporanPage({ onNavigate }) {
                       </div>
                     </div>
                   ))}
-                  <div className="p-4 bg-amber- rounded-lg mt-2">
-                    <Button className="w-full h-12 font-black " onClick={() => handleExcel('all')}>
+                  <div className="p-4 bg-amber-500/10 rounded-lg mt-2">
+                    <Button variant="primary" className="w-full h-12 font-black " onClick={() => handleExcel('all')}>
                        DOWNLOAD ALL DATA
                     </Button>
                   </div>
@@ -295,11 +304,11 @@ export default function LaporanPage({ onNavigate }) {
           {/* Executive Predictive Cockpit - Phase 4 Elite Feature */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
              <Card className="lg:col-span-12 border-none glass-quantum rounded-lg overflow-hidden group relative">
-                <div className="absolute top-0 right-0 w-[70%] h-full bg-amber- blur-[150px] rounded-lg pointer-events-none" />
+                <div className="absolute top-0 right-0 w-[70%] h-full bg-amber-500/5 blur-[150px] rounded-lg pointer-events-none" />
                 <CardContent className="p-12 relative z-10">
                    <div className="flex flex-col md:flex-row items-center gap-16">
                       <div className="flex-1 space-y-8">
-                         <div className="inline-flex items-center gap-4 px-4 py-2 bg-amber- rounded-lg border border-amber-500/20 shadow-[0_0_20px_rgba(251,191,36,0.1)]">
+                         <div className="inline-flex items-center gap-4 px-4 py-2 bg-amber-500/10 rounded-lg border border-amber-500/20 shadow-[0_0_20px_rgba(251,191,36,0.1)]">
                             <Zap size={16} className="text-amber-500 fill-amber-500/20 animate-pulse" />
                             <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em]">Quantum Intelligence v5.0</span>
                          </div>
@@ -349,7 +358,7 @@ export default function LaporanPage({ onNavigate }) {
                   <CardTitle className="text-2xl font-black uppercase tracking-tighter">Hourly Performance Matrix</CardTitle>
                   <CardDescription className="text-xs font-bold uppercase tracking-widest  mt-1">Real-time revenue density distribution.</CardDescription>
                 </div>
-                <div className="w-14 h-14 bg-amber- rounded-lg flex items-center justify-center text-amber-500 group-hover:rotate-12 transition-transform">
+                <div className="w-14 h-14 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-500 group-hover:rotate-12 transition-transform">
                    <TrendingUp size={28} />
                 </div>
               </CardHeader>
@@ -675,7 +684,7 @@ export default function LaporanPage({ onNavigate }) {
                           <td className="px-8 py-6 text-center">
                             <span className={cn(
                               "px-4 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest",
-                              tx.payment_status === 'paid' ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400" : "bg-amber- text-amber-500"
+                              tx.payment_status === 'paid' ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400" : "bg-amber-50 dark:bg-amber-950/30 text-amber-500 dark:text-amber-400"
                             )}>
                               {tx.payment_status}
                             </span>
@@ -693,7 +702,7 @@ export default function LaporanPage({ onNavigate }) {
           {!features.ai_insights ? (
             <div className="py-32 flex flex-col items-center justify-center text-center space-y-10">
                <div className="relative">
-                  <div className="w-32 h-32 rounded-lg bg-amber- flex items-center justify-center text-amber-500 shadow-[0_0_50px_rgba(245,158,11,0.2)] border border-amber-500/20 rotate-12">
+                  <div className="w-32 h-32 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500 shadow-[0_0_50px_rgba(245,158,11,0.2)] border border-amber-500/20 rotate-12">
                      <Lock size={64} strokeWidth={2.5} />
                   </div>
                   <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-rose-500 rounded-lg flex items-center justify-center text-zinc-900 dark:text-zinc-100 border-4 border-background">
@@ -705,7 +714,7 @@ export default function LaporanPage({ onNavigate }) {
                   <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium leading-relaxed">Advanced behavioral analytics, Star/Deadwood classification, and predictive forecasting require the **BrewMaster Enterprise** computational engine.</p>
                </div>
                <div className="flex gap-4">
-                  <Button className="h-14 px-10 rounded-lg font-black ">
+                  <Button variant="primary" className="h-14 px-10 rounded-lg font-black ">
                      UPGRADE TO ENTERPRISE
                   </Button>
                   <Button variant="ghost" className="h-14 px-10 rounded-lg font-black border border-white/5 hover:bg-background/5 text-xs tracking-widest">

@@ -123,14 +123,14 @@ export default function ProcurementPage() {
       <main className="grid grid-cols-1 gap-6">
         {activeTab === 'create' && (
           <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
-            <Card className="xl:col-span-3 border-none shadow-2xl">
+            <Card className="xl:col-span-3 border border-zinc-200 dark:border-zinc-800 shadow-2xl">
               <CardHeader className="flex flex-row items-center justify-between pb-6">
                 <div>
                    <CardTitle className="text-2xl">Material Requisition</CardTitle>
                    <CardDescription>Master level supply chain oversight</CardDescription>
-                   <Button variant="outline" size="sm" onClick={handleAutoReplenish} className="h-6 text-white px-2 rounded-lg border-amber-500/50 text-white hover:">
-                      <Plus size={10} className="mr-1" /> AUTO-SCAN LOW STOCK
-                   </Button>
+                   <Button variant="outline" size="sm" onClick={handleAutoReplenish} className="h-6 px-2 rounded-lg border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 active:scale-[0.98] transition-all">
+                       <Plus size={10} className="mr-1" /> AUTO-SCAN LOW STOCK
+                    </Button>
                 </div>
                 <div className="w-72">
                   <Select 
@@ -233,7 +233,7 @@ export default function ProcurementPage() {
             </Card>
 
             <div className="space-y-6">
-               <Card variant="premium" className="p-8 border-none shadow-amber-500/10">
+               <Card variant="premium" className="p-8 border border-zinc-200 dark:border-zinc-800 shadow-amber-500/10">
                   <p className="text-primary-foreground/60 text-[10px] font-black uppercase tracking-[0.4em] mb-4">Total Estimated Settlement</p>
                   <div className="text-4xl font-black text-primary-foreground font-mono tabular-nums tracking-tighter mb-8 tabular-nums">
                     {formatCurrency(poItems.reduce((acc, item) => acc + (item.purchaseQty * item.unitPrice), 0))}
@@ -275,7 +275,7 @@ export default function ProcurementPage() {
                 </div>
               )}
               {pendingPOs.filter(p => p.status === 'pending' || p.status === 'partially_received').map(po => (
-                <Card key={po.id} className="p-6 space-y-6 hover:translate-y-[-4px] transition-transform duration-300 cursor-pointer group">
+                <Card key={po.id} className="p-6 space-y-6 hover:translate-y-[-4px] transition-transform duration-300 cursor-pointer group active:scale-[0.98]">
                    <div className="flex justify-between items-start">
                       <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                          <Truck size={24} strokeWidth={2.5} />
@@ -283,8 +283,7 @@ export default function ProcurementPage() {
                       <div className="flex flex-col items-end gap-1">
                         <span className={cn(
                           "px-4 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-inner border",
-                          po.status === 'partially_received' 
-                            ? "bg-amber- text-amber-600 border-amber-500/20" 
+                          po.status === 'partially_received'                             ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800" 
                             : "bg-background text-zinc-500 dark:text-zinc-100 border-border"
                         )}>
                           {po.status === 'partially_received' ? 'Partial Receipt' : 'Awaiting Audit'}
@@ -307,8 +306,8 @@ export default function ProcurementPage() {
                          <Button 
                            type="button" 
                            variant="outline" 
-                           size="sm" 
-                           className="h-8 px-4 border-amber-500/20 text-amber-600 hover:bg-amber- rounded-lg"
+                           size="sm"                               
+                           className="h-8 px-4 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-lg"
                            onClick={() => handlePrintPO(po)}
                          >
                            <Printer size={14} />
@@ -345,7 +344,7 @@ export default function ProcurementPage() {
                 </div>
               </div>
 
-              <Card className="border-none shadow-2xl">
+              <Card className="border border-zinc-200 dark:border-zinc-800 shadow-2xl">
                 <CardContent className="p-0">
                   <Table>
                     <TableHeader>
@@ -391,7 +390,7 @@ export default function ProcurementPage() {
                               type="button" 
                               variant="outline" 
                               size="sm" 
-                              className="h-8 px-4 border-amber-500/20 text-amber-600 hover:bg-amber- rounded-lg"
+                              className="h-8 px-4 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-lg"
                               onClick={() => handlePrintPO(po)}
                             >
                               <Printer size={12} className="mr-1.5" /> PDF / Print
@@ -408,7 +407,7 @@ export default function ProcurementPage() {
         )}
 
         {activeTab === 'finance' && (
-           <Card className="border-none shadow-2xl">
+           <Card className="border border-zinc-200 dark:border-zinc-800 shadow-2xl">
              <CardHeader className="flex flex-row items-center justify-between p-8">
                 <div>
                    <CardTitle className="text-2xl">Accounts Payable Ledger</CardTitle>
@@ -468,7 +467,7 @@ export default function ProcurementPage() {
 
         {activeTab === 'supplier' && (
            <div className="space-y-6">
-              <Card className="border-none shadow-2xl">
+              <Card className="border border-zinc-200 dark:border-zinc-800 shadow-2xl">
                  <CardHeader className="flex flex-row items-center justify-between p-8">
                     <div>
                        <CardTitle className="text-2xl">Authorized Vendor Registry</CardTitle>
@@ -476,7 +475,7 @@ export default function ProcurementPage() {
                     </div>
                      <Button 
                         onClick={() => setShowSupplierModal(true)}
-                        className="bg-primary text-primary-foreground font-black rounded-lg h-12 px-8 shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all"
+                        className="bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-lg h-12 px-8 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all font-black"
                      >
                         <Plus size={18} className="mr-2" /> Add New Vendor
                      </Button>
@@ -525,7 +524,7 @@ export default function ProcurementPage() {
 
         {activeTab === 'master' && (
            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <Card className="border-none shadow-2xl p-8">
+              <Card className="border border-zinc-200 dark:border-zinc-800 shadow-2xl p-8">
                  <h3 className="text-xl font-black mb-6 flex items-center gap-4">
                     <div className="w-1.5 h-6 bg-primary rounded-lg" />
                     Unit Conversion Logic
@@ -545,7 +544,7 @@ export default function ProcurementPage() {
                  </div>
               </Card>
 
-              <Card className="border-none shadow-2xl p-8">
+              <Card className="border border-zinc-200 dark:border-zinc-800 shadow-2xl p-8">
                  <h3 className="text-xl font-black mb-6 flex items-center gap-4">
                     <div className="w-1.5 h-6 bg-primary rounded-lg" />
                     Procurement Policy
@@ -570,8 +569,8 @@ export default function ProcurementPage() {
       {/* 📦 AUDIT RECEIPT MODAL (GRN VERIFICATION) */}
       {receivingPo && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 ">
-          <Card className="w-full max-w-2xl border-none shadow-2xl bg-card rounded-lg overflow-hidden">
-            <CardHeader className="p-10 border-b border-border bg-background">
+           <Card className="w-full max-w-2xl border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-card rounded-lg overflow-hidden">
+             <CardHeader className="p-8 border-b border-border bg-background">
               <div className="flex justify-between items-start">
                 <div>
                   <div className="inline-flex items-center gap-2 px-4 py-1 bg-primary/10 text-primary rounded-lg text-[9px] font-black uppercase tracking-widest border border-primary/20 mb-4">Physical Audit in Progress</div>
@@ -617,7 +616,7 @@ export default function ProcurementPage() {
                                type="number"
                                className={cn(
                                  "w-24 h-12 text-center font-black text-lg rounded-lg transition-all",
-                                 Number(item.qtyReceived) < remaining ? "border-amber-500 bg-amber- text-amber-600" : "border-emerald-200 dark:border-emerald-800 bg-emerald-500/5 text-emerald-600"
+                                  Number(item.qtyReceived) < remaining ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400" : "border-emerald-200 dark:border-emerald-800 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400"
                                )}
                                value={item.qtyReceived}
                                onChange={(e) => {
@@ -637,7 +636,7 @@ export default function ProcurementPage() {
                 </TableBody>
               </Table>
             </CardContent>
-            <CardFooter className="p-10 bg-background border-t border-border flex flex-col gap-4">
+            <CardFooter className="p-8 bg-background border-t border-border flex flex-col gap-4">
                <div className="flex justify-between items-center w-full px-2">
                   <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100">Verification Requirement</div>
                   <div className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
@@ -659,11 +658,11 @@ export default function ProcurementPage() {
       {/* 📦 ADD VENDOR MODAL */}
       {showSupplierModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 ">
-          <Card className="w-full max-w-md border-none shadow-2xl bg-card rounded-lg overflow-hidden">
+           <Card className="w-full max-w-md border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-card rounded-lg overflow-hidden">
             <CardHeader className="p-8 border-b border-border bg-background">
               <div className="flex justify-between items-center">
                 <div>
-                  <div className="inline-flex items-center gap-2 px-4 py-1 bg-amber- text-amber-500 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-500/20 mb-2">Vendor Registry</div>
+                   <div className="inline-flex items-center gap-2 px-4 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800 mb-2">Vendor Registry</div>
                   <CardTitle className="text-2xl font-black uppercase tracking-tight">Add New Vendor</CardTitle>
                 </div>
                 <button 
@@ -704,8 +703,8 @@ export default function ProcurementPage() {
               </div>
             </CardContent>
             <CardFooter className="p-8 bg-background border-t border-border">
-              <Button 
-                className="w-full h-14 "
+               <Button 
+                 className="w-full h-14 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all font-black uppercase tracking-widest rounded-lg"
                 onClick={handleSaveSupplier}
                 disabled={actionLoading || !newSupplier.name}
               >

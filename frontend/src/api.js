@@ -89,6 +89,9 @@ const getResource = (prop) => {
     'getUsers': 'users',
     'getRolePermissions': 'roles/permissions',
     'saveRolePermissions': 'roles/permissions',
+    'getTenants': 'tenants',
+    'addTenant': 'tenants',
+    'updateTenant': 'tenants',
     'updateTenantFeatures': 'tenant/me/features',
     
     // Procurement
@@ -237,6 +240,18 @@ const apiProxy = new Proxy(apiBase, {
            url += `/${idOrData}`;
            payload = null;
         }
+      }
+
+      // PUT/PATCH with { id, ... } -> /resource/:id (e.g. updateTenant)
+      if (
+        (method === 'PUT' || method === 'PATCH') &&
+        payload &&
+        typeof payload === 'object' &&
+        payload.id &&
+        !url.endsWith(`/${payload.id}`) &&
+        !url.includes('/tenant/me/')
+      ) {
+        url += `/${payload.id}`;
       }
 
       // Add Action Suffixes

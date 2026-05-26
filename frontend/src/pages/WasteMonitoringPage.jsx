@@ -96,7 +96,7 @@ export default function WasteMonitoringPage() {
       )}
 
       {/* HEADER */}
-      <header className="flex flex-col xl:flex-row items-center justify-between gap-8 p-10 rounded-lg border border-zinc-200/80 dark:border-zinc-800/50 bg-[#fafaf9] dark:bg-zinc-800">
+      <header className="flex flex-col xl:flex-row items-center justify-between gap-8 p-10 rounded-lg border border-border bg-card shadow-sm">
         <div className="flex items-center gap-8">
           <div className="w-20 h-20 bg-rose-500 rounded-lg flex items-center justify-center shadow-2xl shadow-rose-500/40 rotate-3">
             <Trash2 size={40} strokeWidth={2.5} className="text-zinc-900" />
@@ -119,14 +119,14 @@ export default function WasteMonitoringPage() {
         <div className="flex items-center gap-4">
           <Button
             variant="outline"
-            className="h-14 px-8 font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100"
+            className="h-14 px-8 font-black uppercase tracking-widest bg-card border border-border text-foreground hover:bg-zinc-50 dark:hover:bg-zinc-800"
             onClick={() => {}}
           >
             <History size={18} className="mr-2 text-rose-600 dark:text-rose-400" /> Waste Logs ({totalWasteQty})
           </Button>
-          <Button
+          <Button variant="primary"
             onClick={handleReportWaste}
-            className="h-14 px-10 font-black uppercase tracking-widest bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-500/20 active:scale-95 transition-all dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500"
+            className="h-14 px-10 font-black uppercase tracking-widest"
           >
             <AlertTriangle size={18} className="mr-2" /> Report Waste
           </Button>
@@ -136,7 +136,7 @@ export default function WasteMonitoringPage() {
       {/* METRICS – semua dari database */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {wasteMetrics.map((s, i) => (
-          <Card key={i} className="border border-zinc-200/80 dark:border-zinc-800/50 bg-[#fafaf9] dark:bg-zinc-800">
+          <Card key={i} className="border border-border bg-card shadow-sm">
             <CardContent className="p-8 flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">{s.label}</p>
@@ -148,7 +148,7 @@ export default function WasteMonitoringPage() {
                   <span className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-400">{s.trend}</span>
                 </div>
               </div>
-              <div className={cn("w-14 h-14 rounded-lg flex items-center justify-center border border-zinc-200 dark:border-zinc-700", s.bg)}>
+              <div className={cn("w-14 h-14 rounded-lg flex items-center justify-center border border-border", s.bg)}>
                 <s.icon size={24} className={cn(s.color)} />
               </div>
             </CardContent>
@@ -159,8 +159,8 @@ export default function WasteMonitoringPage() {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         {/* WASTE LEDGER – data dari DB */}
         <div className="xl:col-span-8 space-y-8">
-          <Card className="border border-zinc-200/80 dark:border-zinc-800/50 bg-[#fbfbfa] dark:bg-zinc-800">
-            <CardHeader className="p-8 border-b border-zinc-200/80 dark:border-zinc-800/50">
+          <Card className="border border-border bg-card shadow-sm">
+            <CardHeader className="p-8 border-b border-border">
               <CardTitle className="text-2xl font-black tracking-tighter uppercase leading-none text-zinc-900 dark:text-zinc-100">
                 Slow-Moving Material Ledger
               </CardTitle>
@@ -183,16 +183,16 @@ export default function WasteMonitoringPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-zinc-50/50 dark:bg-zinc-800/50">
+                      <tr className="bg-background">
                         <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Material</th>
                         <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Potensi Rugi</th>
                         <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Alasan</th>
                         <th className="px-8 py-5 text-right text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Rekomendasi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    <tbody className="divide-y divide-border">
                       {topWasteItems.map((item, i) => (
-                        <tr key={i} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-700/50 transition-colors">
+                        <tr key={i} className="hover:bg-background transition-colors">
                           <td className="px-8 py-6">
                             <div className="flex items-center gap-4">
                               <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center text-[10px] font-black text-rose-600 dark:text-rose-400">
@@ -208,7 +208,7 @@ export default function WasteMonitoringPage() {
                             {formatRupiah(item.value)}
                           </td>
                           <td className="px-8 py-6">
-                            <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded text-[10px] font-black uppercase tracking-wide">
+                            <span className="px-3 py-1 bg-background border border-border text-zinc-700 dark:text-zinc-300 rounded text-[10px] font-black uppercase tracking-wide">
                               {item.reason}
                             </span>
                           </td>
@@ -224,7 +224,7 @@ export default function WasteMonitoringPage() {
                 </div>
               )}
             </CardContent>
-            <CardFooter className="p-8 bg-zinc-50/20 dark:bg-zinc-800/20">
+            <CardFooter className="p-8 bg-background border-t border-border">
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 dark:text-zinc-400">
                 Sustainability Ledger &bull; Data Terverifikasi dari Database
               </p>
@@ -232,8 +232,8 @@ export default function WasteMonitoringPage() {
           </Card>
 
           {/* WASTE LOG HISTORY – real data */}
-          <Card className="border border-zinc-200/80 dark:border-zinc-800/50 bg-[#fbfbfa] dark:bg-zinc-800">
-            <CardHeader className="p-8 border-b border-zinc-200/80 dark:border-zinc-800/50">
+          <Card className="border border-border bg-card shadow-sm">
+            <CardHeader className="p-8 border-b border-border">
               <CardTitle className="text-lg font-black tracking-tighter uppercase text-zinc-900 dark:text-zinc-100">
                 Riwayat Waste Tercatat
               </CardTitle>
@@ -250,16 +250,16 @@ export default function WasteMonitoringPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="bg-zinc-50/50 dark:bg-zinc-800/50">
+                      <tr className="bg-background">
                         <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Material</th>
                         <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Qty</th>
                         <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Alasan</th>
                         <th className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Tanggal</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                    <tbody className="divide-y divide-border">
                       {wasteLogs.map((log, i) => (
-                        <tr key={i} className="hover:bg-zinc-50/80 dark:hover:bg-zinc-700/50">
+                        <tr key={i} className="hover:bg-background">
                           <td className="px-8 py-4 font-black text-sm text-zinc-900 dark:text-zinc-100">{log.bahan_name || 'Item'}</td>
                           <td className="px-8 py-4 font-mono tabular-nums text-rose-600 dark:text-rose-400 font-bold">{Math.abs(log.change_qty)}</td>
                           <td className="px-8 py-4 text-xs text-zinc-500 dark:text-zinc-400">{log.reason || log.notes || '-'}</td>
@@ -279,8 +279,8 @@ export default function WasteMonitoringPage() {
         {/* SIDE WIDGETS */}
         <div className="xl:col-span-4 space-y-8 sticky top-24">
           {/* Loss Causes – dihitung dari data nyata */}
-          <Card className="border border-zinc-200/80 dark:border-zinc-800/50 bg-[#fbfbfa] dark:bg-zinc-800">
-            <CardHeader className="p-8 border-b border-zinc-200/80 dark:border-zinc-800/50">
+          <Card className="border border-border bg-card shadow-sm">
+            <CardHeader className="p-8 border-b border-border">
               <CardTitle className="text-lg font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">
                 Loss Causes
               </CardTitle>
@@ -295,7 +295,7 @@ export default function WasteMonitoringPage() {
                     <span className="text-zinc-500 dark:text-zinc-400">{c.label}</span>
                     <span className="text-zinc-900 dark:text-zinc-100 font-mono tabular-nums">{c.pct}</span>
                   </div>
-                  <div className="h-2 bg-zinc-100 dark:bg-zinc-700 rounded-lg overflow-hidden">
+                  <div className="h-2 bg-background rounded-lg overflow-hidden">
                     <div className={cn("h-full rounded-lg transition-all duration-1000", c.color)} style={{ width: c.pct }} />
                   </div>
                 </div>
@@ -426,8 +426,8 @@ export default function WasteMonitoringPage() {
               >
                 Batal
               </Button>
-              <Button
-                className="flex-1 h-12 font-black uppercase tracking-widest bg-amber-500 text-white hover:bg-amber-600 shadow-lg shadow-amber-500/20 active:scale-95 transition-all dark:bg-amber-400 dark:text-zinc-900"
+              <Button variant="primary"
+                className="flex-1 h-12 font-black uppercase tracking-widest"
                 onClick={handleSubmitWaste}
                 disabled={submitting}
               >

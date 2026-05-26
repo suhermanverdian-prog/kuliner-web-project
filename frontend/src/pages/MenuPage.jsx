@@ -153,7 +153,7 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
                         className={cn(
                           "w-10 h-10 rounded-md border flex items-center justify-center transition-all hover:scale-110", 
                           form.icon === key 
-                            ? "bg-amber-500 text-white dark:text-zinc-100 dark:bg-amber-400 dark:text-zinc-900 border-amber-500 dark:border-amber-400 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10" 
+                            ? "bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 border-amber-500 dark:border-amber-400 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10" 
                             : "bg-card border-border text-zinc-500 dark:text-zinc-100"
                         )}
                       >
@@ -208,7 +208,7 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
         </CardContent>
         <CardFooter className="border-t pt-6 gap-4">
           <Button variant="outline" className="flex-1 h-12 rounded-md" onClick={onClose}>Batal</Button>
-          <Button className="flex-[2] h-12 font-black " onClick={() => onSave({ ...form, cost: hppOtomatis })}>Simpan Produk</Button>
+          <Button className="flex-[2] h-12 font-black bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500" onClick={() => onSave({ ...form, cost: hppOtomatis })}>Simpan Produk</Button>
         </CardFooter>
       </Card>
     </div>
@@ -231,7 +231,7 @@ export default function MenuPage({ user }) {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
-      <div className="w-10 h-10 border-4 border-amber-500 dark:border-amber-400 border-t-transparent rounded-lg animate-spin" />
+      <div className="w-10 h-10 border-4 border-amber-500 dark:border-amber-400 border-t-transparent rounded-full animate-spin" />
       <p className="text-zinc-500 dark:text-zinc-100 animate-pulse font-medium">Memuat katalog...</p>
     </div>
   );
@@ -241,7 +241,7 @@ export default function MenuPage({ user }) {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
            <div className="flex items-center gap-4 mb-2">
-              <span className="px-2.5 py-1 bg-amber- border border-amber-500/20 rounded-sm text-[9px] font-black text-amber-500 uppercase tracking-widest">Katalog Produk</span>
+              <span className="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/20 border border-amber-500/20 rounded-sm text-[9px] font-black text-amber-500 uppercase tracking-widest">Katalog Produk</span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">Gateway Online</span>
@@ -250,7 +250,7 @@ export default function MenuPage({ user }) {
            <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">Katalog <span className="text-amber-500 italic">Menu</span></h2>
            <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium">Manajemen resep bahan baku, estimasi HPP otomatis & kalkulasi margin presisi.</p>
         </div>
-        <Button size="lg" className="h-14 px-8 font-black " onClick={() => { setEditItem(null); setShowModal(true); }}>
+        <Button size="lg" className="h-14 px-8 font-black active:scale-[0.98] transition-all bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500" onClick={() => { setEditItem(null); setShowModal(true); }}>
           <Plus size={20} strokeWidth={3} />
           Tambah Produk
         </Button>
@@ -279,7 +279,7 @@ export default function MenuPage({ user }) {
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 auto-rows-max">
           {filtered.map(item => (
-            <Card key={item.id} className="group overflow-hidden border border-border bg-card text-card-foreground shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 rounded-lg">
+            <Card key={item.id} className="group overflow-hidden border border-border bg-card text-card-foreground shadow-sm hover:shadow-xl hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 rounded-lg">
               <div className="aspect-square relative overflow-hidden bg-background">
                 {item.image ? (
                   <img src={getImgUrl(item.image)} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -314,7 +314,7 @@ export default function MenuPage({ user }) {
                     <FlaskConical size={10} className="text-zinc-500 dark:text-zinc-100" />
                     <span className="text-[8px] font-black text-zinc-500 dark:text-zinc-100 uppercase">{item.bom?.length || 0} Resep</span>
                  </div>
-                 <div className="flex items-center gap-1 bg-amber- px-2 py-0.5 rounded-sm text-amber-600 dark:text-amber-400 font-black text-[8px] font-mono tabular-nums shrink-0">
+                 <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-sm text-amber-600 dark:text-amber-400 font-black text-[8px] font-mono tabular-nums shrink-0">
                     {item.price > 0 ? Math.round(((item.price - item.cost) / item.price) * 100) : 0}% Mg
                  </div>
               </CardFooter>
@@ -331,7 +331,7 @@ export default function MenuPage({ user }) {
           </button>
         </div>
       ) : (
-        <Card className="border-none shadow-xl overflow-hidden">
+        <Card className="border border-border shadow-xl overflow-hidden rounded-lg bg-card dark:bg-zinc-900">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -364,7 +364,7 @@ export default function MenuPage({ user }) {
                     <td className="px-6 py-4 text-right font-black text-sm font-mono tabular-nums text-foreground">{formatRupiah(item.price)}</td>
                     <td className="px-6 py-4 text-right font-bold text-primary text-sm font-mono tabular-nums">{formatRupiah(item.cost)}</td>
                     <td className="px-6 py-4 text-center">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm bg-amber- text-amber-600 dark:text-amber-400 text-[9px] font-black font-mono tabular-nums border border-amber-500/10">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 text-[9px] font-black font-mono tabular-nums border border-amber-500/10">
                         <ArrowUpRight size={10} />
                         {item.price > 0 ? Math.round(((item.price - item.cost) / item.price) * 100) : 0}%
                       </div>

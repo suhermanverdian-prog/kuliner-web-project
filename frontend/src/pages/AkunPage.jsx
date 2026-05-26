@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { cn } from '../lib/utils';
 import { useAkunPage } from '../hooks/useAkunPage';
 
@@ -28,11 +30,11 @@ const TABS = [
 ];
 
 const COA_COLORS = {
-  'Aset': 'bg-amber- text-amber-600 dark:text-amber-400 border-amber-500/20',
-  'Liabilitas': 'bg-red-500/10 text-red-600 border-red-500/20',
+  'Aset': 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  'Kewajiban': 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-500/20',
   'Ekuitas': 'bg-amber-500/10 text-primary border-zinc-800/20',
-  'Pendapatan': 'bg-amber- text-amber-600 dark:text-amber-400 border-amber-500/20',
-  'Beban': 'bg-amber- text-amber-600 border-amber-500/20',
+  'Pendapatan': 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  'Beban': 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 border-amber-500/20',
 };
 
 function KPICard({ label, value, sub, icon: Icon, color, trend, trendVal }) {
@@ -51,7 +53,7 @@ function KPICard({ label, value, sub, icon: Icon, color, trend, trendVal }) {
         </div>
         {trendVal !== undefined && (
           <div className="mt-4 flex items-center gap-2">
-            <div className={cn('flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black', trendVal >= 0 ? 'bg-amber- text-amber-600 dark:text-amber-400' : 'bg-destructive/10 text-destructive')}>
+            <div className={cn('flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black', trendVal >= 0 ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400' : 'bg-destructive/10 text-destructive')}>
               {trendVal >= 0 ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
               {Math.abs(trendVal).toFixed(1)}%
             </div>
@@ -67,7 +69,7 @@ function JournalRow({ journal, expanded, onToggle }) {
   const totalDebit = journal.lines?.reduce((s, l) => s + Number(l.debit || 0), 0) || journal.totalDebit || 0;
   return (
     <>
-      <tr className={cn('hover:bg-background transition-colors cursor-pointer group', expanded && 'bg-amber-')} onClick={onToggle}>
+      <tr className={cn('hover:bg-background transition-colors cursor-pointer group', expanded && 'bg-amber-50 dark:bg-amber-950/30')} onClick={onToggle}>
         <td className="px-4 py-4">
           <div className="flex items-center gap-2">
             <div className={cn('w-6 h-6 rounded flex items-center justify-center transition-colors', expanded ? 'bg-amber-500 dark:bg-amber-400 text-zinc-900 dark:text-zinc-100' : 'bg-background text-zinc-500 dark:text-zinc-100')}>
@@ -81,14 +83,14 @@ function JournalRow({ journal, expanded, onToggle }) {
         <td className="px-4 py-4 text-xs font-black text-right">{fmt(totalDebit)}</td>
         <td className="px-4 py-4 text-xs font-black text-right">{fmt(totalDebit)}</td>
         <td className="px-4 py-4">
-          <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 bg-amber- px-2 py-0.5 rounded-lg w-fit ml-auto">
+          <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-lg w-fit ml-auto">
             <CheckCircle2 size={10} />
             <span className="text-[9px] font-black uppercase">Balance</span>
           </div>
         </td>
       </tr>
       {expanded && journal.lines?.map((l, i) => (
-        <tr key={i} className="bg-amber- border-l-2 border-accent/30">
+        <tr key={i} className="bg-amber-50 dark:bg-amber-950/30 border-l-2 border-accent/30">
           <td className="px-4 py-2" />
           <td className="px-4 py-2 text-[10px] text-zinc-500 dark:text-zinc-100 font-mono pl-8">{l.accountCode}</td>
           <td className="px-4 py-2 text-[10px] text-zinc-500 dark:text-zinc-100" colSpan={2}>{l.accountName}</td>
@@ -113,36 +115,36 @@ function AddExpenseModal({ onClose, onSave, loading, accounts }) {
         <CardContent className="p-8 space-y-5">
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-100 tracking-widest">Deskripsi Biaya</label>
-            <input className="w-full h-12 bg-background border-none rounded-lg px-4 text-sm font-bold focus:ring-2 focus:ring-amber-500/20" placeholder="Contoh: Bayar Listrik Bulan Mei" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+            <Input placeholder="Contoh: Bayar Listrik Bulan Mei" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
           </div>
           <div className="grid grid-cols-2 gap-4">
              <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-100 tracking-widest">Jumlah (Rp)</label>
-                <input type="number" className="w-full h-12 bg-background border-none rounded-lg px-4 text-sm font-bold focus:ring-2 focus:ring-amber-500/20" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} />
+                <Input type="number" className="font-mono tabular-nums" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} />
              </div>
              <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-100 tracking-widest">Metode Pembayaran</label>
-                <select className="w-full h-12 bg-background border-none rounded-lg px-4 text-sm font-bold focus:ring-2 focus:ring-amber-500/20" value={form.paymentMethod} onChange={e => setForm({...form, paymentMethod: e.target.value})}>
+                <Select value={form.paymentMethod} onChange={e => setForm({...form, paymentMethod: e.target.value})}>
                   <option>Tunai</option>
                   <option>BCA</option>
                   <option>Mandiri</option>
-                </select>
+                </Select>
              </div>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-100 tracking-widest">Kategori Akun</label>
-            <select className="w-full h-12 bg-background border-none rounded-lg px-4 text-sm font-bold focus:ring-2 focus:ring-amber-500/20" value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+            <Select value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
               <option value="Beban Operasional">Beban Operasional Umum</option>
               <option value="Beban Gaji">Beban Gaji Pegawai</option>
               <option value="Beban Listrik & Air">Beban Listrik & Air</option>
               <option value="Beban Sewa">Beban Sewa Tempat</option>
               <option value="Beban Lainnya">Beban Lain-lain</option>
-            </select>
+            </Select>
           </div>
         </CardContent>
         <CardFooter className="p-6 border-t bg-background gap-4">
            <Button variant="ghost" className="flex-1 font-bold" onClick={onClose}>Batal</Button>
-           <Button className="flex-[2] font-black " onClick={() => onSave(form)} disabled={loading || !form.description || !form.amount}>
+           <Button variant="primary" className="flex-[2] font-black" onClick={() => onSave(form)} disabled={loading || !form.description || !form.amount}>
              {loading ? 'Menyimpan...' : 'SIMPAN PENGELUARAN'}
            </Button>
         </CardFooter>
@@ -187,7 +189,7 @@ export default function AkunPage({ user }) {
             {PERIODS.map(p => (
               <button key={p.key} onClick={() => setPeriod(p.key)}
                 className={cn('px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all',
-                  period === p.key ? 'bg-amber-500 dark:bg-amber-400 text-zinc-900 dark:text-zinc-100 shadow' : 'text-zinc-500 dark:text-zinc-100 hover:text-foreground')}>
+                  period === p.key ? 'bg-amber-500 dark:bg-amber-400 text-white dark:text-zinc-900 shadow' : 'text-zinc-500 dark:text-zinc-100 hover:text-foreground')}>
                 {p.label}
               </button>
             ))}
@@ -198,7 +200,7 @@ export default function AkunPage({ user }) {
           <Button variant="outline" size="sm" className="gap-2 h-8" onClick={handlePrint}>
             <Printer size={14} /> Print
           </Button>
-          <Button size="sm" className="gap-2 h-8 " onClick={() => setShowExpenseModal(true)}>
+          <Button variant="primary" size="sm" className="gap-2 h-8" onClick={() => setShowExpenseModal(true)}>
             <Plus size={14} /> Tambah Biaya
           </Button>
           <Button variant="outline" size="sm" className="gap-2 h-8" onClick={loadData}>
@@ -286,7 +288,7 @@ export default function AkunPage({ user }) {
                         <div className="flex justify-between font-black border-t pt-2"><span>TOTAL LIABILITAS</span><span className="text-destructive">{fmt(bs.liabilities?.total)}</span></div>
                       </div>
                     </div>
-                    <div className="p-4 bg-amber- border border-amber-500/20 rounded-lg flex justify-between font-black">
+                    <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 rounded-lg flex justify-between font-black">
                       <span>EKUITAS (Aset - Liabilitas)</span>
                       <span className="text-amber-600 dark:text-amber-400">{fmt((bs.assets?.total || 0) - (bs.liabilities?.total || 0))}</span>
                     </div>
@@ -321,13 +323,13 @@ export default function AkunPage({ user }) {
           {tab === 'ledger' && (
             <div className="space-y-4">
               <div className="flex gap-4 items-center">
-                <input
-                  className="h-10 flex-1 max-w-sm rounded-lg border bg-card px-4 text-sm outline-none focus:ring-2 focus:ring-amber-500/20/30"
+                <Input
+                  className="flex-1 max-w-sm"
                   placeholder="Cari referensi atau deskripsi jurnal..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
-                <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase">{filteredJournals.length} entri jurnal</p>
+                <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tabular-nums">{filteredJournals.length} entri jurnal</p>
               </div>
 
               <Card className="border-none shadow-xl bg-card overflow-hidden">

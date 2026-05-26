@@ -35,7 +35,7 @@ export default function ConsolidatedFinancePage() {
   const balanceData = summary?.balanceSheet || {};
 
   const metrics = [
-    { label: 'Consolidated Revenue', val: incomeStats.revenue || 0, trend: '+0.0%', icon: Globe, color: 'text-amber-500', bg: 'bg-amber-' },
+    { label: 'Consolidated Revenue', val: incomeStats.revenue || 0, trend: '+0.0%', icon: Globe, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/30' },
     { label: 'Cost of Goods Sold (HPP)', val: incomeStats.hpp || 0, trend: 'Ledger', icon: Box, color: 'text-zinc-500', bg: 'bg-zinc-500/10' },
     { label: 'Total Operating Cost', val: incomeStats.expenses || 0, trend: 'Real-time', icon: Wallet, color: 'text-foreground', bg: 'bg-background' },
     { label: 'Estimated Net Profit', val: incomeStats.netProfit || 0, trend: `${incomeStats.grossMargin?.toFixed(1) || 0}% Margin`, icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
@@ -47,7 +47,7 @@ export default function ConsolidatedFinancePage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
            <div className="flex items-center gap-4 mb-2">
-              <span className="px-2 py-1 bg-amber- border border-amber-500/20 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Enterprise Ledger</span>
+              <span className="px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Enterprise Ledger</span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">Real-time P&L Feed</span>
@@ -154,31 +154,35 @@ export default function ConsolidatedFinancePage() {
 
             {/* Neural Insights Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <Card className="border-none ">
-                  <div className="absolute top-0 right-0 p-8  group-hover:scale-110 transition-transform duration-1000">
+               <Card className="border border-border bg-card shadow-sm group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 text-amber-500/10 group-hover:scale-110 transition-transform duration-1000">
                      <Sparkles size={120} />
                   </div>
-                  <div className="space-y-2 relative z-10">
-                     <div className="inline-flex items-center gap-2 px-4 py-1 ">AI Financial Insight</div>
+                  <div className="space-y-2 relative z-10 p-8">
+                     <div className="inline-flex items-center gap-2 px-4 py-1 bg-amber-500/10 text-amber-500 rounded-lg text-[9px] font-black uppercase tracking-widest">AI Financial Insight</div>
                      <h4 className="text-2xl font-black uppercase tracking-tighter leading-none">Net Margin <span className="text-amber-500">Anomaly</span></h4>
                      <p className="text-zinc-500 text-xs font-medium leading-relaxed">
                         Outlet 'Surabaya Edge' menunjukkan efisiensi operasional tertinggi. Neural model menyarankan replikasi struktur biaya logistik ke Menteng Hub.
                      </p>
                   </div>
-                  <Button className="w-full h-14 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800">REPLICATE STRATEGY</Button>
+                  <div className="p-8 pt-0 relative z-10">
+                     <Button variant="primary" className="w-full h-14 font-black uppercase tracking-widest text-[10px]">REPLICATE STRATEGY</Button>
+                  </div>
                </Card>
-               <Card className="border-none ">
-                  <div className="absolute top-0 right-0 p-8  group-hover:rotate-12 transition-transform duration-1000">
+               <Card className="border border-border bg-card shadow-sm group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 text-emerald-500/10 group-hover:rotate-12 transition-transform duration-1000">
                      <Landmark size={120} />
                   </div>
-                  <div className="space-y-2 relative z-10">
-                     <div className="inline-flex items-center gap-2 px-4 py-1 ">Tax & Compliance</div>
-                     <h4 className="text-2xl font-black uppercase tracking-tighter leading-none">Fiscal <span className="italic  underline">Readiness</span></h4>
-                     <p className="text-zinc-900 text-xs font-bold leading-relaxed uppercase ">
+                  <div className="space-y-2 relative z-10 p-8">
+                     <div className="inline-flex items-center gap-2 px-4 py-1 bg-emerald-500/10 text-emerald-500 rounded-lg text-[9px] font-black uppercase tracking-widest">Tax & Compliance</div>
+                     <h4 className="text-2xl font-black uppercase tracking-tighter leading-none">Fiscal <span className="italic underline">Readiness</span></h4>
+                     <p className="text-zinc-500 dark:text-zinc-100 text-xs font-bold leading-relaxed uppercase">
                         Laporan PPN terpusat untuk seluruh outlet periode {period} siap diaudit. Total kewajiban fiskal terhitung otomatis berdasarkan regulasi terbaru.
                      </p>
                   </div>
-                  <Button className="w-full h-14 ">AUDIT REPORT</Button>
+                  <div className="p-8 pt-0 relative z-10">
+                     <Button variant="primary" className="w-full h-14 font-black uppercase tracking-widest text-[10px]">AUDIT REPORT</Button>
+                  </div>
                </Card>
             </div>
          </div>
@@ -216,24 +220,24 @@ export default function ConsolidatedFinancePage() {
                </CardContent>
             </Card>
 
-            <Card className="border-none ">
+            <Card className="border border-border bg-card shadow-sm group relative overflow-hidden">
                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-transparent" />
                <CardHeader className="p-10 pb-0 flex flex-row items-center justify-between relative z-10">
                   <div>
                     <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">Historical Trend</p>
                     <h3 className="text-2xl font-black uppercase tracking-tighter mt-1">REVENUE <span className="text-amber-500">CURVE</span></h3>
                   </div>
-                  <LineChart className="text-zinc-800 group-hover:text-amber-500 transition-colors" size={32} />
+                  <LineChart className="text-zinc-400 group-hover:text-amber-500 transition-colors" size={32} />
                </CardHeader>
                <CardContent className="p-10 pt-6 space-y-8 relative z-10">
                   <div className="flex items-end gap-4 h-32">
                      {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
-                        <div key={i} className="flex-1 ">
-                           <div className="absolute bottom-0 inset-x-0 bg-amber- group-hover/bar:" style={{ height: `${h}%` }} />
+                        <div key={i} className="flex-1 relative group/bar rounded-t-sm overflow-hidden bg-background">
+                           <div className="absolute bottom-0 inset-x-0 bg-amber-500/20 group-hover/bar:bg-amber-500 transition-colors" style={{ height: `${h}%` }} />
                         </div>
                      ))}
                   </div>
-                  <div className="flex justify-between items-center border-t border-white/5 pt-6">
+                  <div className="flex justify-between items-center border-t border-border pt-6">
                      <div>
                         <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Growth Forecast</p>
                         <p className="text-lg font-black text-emerald-600 dark:text-emerald-400 font-mono tabular-nums">+18.2%</p>

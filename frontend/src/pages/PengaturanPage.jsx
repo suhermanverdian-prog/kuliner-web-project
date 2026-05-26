@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
-import { BrainCircuit, KeyRound, Server, Sparkles, Zap, PackageOpen } from 'lucide-react';
+import { BrainCircuit, KeyRound, Server, Sparkles, Zap, PackageOpen, MapPin, Globe } from 'lucide-react';
 import { FEATURE_CATALOG, TIER_DEFAULTS, resolveFeatures } from '../lib/featureFlags';
 import { useAppStore } from '../store/useAppStore';
 
@@ -41,7 +41,7 @@ function AddUserModal({ onClose, onSave, loading }) {
         <CardHeader className="border-b pb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-lg bg-amber- flex items-center justify-center text-amber-600 dark:text-amber-400">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
                 <Plus size={24} strokeWidth={3} />
               </div>
               <div>
@@ -141,7 +141,7 @@ function AddUserModal({ onClose, onSave, loading }) {
         </CardContent>
         <CardFooter className="border-t bg-background p-6 gap-4">
           <Button variant="ghost" className="flex-1 h-12 rounded-lg font-bold" onClick={onClose} disabled={loading || uploading}>Batal</Button>
-          <Button className="flex-[2] h-12 rounded-lg font-black " onClick={() => onSave(form)} disabled={loading || uploading}>
+          <Button variant="primary" className="flex-[2] h-12 rounded-lg font-black" onClick={() => onSave(form)} disabled={loading || uploading}>
             {loading ? <RefreshCw className="animate-spin mr-2" /> : null}
             {loading ? 'MENYIMPAN...' : 'DAFTARKAN ANGGOTA'}
           </Button>
@@ -153,6 +153,7 @@ function AddUserModal({ onClose, onSave, loading }) {
 
 
 export default function PengaturanPage() {
+  const fileInputRef = useRef(null);
   const {
     user, globalUser, tenant,
     users, setUsers,
@@ -266,7 +267,7 @@ export default function PengaturanPage() {
                         onClick={() => setSelected({...u})}
                         className={cn(
                           "w-full flex items-center gap-4 p-4 rounded-lg transition-all text-left group",
-                          selected?.id === u.id ? "bg-amber- border-amber-500/20 border shadow-sm" : "hover:bg-background border border-transparent"
+                          selected?.id === u.id ? "bg-amber-50 dark:bg-amber-950/30 border-amber-500/20 border shadow-sm" : "hover:bg-background border border-transparent"
                         )}
                       >
                         <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center text-zinc-900 dark:text-zinc-100 font-bold shrink-0 shadow-sm overflow-hidden", !u.avatar_url && (ROLE_COLORS[u.role] || "bg-amber-500"))}>
@@ -381,7 +382,7 @@ export default function PengaturanPage() {
                       </div>
                     </CardContent>
                     <CardFooter className="border-t bg-background p-6 gap-4">
-                      <Button className="w-full h-12 font-black shadow-lg shadow-amber-500/20" onClick={handleSaveUser} disabled={loading}>
+                      <Button variant="primary" className="w-full h-12 font-black" onClick={handleSaveUser} disabled={loading}>
                         <Save size={18} className="mr-2" /> Simpan Profil
                       </Button>
                     </CardFooter>
@@ -414,7 +415,7 @@ export default function PengaturanPage() {
                         onClick={() => setSelectedRole(roleKey)}
                         className={cn(
                           "w-full flex items-center gap-4 p-4 rounded-lg transition-all text-left group",
-                          selectedRole === roleKey ? "bg-amber- border-amber-500/20 border shadow-sm" : "hover:bg-background border border-transparent"
+                          selectedRole === roleKey ? "bg-amber-50 dark:bg-amber-950/30 border-amber-500/20 border shadow-sm" : "hover:bg-background border border-transparent"
                         )}
                       >
                         <div className="w-10 h-10 rounded-lg flex items-center justify-center text-zinc-900 dark:text-zinc-100 font-bold shrink-0 shadow-sm overflow-hidden ">
@@ -447,7 +448,7 @@ export default function PengaturanPage() {
                     </CardHeader>
                     <CardContent className="p-8">
                       {selectedRole === 'superadmin' && (
-                        <div className="flex items-center gap-4 p-4 bg-amber- border border-amber-500/20 rounded-lg mb-8 text-amber-600 dark:text-amber-400">
+                        <div className="flex items-center gap-4 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 rounded-lg mb-8 text-amber-600 dark:text-amber-400">
                           <ShieldCheck className="shrink-0" />
                           <p className="text-sm font-bold leading-relaxed">
                             Superadmin adalah dewa dari sistem ini. Memiliki akses penuh ke seluruh modul tanpa bisa dibatasi.
@@ -475,7 +476,7 @@ export default function PengaturanPage() {
                               key={perm.key} 
                               className={cn(
                                 "flex items-center justify-between p-4 rounded-lg border transition-all",
-                                hasPerm ? "bg-amber-500 dark:bg-amber- border-amber-500/20 shadow-sm" : "bg-background "
+                                hasPerm ? "bg-amber-50 dark:bg-amber-950/30 border-amber-500/20 shadow-sm" : "bg-background "
                               )}
                             >
                               <div className="flex items-center gap-4">
@@ -495,7 +496,7 @@ export default function PengaturanPage() {
                       </div>
                     </CardContent>
                     <CardFooter className="border-t bg-background p-6 gap-4">
-                      <Button className="w-full h-12 font-black shadow-lg shadow-amber-500/20" onClick={handleSaveRolePermissions} disabled={loading || selectedRole === 'superadmin'}>
+                      <Button variant="primary" className="w-full h-12 font-black" onClick={handleSaveRolePermissions} disabled={loading || selectedRole === 'superadmin'}>
                         <Save size={18} className="mr-2" /> Simpan Hak Akses Jabatan
                       </Button>
                     </CardFooter>
@@ -522,7 +523,7 @@ export default function PengaturanPage() {
                  <h3 className="text-xl font-bold">Metode Pembayaran Cashless</h3>
                  <p className="text-sm text-zinc-500 dark:text-zinc-100">Atur rekening bank dan QRIS perusahaan untuk menerima pembayaran non-tunai.</p>
               </div>
-              <Button className="font-black " onClick={() => setShowAddPayment(true)}>
+              <Button variant="primary" className="font-black" onClick={() => setShowAddPayment(true)}>
                  <Plus size={18} className="mr-2" /> Tambah Rekening
               </Button>
            </div>
@@ -671,7 +672,7 @@ export default function PengaturanPage() {
                    </CardContent>
                    <CardFooter className="border-t p-6 gap-4">
                       <Button variant="ghost" className="flex-1 font-bold rounded-lg" onClick={() => { setShowAddPayment(false); setEditingPayment(null); }}>Batal</Button>
-                      <Button className="flex-[2] font-black " onClick={async () => {
+                      <Button variant="primary" className="flex-[2] font-black" onClick={async () => {
                          try {
                             if (editingPayment) {
                                await api.updatePaymentMethods(editingPayment);
@@ -760,14 +761,14 @@ export default function PengaturanPage() {
                   {['Midtrans', 'Xendit', 'Doku'].map(gw => (
                     <div key={gw} className="p-4 rounded-lg border border-dashed flex flex-col items-center justify-center gap-2  grayscale hover:grayscale-0 transition-all cursor-not-allowed group">
                       <p className="text-xs font-black uppercase tracking-tighter">{gw}</p>
-                      <span className="text-white font-black bg-amber- text-white px-1.5 py-0.5 rounded-lg uppercase group-hover:">Segera</span>
+                      <span className="text-white font-black bg-amber-500 px-1.5 py-0.5 rounded-lg uppercase group-hover:">Segera</span>
                     </div>
                   ))}
                 </div>
               </div>
             </CardContent>
             <CardFooter className="border-t bg-background p-6">
-              <Button className="w-full h-12 font-black " onClick={handleSaveSettings} disabled={savingSettings}>
+              <Button className="w-full h-12 font-black bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95" onClick={handleSaveSettings} disabled={savingSettings}>
                 {savingSettings ? 'Menyimpan...' : 'Simpan Konfigurasi'}
               </Button>
             </CardFooter>
@@ -915,7 +916,7 @@ export default function PengaturanPage() {
               </div>
             </CardContent>
             <CardFooter className="border-t bg-background p-6">
-              <Button className="w-full h-12 font-black " onClick={async () => {
+              <Button className="w-full h-12 font-black bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95" onClick={async () => {
                 try {
                   setSavingSettings(true);
                   await api.saveSettings(settings);
@@ -983,12 +984,12 @@ export default function PengaturanPage() {
            {(!user?.tier || user?.tier === 'lite') && (
               <div className="absolute inset-0 z-50 bg-background/60 backdrop-blur-[2px] flex items-center justify-center rounded-lg">
                  <Card className="max-w-md p-10 text-center shadow-2xl border-2 border-amber-500 dark:border-amber-400 animate-in zoom-in-95">
-                    <div className="w-20 h-20 bg-amber- text-amber-600 dark:text-amber-400 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <div className="w-20 h-20 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-lg flex items-center justify-center mx-auto mb-6">
                        <Shield size={40} />
                     </div>
                     <h3 className="text-2xl font-black mb-2">Buka Fitur Omnichannel</h3>
                     <p className="text-sm text-zinc-500 dark:text-zinc-100 mb-8">Hubungkan GoFood, GrabFood, dan ShopeeFood langsung ke KDS Anda. Fitur ini tersedia untuk paket **PRO**.</p>
-                    <Button className="w-full h-14 ">
+                    <Button className="w-full h-14 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95">
                        Upgrade ke Paket PRO
                     </Button>
                     <p className="mt-4 text-[10px] uppercase font-bold text-zinc-500 dark:text-zinc-100 tracking-widest cursor-pointer hover:text-amber-600 dark:text-amber-400">Lihat Perbandingan Paket</p>
@@ -1098,7 +1099,7 @@ export default function PengaturanPage() {
                          className={cn(
                            "p-4 rounded-2xl border-2 transition-all flex items-start gap-4",
                            !isAllowed ? "opacity-50 grayscale bg-muted border-muted" : 
-                           isTurnedOn ? "bg-amber- border-amber-500/30 shadow-sm" : "bg-background border-border"
+                           isTurnedOn ? "bg-amber-50 dark:bg-amber-950/30 border-amber-500/30 shadow-sm" : "bg-background border-border"
                          )}
                        >
                          <div className="text-3xl shrink-0">{feature.icon}</div>
@@ -1173,7 +1174,7 @@ export default function PengaturanPage() {
                 <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100">Status Engine:</span>
                 <span className={cn(
                   "px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1",
-                  aiConfig.isEnabled && aiConfig.apiKey ? "bg-amber- text-amber-600 dark:text-amber-400" : "bg-destructive/20 text-destructive"
+                  aiConfig.isEnabled && aiConfig.apiKey ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400" : "bg-destructive/20 text-destructive"
                 )}>
                   {aiConfig.isEnabled && aiConfig.apiKey ? <><CheckCircle2 size={12}/> AKTIF</> : <><AlertCircle size={12}/> NONAKTIF</>}
                 </span>
@@ -1181,7 +1182,7 @@ export default function PengaturanPage() {
             </div>
           </CardHeader>
           <CardContent className="p-8 space-y-8">
-            <div className="p-4 rounded-lg bg-amber- border border-amber-500/20 flex gap-4">
+            <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 flex gap-4">
               <KeyRound className="text-amber-600 shrink-0 mt-1" />
               <div className="space-y-1">
                 <h4 className="font-bold text-amber-700">Keamanan API Key Anda Terjamin</h4>
@@ -1207,7 +1208,7 @@ export default function PengaturanPage() {
                       className={cn(
                         "p-6 rounded-lg border-2 transition-all flex flex-col items-center gap-4 group relative overflow-hidden",
                         aiConfig.provider === p.id 
-                          ? "border-amber-500 bg-amber- shadow-[0_0_20px_rgba(245,158,11,0.1)]" 
+                          ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30 shadow-[0_0_20px_rgba(245,158,11,0.1)]" 
                           : "border-border bg-background hover:border-amber-500/50 hover:bg-background"
                       )}
                     >
@@ -1281,7 +1282,7 @@ export default function PengaturanPage() {
             </div>
           </CardContent>
           <CardFooter className="">
-            <Button className="h-16 px-10 font-black " onClick={handleSaveSettings}>
+            <Button className="h-16 px-10 font-black bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95" onClick={handleSaveSettings}>
               {savingSettings ? <RefreshCw className="animate-spin" /> : <Save size={24} strokeWidth={3} />}
               SIMPAN PENGATURAN AI
             </Button>
@@ -1306,7 +1307,7 @@ export default function PengaturanPage() {
             
             <div className={cn(
               "w-12 h-12 rounded-lg flex items-center justify-center shadow-lg",
-              toast.type === 'success' ? "bg-amber- text-amber-500" : "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400"
+              toast.type === 'success' ? "bg-amber-50 dark:bg-amber-950/30 text-amber-500" : "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400"
             )}>
               {toast.type === 'success' ? <CheckCircle2 size={24} strokeWidth={3} /> : <AlertCircle size={24} strokeWidth={3} />}
             </div>

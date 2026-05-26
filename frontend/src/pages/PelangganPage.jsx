@@ -15,7 +15,7 @@ import { cn } from "../lib/utils";
 import { usePelangganPage } from '../hooks/usePelangganPage';
 
 const STATUS_BADGE = {
-  vip: { bg: 'bg-amber-', text: 'text-amber-600', label: 'VIP', icon: Crown },
+  vip: { bg: 'bg-amber-50 dark:bg-amber-950/30', text: 'text-amber-600 dark:text-amber-400', label: 'VIP', icon: Crown },
   member: { bg: 'bg-emerald-50 dark:bg-emerald-950/30', text: 'text-emerald-600', label: 'MEMBER', icon: UserPlus },
   guest: { bg: 'bg-amber-500/10', text: 'text-primary', label: 'GUEST', icon: Users },
 };
@@ -50,7 +50,7 @@ export default function PelangganPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
            <div className="flex items-center gap-4 mb-2">
-              <span className="px-2 py-1 bg-amber- border border-amber-500/20 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Predictive CRM</span>
+              <span className="px-2 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 rounded text-[9px] font-black text-amber-500 uppercase tracking-widest">Predictive CRM</span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">AI Analysis Online</span>
@@ -59,7 +59,7 @@ export default function PelangganPage() {
            <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">CRM & LOYALTY <span className="text-amber-500 italic">COCKPIT</span></h2>
            <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium">Data-driven behavioral analytics & automated engagement engine.</p>
         </div>
-        <Button size="lg" className="h-14 px-10 font-black gap-4 " onClick={() => setShowAddModal(true)}>
+        <Button variant="primary" size="lg" className="h-14 px-10 font-black gap-4" onClick={() => setShowAddModal(true)}>
           <UserPlus size={20} strokeWidth={3} /> REGISTRASI MEMBER
         </Button>
       </div>
@@ -68,9 +68,9 @@ export default function PelangganPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Market Reach', val: customers.length, sub: 'Global Entities', icon: Globe, color: 'text-foreground', bg: 'bg-background' },
-          { label: 'Active Retention', val: `${((totalMembers/customers.length)*100).toFixed(1)}%`, sub: 'Member Conversion', icon: Target, color: 'text-amber-500', bg: 'bg-amber-' },
+          { label: 'Active Retention', val: `${((totalMembers/customers.length)*100).toFixed(1)}%`, sub: 'Member Conversion', icon: Target, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/30' },
           { label: 'VIP Network', val: vipCount, sub: 'Top Tier Spenders', icon: Crown, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
-          { label: 'Loyalty Points', val: totalPoints.toLocaleString('id-ID'), sub: 'Redeemable Assets', icon: Gift, color: 'text-amber-600', bg: 'bg-amber-' },
+          { label: 'Loyalty Points', val: totalPoints.toLocaleString('id-ID'), sub: 'Redeemable Assets', icon: Gift, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-950/30' },
         ].map((s, i) => (
           <Card key={i} className="group border-none bg-card shadow-sm hover:shadow-md transition-all rounded-lg overflow-hidden">
             <CardContent className="p-8 flex items-center justify-between">
@@ -152,7 +152,7 @@ export default function PelangganPage() {
                    </thead>
                    <tbody className="divide-y divide-border">
                       {filtered.map(c => (
-                        <tr key={c.id} className={cn("hover:bg-background transition-all group cursor-pointer", selected?.id === c.id && "bg-amber-")} onClick={() => setSelected(c)}>
+                        <tr key={c.id} className={cn("hover:bg-background transition-all group cursor-pointer", selected?.id === c.id && "bg-amber-50 dark:bg-amber-950/30")} onClick={() => setSelected(c)}>
                            <td className="px-10 py-8">
                               <div className="flex items-center gap-4">
                                   <div className="w-14 h-14 rounded-lg bg-background flex items-center justify-center text-white font-black group-hover:scale-110 group-hover:">
@@ -190,14 +190,14 @@ export default function PelangganPage() {
                               <div className={cn(
                                 "inline-flex items-center gap-2 px-4 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border",
                                 c.churnRisk === 'Low' ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-200 dark:border-emerald-800" : 
-                                (c.churnRisk === 'Medium' ? "bg-amber- text-amber-600 border-amber-500/20" : "bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800")
+                                (c.churnRisk === 'Medium' ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-500/20" : "bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800")
                               )}>
                                  <div className={cn("w-1.5 h-1.5 rounded-lg", c.churnRisk === 'Low' ? "bg-emerald-500" : (c.churnRisk === 'Medium' ? "bg-amber-500" : "bg-rose-500 animate-pulse"))} />
                                  {c.churnRisk} Risk
                               </div>
                            </td>
                            <td className="px-10 py-8 text-right">
-                              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg text-white hover:">
+                              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg text-amber-600 dark:text-amber-400 hover:bg-amber-500/10">
                                  <ChevronRight size={20} />
                               </Button>
                            </td>
@@ -239,7 +239,7 @@ export default function PelangganPage() {
                          <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-[0.2em]">LTV (Lifetime Value)</p>
                          <p className="text-lg font-black text-foreground font-mono tabular-nums">{formatRupiah(selected.totalSpend)}</p>
                       </div>
-                      <div className="p-4 bg-amber- rounded-lg space-y-1 border border-amber-500/10">
+                      <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg space-y-1 border border-amber-500/10">
                          <p className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em]">Reward Assets</p>
                          <p className="text-lg font-black text-amber-500 flex items-center gap-1.5 font-mono tabular-nums"><Star size={16} fill="currentColor" /> {selected.points}</p>
                       </div>
@@ -252,7 +252,7 @@ export default function PelangganPage() {
                       </p>
                       <div className="flex flex-wrap gap-2">
                          <div className="px-4 py-2 bg-background rounded-lg text-[10px] font-black uppercase text-foreground border border-border">Loyal Customer</div>
-                         <div className="px-4 py-2 bg-amber- rounded-lg text-[10px] font-black uppercase text-amber-500 border border-amber-500/20">High Ticket Spender</div>
+                         <div className="px-4 py-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-[10px] font-black uppercase text-amber-500 border border-amber-500/20">High Ticket Spender</div>
                          <div className="px-4 py-2 bg-background rounded-lg text-[10px] font-black uppercase text-foreground border border-border">Morning Regular</div>
                       </div>
                    </div>
@@ -281,7 +281,7 @@ export default function PelangganPage() {
                         <p className="text-[10px] font-black uppercase tracking-widest ">Recommended AI Action</p>
                         <p className="text-sm font-black mt-1 leading-tight uppercase">Kirim Promo "Personalized Reserve" untuk meningkatkan kunjungan minggu ini.</p>
                       </div>
-                      <Button className="w-full h-12 ">
+                      <Button variant="primary" className="w-full h-12">
                          EKSEKUSI PROMO SEKARANG
                       </Button>
                    </div>
@@ -325,7 +325,7 @@ export default function PelangganPage() {
                  </div>
               </CardContent>
               <CardFooter className="p-10 bg-background border-t border-border flex flex-col gap-4">
-                 <Button className="w-full h-14 font-black uppercase tracking-[0.3em] text-white " onClick={handleAdd}>AKTIFKAN MEMBER</Button>
+                 <Button variant="primary" className="w-full h-14 font-black uppercase tracking-[0.3em]" onClick={handleAdd}>AKTIFKAN MEMBER</Button>
                  <Button variant="ghost" className="w-full h-10 font-black uppercase tracking-widest text-[9px] text-zinc-500 dark:text-zinc-100" onClick={() => setShowAddModal(false)}>BATALKAN</Button>
               </CardFooter>
            </Card>

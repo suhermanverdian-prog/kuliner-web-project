@@ -35,7 +35,7 @@ export default function LaporanHRDPage({ user }) {
            <Button variant="outline" className="rounded-lg font-bold border-amber-500 dark:border-amber-400 text-amber-600 dark:text-amber-400">
               <Download size={16} className="mr-2" /> Slip Gaji Massal
            </Button>
-           <Button className="">
+           <Button className="bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95">
               <UserPlus size={16} className="mr-2" /> Rekrut Pegawai
            </Button>
         </div>
@@ -82,7 +82,7 @@ export default function LaporanHRDPage({ user }) {
             {selectedEmp ? (
                <>
                   <Card className="border-none shadow-xl bg-card overflow-hidden">
-                     <CardHeader className="bg-amber- border-b border-amber-500/10">
+                     <CardHeader className="bg-amber-50 dark:bg-amber-950/30 border-b border-amber-500/10">
                         <div className="flex items-center gap-6">
                            <div className="w-16 h-16 rounded-lg ">
                               {selectedEmp.name[0].toUpperCase()}
@@ -130,7 +130,7 @@ export default function LaporanHRDPage({ user }) {
                                 onChange={e => setSalaryForm({...salaryForm, position: e.target.value})}
                               />
                            </div>
-                           <div className="p-6 bg-amber- rounded-lg border border-amber-500/10 flex items-center justify-between">
+                           <div className="p-6 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-500/10 flex items-center justify-between">
                               <div>
                                  <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">Total Take Home Pay</p>
                                  <p className="text-2xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">Rp {(salaryForm.base_salary + salaryForm.allowances).toLocaleString()}</p>
@@ -140,7 +140,7 @@ export default function LaporanHRDPage({ user }) {
                         </div>
                      </CardContent>
                      <CardFooter className="bg-background p-6 border-t">
-                        <Button className="w-full h-12 " onClick={handleSaveProfile}>
+                        <Button className="w-full h-12 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95" onClick={handleSaveProfile}>
                            Simpan Profil Gaji
                         </Button>
                      </CardFooter>
@@ -165,7 +165,7 @@ export default function LaporanHRDPage({ user }) {
                               <FileText size={18} /> Review Absensi
                            </Button>
                            <Button 
-                             className="h-14 px-10 "
+                             className="h-14 px-10 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95"
                              onClick={() => setShowPayModal(true)}
                            >
                               BAYAR GAJI <ArrowRight size={20} className="ml-2 group-hover:translate-x-2 transition-transform" />
@@ -234,7 +234,7 @@ export default function LaporanHRDPage({ user }) {
               </div>
             </CardContent>
             <CardFooter className="p-6 border-t bg-background">
-              <Button className="w-full font-black " onClick={() => setShowAttendanceModal(false)}>
+              <Button className="w-full font-black bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95" onClick={() => setShowAttendanceModal(false)}>
                 TUTUP REVIEW
               </Button>
             </CardFooter>
@@ -303,7 +303,7 @@ export default function LaporanHRDPage({ user }) {
                       </span>
                     </div>
                   </div>
-                  <div className="p-4 bg-amber- border border-amber-500/20 rounded-lg text-[11px] text-amber-700 dark:text-amber-400 font-bold leading-relaxed">
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 rounded-lg text-[11px] text-amber-700 dark:text-amber-400 font-bold leading-relaxed">
                     ⚠️ Transaksi ini akan memotong rekening kas outlet sebesar total transfer dan langsung mencatatkan mutasi debit-kredit di Buku Besar (Double-Entry).
                   </div>
                 </>
@@ -315,7 +315,7 @@ export default function LaporanHRDPage({ user }) {
                   Batal
                 </Button>
                 <Button 
-                  className="flex-[2] font-black "
+                  className="flex-[2] font-black bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95"
                   onClick={handlePaySalary}
                   disabled={payingPayroll}
                 >

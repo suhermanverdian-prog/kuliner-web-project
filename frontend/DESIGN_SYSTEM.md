@@ -1,250 +1,68 @@
-# 👑 KEN ENTERPRISE UI - DESIGN SYSTEM (V5.0)
+# 👑 KEN ENTERPRISE UI – GLOBAL DESIGN SYSTEM (Version 6.0)
 
-Dokumentasi ini adalah **Satu-satunya Sumber Kebenaran (Single Source of Truth - SSOT)** untuk standar UI/UX di proyek Coffeeshop ERP. Setiap *developer* atau desainer wajib mematuhi panduan ini.
+## 1️⃣ DESIGN FOUNDATION & THEME TOKENS
+- **All colors** are defined as CSS custom properties in `src/styles/theme.css`:
+  - `--color-background` / `--color-surface` / `--color-card`
+  - `--color-primary-bg` (`amber-500`), `--color-primary-text` (`white` in light, `zinc-900` in dark)
+  - `--color-success-bg` / `--color-error-bg` / `--color-info-bg` (emerald / rose / sky families)
+  - `--radius-card`, `--radius-button`, `--radius-modal`
+  - `--spacing-1` = 4px, `--spacing-2` = 8px, `--spacing-3` = 12px, … up to `--spacing-10` = 40px
+- **Dark mode** overrides are placed under `.dark` selector using the same variable names.
+- **Tailwind config** now only contains `theme: { extend: { spacing: { ... } } }` for the 8‑px grid, no hard‑coded color classes.
 
-## 1. 🎨 The Golden Contrast Rule & Palette
-Kami menggunakan secara eksklusif **Zinc Spectrum** untuk latar belakang dan **Amber Spectrum** untuk aksen utama. **DILARANG KERAS MENGGUNAKAN HITAM PEKAT (#000000)**.
+## 2️⃣ GLOBAL UI COMPONENTS (Shadcn / Radix + Framer Motion)
+| Component | Variant(s) | Key Tokens |
+|-----------|------------|------------|
+| `Button` | `primary`, `secondary`, `ghost` | `--color-primary-bg`, `--color-primary-text`, `--radius-button`, `transition`, `active:scale-95` |
+| `Card` | – | `--color-card`, `--radius-card`, `shadow-lg` (light only) |
+| `Modal` | Desktop only | Framer‑Motion entry/exit, `--radius-modal`, backdrop blur |
+| `Sheet` | Mobile‑first Bottom‑Sheet | Drag‑snap, `--radius-modal`, smooth slide animation |
+| `Tooltip` | – | Radix UI, `--color-background`, `--color-foreground` |
+| `Input` | – | `height: var(--spacing-12)`, `border`, `focus-visible:ring-amber-500/20` |
+| `Badge` | `success`, `error`, `info` | Semantic colors, opacity `/30` in dark mode |
 
-### Mode Terang (Light Mode)
-- **Background Utama:** `bg-zinc-50` (`#fafafa`)
-- **Card / Panel:** `bg-white` (`#ffffff`)
-- **Teks Utama:** `text-zinc-900`
-- **Primary Action (Tombol):** `bg-amber-500 text-white hover:bg-amber-600`
+All components consume the CSS variables via `className="bg-[var(--color-primary-bg)] text-[var(--color-primary-text)]"` etc., guaranteeing **single‑source‑of‑truth** styling.
 
-### Mode Gelap (Dark Mode)
-- **Background Utama:** `dark:bg-zinc-900` (`#18181b`)
-- **Card / Panel:** `dark:bg-zinc-800` (`#27272a`)
-- **Teks Utama:** `dark:text-zinc-100`
-- **Primary Action (Tombol):** `dark:bg-amber-400 dark:text-zinc-900 hover:bg-amber-500`
+## 3️⃣ LAYOUT & GRID
+- **8 px grid** remains the sole spacing system (`p-2`, `p-4`, `p-6`, `gap-4`, `gap-6`).
+- **Border radius**: `--radius-card` = 8 px (`rounded-lg`), `--radius-button` = 8 px, `--radius-modal` = 16 px (`rounded-2xl`).
+- **Shadows**: Enabled only in light mode (`shadow-lg`). Dark mode uses subtle borders instead of shadows.
 
-### Semantic Status (Wajib Adaptive)
-- **Sukses:** `text-emerald-600 dark:text-emerald-400`
-- **Gagal/Error:** `text-rose-600 dark:text-rose-400`
-- **Info:** `text-sky-600 dark:text-sky-400`
+## 4️⃣ MOTION & ANIMATIONS
+- **Framer Motion** is the global animation engine.
+  - Page transitions: `initial={{ opacity:0 }}` → `animate={{ opacity:1 }}` (150 ms).
+  - Hover / focus scaling: `whileHover={{ scale:1.05 }}`.
+  - Modal & Sheet entry/exit: slide‑up / slide‑down with `duration:0.25`.
+- **No CSS‑only animations** that depend on `animate-quantum-fade` or `glass-quantum` – they have been **removed**.
 
----
+## 5️⃣ DATA VISUALIZATION
+- **Recharts** (or Chart.js) is the standard chart library.
+- All charts read colors from the CSS variables, e.g. `stroke: var(--color-primary-bg)`.
+- Dark‑mode palette uses the same variables with dark overrides (`--color-primary-bg` becomes a darker amber, grid lines use `zinc-700`).
+- Interactive features: tooltip, legend, zoom, and responsive resizing.
 
-## 2. 🛡️ Anti-Invisibility Law (Hukum ke-5)
-Dilarang menggunakan `text-white` secara statis di atas elemen yang memiliki latar belakang dinamis (misalnya `bg-card`). 
-✅ **Benar:** `className="text-zinc-900 dark:text-zinc-100"`
-❌ **Salah:** `className="text-white"` (Teks ini akan hilang saat pengguna beralih ke Light Mode).
+## 6️⃣ ACCESSIBILITY & WCAG 2.1 AA
+- Minimum contrast **4.5:1** enforced via `axe-core` CI step.
+- **Never use static `text-white`** on adaptive backgrounds – replaced by `text-[var(--color-foreground)]`.
+- All icon buttons receive `aria-label` and `role="button"`.
+- Focus ring: `focus-visible:ring-[var(--color-primary-bg)]/20`.
+- Tap targets ≥ 44 × 44 dp.
+- Keyboard navigation order is logical; `Esc` closes modals/sheets.
 
----
+## 7️⃣ DEPRECATED / REMOVED RULES
+- **Glass‑Quantum**, **Animate‑Quantum‑Fade**, **rounded‑2xl** (outside of modal), **rounded‑full**, **bg‑amber‑** incomplete classes, **border‑white/10**, **border‑amber‑500/20 on dark backgrounds** without opacity – all eliminated.
+- Any usage of `text-white` on non‑static backgrounds is now a violation.
+- `rounded‑md`, `rounded‑xl` are no longer allowed; only `rounded‑lg` (8 px) for cards/buttons and `rounded‑2xl` (16 px) for modals/sheets.
 
-## 3. 📐 The 8px Grid Law
-Semua ruang, ukuran, dan jarak (padding, margin, gap, height) harus mematuhi **kelipatan 8px**.
-- **Kecil:** `p-2` (8px)
-- **Standar:** `p-4` (16px) atau `gap-4`
-- **Besar:** `p-6` (24px)
-- **Ekstra Besar:** `p-8` (32px)
+## 8️⃣ COMPONENT LIBRARY & DISTRIBUTION
+- The UI library is published as **`@ken/ui`** to the internal npm registry.
+- Versioning follows Semantic Versioning; major bump required for any token change.
+- Documentation lives in `STYLE_GUIDE.md` and includes live Storybook examples.
 
-### Standar Border Radius
-- **Kartu/Modal Besar:** `rounded-2xl` (16px)
-- **Tombol/Input:** `rounded-lg` (8px)
-* (Jangan pernah menggunakan `rounded-md` atau `rounded-xl`).*
-
----
-
-## 4. 🧮 Tipografi Angka (Financial Precision)
-Semua nominal uang, total tagihan, harga, kuantitas stok, ID resi, dan tanggal wajib menggunakan font *monospace* agar tabel/kolom rata lurus.
-✅ **Aturan Kelas:** Selalu tambahkan `font-mono tabular-nums`.
-
----
-
-## 5. 🧪 Visual Regression Testing
-Konfigurasi `playwright.config.js` telah disiapkan untuk menguji responsivitas dan kebocoran kontras secara otomatis.
-Untuk menjalankan tes visual (*Light & Dark* secara paralel):
-```bash
-npm install -D @playwright/test
-npx playwright install --with-deps
-npx playwright test
-```
-
----
-
-# KEN Ecosystem — Complete Global UI/UX Design System (Version 1.0)
-
-## 1. DESIGN FOUNDATION
-
-### 1.1 Brand Identity
-- Enterprise‑grade
-- Premium
-- Elegant
-- Stable
-- Intelligent
-- Modern
-- Warm luxury
-- Minimalist
-
-### 1.2 Design Philosophy
-- **Functional Luxury** – mewah tetapi tetap usable.
-- **Enterprise Minimalism** – UI bersih dan profesional.
-- **Information First** – informasi penting paling menonjol.
-- **Fast Interaction** – semua workflow harus cepat.
-- **One Ecosystem** – semua divisi terasa satu produk.
-
-## 2. GLOBAL COLOR SYSTEM
-
-### 2.1 Core Palette
-#### Dark Mode
-| Role | Tailwind | HEX |
-|------|----------|-----|
-| Background | zinc-950 | #09090B |
-| Surface | zinc-900 | #18181B |
-| Elevated | zinc-800 | #27272A |
-| Border | zinc-700 | #3F3F46 |
-| Text Primary | zinc-100 | #F4F4F5 |
-| Text Secondary | zinc-400 | #A1A1AA |
-| Text Muted | zinc-500 | #71717A |
-
-#### Light Mode
-| Role | Tailwind | HEX |
-|------|----------|-----|
-| Background | zinc-50 | #FAFAFA |
-| Surface | white | #FFFFFF |
-| Elevated | zinc-100 | #F4F4F5 |
-| Border | zinc-200 | #E4E4E7 |
-| Text Primary | zinc-900 | #18181B |
-| Text Secondary | zinc-600 | #52525B |
-| Text Muted | zinc-500 | #71717A |
-
-### 2.2 Accent Palette
-| Purpose | Tailwind | HEX |
-|---------|----------|-----|
-| Primary Gold | amber-600 | #D97706 |
-| Soft Gold | amber-500 | #F59E0B |
-| Hover Gold | amber-400 | #FBBF24 |
-| Copper | orange-700 | #C2410C |
-| Success | green-600 | #16A34A |
-| Danger | red-600 | #DC2626 |
-| Warning | yellow-600 | #CA8A04 |
-| Info | blue-600 | #2563EB |
-
-## 3. TYPOGRAPHY SYSTEM
-
-### 3.1 Font Pairing (Standard Mutlak)
-- **Serif** (branding, hero, menu, titles): **Playfair Display**
-- **Sans Serif** (dashboard, tables, forms, navigation, buttons): **Inter**
-- **Monospace** (numbers, IDs, currency, dates): **JetBrains Mono** (wajib dengan kelas `font-mono tabular-nums`)
-
-### 3.2 Typography Scale
-| Token | Size (px) | Weight |
-|-------|-----------|--------|
-| Display XL | 48 | Bold |
-| Display | 40 | Bold |
-| H1 | 32 | SemiBold |
-| H2 | 28 | SemiBold |
-| H3 | 24 | Medium |
-| H4 | 20 | Medium |
-| Body Large | 18 | Regular |
-| Body | 16 | Regular |
-| Small | 14 | Regular |
-| Caption | 12 | Medium |
-
-### 3.3 Typography Rules
-- Headings: max 2 font‑weight levels, adequate spacing, avoid excessive uppercase.
-- Body: line‑height 150‑170 %, max 2 text colors.
-- Tables: minimum 14 px, numbers right‑aligned, use `tabular‑nums`.
-
-## 4. SPACING SYSTEM
-
-### 4.1 8pt Grid (multiples of 8 px)
-| Token | Value (px) |
-|-------|------------|
-| 1 | 4 |
-| 2 | 8 |
-| 3 | 12 |
-| 4 | 16 |
-| 5 | 20 |
-| 6 | 24 |
-| 8 | 32 |
-| 10 | 40 |
-| 12 | 48 |
-| 16 | 64 |
-
-### 4.2 Layout Rules
-- **Desktop**: Sidebar 260‑280 px, content padding 24‑32 px, max width 1440 px.
-- **Tablet**: Padding 20 px.
-- **Mobile**: Padding 16‑20 px.
-
-## 5. RADIUS SYSTEM
-| Usage | Radius (px) |
-|-------|------------|
-| Small | 10 |
-| Medium | 14 |
-| Large | 20 |
-| XL | 24 |
-| XXL | 28 |
-| Pill | 9999 |
-
-## 6. SHADOW SYSTEM
-- **Light Mode**: Soft – `0 2px 8px rgba(0,0,0,0.06)`; Medium – `0 8px 24px rgba(0,0,0,0.08)`.
-- **Dark Mode**: Soft – `0 2px 8px rgba(0,0,0,0.30)`; Medium – `0 8px 24px rgba(0,0,0,0.35)`.
-
-## 7. GLOBAL COMPONENT RULES
-
-### 7.1 Cards
-- Radius: 24 px, Padding: 16‑24 px, Subtle border, low elevation, soft shadow.
-
-### 7.2 Buttons
-- **Primary**: `bg-amber-600 text-zinc-950` (height 48‑56 px, radius 16 px).
-- **Secondary**: outline, amber border.
-- **Ghost**: no border, subtle hover.
-- Icons optional, hover subtle, loading state mandatory.
-
-### 7.3 Input Fields
-- Height 48 px, radius 14 px, 1 px border, `px-4` horizontal padding.
-- States: default subtle border, focus amber outline, error red border, disabled muted surface.
-
-### 7.4 Tables
-- Row height 52‑64 px, header medium weight, padding 16 px.
-- Desktop: sticky header, sortable, searchable.
-- Mobile: horizontal scroll, card transform.
-
-### 7.5 Modals
-- Radius 28 px, max‑width 720 px, backdrop blur.
-
-### 7.6 Bottom Sheet (Mobile only)
-- Rounded top 28 px, draggable, snap heights, smooth animation.
-
-## 8. NAVIGATION SYSTEM
-- **Sidebar**: width 260‑280 px, active amber accent, hover subtle surface.
-- **Topbar**: height 64‑72 px, search width 320‑420 px.
-- **Bottom Navbar**: max 5 items, active amber, inactive muted.
-
-## 9. MOTION SYSTEM
-- Durations: Fast 150 ms, Normal 250 ms, Slow 350 ms.
-- Animations: subtle, smooth, meaningful; no excessive bouncing.
-
-## 10. DATA VISUALIZATION
-- Charts: line, bar, donut, area.
-- Max colors 4, subtle gridlines, clean tooltip, minimal legend.
-
-## 11. RESPONSIVE SYSTEM
-- Breakpoints: Mobile <640 px, Tablet 640‑1024 px, Desktop 1024‑1440 px, Wide >1440 px.
-- Mobile: single column, sticky CTA, bottom sheet preferred.
-- Tablet: adaptive grid, collapsible sidebar.
-- Desktop: multi‑column, persistent sidebar.
-
-## 12. ACCESSIBILITY RULES
-- WCAG AA contrast minimum.
-- Click area minimum 44 × 44 px.
-- Keyboard navigation: tab, enter submit, esc close.
-
-## 13. GLOBAL UX RULES
-- DO: clear hierarchy, ample whitespace, reusable components, responsive‑first, loading states.
-- DON'T: overcrowding, excessive colors, random icons, too many fonts, harsh shadows.
-
-## 14. DIVISION‑SPECIFIC FOCUS
-- **Customer App**: visual heavy, emotional, product‑first.
-- **POS / Cashier**: speed, large touch targets, minimal steps.
-- **Kitchen Display**: readability, urgency, status visibility.
-- **Inventory**: dense data, table efficiency, scanning workflow.
-- **Finance**: structured data, clean tables, chart clarity.
-- **HR Management**: employee data, timeline, approval workflow.
-- **CRM & Marketing**: engagement, campaign visibility, loyalty tracking.
-- **Analytics**: chart priority, comparison, KPI visibility.
+## 9️⃣ CONTINUOUS INTEGRATION
+- **Lint**: Tailwind‑lint + ESLint (React, TypeScript).
+- **Tests**: Unit tests (Jest + React Testing Library), visual regression (Storybook + Chromatic), accessibility audit (`npm run lint:axe`).
+- **CI/CD** runs on every push; any rule violation blocks the pipeline.
 
 ---
-
-*All the above rules are now incorporated into the unified **KEN Enterprise Design System** and must be treated as absolute, immutable law for any future development.*
+*All developers must conform to these updated global UI/UX rules. Any deviation must be approved through a design‑review ticket.*

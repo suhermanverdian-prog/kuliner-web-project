@@ -94,7 +94,7 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 font-mono tabular-nums bg-black/50">
-      <Card className="w-full max-w-lg shadow-2xl border border-white/10 rounded-lg overflow-hidden glass-quantum quantum-noise flex flex-col max-h-[90vh]">
+      <Card className="w-full max-w-lg border border-border rounded-lg overflow-hidden bg-card flex flex-col max-h-[90vh]">
         <CardHeader className="p-6 border-b border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -132,7 +132,7 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
                   <span className="absolute left-8 top-1/2 -translate-y-1/2 text-2xl font-black text-zinc-600 dark:text-zinc-300 group-focus-within:text-amber-500 transition-colors">Rp</span>
                   <input
                     type="text"
-                    className="w-full h-20 text-3xl text-right pr-6 font-mono tabular-nums font-black bg-white dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:border-amber-500 dark:text-white transition-colors"
+                    className="w-full h-20 text-3xl text-right pr-6 font-mono tabular-nums font-black bg-card border border-border rounded-lg focus:outline-none focus:border-amber-500 text-foreground transition-colors"
                     value={cashNum > 0 ? cashNum.toLocaleString('id-ID') : ''}
                     onChange={e => setCashReceived(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder="0"
@@ -180,8 +180,8 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
           )}
         </CardContent>
         <CardFooter className="p-8 border-t border-border bg-background gap-4">
-          <Button variant="ghost" className="h-14 flex-1 font-bold rounded-lg" onClick={onClose}>Batalkan</Button>
-          <Button className={cn("h-14 flex-[2] text-lg font-black rounded-lg shadow-2xl", !isReadyToPay ? "" : "bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900")} disabled={!isReadyToPay || loading} onClick={handleConfirm}>
+          <Button variant="ghost" className="h-14 flex-1 font-bold rounded-lg border border-border text-foreground bg-card" onClick={onClose}>Batalkan</Button>
+          <Button className={cn("h-14 flex-[2] text-lg font-black rounded-lg", !isReadyToPay ? "" : "bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900")} disabled={!isReadyToPay || loading} onClick={handleConfirm}>
             {loading ? 'Menyelesaikan...' : 'Selesaikan Transaksi'}
           </Button>
         </CardFooter>
@@ -267,7 +267,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50">
-      <Card className="w-full max-w-5xl shadow-2xl border border-white/10 rounded-lg overflow-hidden flex flex-col md:flex-row h-full max-h-[85vh] glass-quantum quantum-noise">
+      <Card className="w-full max-w-5xl shadow-2xl border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col md:flex-row h-full max-h-[85vh] bg-card">
         <div className="w-full md:w-[320px] p-6 bg-zinc-50 dark:bg-zinc-900 border-r border-border flex flex-col">
           <h3 className="text-lg font-black mb-4 text-zinc-900 dark:text-zinc-50">Detail Tagihan</h3>
           <div className="flex-1 space-y-3 overflow-y-auto pr-2 custom-scrollbar">
@@ -288,7 +288,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
           </div>
         </div>
 
-        <div className="flex-1 p-6 space-y-5 overflow-y-auto custom-scrollbar flex flex-col justify-between bg-white dark:bg-zinc-800">
+        <div className="flex-1 p-6 space-y-5 overflow-y-auto custom-scrollbar flex flex-col justify-between bg-card dark:bg-zinc-800">
           <div className="space-y-3">
             <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Tipe Pelayanan</h4>
             <div className="grid grid-cols-2 gap-4">
@@ -348,13 +348,13 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                   type="number"
                   value={cashReceived}
                   onChange={e => setCashReceived(e.target.value)}
-                  className="w-full h-12 px-4 text-xl font-black font-mono tabular-nums bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-zinc-900 dark:text-zinc-50 placeholder-zinc-400 dark:placeholder-zinc-600 text-right"
+                  className="w-full h-12 px-4 text-xl font-black font-mono tabular-nums bg-card dark:bg-zinc-800 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground placeholder-zinc-400 dark:placeholder-zinc-600 text-right"
                   placeholder="0"
                 />
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400 text-right block">Kembalian</label>
-                <div className="h-12 flex items-center justify-end px-4 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg font-black text-xl font-mono tabular-nums text-amber-600 dark:text-amber-400">
+                <div className="h-12 flex items-center justify-end px-4 bg-card dark:bg-zinc-800 border border-border rounded-lg font-black text-xl font-mono tabular-nums text-amber-600 dark:text-amber-400">
                   {changeAmount >= 0 ? formatRupiah(changeAmount) : 'Rp 0'}
                 </div>
               </div>
@@ -427,13 +427,13 @@ export default function KasirPage({ user }) {
   if (loading) return <div className="p-8 max-w-7xl mx-auto w-full"><KasirSkeleton /></div>;
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-10 animate-quantum-fade quantum-noise relative">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-8 animate-in fade-in duration-500 relative">
       {!isOnline && <div className="absolute top-0 left-0 right-0 z-[60] bg-rose-600 text-white p-2 text-center text-[10px] font-black uppercase">Offline Mode Active</div>}
 
       {!activeShift && (
         <div className="absolute inset-0 z-[50] flex items-center justify-center bg-zinc-950/60 backdrop-blur-md rounded-lg m-1">
-          <Card className="max-w-sm w-full text-center p-6 space-y-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl">
-            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-400 mx-auto">
+          <Card className="max-w-sm w-full text-center p-6 space-y-6 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-card shadow-none">
+            <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-400 mx-auto">
               <Lock size={32} />
             </div>
             <div>
@@ -452,7 +452,7 @@ export default function KasirPage({ user }) {
           <div className="relative group">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-amber-500 transition-colors" size={20} />
             <Input 
-              className="pl-14 h-14 rounded-lg border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 placeholder:text-zinc-400 focus-visible:ring-amber-500/20 shadow-sm font-bold text-base" 
+              className="pl-14 h-14 rounded-lg border border-border bg-card dark:bg-zinc-900 text-foreground placeholder:text-zinc-400 focus-visible:ring-amber-500/20 shadow-sm font-bold text-base" 
               placeholder="Cari menu terbaik Anda..." 
               value={search} 
               onChange={e => setSearch(e.target.value)} 
@@ -467,7 +467,7 @@ export default function KasirPage({ user }) {
                   "px-4 h-8 rounded-lg text-[10px] font-bold uppercase border transition-all whitespace-nowrap", 
                   category === c 
                     ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent shadow-sm font-black" 
-                    : "bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    : "bg-card dark:bg-zinc-900 border-border text-foreground hover:bg-zinc-50 dark:hover:bg-zinc-800"
                 )}
               >
                 {c}
@@ -478,7 +478,7 @@ export default function KasirPage({ user }) {
 
         <div className="flex-1 overflow-y-auto pr-4 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 content-start pb-20 custom-scrollbar">
           {filteredMenus.map(item => (
-            <div key={item.id} className="group cursor-pointer bg-white dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-amber-500/50 hover:shadow-md transition-all duration-300 flex flex-col h-[220px] overflow-hidden relative" onClick={() => addToCart(item)}>
+            <div key={item.id} className="group cursor-pointer bg-card dark:bg-zinc-900 rounded-lg border border-border shadow-sm hover:border-amber-500/50 hover:shadow-md active:scale-[0.98] transition-all duration-300 flex flex-col h-[220px] overflow-hidden relative" onClick={() => addToCart(item)}>
               <div className="w-full h-[140px] bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center overflow-hidden relative shrink-0 border-b border-zinc-100 dark:border-zinc-800">
                 <img
                   src={getImgUrl(item.image) || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1000&auto=format&fit=crop'}
@@ -487,7 +487,7 @@ export default function KasirPage({ user }) {
                   onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1000&auto=format&fit=crop'; }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="absolute top-3 right-3 w-7 h-7 rounded-md bg-white/90 dark:bg-zinc-900/90 backdrop-blur shadow-md text-amber-500 border border-white/20 transform translate-x-12 group-hover:translate-x-0 transition-all duration-300 flex items-center justify-center"><Plus size={14} className="stroke-2" /></div>
+                <div className="absolute top-3 right-3 w-7 h-7 rounded-md bg-card/90 dark:bg-zinc-900/90 backdrop-blur shadow-md text-amber-500 border border-card/20 transform translate-x-12 group-hover:translate-x-0 transition-all duration-300 flex items-center justify-center"><Plus size={14} className="stroke-2" /></div>
               </div>
               <div className="h-[80px] px-4 py-3 flex flex-col justify-between shrink-0">
                 <h3 className="font-bold text-[13px] leading-tight text-zinc-900 dark:text-zinc-50 line-clamp-2">{item.name}</h3>
@@ -506,7 +506,7 @@ export default function KasirPage({ user }) {
             className="w-full h-16 rounded-lg bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-xl shadow-amber-500/20 dark:shadow-amber-400/10"
           >
             <div className="flex items-center gap-4">
-              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center font-bold">
+              <div className="w-8 h-8 bg-card/20 rounded-lg flex items-center justify-center font-bold">
                 {cartItemCount}
               </div>
               <span className="font-black uppercase text-sm tracking-widest">Pesanan</span>
@@ -528,8 +528,8 @@ export default function KasirPage({ user }) {
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm lg:hidden" onClick={() => setIsCartOpenMobile(false)} />
 
         <Card className={cn(
-          "flex-1 flex flex-col overflow-hidden shadow-2xl bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 relative",
-          "mt-auto h-[90vh] rounded-t-2xl lg:h-full lg:rounded-2xl lg:mt-0 animate-in slide-in-from-bottom lg:animate-none"
+          "flex-1 flex flex-col overflow-hidden bg-card border-border relative",
+          "mt-auto h-[90vh] rounded-t-lg lg:h-full lg:rounded-lg lg:mt-0 animate-in slide-in-from-bottom lg:animate-none"
         )}>
           <CardHeader className="p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900 flex flex-row items-center justify-between">
             <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50">Daftar Pesanan</CardTitle>
@@ -566,9 +566,9 @@ export default function KasirPage({ user }) {
                       <p className="text-[11px] font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(item.price)}</p>
                     </div>
                     <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1 border border-zinc-200 dark:border-zinc-700">
-                      <button onClick={() => changeQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 shadow-sm hover:text-rose-500"><Minus size={12} strokeWidth={3} /></button>
+                      <button onClick={() => changeQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-card dark:bg-zinc-700 text-foreground dark:text-zinc-300 shadow-sm hover:text-rose-500"><Minus size={12} strokeWidth={3} /></button>
                       <span className="w-8 text-center text-xs font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-50">{item.qty}</span>
-                      <button onClick={() => changeQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 shadow-sm hover:text-emerald-500"><Plus size={12} strokeWidth={3} /></button>
+                      <button onClick={() => changeQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-card dark:bg-zinc-700 text-foreground dark:text-zinc-300 shadow-sm hover:text-emerald-500"><Plus size={12} strokeWidth={3} /></button>
                     </div>
                   </div>
                 ))}
@@ -610,8 +610,8 @@ export default function KasirPage({ user }) {
 
       {showSuccess && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="w-full max-w-md text-center p-12 space-y-8 rounded-2xl border-none shadow-2xl bg-white dark:bg-zinc-900">
-            <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Card className="w-full max-w-md text-center p-12 space-y-8 rounded-lg border border-border bg-card dark:bg-zinc-900">
+            <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-lg flex items-center justify-center mx-auto mb-6">
               <Check size={48} strokeWidth={4} />
             </div>
             <div>
@@ -623,7 +623,7 @@ export default function KasirPage({ user }) {
               <Button variant="outline" className="h-12 rounded-lg font-bold border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300" onClick={() => { const WinPrint = window.open('', '', 'width=900,height=650'); WinPrint.document.write(receiptRef.current.innerHTML); WinPrint.document.close(); WinPrint.focus(); WinPrint.print(); WinPrint.close(); }}>Cetak Struk</Button>
               <Button variant="outline" className="h-12 rounded-lg font-bold border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300" onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Terima kasih atas pesanan Anda!')}`, '_blank')}>Struk WA</Button>
             </div>
-            <Button className="w-full h-14 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 font-bold rounded-lg" onClick={() => setShowSuccess(false)}>Pesanan Baru</Button>
+            <Button className="w-full h-14 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20 font-bold rounded-lg" onClick={() => setShowSuccess(false)}>Pesanan Baru</Button>
           </Card>
         </div>
       )}

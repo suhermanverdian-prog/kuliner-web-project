@@ -130,6 +130,7 @@ class InventoryService {
           name: b.name,
           currentStock: b.stock,
           unit: b.unit,
+          cost: Number(b.cost) || 0,
           avgDailyUsage: avgDailyUsage.toFixed(2),
           daysLeft: daysLeft > 99 ? '>99' : Math.ceil(daysLeft),
           status,
@@ -158,13 +159,17 @@ class InventoryService {
       const predictions = await this.getStockPredictions(tenantId);
       const slowMoving = predictions.filter(p => Number(p.avgDailyUsage) < 0.1 && p.currentStock > 0);
       
-      const wasteItems = slowMoving.map(p => ({
-        name: p.name,
-        qty: `${p.currentStock} ${p.unit}`,
-        value: Math.round(p.currentStock * (p.cost || 5000)), 
-        reason: 'Slow Moving / Overstock',
-        action: 'Rebalance to other outlet'
-      }));
+      const wasteItems = slowMoving.map(p => {
+        const unitCost = Number(p.cost) || 0;
+        return {
+          name: p.name,
+          qty: `${p.currentStock} ${p.unit}`,
+          value: Math.round(Number(p.currentStock) * unitCost),
+          unitCost,
+          reason: 'Slow Moving / Overstock',
+          action: 'Rebalance to other outlet'
+        };
+      });
 
       return wasteItems.slice(0, 5);
     } catch (err) {

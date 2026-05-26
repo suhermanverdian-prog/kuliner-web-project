@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
-
+// Card component supports optional icons. Use class "w-5 h-5 text-amber-600 dark:text-amber-400" for proper contrast.
 const Card = React.forwardRef(({ className, variant = "default", ...props }, ref) => (
   <div
     ref={ref}

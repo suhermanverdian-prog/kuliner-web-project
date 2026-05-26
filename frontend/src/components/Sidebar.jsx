@@ -128,10 +128,10 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                   key={item.id}
                   to={item.id}
                   className={({ isActive }) => cn(
-                    "flex items-center gap-4 px-4 py-2.5 rounded-2xl transition-all group",
-                    isActive 
-                      ? "bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-950 font-bold shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                    "flex items-center gap-4 px-4 py-2.5 rounded-lg transition-all duration-300 group",
+                    isActive
+                      ? "bg-amber-50 text-amber-600 dark:bg-zinc-800 dark:text-amber-400 font-bold shadow-sm border border-amber-500/20 dark:border-zinc-700/50"
+                      : "text-muted-foreground hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:-translate-y-[1px]"
                   )}
                   onClick={onClose}
                 >
@@ -147,7 +147,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       {/* User Section */}
       <div className="p-4 border-t border-border bg-background/50 dark:bg-zinc-950/50 dark:border-zinc-900">
         {!isCollapsed ? (
-          <div className="flex items-center gap-4 p-2 rounded-2xl bg-muted/50 border border-border dark:bg-zinc-900/50 dark:border-zinc-900">
+          <div className="flex items-center gap-4 p-2 rounded-lg bg-muted/50 border border-border dark:bg-zinc-900/50 dark:border-zinc-900">
              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-foreground font-black dark:bg-zinc-800">
                 {user?.name?.[0] || 'U'}
              </div>

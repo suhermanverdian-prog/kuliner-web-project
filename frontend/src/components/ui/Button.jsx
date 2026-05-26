@@ -32,8 +32,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10",
-        destructive: "bg-zinc-100 dark:bg-zinc-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-500 hover:text-white",
+        default: "bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 shadow-lg dark:shadow-none hover:-translate-y-[2px]",
+        primary: "bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 shadow-lg dark:shadow-amber-400/10 active:scale-95 transition-all",
+        destructive: "bg-zinc-100 dark:bg-zinc-800 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 hover:bg-rose-500 hover:text-white hover:-translate-y-[2px]",
         outline: "border border-zinc-200 dark:border-zinc-800 bg-transparent text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900",
         secondary: "bg-zinc-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white border border-zinc-200 dark:border-zinc-800/50 hover:bg-zinc-200 dark:hover:bg-zinc-800",
         ghost: "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/5",
@@ -44,7 +45,7 @@ const buttonVariants = cva(
         default: "h-14 px-10",
         sm: "h-10 rounded-lg px-4 text-xs",
         xs: "h-8 w-8 rounded-lg",
-        lg: "h-16 rounded-2xl px-14 text-base",
+        lg: "h-16 rounded-lg px-14 text-base",
         icon: "h-12 w-12",
       },
     },
