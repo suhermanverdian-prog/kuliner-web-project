@@ -238,6 +238,25 @@ class InventoryService {
     }
   }
 
+  // --- Stock Reservation Helpers ---
+  static async reserveStock(bahanId, qty, tenantId) {
+    const bahan = await InventoryRepository.getBahanById(bahanId, tenantId);
+    if (!bahan) throw new Error('Bahan tidak ditemukan');
+    const currentStock = Number(bahan.stock);
+    if (currentStock < qty) return false;
+    const newStock = currentStock - qty;
+    await TransactionRepository.updateStockDirect(bahanId, newStock, tenantId);
+    return true;
+  }
+
+  static async releaseStock(bahanId, qty, tenantId) {
+    const bahan = await InventoryRepository.getBahanById(bahanId, tenantId);
+    if (!bahan) throw new Error('Bahan tidak ditemukan');
+    const newStock = Number(bahan.stock) + qty;
+    await TransactionRepository.updateStockDirect(bahanId, newStock, tenantId);
+    return true;
+  }
+
   static async getLogisticsStatus(tenantId) {
     try {
       const transfers = await InventoryRepository.getRecentTransfers(tenantId);

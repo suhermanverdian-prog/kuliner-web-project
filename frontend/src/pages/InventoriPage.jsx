@@ -156,7 +156,7 @@ export default function InventoriPage() {
                <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
                   <BrainCircuit size={160} />
                </div>
-               <CardHeader className="p-8 pb-0 relative z-10 flex flex-row items-center justify-between">
+               <CardHeader className="p-6 pb-0 relative z-10 flex flex-row items-center justify-between">
                   <div className="space-y-1">
                      <div className="flex items-center gap-4">
                         <Sparkles className="text-amber-500 animate-pulse" size={20} />
@@ -173,27 +173,29 @@ export default function InventoriPage() {
                      <span className="text-[9px] font-black uppercase tracking-widest">AI ACTIVE</span>
                   </div>
                </CardHeader>
-               <CardContent className="p-8 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+               <CardContent className="p-6 relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
                   {aiPredictions.length === 0 ? (
                      <div className="col-span-3 py-8 text-center text-zinc-500 text-xs font-black uppercase tracking-widest border border-dashed border-border rounded-lg">
                        Need more transaction data for accurate prediction
-                    </div>
+                     </div>
                   ) : aiPredictions.map((pred, i) => (
-                    <div key={i} className="p-6 ">
-                       <div className="flex justify-between items-start mb-4">
-                          <p className="text-xs font-black uppercase tracking-tight text-zinc-800 dark:text-zinc-200">{pred.name}</p>
-                          <Timer size={14} className={cn(pred.status === 'Kritis' ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400")} />
+                    <div key={i} className="p-4 rounded-md border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/20 dark:bg-zinc-900/40 hover:-translate-y-0.5 transition-all shadow-sm flex flex-col justify-between min-h-[160px]">
+                       <div>
+                          <div className="flex justify-between items-start mb-2">
+                             <p className="text-xs font-black uppercase tracking-tight text-zinc-800 dark:text-zinc-200 truncate max-w-[80%]">{pred.name}</p>
+                             <Timer size={14} className={cn(pred.status === 'Kritis' ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400")} />
+                          </div>
+                          <div className="space-y-0.5">
+                             <p className="text-xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">{pred.daysLeft} DAYS</p>
+                             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Estimated stockout</p>
+                          </div>
                        </div>
-                       <div className="space-y-1">
-                          <p className="text-2xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">{pred.daysLeft} DAYS</p>
-                          <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Estimated stockout</p>
-                       </div>
-                       <div className="mt-6 pt-4 border-t border-zinc-800/50 flex items-center justify-between">
+                       <div className="mt-4 pt-3 border-t border-zinc-100 dark:border-zinc-850/50 flex items-center justify-between">
                           <span className={cn(
-                            "px-4 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border",
-                            pred.status === 'Kritis' ? "bg-rose-50 dark:bg-rose-950/30 text-rose-400 border-rose-200 dark:border-rose-800" : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                            "px-2.5 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest border",
+                            pred.status === 'Kritis' ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800" : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
                           )}>{pred.recommendation}</span>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800"><ArrowUpRight size={16} /></Button>
+                           <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"><ArrowUpRight size={14} /></Button>
                        </div>
                     </div>
                   ))}
@@ -228,11 +230,11 @@ export default function InventoriPage() {
                   <table className="w-full text-left border-collapse">
                      <thead>
                         <tr className="bg-background text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 border-b border-zinc-200/80 dark:border-zinc-800/50">
-                           <th className="px-8 py-4">Material Node</th>
-                            <th className="px-8 py-4 text-center">Availability</th>
-                            <th className="px-8 py-4">Unit Cost</th>
-                            <th className="px-8 py-4">Status</th>
-                            <th className="px-8 py-4 text-right">Actions</th>
+                           <th className="px-4 py-4">Material Node</th>
+                           <th className="px-4 py-4 text-center">Availability</th>
+                           <th className="px-4 py-4">Unit Cost</th>
+                           <th className="px-4 py-4">Status</th>
+                           <th className="px-4 py-4 text-right">Actions</th>
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-zinc-200/80 dark:divide-zinc-800/50">
@@ -240,13 +242,13 @@ export default function InventoriPage() {
                           const st = getStockStatus(item);
                           return (
                             <tr key={item.id} className="hover:bg-background transition-all group">
-                               <td className="px-8 py-6">
-                                  <div className="flex items-center gap-6">
-                                     <div className="w-12 h-12 bg-background">
-                                        <Package size={24} />
+                               <td className="px-4 py-4">
+                                  <div className="flex items-center gap-4">
+                                     <div className="w-10 h-10 rounded-md bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center shrink-0 text-amber-500 dark:text-amber-400 shadow-inner">
+                                        <Package size={18} />
                                      </div>
                                      <div>
-                                        <p className="text-base font-black tracking-tight uppercase text-zinc-900 dark:text-zinc-100 group-hover:text-amber-500 transition-colors">{item.name}</p>
+                                        <p className="text-sm font-black tracking-tight uppercase text-zinc-900 dark:text-zinc-100 group-hover:text-amber-500 transition-colors">{item.name}</p>
                                         <div className="flex items-center gap-2 mt-1">
                                            <Truck size={10} className="text-zinc-500 dark:text-zinc-100" />
                                            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 ">{item.supplier?.name || 'No Supplier'}</span>
@@ -254,26 +256,26 @@ export default function InventoriPage() {
                                      </div>
                                   </div>
                                </td>
-                               <td className="px-8 py-6">
-                                  <div className="flex flex-col items-center gap-2">
-                                     <p className="text-lg font-black font-mono tabular-nums leading-none text-zinc-900 dark:text-zinc-100">
+                               <td className="px-4 py-4">
+                                  <div className="flex flex-col items-center gap-1.5">
+                                     <p className="text-base font-black font-mono tabular-nums leading-none text-zinc-900 dark:text-zinc-100">
                                        {getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase">{getMediumUnit(item)}</span>
                                      </p>
-                                     <div className="h-1.5 w-32 bg-background">
+                                     <div className="h-1.5 w-24 bg-background border border-zinc-250 dark:border-zinc-800 rounded-full overflow-hidden">
                                         <div className={cn("h-full transition-all duration-1000", st.barCls)} style={{ width: `${st.pct}%` }} />
                                      </div>
                                   </div>
                                </td>
-                               <td className="px-8 py-6 text-sm font-black font-mono tabular-nums text-zinc-800 dark:text-zinc-200">{formatRupiah(item.cost || 0)}</td>
-                               <td className="px-8 py-6">
+                               <td className="px-4 py-4 text-sm font-black font-mono tabular-nums text-zinc-800 dark:text-zinc-200">{formatRupiah(item.cost || 0)}</td>
+                               <td className="px-4 py-4">
                                   <span className={cn(
-                                    "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm border",
+                                    "px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest shadow-sm border",
                                     st.bg, st.color
                                   )}>
                                      {st.label}
                                   </span>
-                               </td>
-                               <td className="px-8 py-6 text-right">
+                                </td>
+                               <td className="px-4 py-4 text-right">
                                   {isOpnameMode ? (
                                     <Input 
                                       type="number" 
@@ -284,8 +286,8 @@ export default function InventoriPage() {
                                     />
                                   ) : (
                                     <div className="flex justify-end gap-2">
-                                       <Button variant="ghost" size="icon" className="h-10 w-10 rounded-md hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-500 text-zinc-500 dark:text-zinc-400" onClick={() => { setAdjItem(item); setShowAdjModal(true); }}><Scale size={18} /></Button>
-                                       <Button variant="ghost" size="icon" className="h-10 w-10 rounded-md hover:bg-background text-zinc-500" onClick={() => openEdit(item)}><Edit3 size={18} /></Button>
+                                       <Button variant="ghost" size="icon" className="h-9 w-9 rounded-md border border-zinc-200 dark:border-zinc-800/80 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-500 text-zinc-500 dark:text-zinc-400" onClick={() => { setAdjItem(item); setShowAdjModal(true); }}><Scale size={16} /></Button>
+                                       <Button variant="ghost" size="icon" className="h-9 w-9 rounded-md border border-zinc-200 dark:border-zinc-800/80 hover:bg-background text-zinc-500" onClick={() => openEdit(item)}><Edit3 size={16} /></Button>
                                     </div>
                                   )}
                                 </td>
@@ -303,9 +305,9 @@ export default function InventoriPage() {
              <Card className="border border-border bg-card text-card-foreground shadow-lg rounded-lg overflow-hidden">
                 <CardHeader className="p-8 border-b border-zinc-200/80 dark:border-zinc-800/50 bg-background">
                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-background">
-                         <History size={20} className="text-zinc-800 dark:text-zinc-200" />
-                      </div>
+                       <div className="w-10 h-10 rounded-md bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center shrink-0 text-amber-500 dark:text-amber-400 shadow-inner">
+                          <History size={18} />
+                       </div>
                       <div>
                          <CardTitle className="text-lg font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">Stock Ledger</CardTitle>
                          <CardDescription className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 ">Recent Movement History</CardDescription>
@@ -319,10 +321,10 @@ export default function InventoriPage() {
                         { label: 'Procurement In', sub: 'Supplier Log', val: '+25kg', time: '1h ago', icon: Truck, color: 'text-emerald-600 dark:text-emerald-400' },
                         { label: 'System Sync', sub: 'Auto Balance', val: '12L', time: '3h ago', icon: RefreshCw, color: 'text-amber-600 dark:text-amber-400' },
                       ].map((l, i) => (
-                        <div key={i} className="flex gap-4 group relative">
-                           <div className="w-12 h-12 bg-background">
-                              <l.icon size={20} />
-                           </div>
+                         <div key={i} className="flex gap-4 group relative">
+                            <div className="w-10 h-10 rounded-md bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center shrink-0 text-amber-500 dark:text-amber-400 shadow-inner">
+                               <l.icon size={18} />
+                            </div>
                            <div className="flex-1 pt-1">
                               <div className="flex justify-between items-start">
                                  <p className="text-sm font-black uppercase tracking-tight leading-none text-zinc-800 dark:text-zinc-200">{l.label}</p>

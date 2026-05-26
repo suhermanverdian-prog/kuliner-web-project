@@ -53,8 +53,8 @@ const requireFeature = (featureKey) => {
       let tenant = cache.get(cacheKey);
       
       if (!tenant) {
-        const { data } = await supabase.from('tenants').select('tier, feature_overrides').eq('id', tenantId).single();
-        if (!data) return res.status(403).json({ error: 'Akses ditolak: Tenant tidak ditemukan' });
+        const { data, error } = await supabase.from('tenants').select('tier, feature_overrides').eq('id', tenantId).single();
+        if (error || !data) return res.status(403).json({ error: 'Akses ditolak: Tenant tidak ditemukan atau ID tidak valid' });
         tenant = data;
         cache.set(cacheKey, tenant, 600); // 10 min TTL
       }

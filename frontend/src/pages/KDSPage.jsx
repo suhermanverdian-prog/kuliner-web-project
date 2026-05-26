@@ -99,37 +99,50 @@ export default function KDSPage() {
       </div>
       
       {/* Filter Navigation Row - Full Width with Horizontal Scroll Prevention */}
-      <div className="flex flex-row items-center justify-start overflow-x-auto flex-nowrap gap-2 bg-background p-1.5 rounded-lg border border-border backdrop-blur-2xl custom-scrollbar">
+      <div className="flex flex-row items-center justify-start overflow-x-auto flex-nowrap gap-2 bg-background p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800 backdrop-blur-2xl custom-scrollbar">
         {[
-          { key: 'all', label: `Semua`, count: safeOrders.length },
-          { key: 'new', label: `🆕 Baru`, count: counts.new, color: 'text-amber-500 dark:text-amber-400' },
-          { key: 'cooking', label: `🔥 Masak`, count: counts.cooking, color: 'text-amber-600 dark:text-amber-400' },
-          { key: 'ready', label: `✅ Siap`, count: counts.ready, color: 'text-emerald-600 dark:text-emerald-400' },
-        ].map(f => (
-          <Button 
-            key={f.key}
-            className={cn(
-              "h-10 px-4 font-bold rounded-md transition-all border-none bg-transparent shadow-none shrink-0",
-              filter === f.key 
-                ? "bg-card text-foreground shadow-sm border border-border" 
-                : "text-zinc-500 dark:text-zinc-100 hover:text-foreground hover:bg-background"
-            )}
-            onClick={() => setFilter(f.key)}
-          >
-            {f.label}{" "}
-            <span className={cn("ml-2 px-2 py-0.5 rounded-lg bg-background text-[10px] font-black font-mono tabular-nums", f.color)}>
-              {f.count}
-            </span>
-          </Button>
-        ))}
+          { key: 'all', label: 'Semua', count: safeOrders.length, icon: ClipboardList, color: 'text-zinc-500 dark:text-zinc-400' },
+          { key: 'new', label: 'Baru', count: counts.new, icon: Bell, color: 'text-amber-500 dark:text-amber-400' },
+          { key: 'cooking', label: 'Masak', count: counts.cooking, icon: Flame, color: 'text-amber-600 dark:text-amber-400' },
+          { key: 'ready', label: 'Siap', count: counts.ready, icon: CheckCircle2, color: 'text-emerald-600 dark:text-emerald-400' },
+        ].map(f => {
+          const Icon = f.icon;
+          const isSelected = filter === f.key;
+          return (
+            <Button 
+              key={f.key}
+              variant="ghost"
+              className={cn(
+                "h-10 px-4 font-bold rounded-md transition-all shrink-0 active:scale-95 flex items-center gap-2",
+                isSelected 
+                  ? "bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 shadow-md" 
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              )}
+              onClick={() => setFilter(f.key)}
+            >
+              <Icon size={14} className={cn("transition-colors", isSelected ? "text-white dark:text-zinc-900" : f.color)} />
+              <span>{f.label}</span>
+              <span className={cn(
+                "ml-1 px-2 py-0.5 rounded-lg text-[10px] font-black font-mono tabular-nums transition-colors",
+                isSelected
+                  ? "bg-white/20 text-white dark:bg-zinc-900/15 dark:text-zinc-900"
+                  : "bg-zinc-100 dark:bg-zinc-800/80 " + f.color
+              )}>
+                {f.count}
+              </span>
+            </Button>
+          );
+        })}
       </div>
 
       {filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 text-center space-y-6 ">
-           <div className="w-24 h-24 bg-background rounded-lg flex items-center justify-center text-4xl">🎉</div>
+           <div className="w-24 h-24 bg-background border border-zinc-200 dark:border-zinc-800 rounded-lg flex items-center justify-center text-amber-500">
+             <ChefHat size={48} strokeWidth={1.5} />
+           </div>
            <div>
-              <p className="text-2xl font-black">Antrian Bersih!</p>
-              <p className="text-sm font-medium">Semua pesanan telah disajikan kepada pelanggan.</p>
+              <p className="text-2xl font-black animate-pulse">Antrian Dapur Bersih!</p>
+              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">Semua pesanan telah disajikan kepada pelanggan.</p>
            </div>
         </div>
       ) : (

@@ -1,0 +1,79 @@
+openapi: 3.0.0
+info:
+  title: Coffeeshop API
+  version: 1.0.0
+  description: Dokumentasi API untuk layanan shift, audit, transaksi, dll.
+servers:
+  - url: http://localhost:3001/api
+    description: Server Lokal
+paths:
+  /shifts/{id}/audit:
+    get:
+      summary: Dapatkan audit shift berdasarkan ID
+      description: Mengambil data keuangan, penjualan aktual, modal awal, serta selisih kas untuk shift tertentu.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: ID unik shift
+      responses:
+        '200':
+          description: Data audit shift berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShiftAudit'
+        '401':
+          description: Akses ditolak karena token tidak ada atau tidak valid
+        '404':
+          description: Shift tidak ditemukan
+        '500':
+          description: Error internal server
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ShiftAudit:
+      type: object
+      properties:
+        shiftId:
+          type: string
+          example: "00a11223-b456-c789-d012-e3456789abcd"
+        tenantId:
+          type: string
+          example: "00000000-0000-0000-0000-000000000000"
+        startTime:
+          type: string
+          format: date-time
+          example: "2026-05-26T10:00:00.000Z"
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+          example: null
+        initialCash:
+          type: number
+          example: 100000
+        actualSales:
+          type: number
+          example: 50000
+        expectedCash:
+          type: number
+          example: 150000
+        closingCash:
+          type: number
+          nullable: true
+          example: null
+        difference:
+          type: number
+          example: -150000
+        notes:
+          type: string
+          example: "Catatan audit shift"

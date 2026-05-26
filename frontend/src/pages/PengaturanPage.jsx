@@ -1198,7 +1198,7 @@ export default function PengaturanPage() {
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'openai', name: 'OpenAI', icon: BrainCircuit },
-                    { id: 'gemini', name: 'Gemini', icon: Sparkles },
+
                     { id: 'deepseek', name: 'DeepSeek', icon: Zap },
                     { id: 'grok', name: 'Grok (xAI)', icon: KeyRound }
                   ].map(p => (
@@ -1261,7 +1261,7 @@ export default function PengaturanPage() {
                       <Trash2 size={18} />
                     </Button>
                   </div>
-                  <p className="text-[10px] text-zinc-500 dark:text-zinc-100 font-bold">Dapatkan key ini dari dashboard {aiConfig.provider === 'openai' ? 'platform.openai.com' : aiConfig.provider === 'gemini' ? 'aistudio.google.com' : aiConfig.provider === 'deepseek' ? 'platform.deepseek.com' : 'console.x.ai'}.</p>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-100 font-bold">Dapatkan key ini dari dashboard {aiConfig.provider === 'openai' ? 'platform.openai.com' : aiConfig.provider === 'deepseek' ? 'platform.deepseek.com' : 'console.x.ai'}.</p>
                 </div>
 
                 <div className="flex items-center gap-4 pt-4">

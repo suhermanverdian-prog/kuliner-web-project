@@ -32,8 +32,20 @@ class ShiftRepository {
   }
 
   /**
-   * Membuat shift baru.
+   * Mengambil shift berdasarkan ID untuk tenant tertentu.
    */
+  async getById(tenantId, shiftId) {
+    const { data, error } = await supabase
+      .from('shifts')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('id', shiftId)
+      .maybeSingle();
+
+    if (error) throw new AppError('Gagal menemukan shift dengan ID', 500);
+    return data;
+  }
+
   async create(tenantId, shiftData) {
     const payload = {
       ...shiftData,
@@ -46,7 +58,10 @@ class ShiftRepository {
       .select()
       .single();
 
-    if (error) throw new AppError('Gagal menyimpan shift baru', 500);
+    if (error) {
+      console.error('Supabase Error on Create Shift:', error);
+      throw new AppError('Gagal menyimpan shift baru: ' + error.message, 500);
+    }
     return data;
   }
 

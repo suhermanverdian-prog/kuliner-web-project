@@ -69,13 +69,13 @@ export default function MejaPage() {
           { key:'occupied',  label:'Meja Terisi',   count: counts.occupied,  color:'text-rose-600 dark:text-rose-400', bg:'bg-rose-50 dark:bg-rose-950/30 dark:bg-rose-500/20' },
           { key:'reserved',  label:'Reservasi',count: counts.reserved,  color:'text-amber-600 dark:text-amber-400', bg:'bg-amber-50 dark:bg-amber-950/30' },
         ].map(s => (
-          <Card key={s.key} className="border border-border shadow-md bg-card rounded-lg group transition-all hover:scale-[1.02]">
+          <Card key={s.key} variant="premium" className="group">
             <CardContent className="p-6 flex items-center justify-between">
               <div>
                 <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">{s.label}</p>
                 <h3 className={cn("text-3xl font-black mt-1 font-mono tabular-nums", s.color)}>{s.count}</h3>
               </div>
-              <div className={cn("w-12 h-12 rounded-md flex items-center justify-center border border-border shadow-inner", s.bg)}>
+              <div className={cn("w-12 h-12 rounded-md flex items-center justify-center border border-zinc-200 dark:border-zinc-700 shadow-inner", s.bg)}>
                 {s.key === 'available' ? <Armchair className={s.color} /> : s.key === 'occupied' ? <Users className={s.color} /> : <Bookmark className={s.color} />}
               </div>
             </CardContent>
@@ -85,8 +85,8 @@ export default function MejaPage() {
 
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Floor Map */}
-        <Card className="flex-1 border border-border shadow-xl bg-card rounded-lg overflow-hidden">
-          <CardHeader className="border-b bg-background pb-6">
+        <Card variant="premium" className="flex-1 overflow-hidden">
+          <CardHeader className="border-b border-zinc-100 dark:border-zinc-800 bg-background pb-6">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-xl">Denah Meja (Floor Plan)</CardTitle>
@@ -108,11 +108,11 @@ export default function MejaPage() {
                     onClick={() => setSelected(t)}
                     className={cn(
                       "flex flex-col items-center justify-center p-6 rounded-lg border-2 transition-all duration-300 group",
-                      isSelected ? cn(st.border, st.bg, "shadow-xl scale-105") : "bg-background border-border/40 hover:bg-background hover:scale-105 shadow-sm"
+                      isSelected ? cn(st.border, st.bg, "shadow-xl scale-105") : "bg-background border-zinc-200/40 dark:border-zinc-700/40 hover:bg-background hover:scale-105 shadow-sm"
                     )}
                   >
                     <div className={cn(
-                      "w-12 h-12 rounded-md flex items-center justify-center mb-4 transition-all duration-500 border border-border/50",
+                      "w-12 h-12 rounded-md flex items-center justify-center mb-4 transition-all duration-500 border border-zinc-200/50 dark:border-zinc-700/50",
                       isSelected ? "bg-card shadow-lg" : "bg-background group-hover:bg-card group-hover:shadow-md"
                     )}>
                       <Icon className={cn("transition-colors", isSelected ? st.color : "text-zinc-500 dark:text-zinc-100 group-hover:text-primary")} size={24} />
@@ -131,7 +131,7 @@ export default function MejaPage() {
                 );
               })}
               <button 
-                className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-border bg-transparent hover:bg-background hover:border-primary/40 transition-all group"
+                className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-zinc-200 dark:border-zinc-700 bg-transparent hover:bg-background hover:border-primary/40 transition-all group"
                 onClick={() => setShowAddModal(true)}
               >
                 <div className="w-12 h-12 rounded-md flex items-center justify-center mb-4 bg-background text-zinc-900 dark:text-zinc-100 group-hover:">
@@ -144,15 +144,12 @@ export default function MejaPage() {
         </Card>
 
         {/* Action Panel */}
-        <Card className={cn(
-          "w-full lg:w-[350px] border border-border shadow-xl bg-card rounded-lg shrink-0 transition-all duration-500",
-          !selected && " grayscale"
-        )}>
+        <Card variant="premium" className="w-full lg:w-[350px] shrink-0">
           {selected ? (
             <div className="animate-in slide-in-from-right-4 duration-500">
-              <CardHeader className="border-b bg-background">
+              <CardHeader className="border-b border-zinc-100 dark:border-zinc-800 bg-background">
                 <div className="flex justify-between items-start">
-                  <div className={cn("w-14 h-14 rounded-md flex items-center justify-center shadow-lg text-2xl border border-border/50", STATUS_STYLE[selected.status].bg, STATUS_STYLE[selected.status].color)}>
+                  <div className={cn("w-14 h-14 rounded-md flex items-center justify-center shadow-lg text-2xl border border-zinc-200/50 dark:border-zinc-700/50", STATUS_STYLE[selected.status].bg, STATUS_STYLE[selected.status].color)}>
                     {selected.status === 'available' ? <Armchair size={32} /> : selected.status === 'occupied' ? <Users size={32} /> : <Bookmark size={32} />}
                   </div>
                   <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive rounded-md" onClick={() => handleDeleteTable(selected.id)}>
@@ -179,7 +176,7 @@ export default function MejaPage() {
                               isActive ? cn(s.bg, s.border, s.color) : "bg-background border-transparent  hover:"
                             )}
                           >
-                            <div className={cn("w-10 h-10 rounded-md flex items-center justify-center border", isActive ? "bg-card" : "bg-background")}>
+                            <div className={cn("w-10 h-10 rounded-md flex items-center justify-center border border-zinc-200 dark:border-zinc-700", isActive ? "bg-card" : "bg-background")}>
                               <Icon size={20} />
                             </div>
                             <div>
@@ -202,7 +199,7 @@ export default function MejaPage() {
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="border-t bg-background p-6">
+              <CardFooter className="border-t border-zinc-100 dark:border-zinc-800 bg-background p-6">
                 <Button 
                   variant="outline" 
                   className="w-full h-12 font-black border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 hover:" 
@@ -227,8 +224,8 @@ export default function MejaPage() {
       {/* Add Table Modal (Premium Design) */}
       {showAddModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 ">
-           <Card className="w-full max-w-md shadow-2xl border border-border rounded-lg overflow-hidden animate-in zoom-in-95 duration-200 bg-card">
-              <CardHeader className="bg-background border-b border-border p-8">
+           <Card variant="premium" className="w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              <CardHeader className="bg-background border-b border-zinc-100 dark:border-zinc-800 p-8">
                  <div className="flex items-center justify-between mb-2">
                     <CardTitle className="text-xl font-black uppercase tracking-tighter text-foreground">
                        Tambah <span className="text-amber-500 italic">Meja Baru</span>
@@ -241,7 +238,7 @@ export default function MejaPage() {
                  <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 px-1">Nama / Nomor Meja</label>
                     <Input 
-                      className="h-12 rounded-md bg-background border-border font-bold text-foreground focus-visible:ring-amber-500" 
+                      className="h-12 rounded-md bg-background border-zinc-200 dark:border-zinc-700 font-bold text-foreground focus-visible:ring-amber-500" 
                       value={newTableName} 
                       onChange={e => setNewTableName(e.target.value)} 
                       placeholder="cth: Meja 12 atau VIP 03" 
@@ -251,14 +248,14 @@ export default function MejaPage() {
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100 px-1 font-sans">Kapasitas Tamu</label>
                     <Input 
                       type="number"
-                      className="h-12 rounded-md bg-background border-border font-mono font-bold text-foreground focus-visible:ring-amber-500" 
+                      className="h-12 rounded-md bg-background border-zinc-200 dark:border-zinc-700 font-mono font-bold text-foreground focus-visible:ring-amber-500" 
                       value={newTableCapacity}
                       onChange={e => setNewTableCapacity(e.target.value)}
                       placeholder="cth: 4"
                     />
-                 </div>
+                  </div>
               </CardContent>
-              <CardFooter className="p-8 bg-background border-t border-border flex flex-col gap-4">
+              <CardFooter className="p-8 bg-background border-t border-zinc-100 dark:border-zinc-800 flex flex-col gap-4">
                  <Button 
                    className="w-full h-14 font-black " 
                    onClick={handleAddTable}

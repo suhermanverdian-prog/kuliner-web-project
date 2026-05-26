@@ -30,6 +30,18 @@ exports.openShift = async (req, res, next) => {
   }
 };
 
+exports.getShiftAudit = async (req, res, next) => {
+  try {
+    const tenantId = req.userContext.tenantId;
+    const shiftId = req.params.id;
+    const audit = await shiftService.getShiftAudit(tenantId, shiftId);
+    // Ensure response includes status 200
+    res.status(200).json(audit);
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.closeShift = async (req, res, next) => {
   try {
     const tenantId = req.userContext.tenantId;

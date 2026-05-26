@@ -30,13 +30,13 @@ function createChain() {
 
 let mockChain;
 
-jest.mock('../../src/supabase', () => ({
+jest.mock('../../supabase', () => ({
   supabase: {
     from: jest.fn(() => mockChain),
   },
 }));
 
-const AppError = require('../../src/utils/AppError');
+const AppError = require('../../utils/AppError');
 
 // Re-require after mock
 let shiftRepository;
@@ -44,10 +44,7 @@ let shiftRepository;
 beforeEach(() => {
   jest.clearAllMocks();
   mockChain = createChain();
-  // Re-require to get fresh module with mocks
-  jest.isolateModules(() => {
-    shiftRepository = require('../../src/repositories/shiftRepository');
-  });
+  shiftRepository = require('../shiftRepository');
 });
 
 describe('ShiftRepository', () => {

@@ -61,7 +61,10 @@ const permissionGuard = (featureKey, action = 'view') => {
                     .eq('feature_key', featureKey)
                     .maybeSingle();
 
-                if (error) throw error;
+                if (error) {
+                    console.warn(`⚠️ [Security] Supabase query error for role_permissions: ${error.message}`);
+                    return res.status(403).json({ error: 'Akses Ditolak: Gagal memverifikasi izin karena data tidak valid.' });
+                }
                 perm = data || null;
                 cache.set(roleCacheKey, perm, 300); // 5 min TTL
             }

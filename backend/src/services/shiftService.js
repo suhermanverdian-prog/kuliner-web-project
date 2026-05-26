@@ -13,12 +13,14 @@ class ShiftService {
         ...stats,
       };
     } else {
+      // Shift tertutup – gunakan data yang tersimpan di DB bila ada
       return {
         ...shift,
         openCash: shift.initial_cash,
         openTime: shift.start_time,
         currentSales: shift.total_sales || 0,
-        currentSalesCount: 0,
+        // Gunakan total_transactions jika tersedia, otherwise 0
+        currentSalesCount: typeof shift.total_transactions === 'number' ? shift.total_transactions : 0,
       };
     }
   }
@@ -44,54 +46,57 @@ class ShiftService {
       throw new AppError('Sudah ada sesi shift yang berjalan. Tutup shift aktif terlebih dahulu.', 400);
     }
 
-    if (shiftData.openCash === undefined || shiftData.openCash < 0) {
-      throw new AppError('Modal awal wajib diisi dan tidak boleh negatif.', 400);
+    // Validate openCash must be a finite number >= 0
+    if (typeof shiftData.openCash !== 'number' || isNaN(shiftData.openCash) || shiftData.openCash < 0) {
+      throw new AppError('Modal awal wajib diisi dan harus berupa angka non‑negatif.', 400);
+    }
+    // Validate userId presence and format (basic UUID check)
+    if (!shiftData.userId || typeof shiftData.userId !== 'string' || !/^[0-9a-fA-F-]{36}$/.test(shiftData.userId)) {
+      throw new AppError('User ID wajib diisi dengan format UUID yang valid.', 400);
     }
 
     return await shiftRepository.create(tenantId, {
       user_id: shiftData.userId,
-      user_name: shiftData.userName || shiftData.kasir,
       start_time: shiftData.openTime || new Date().toISOString(),
       initial_cash: shiftData.openCash,
       status: 'open',
-      current_cash: 0,
-      current_qris: 0,
       total_sales: 0,
     });
   }
 
-  async closeShift(tenantId, shiftId, closeData) {
+  async getShiftAudit(tenantId, shiftId) {
     if (!tenantId) throw new AppError('Akses Ditolak: Tenant ID tidak ditemukan.', 401);
-
-    const shift = await shiftRepository.findActiveShift(tenantId);
-    if (!shift || shift.id !== shiftId) {
-      throw new AppError('Shift tidak ditemukan atau sudah ditutup.', 404);
+    if (!shiftId) throw new AppError('Shift ID tidak diberikan.', 400);
+    // Ambil shift
+    const shift = await shiftRepository.getById(tenantId, shiftId);
+    if (!shift) throw new AppError('Shift tidak ditemukan.', 404);
+    // Guard start_time
+    const startTime = shift.start_time || new Date().toISOString();
+    // Hitung agregasi penjualan sejak start_time with safe fallback
+    let stats = { currentSales: 0, currentCash: 0, currentQris: 0, currentDebit: 0 };
+    try {
+        stats = await shiftRepository.getSalesAggregation(tenantId, startTime);
+    } catch (e) {
+        console.warn('⚠️ Sales aggregation failed, proceeding with zeros:', e.message);
     }
-
-    if (closeData.closingCash === undefined || closeData.closingCash < 0) {
-      throw new AppError('Nilai uang fisik (closingCash) wajib diisi dengan benar.', 400);
-    }
-
-    // 2. Hitung Total Penjualan Real-Time dari Tabel Transaksi
-    const stats = await shiftRepository.getSalesAggregation(tenantId, shift.start_time);
-    const actualSales = stats.currentSales;
-
-    // 3. Kalkulasi Audit Finansial
-    const expectedCash = Number(shift.initial_cash) + actualSales;
-    const difference = Number(closeData.closingCash) - expectedCash;
-
-    const payload = {
-      status: 'closed',
-      end_time: new Date().toISOString(),
-      total_sales: actualSales,
-      expected_cash: expectedCash,
-      closing_cash: Number(closeData.closingCash),
-      difference: difference,
-      notes: closeData.notes || '',
+    const actualSales = stats.currentSales || 0;
+    const expectedCash = Number(shift.initial_cash) + (stats.currentCash || 0);
+    const closingCashVal = shift.closing_cash !== undefined && shift.closing_cash !== null ? Number(shift.closing_cash) : null;
+    const difference = closingCashVal !== null ? closingCashVal - expectedCash : null;
+    return {
+        shiftId: shift.id,
+        tenantId,
+        startTime: shift.start_time,
+        endTime: shift.end_time || null,
+        initialCash: Number(shift.initial_cash),
+        actualSales,
+        expectedCash,
+        closingCash: closingCashVal,
+        difference,
+        notes: shift.notes || ''
     };
+}
 
-    return await shiftRepository.update(tenantId, shiftId, payload);
-  }
 }
 
 module.exports = new ShiftService();

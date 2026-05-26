@@ -144,6 +144,15 @@ const apiBase = {
     try {
       const response = await fetch(url, options);
       if (!response.ok) {
+        // --- KEN ENTERPRISE: GLOBAL 401/403 INTERCEPTOR ---
+        if (response.status === 401 || response.status === 403) {
+          console.warn(`[KEN API] 401/403 Detected. Forcing logout to prevent stale session...`);
+          localStorage.removeItem('ken-enterprise-storage');
+          localStorage.removeItem('token');
+          localStorage.removeItem('tenantId');
+          window.location.href = '/#/login';
+        }
+
         const error = await response.json().catch(() => ({}));
         const finalError = new Error(error.message || `API Error ${response.status}`);
         Sentry.captureException(finalError, { extra: { url, method, data } });

@@ -1,10 +1,20 @@
 require('dotenv').config();
+const Sentry = require("@sentry/node");
+
+Sentry.init({
+  dsn: "https://d12d810e0ed1be3ceeb39ce32badf469@o4511436228067328.ingest.us.sentry.io/4511436240650240",
+  integrations: [],
+  tracesSampleRate: 1.0,
+});
+
 let app;
+let startServer = () => {};
+
 try {
-  const Sentry = require("@sentry/node");
   const { requireFeature } = require('./middleware/tierGuard');
   // MENCEGAH VERCEL CRASH:
   // const { nodeProfilingIntegration } = require("@sentry/profiling-node");
+
 
   Sentry.init({
     dsn: "https://d12d810e0ed1be3ceeb39ce32badf469@o4511436228067328.ingest.us.sentry.io/4511436240650240",
@@ -25,12 +35,22 @@ try {
   const io = new Server(server, { cors: { origin: '*' } });
 
   app.set('io', io);
+  // Expose a getter for utils/realtimeNotifier to retrieve the Socket.IO instance
+  app.getIo = () => io;
+
   app.use(cors());
   app.use(express.json());
   app.use('/api/uploads', express.static(path.join(__dirname, '../public/uploads')));
   
   // Public route test
   app.get('/api/health', (req, res) => res.json({ status: 'ok', source: 'vercel' }));
+
+  // Swagger UI Integration
+  const swaggerUi = require('swagger-ui-express');
+  const YAML = require('yamljs');
+  const swaggerDocument = YAML.load(path.join(__dirname, '../swagger.yaml'));
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
 
   const jwt = require('jsonwebtoken');
   const SECRET = process.env.JWT_SECRET || 'ken_enterprise_secret_2024';
@@ -51,6 +71,7 @@ try {
   app.use('/api/ai', requireFeature('ai_insights'), require('./routes/aiRoutes'));
   app.use('/api/p', requireFeature('procurement'), require('./routes/procurementRoutes'));
   app.use('/api/laporan', require('./routes/reportRoutes'));
+  app.use('/api/promo-codes', require('./routes/promoCodeRoutes'));
 
   const { supabase } = require('./supabase');
   app.post('/api/upload', upload.single('image'), async (req, res) => {
@@ -92,11 +113,15 @@ try {
   const PORT = process.env.PORT || 3001;
   const { startSyncDaemon } = require('./services/syncService');
 
-  if (!process.env.VERCEL) {
+  startServer = () => {
     server.listen(PORT, () => {
       console.log(`🚀 KEN ENTERPRISE CORE ACTIVE ON PORT ${PORT}`);
       startSyncDaemon();
     });
+  };
+
+  if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
+    startServer();
   }
 } catch (error) {
   const express = require('express');
@@ -110,4 +135,5 @@ try {
   });
 }
 
-module.exports = app;
+module.exports = { app, getIo: app.getIo, startServer };
+
