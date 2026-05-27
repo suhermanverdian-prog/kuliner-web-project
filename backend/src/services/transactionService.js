@@ -353,8 +353,8 @@ class TransactionService {
   }
 
   static async approveVoid(id, role) {
-    if (role !== 'manager' && role !== 'owner' && role !== 'superadmin') {
-        throw new Error('RBAC: Hanya Manager/Owner yang dapat menyetujui VOID');
+    if (role !== 'manager' && role !== 'owner' && role !== 'superadmin' && role !== 'accounting') {
+        throw new Error('RBAC: Hanya Manager/Owner/Akunting yang dapat menyetujui VOID');
     }
 
     const oldTx = await TransactionRepository.getTransactionById(id);
