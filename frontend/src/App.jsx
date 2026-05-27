@@ -138,6 +138,9 @@ function AppRoutes() {
             user.role === 'staff' ? "/kasir" : 
             user.role === 'chef' ? "/kds" : 
             user.role === 'hrd' ? "/hrd" : 
+            user.role === 'accounting' ? "/accounting" :
+            user.role === 'customer' ? "/customer" :
+            user.role === 'superadmin' ? "/superadmin" :
             "/"
           } replace />
         } />

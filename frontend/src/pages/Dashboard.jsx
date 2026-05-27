@@ -78,6 +78,9 @@ export default function Dashboard() {
   if (user?.role === 'staff') return <Navigate to="/kasir" replace />;
   if (user?.role === 'chef') return <Navigate to="/kds" replace />;
   if (user?.role === 'hrd') return <Navigate to="/hrd" replace />;
+  if (user?.role === 'accounting') return <Navigate to="/accounting" replace />;
+  if (user?.role === 'customer') return <Navigate to="/customer" replace />;
+  if (user?.role === 'superadmin') return <Navigate to="/superadmin" replace />;
 
   const {
     loading,
