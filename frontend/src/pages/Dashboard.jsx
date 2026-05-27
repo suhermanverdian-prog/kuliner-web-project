@@ -12,8 +12,9 @@ import { Badge } from "../components/ui/Badge";
 import { cn } from "../lib/utils";
 import { Skeleton } from "../components/ui/Skeleton";
 import { ChartWrapper } from "../components/charts/ChartWrapper";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useDashboard } from '../hooks/useDashboard';
+import { useAppStore } from '../store/useAppStore';
 
 
 /* ── Komponen Donat Mini (KEN Enterprise Style) ─────────────────────────────────────────── */
@@ -72,6 +73,12 @@ function DashboardSkeleton() {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const user = useAppStore(state => state.user);
+  
+  if (user?.role === 'staff') {
+    return <Navigate to="/kasir" replace />;
+  }
+
   const {
     loading,
     aiInsights,

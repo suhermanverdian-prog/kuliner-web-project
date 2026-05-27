@@ -132,7 +132,10 @@ function AppRoutes() {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* Public Routes - Accessible without Login */}
-        <Route path="/login" element={!user ? <LoginPage onLogin={setUser} /> : <Navigate to="/" replace />} />
+        <Route path="/login" element={
+          !user ? <LoginPage onLogin={setUser} /> : 
+          <Navigate to={user.role === 'staff' ? "/kasir" : "/"} replace />
+        } />
         <Route path="/register" element={<RegisterPage onSuccess={setUser} />} />
         <Route path="/guest/*" element={<GuestMenuPage />} />
         <Route path="/guest-menu" element={<GuestMenuPage />} />
