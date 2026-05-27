@@ -143,8 +143,8 @@ export default function LogisticsHubPage() {
             </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <Card className="border-none ">
-                  <div className="absolute top-0 right-0 p-8  group-hover:scale-110 transition-transform duration-1000">
+               <Card className="border-none relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 group-hover:scale-110 transition-transform duration-1000">
                      <BrainCircuit size={120} />
                   </div>
                   <div className="space-y-2 relative z-10">
@@ -156,8 +156,8 @@ export default function LogisticsHubPage() {
                   </div>
                   <Button className="w-full h-14 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800">OPTIMIZE SCHEDULE</Button>
                </Card>
-               <Card className="border-none ">
-                  <div className="absolute top-0 right-0 p-8  group-hover:rotate-12 transition-transform duration-1000">
+               <Card className="border-none relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-8 group-hover:rotate-12 transition-transform duration-1000">
                      <Truck size={120} />
                   </div>
                   <div className="space-y-2 relative z-10">

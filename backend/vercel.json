@@ -8,6 +8,10 @@
   ],
   "routes": [
     {
+      "src": "/healthz",
+      "dest": "src/server.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "src/server.js",
       "headers": {

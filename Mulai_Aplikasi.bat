@@ -35,7 +35,7 @@ if not exist "frontend\node_modules" (
 
 :: 3. Service Initialization
 echo  [SYSTEM] Initializing KEN API Server (Development Mode)...
-start "KEN-BACKEND" /min cmd /k "title KEN API && cd backend && npm run dev"
+start "KEN-BACKEND" /min cmd /k "title KEN API && cd backend && npm start"
 
 echo  [SYSTEM] Initializing KEN UI Engine (Development Mode)...
 start "KEN-FRONTEND" /min cmd /k "title KEN UI && cd frontend && npm run dev"

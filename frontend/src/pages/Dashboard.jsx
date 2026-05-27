@@ -101,7 +101,7 @@ export default function Dashboard() {
   if (loading) return <DashboardSkeleton />;
 
   return (
-    <div className="space-y-8 pb-16">
+    <div className="space-y-8 pb-16 overflow-x-hidden max-w-full">
       {/* Header Section - Sleek Premium Omnichannel Style */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 p-4">
         <div>
@@ -116,9 +116,9 @@ export default function Dashboard() {
              {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
            </p>
         </div>
-        <div className="flex items-center gap-4">
-          <Button variant="primary" aria-label="Export data" onClick={() => navigate('/reports')}>Export Data</Button>
-          <Button variant="primary" aria-label="New transaction" onClick={() => navigate('/kasir')}>New Transaction</Button>
+        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+          <Button className="flex-1 md:flex-none" variant="primary" aria-label="Export data" onClick={() => navigate('/reports')}>Export Data</Button>
+          <Button className="flex-1 md:flex-none" variant="primary" aria-label="New transaction" onClick={() => navigate('/kasir')}>New Transaction</Button>
         </div>
       </div>
 
@@ -170,15 +170,17 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 px-4">
         <Card className="lg:col-span-8 p-8" variant="premium">
            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-black uppercase tracking-tighter text-[var(--text-primary)]">Market Trajectory</h3>
+              <h3 className="text-lg font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">Market Trajectory</h3>
               <BarChart3 className="text-amber-500 " size={20} aria-label="Market Trajectory chart" role="img" />
            </div>
-           <ChartWrapper 
-             data={trendData.length > 0 ? trendData : Array.from({ length: 7 }, (_, i) => ({ label: ['S','M','T','W','T','F','S'][i], value: 0 }))} 
-             height={200}
-             valueFormatter={(val) => formatRupiah(val)}
-             className="mt-6"
-           />
+           <div className="w-full min-w-0 overflow-hidden">
+             <ChartWrapper 
+               data={trendData.length > 0 ? trendData : Array.from({ length: 7 }, (_, i) => ({ label: ['S','M','T','W','T','F','S'][i], value: 0 }))} 
+               height={200}
+               valueFormatter={(val) => formatRupiah(val)}
+               className="mt-6"
+             />
+           </div>
         </Card>
 
         <Card className="lg:col-span-4 p-8 space-y-6" variant="premium">
@@ -226,7 +228,7 @@ export default function Dashboard() {
                   <div className="w-10 h-10 bg-amber-50 dark:bg-amber-950/30 rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
                     <Coffee size={18} />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex justify-between mb-1.5">
                         <p className="text-xs font-black text-zinc-900 dark:text-zinc-50">{item?.name}</p>
                         <p className="text-xs font-mono tabular-nums text-amber-500">85%</p>

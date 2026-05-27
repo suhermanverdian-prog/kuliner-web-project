@@ -26,18 +26,18 @@ const PERIODS = [
 function KPICard({ label, value, sub, icon: Icon, delta, colorClass }) {
   const isUp = delta >= 0;
   return (
-    <Card className="bg-card border border-border shadow-sm font-mono tabular-nums">
+    <Card className="bg-card border border-border shadow-sm font-mono tabular-nums relative overflow-hidden">
       <CardContent className="p-8 relative">
         <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/5 blur-3xl rounded-lg group-hover: transition-opacity duration-700" />
         
         <div className="flex justify-between items-start relative z-10">
-          <div className="space-y-3">
-            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em]">{label}</p>
-            <h3 className="text-2xl font-black tracking-tight font-mono tabular-nums text-zinc-900 dark:text-zinc-100">{value}</h3>
-            {sub && <p className="text-[10px] text-zinc-500 font-bold tracking-tight  uppercase">{sub}</p>}
+          <div className="space-y-3 min-w-0 flex-1">
+            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em] truncate">{label}</p>
+            <h3 className="text-2xl font-black tracking-tight font-mono tabular-nums text-zinc-900 dark:text-zinc-100 truncate">{value}</h3>
+            {sub && <p className="text-[10px] text-zinc-500 font-bold tracking-tight uppercase truncate">{sub}</p>}
           </div>
           <div className={cn(
-            "w-14 h-14 rounded-lg flex items-center justify-center shadow-2xl transition-all duration-500 group-hover:rotate-6 group-hover:scale-110",
+            "w-14 h-14 rounded-lg flex items-center justify-center shadow-2xl transition-all duration-500 group-hover:rotate-6 group-hover:scale-110 shrink-0 ml-4",
             colorClass.includes('amber') ? "bg-amber-500 text-zinc-950" : "bg-amber-500 text-amber-500"
           )}>
             <Icon size={28} strokeWidth={2.5} />
@@ -81,7 +81,7 @@ function MiniChart({ data, prev }) {
           </linearGradient>
           <filter id="glow">
             {/* Using amber drop‑shadow with 40% opacity for consistent branding */}
-            <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="var(--amber)" flood-opacity="0.4" />
+            <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="var(--amber)" floodOpacity="0.4" />
           </filter>
         </defs>
         

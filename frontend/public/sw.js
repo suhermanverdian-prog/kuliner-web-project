@@ -62,17 +62,24 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => {
+      .catch(async () => {
         // Fallback to cache when offline
-        return caches.match(req).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
+        const cachedResponse = await caches.match(req);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
 
-          // SPA Fallback: If requesting HTML route (like /procurement or /shift), return index.html
-          if (req.headers.get('accept')?.includes('text/html')) {
-            return caches.match('/index.html');
-          }
+        // SPA Fallback: If requesting HTML route, return index.html
+        if (req.headers.get('accept')?.includes('text/html')) {
+          const htmlFallback = await caches.match('/index.html');
+          if (htmlFallback) return htmlFallback;
+        }
+
+        // ✅ Always return a valid Response — prevents "Failed to convert value to 'Response'" error
+        return new Response('Service Unavailable', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain' },
         });
       })
   );

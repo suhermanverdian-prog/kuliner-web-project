@@ -13,7 +13,9 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(dirname, './src')
+      '@': path.resolve(dirname, './src'),
+      'react': path.resolve(dirname, './node_modules/react'),
+      'react-dom': path.resolve(dirname, './node_modules/react-dom')
     }
   },
   build: {
@@ -41,5 +43,19 @@ export default defineConfig({
       'cypress/**',
       'tests/visual.spec.js'
     ]
+  },
+  server: {
+    host: 'localhost',
+    port: 5173,
+    hmr: {
+      clientPort: 5173,
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   }
 });

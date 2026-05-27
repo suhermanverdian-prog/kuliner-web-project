@@ -14,7 +14,7 @@ const authMiddleware = (req, res, next) => {
     '/api/menu',
     '/api/activeshift',
     '/api/v1/system/outletinfos',
-    '/healthz'
+    '/api/healthz',
   ];
 
 

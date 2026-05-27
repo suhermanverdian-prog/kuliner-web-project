@@ -1,4 +1,4 @@
-const supabase = require('../supabase');
+const { supabase } = require('../supabase');
 const cache = require('../utils/cache');
 
 const TIER_DEFAULTS = {

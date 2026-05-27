@@ -59,8 +59,8 @@ export default function RevenueIntelligencePage() {
       </div>
 
       {/* Hero Analytics Card */}
-      <Card className="border-none ">
-         <div className="absolute top-0 right-0 p-12  group-hover:scale-110 transition-transform duration-1000">
+      <Card className="border-none relative overflow-hidden">
+         <div className="absolute top-0 right-0 p-12 group-hover:scale-110 transition-transform duration-1000">
             <LineChart size={240} />
          </div>
          <CardContent className="p-10 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -214,7 +214,7 @@ export default function RevenueIntelligencePage() {
                </CardContent>
             </Card>
 
-            <Card className="border-none ">
+            <Card className="border-none relative overflow-hidden">
                <CardHeader className="p-8 pb-0">
                   <p className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.3em]">Revenue Forecast</p>
                   <h3 className="text-2xl font-black uppercase tracking-tighter mt-1">MONTHLY <span className="text-amber-500">OUTLOOK</span></h3>
