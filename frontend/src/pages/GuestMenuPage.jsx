@@ -722,8 +722,13 @@ export default function GuestMenuPage({ user, tableFromQR }) {
                 </div>
               </div>
             ) : (
-              <Button variant="ghost" size="sm" asChild className="rounded-lg font-bold text-xs">
-                <a href="#/member-login">👤 Member</a>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => window.location.href = '#/login'} 
+                className="rounded-lg font-bold text-xs"
+              >
+                👤 Member
               </Button>
             )}
             
