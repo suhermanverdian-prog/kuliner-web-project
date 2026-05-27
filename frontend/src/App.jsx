@@ -134,7 +134,12 @@ function AppRoutes() {
         {/* Public Routes - Accessible without Login */}
         <Route path="/login" element={
           !user ? <LoginPage onLogin={setUser} /> : 
-          <Navigate to={user.role === 'staff' ? "/kasir" : "/"} replace />
+          <Navigate to={
+            user.role === 'staff' ? "/kasir" : 
+            user.role === 'chef' ? "/kds" : 
+            user.role === 'hrd' ? "/hrd" : 
+            "/"
+          } replace />
         } />
         <Route path="/register" element={<RegisterPage onSuccess={setUser} />} />
         <Route path="/guest/*" element={<GuestMenuPage />} />

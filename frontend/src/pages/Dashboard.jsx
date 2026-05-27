@@ -75,9 +75,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const user = useAppStore(state => state.user);
   
-  if (user?.role === 'staff') {
-    return <Navigate to="/kasir" replace />;
-  }
+  if (user?.role === 'staff') return <Navigate to="/kasir" replace />;
+  if (user?.role === 'chef') return <Navigate to="/kds" replace />;
+  if (user?.role === 'hrd') return <Navigate to="/hrd" replace />;
 
   const {
     loading,
