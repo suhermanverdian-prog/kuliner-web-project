@@ -44,6 +44,8 @@ try {
   
   // Public route test
   app.get('/api/health', (req, res) => res.json({ status: 'ok', source: 'vercel' }));
+  // New simple health check that bypasses auth & other middleware
+  app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
   // Swagger UI Integration
   const swaggerUi = require('swagger-ui-express');
