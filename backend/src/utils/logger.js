@@ -1,5 +1,19 @@
 const { createLogger, format, transports } = require('winston');
 
+const activeTransports = [];
+
+if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+  activeTransports.push(new transports.Console({ format: format.simple() }));
+} else {
+  activeTransports.push(new transports.Console({ format: format.simple() }));
+  try {
+    activeTransports.push(new transports.File({ filename: 'logs/error.log', level: 'error' }));
+    activeTransports.push(new transports.File({ filename: 'logs/combined.log' }));
+  } catch (e) {
+    console.error("Failed to initialize file logger", e);
+  }
+}
+
 const logger = createLogger({
   level: 'info',
   format: format.combine(
@@ -7,15 +21,8 @@ const logger = createLogger({
     format.errors({ stack: true }),
     format.json()
   ),
-  transports: [
-    new transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new transports.File({ filename: 'logs/combined.log' })
-  ]
+  transports: activeTransports
 });
 
-// If we're not in production, also log to the console with a simple format
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new transports.Console({ format: format.simple() }));
-}
-
 module.exports = logger;
+
