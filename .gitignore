@@ -5,3 +5,5 @@ build/
 .DS_Store
 backend/src/db/data.json
 *.log
+
+.vercel

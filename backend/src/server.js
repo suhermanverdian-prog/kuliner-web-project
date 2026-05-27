@@ -137,5 +137,5 @@ try {
   });
 }
 
-module.exports = { app, getIo: app.getIo, startServer };
+module.exports = app;
 
