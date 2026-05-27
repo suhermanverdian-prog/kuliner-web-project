@@ -13,8 +13,10 @@ const authMiddleware = (req, res, next) => {
     '/api/v1/system/health',
     '/api/menu',
     '/api/activeshift',
-    '/api/v1/system/outletinfos'
+    '/api/v1/system/outletinfos',
+    '/healthz'
   ];
+
 
   // Initialize empty context to prevent destructuring crashes downstream
   req.userContext = {};
