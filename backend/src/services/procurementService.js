@@ -479,6 +479,9 @@ class ProcurementService {
             console.error('❌ [ProcurementService.processGRN] Journal creation failed:', e.message);
         }
 
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 14);
+
         const invoicePayload = {
             id: require('crypto').randomUUID(),
             tenant_id: tenantId,
@@ -487,6 +490,7 @@ class ProcurementService {
             invoice_number: `INV-${Date.now().toString().slice(-6)}`,
             total: totalValue,
             status: 'unpaid',
+            due_date: dueDate.toISOString().split('T')[0],
             created_at: new Date().toISOString()
         };
 

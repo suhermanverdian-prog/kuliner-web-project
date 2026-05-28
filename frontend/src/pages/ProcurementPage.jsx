@@ -485,6 +485,7 @@ export default function ProcurementPage() {
                       <TableRow>
                         <TableHead>Invoice ID</TableHead>
                         <TableHead>Vendor Entity</TableHead>
+                        <TableHead className="text-center">Jatuh Tempo (Due)</TableHead>
                         <TableHead className="text-right">Settlement Amount</TableHead>
                         <TableHead className="text-center">State</TableHead>
                         <TableHead className="text-right">Control</TableHead>
@@ -493,13 +494,16 @@ export default function ProcurementPage() {
                     <TableBody>
                       {filteredInvoices.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={5} className="h-32 text-center text-zinc-500 dark:text-zinc-100 italic">No settlement liabilities recorded.</TableCell>
+                          <TableCell colSpan={6} className="h-32 text-center text-zinc-500 dark:text-zinc-100 italic">No settlement liabilities recorded.</TableCell>
                         </TableRow>
                       )}
                       {filteredInvoices.map(inv => (
                         <TableRow key={inv.id} className="h-16">
                           <TableCell className="font-mono tabular-nums text-zinc-500 dark:text-zinc-100 font-bold">#{inv.id.slice(0,8).toUpperCase()}</TableCell>
                           <TableCell className="font-black text-sm">{inv.supplier?.name}</TableCell>
+                          <TableCell className="text-center font-mono tabular-nums text-xs text-zinc-600 dark:text-zinc-400">
+                            {inv.due_date ? new Date(inv.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Instant Cash'}
+                          </TableCell>
                           <TableCell className="text-right font-mono tabular-nums font-black text-foreground tabular-nums text-sm">{formatCurrency(inv.total)}</TableCell>
                           <TableCell className="text-center">
                             <span className={cn(
