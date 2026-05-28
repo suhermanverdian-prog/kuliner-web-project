@@ -412,10 +412,10 @@ export default function LaporanPage({ onNavigate }) {
           </div>
 
           {/* Analytics Row - Detail Oriented */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* Top Products */}
             <Card className="border-none shadow-2xl ">
-              <CardHeader className="p-8 border-b border-white/5">
+              <CardHeader className="p-4 sm:p-6 lg:p-8 border-b border-white/5">
                 <CardTitle className="text-lg font-black uppercase tracking-widest flex items-center gap-4">
                    <div className="w-8 h-8 ">
                       <TrendingUp size={16} />
@@ -423,7 +423,7 @@ export default function LaporanPage({ onNavigate }) {
                    Elite Performance
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
                 <div className="space-y-6">
                   {topProducts.slice(0, 5).map((p, i) => (
                     <div key={i} className="flex items-center gap-6 group hover:translate-x-2 transition-transform cursor-default">
@@ -446,7 +446,7 @@ export default function LaporanPage({ onNavigate }) {
 
             {/* Stock Alert - Critical */}
             <Card className="border-none shadow-2xl ">
-              <CardHeader className="p-8 border-b border-white/5">
+              <CardHeader className="p-4 sm:p-6 lg:p-8 border-b border-white/5">
                 <CardTitle className="text-lg font-black uppercase tracking-widest flex items-center gap-4 text-rose-600 dark:text-rose-400">
                    <div className="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center text-zinc-900 dark:text-zinc-100">
                       <AlertTriangle size={16} />
@@ -454,7 +454,7 @@ export default function LaporanPage({ onNavigate }) {
                    Stock Depletion
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-8">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
                 <div className="space-y-4">
                   {criticalStock.length === 0 ? (
                     <div className="py-20 text-center space-y-6 ">
@@ -484,12 +484,12 @@ export default function LaporanPage({ onNavigate }) {
             {/* Waste & AI Insight Mini */}
             <div className="space-y-8">
                <Card className="border-none shadow-2xl ">
-                 <CardHeader className="p-8 pb-4">
+                 <CardHeader className="p-4 sm:p-6 lg:p-8 pb-4">
                    <CardTitle className="text-lg font-black uppercase tracking-widest flex items-center gap-4 text-rose-600 dark:text-rose-400">
                       <Trash2 size={20} /> Operational Waste
                    </CardTitle>
                  </CardHeader>
-                 <CardContent className="p-8 pt-0">
+                 <CardContent className="p-4 sm:p-6 lg:p-8 pt-0">
                     <div className="flex items-center justify-between mb-8">
                        <div className="space-y-1">
                          <p className="text-4xl font-black text-rose-600 dark:text-rose-400 font-mono tabular-nums tracking-tighter">{formatRupiah(waste.totalWaste)}</p>
@@ -522,7 +522,7 @@ export default function LaporanPage({ onNavigate }) {
                </Card>
 
                <Card className="border-none shadow-2xl ">
-                  <div className="">
+                  <div className="p-4 sm:p-6 lg:p-8 space-y-6">
                     <div className="flex items-center justify-between">
                        <CardTitle className="text-xs font-black uppercase tracking-[0.4em] text-amber-500">Live Insights</CardTitle>
                        <Lightbulb size={18} className="text-amber-500 animate-pulse" />
@@ -542,7 +542,7 @@ export default function LaporanPage({ onNavigate }) {
 
           {/* Inventory Mutation Log - Data Rich */}
           <Card className="border-none shadow-2xl ">
-            <CardHeader className="p-12 pb-8 flex flex-col md:flex-row items-center justify-between gap-8">
+            <CardHeader className="p-4 sm:p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-8">
               <div className="space-y-1">
                 <CardTitle className="text-2xl font-black uppercase tracking-tighter flex items-center gap-4">
                   <ClipboardCheck size={28} className="text-amber-500" /> Stock Audit Ledger
@@ -555,7 +555,7 @@ export default function LaporanPage({ onNavigate }) {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="p-0 px-8 pb-12">
+            <CardContent className="p-0 px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6 lg:pb-8">
               <div className="overflow-x-auto rounded-lg border border-white/5">
                 <table className="w-full text-left border-collapse overflow-hidden">
                   <thead>
