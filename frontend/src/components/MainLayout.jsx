@@ -55,7 +55,7 @@ export default function MainLayout() {
     <div className="flex min-h-screen bg-background font-sans">
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:flex flex-col shrink-0 min-h-screen transition-all duration-300",
+        "hidden lg:flex flex-col shrink-0 sticky top-0 h-screen transition-all duration-300",
         isCollapsed ? "w-16" : "w-64"
       )}>
         <Sidebar
