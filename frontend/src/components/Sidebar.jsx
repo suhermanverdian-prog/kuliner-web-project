@@ -98,14 +98,25 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Brand */}
-      <div className="h-16 flex items-center justify-between px-4 shrink-0">
+      <div className={cn(
+        "h-16 flex items-center shrink-0 px-4",
+        isCollapsed ? "justify-center" : "justify-between"
+      )}>
         {!isCollapsed ? (
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-amber-500 text-zinc-950 rounded-lg flex items-center justify-center font-black text-lg">K</div>
             <span className="font-black text-lg tracking-tighter text-foreground uppercase">Enterprise</span>
           </div>
         ) : (
-          <div className="w-8 h-8 bg-amber-500 text-zinc-950 rounded-lg flex items-center justify-center font-black text-lg mx-auto">K</div>
+          <Button 
+            variant="ghost" 
+            size="xs" 
+            onClick={onToggleCollapse} 
+            className="w-8 h-8 bg-amber-500 text-zinc-950 hover:bg-amber-600 rounded-lg flex items-center justify-center font-black text-lg shadow-sm transition-all active:scale-95"
+            title="Expand Sidebar"
+          >
+            K
+          </Button>
         )}
         {!isCollapsed && (
           <Button variant="ghost" size="xs" onClick={onToggleCollapse} className="text-muted-foreground hover:text-foreground">

@@ -55,7 +55,7 @@ export default function MainLayout() {
     <div className="flex min-h-screen bg-background font-sans">
       {/* Desktop Sidebar */}
       <aside className={cn(
-        "hidden lg:flex flex-col fixed inset-y-0 left-0 z-50 transition-all duration-300",
+        "hidden lg:flex flex-col shrink-0 min-h-screen transition-all duration-300",
         isCollapsed ? "w-16" : "w-64"
       )}>
         <Sidebar
@@ -67,10 +67,7 @@ export default function MainLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className={cn(
-        "flex flex-col flex-1 min-h-screen transition-all duration-300",
-        isCollapsed ? "lg:ml-16" : "lg:ml-64"
-      )}>
+      <div className="flex flex-col flex-1 min-h-screen min-w-0 transition-all duration-300">
         {/* Topbar */}
         <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-[60] bg-background/80 backdrop-blur-md border-b border-border/50">
           <div className="flex items-center gap-4">
