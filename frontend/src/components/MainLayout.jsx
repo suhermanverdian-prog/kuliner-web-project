@@ -69,8 +69,7 @@ export default function MainLayout() {
       {/* Main Content */}
       <div className={cn(
         "flex flex-col flex-1 min-h-screen transition-all duration-300",
-        "lg:ml-64",
-        isCollapsed && "lg:ml-16"
+        isCollapsed ? "lg:ml-16" : "lg:ml-64"
       )}>
         {/* Topbar */}
         <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-[60] bg-background/80 backdrop-blur-md border-b border-border/50">
