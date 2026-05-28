@@ -189,7 +189,7 @@ export default function LaporanPage({ onNavigate }) {
   );
 
   return (
-    <div className="space-y-16 pb-20 min-h-screen">
+    <div className="space-y-16 pb-20 min-h-screen w-full max-w-full overflow-x-hidden px-1">
       {/* Header - Enterprise Grade */}
       <div className="space-y-6">
         <div className="flex items-center gap-6">
@@ -200,8 +200,8 @@ export default function LaporanPage({ onNavigate }) {
       </div>
 
       {/* Filter Row - Moved below Header */}
-      <div className="flex flex-wrap items-center gap-6 bg-card p-4 rounded-lg border border-border shadow-sm w-fit">
-          <div className="flex p-1 gap-1">
+      <div className="flex flex-wrap items-center gap-4 bg-card p-4 rounded-lg border border-border shadow-sm w-full md:w-fit max-w-full overflow-hidden">
+          <div className="flex flex-wrap p-1 gap-1">
             {PERIODS.map(p => (
               <button 
                 key={p.key} 
@@ -607,7 +607,7 @@ export default function LaporanPage({ onNavigate }) {
           {/* Comprehensive Financial Summary */}
           <Card className="border-none shadow-2xl ">
             <CardContent className="p-0">
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 divide-x divide-white/5">
+                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-px bg-zinc-200 dark:bg-zinc-800/30 border border-zinc-200 dark:border-zinc-800/80 rounded-lg overflow-hidden">
                   {[
                     { label: 'Gross Sales', value: formatRupiah(summary.totalRevenue) },
                     { label: 'Applied Discounts', value: formatRupiah(0), color: 'text-rose-600 dark:text-rose-400' },
