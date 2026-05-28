@@ -742,8 +742,9 @@ export default function ProcurementPage() {
       )}
       {/* 📦 ADD VENDOR MODAL */}
       {showSupplierModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 ">
-           <Card className="w-full max-w-md border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-card rounded-lg overflow-hidden">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setShowSupplierModal(false)} />
+          <Card className="relative w-full max-w-lg border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-card rounded-lg overflow-hidden animate-in zoom-in-95 duration-200">
             <CardHeader className="p-8 border-b border-border bg-background">
               <div className="flex justify-between items-center">
                 <div>
