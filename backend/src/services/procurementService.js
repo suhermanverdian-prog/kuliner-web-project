@@ -479,8 +479,25 @@ class ProcurementService {
             console.error('❌ [ProcurementService.processGRN] Journal creation failed:', e.message);
         }
 
+        let topDays = 14;
+        if (supplier_id) {
+            try {
+                const { supabase: sb } = require('../supabase');
+                const { data: supplierData } = await sb
+                    .from('suppliers')
+                    .select('payment_terms_days')
+                    .eq('id', supplier_id)
+                    .maybeSingle();
+                if (supplierData && supplierData.payment_terms_days !== undefined && supplierData.payment_terms_days !== null) {
+                    topDays = Number(supplierData.payment_terms_days);
+                }
+            } catch (e) {
+                console.warn('⚠️ Failed to fetch dynamic TOP days, defaulting to 14:', e.message);
+            }
+        }
+        
         const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 14);
+        dueDate.setDate(dueDate.getDate() + topDays);
 
         const invoicePayload = {
             id: require('crypto').randomUUID(),

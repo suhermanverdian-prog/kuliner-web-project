@@ -764,6 +764,16 @@ export default function ProcurementPage() {
                   onChange={e => setNewSupplier({ ...newSupplier, address: e.target.value })}
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Term of Payment (Hari)</label>
+                <Input 
+                  type="number"
+                  placeholder="e.g. 14" 
+                  className="h-12 bg-background border-border/80 focus:bg-background rounded-lg font-bold text-sm"
+                  value={newSupplier.payment_terms_days || ''}
+                  onChange={e => setNewSupplier({ ...newSupplier, payment_terms_days: parseInt(e.target.value) || 0 })}
+                />
+              </div>
             </CardContent>
             <CardFooter className="p-8 bg-background border-t border-border">
                <Button 

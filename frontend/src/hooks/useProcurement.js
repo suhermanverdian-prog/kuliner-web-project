@@ -14,7 +14,7 @@ export function useProcurement() {
   const [poItems, setPoItems] = useState([]);
   const [notes, setNotes] = useState('');
   const [showSupplierModal, setShowSupplierModal] = useState(false);
-  const [newSupplier, setNewSupplier] = useState({ name: '', contact: '', address: '' });
+  const [newSupplier, setNewSupplier] = useState({ name: '', contact: '', address: '', payment_terms_days: 14 });
   const [receivingPo, setReceivingPo] = useState(null);
   const [receivingItems, setReceivingItems] = useState([]);
   const [cancelConfirmPO, setCancelConfirmPO] = useState(null); // PO yang akan dibatalkan
@@ -352,7 +352,7 @@ export function useProcurement() {
     try {
       await api.addSupplier(newSupplier);
       setShowSupplierModal(false);
-      setNewSupplier({ name: '', contact: '', address: '' });
+      setNewSupplier({ name: '', contact: '', address: '', payment_terms_days: 14 });
       loadBaseData();
     } catch (err) {
       alert("Error adding vendor: " + err.message);
