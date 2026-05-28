@@ -12,7 +12,7 @@ class AccountingRepository {
   }
 
   async getAccounts(tenantId) {
-    let query = supabase.from('accounts').select('*').order('code');
+    let query = supabase.from('accounts').select('id, tenant_id, code, name, category, normalBalance:normal_balance, is_active, created_at').order('code');
     if (tenantId) query = query.eq('tenant_id', tenantId);
     
     const { data, error } = await query;

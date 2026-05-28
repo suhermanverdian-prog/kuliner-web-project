@@ -180,7 +180,8 @@ class SystemService {
         geofence_radius: data.geofence_radius || 100,
         ai_provider: data.ai_provider,
         ai_api_key: data.ai_api_key,
-        is_ai_enabled: data.is_ai_enabled
+        is_ai_enabled: data.is_ai_enabled,
+        void_approvers: data.void_approvers
       };
     }
 

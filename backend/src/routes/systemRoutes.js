@@ -17,13 +17,14 @@ const settingsSchema = z.object({
   radius: z.number().nonnegative().optional(),
   ai_provider: z.string().optional().nullable(),
   ai_api_key: z.string().optional().nullable(),
-  is_ai_enabled: z.boolean().optional().nullable()
-});
+  is_ai_enabled: z.boolean().optional().nullable(),
+  void_approvers: z.array(z.string()).optional().nullable()
+}).passthrough();
 
 const loyaltySettingsSchema = z.object({
   enabled: z.boolean(),
-  multiplier: z.number().positive(),
-  points_value: z.number().positive()
+  multiplier: z.number().nonnegative(),
+  points_value: z.number().nonnegative()
 });
 // ============================================================
 

@@ -64,4 +64,7 @@ router.patch('/pos/:id/cancel', permissionGuard('procurement', 'update'), async 
   }
 });
 
+// 11. QUICK/SIMPLE DIRECT PURCHASE (Cash/Tunai dari Kas Kecil)
+router.post('/simple-purchase', permissionGuard('procurement', 'create'), journalGuard, procurementController.processSimplePurchase);
+
 module.exports = router;

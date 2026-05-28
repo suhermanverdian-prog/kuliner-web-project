@@ -114,9 +114,30 @@ async function seed() {
   }
 
   // ─────────────────────────────────────────────
-  // 6. SEED OUTLETS
+  // 6. SEED CHART OF ACCOUNTS (COA)
   // ─────────────────────────────────────────────
-  console.log('6️⃣  Seeding Outlets...');
+  console.log('6️⃣  Seeding Chart of Accounts...');
+  const coaItems = [
+    { tenant_id: TENANT_ID, code: '1-1000', name: 'Kas Tunai', category: 'Asset', normal_balance: 'Debit' },
+    { tenant_id: TENANT_ID, code: '1-1010', name: 'Rekening Bank', category: 'Asset', normal_balance: 'Debit' },
+    { tenant_id: TENANT_ID, code: '1-2000', name: 'Inventory / Persediaan Bahan Baku', category: 'Asset', normal_balance: 'Debit' },
+    { tenant_id: TENANT_ID, code: '2-1000', name: 'Accounts Payable / Hutang Usaha', category: 'Liability', normal_balance: 'Credit' },
+    { tenant_id: TENANT_ID, code: '2-1010', name: 'Hutang Pajak (PPN)', category: 'Liability', normal_balance: 'Credit' },
+    { tenant_id: TENANT_ID, code: '3-1000', name: 'Modal Pemilik', category: 'Equity', normal_balance: 'Credit' },
+    { tenant_id: TENANT_ID, code: '4-1000', name: 'Pendapatan Penjualan', category: 'Revenue', normal_balance: 'Credit' },
+    { tenant_id: TENANT_ID, code: '5-1000', name: 'HPP / COGS', category: 'Expense', normal_balance: 'Debit' },
+    { tenant_id: TENANT_ID, code: '5-2000', name: 'Beban Operasional / Waste', category: 'Expense', normal_balance: 'Debit' },
+  ];
+
+  for (const coa of coaItems) {
+    const { error } = await supabase.from('accounts').upsert([coa], { onConflict: 'tenant_id,code' });
+    console.log(error ? `   ❌ COA "${coa.code}": ${error.message}` : `   ✅ COA "${coa.code}" OK`);
+  }
+
+  // ─────────────────────────────────────────────
+  // 7. SEED OUTLETS
+  // ─────────────────────────────────────────────
+  console.log('7️⃣  Seeding Outlets...');
   const { error: oErr } = await supabase.from('outlets').upsert([{
     id: '11111111-1111-1111-1111-111111111111',
     name: 'Outlet Pusat',
@@ -130,9 +151,9 @@ async function seed() {
   console.log(oErr ? `   ❌ Outlet Error: ${oErr.message}` : '   ✅ Outlet OK');
 
   // ─────────────────────────────────────────────
-  // 7. SEED SUPPLIERS
+  // 8. SEED SUPPLIERS
   // ─────────────────────────────────────────────
-  console.log('7️⃣  Seeding Suppliers...');
+  console.log('8️⃣  Seeding Suppliers...');
   const suppliers = [
     { name: 'PT Kopi Nusantara', contact: '021-5551234', address: 'Jl. Kopi Raya No. 10, Bandung', tenant_id: TENANT_ID },
     { name: 'UD Susu Segar', contact: '021-5555678', address: 'Jl. Peternakan No. 5, Bogor', tenant_id: TENANT_ID },
@@ -147,6 +168,16 @@ async function seed() {
   console.log('   SuperAdmin → username: superadmin / password: admin123');
   console.log('   Admin      → username: admin / password: admin123');
   console.log('   Kasir      → username: kasir / password: kasir123');
+  console.log('\n📊 Chart of Accounts yang sudah di-seed:');
+  console.log('   1-1000: Kas Tunai');
+  console.log('   1-1010: Rekening Bank');
+  console.log('   1-2000: Inventory');
+  console.log('   2-1000: Accounts Payable');
+  console.log('   2-1010: Hutang Pajak');
+  console.log('   3-1000: Modal Pemilik');
+  console.log('   4-1000: Pendapatan Penjualan');
+  console.log('   5-1000: HPP / COGS');
+  console.log('   5-2000: Beban Operasional');
 }
 
 seed().catch(console.error);

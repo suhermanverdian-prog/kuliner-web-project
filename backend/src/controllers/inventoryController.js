@@ -111,6 +111,7 @@ class InventoryController {
     }
   }
 
+
   async deleteInventory(req, res) {
     try {
       const { tenantId } = req.userContext || {};
@@ -119,6 +120,53 @@ class InventoryController {
       res.json({ success: true, message: 'Berhasil dihapus (soft-delete)' });
     } catch (err) {
       console.error('❌ [Inventory DELETE Error]:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  async getCategories(req, res) {
+    try {
+      const { tenantId } = req.userContext || {};
+      const data = await InventoryService.getCategories(tenantId);
+      res.json(data);
+    } catch (err) {
+      console.error('❌ [Categories GET Error]:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  async createCategory(req, res) {
+    try {
+      const { tenantId } = req.userContext || {};
+      const { name } = req.body;
+      const data = await InventoryService.createCategory(name, tenantId);
+      res.status(201).json(data);
+    } catch (err) {
+      console.error('❌ [Category POST Error]:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  async deleteCategory(req, res) {
+    try {
+      const { tenantId } = req.userContext || {};
+      const { id } = req.params;
+      const data = await InventoryService.deleteCategory(id, tenantId);
+      res.json({ success: true, data });
+    } catch (err) {
+      console.error('❌ [Category DELETE Error]:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  async assembleInventory(req, res) {
+    try {
+      const { tenantId } = req.userContext || {};
+      const { targetBahanId, produceQty } = req.body;
+      const data = await InventoryService.assembleInventory(targetBahanId, produceQty, tenantId);
+      res.status(201).json(data);
+    } catch (err) {
+      console.error('❌ [Assembly POST Error]:', err.message);
       res.status(500).json({ error: err.message });
     }
   }

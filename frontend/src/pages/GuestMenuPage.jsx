@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { formatRupiah } from '../utils/formatters';
 import { MENU_CATEGORIES } from '../utils/constants';
 import { api } from '../api';
@@ -37,6 +38,7 @@ import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { cn } from '../lib/utils';
+import { useAppStore } from '../store/useAppStore';
 
 // KEN ENTERPRISE RECEIPT ENGINE
 const printReceipt = (order) => {
@@ -398,7 +400,7 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
         customerPhone: form.phone,
         note: form.note,
         type: 'Self Order',
-        cashierName: 'Self Service'
+        cashierName: 'Self Service (Paid)'
       };
       const res = await api.checkout(trxData);
       onSuccess(res.id);
@@ -643,7 +645,35 @@ function CartDrawer({ cart, onClose, onChangeQty, onCheckout }) {
   );
 }
 
-export default function GuestMenuPage({ user, tableFromQR }) {
+export default function GuestMenuPage({ user }) {
+  const { tenantId, tableNumber: tableFromQR } = useParams();
+  const setUser = useAppStore(state => state.setUser);
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginPhone, setLoginPhone] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const handleMemberLogin = async (e) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    try {
+      const res = await api.login({ username: loginPhone, password: loginPassword });
+      setUser(res);
+      setShowLogin(false);
+    } catch (err) {
+      alert('Gagal login: ' + err.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  // Initialize storage if accessing via a direct store link
+  useEffect(() => {
+    if (tenantId) {
+      localStorage.setItem('tenantId', tenantId);
+    }
+  }, [tenantId]);
+
   const {
     category, setCategory,
     search, setSearch,
@@ -725,7 +755,7 @@ export default function GuestMenuPage({ user, tableFromQR }) {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => window.location.href = '#/login'} 
+                onClick={() => setShowLogin(true)} 
                 className="rounded-lg font-bold text-xs"
               >
                 👤 Member
@@ -898,12 +928,58 @@ export default function GuestMenuPage({ user, tableFromQR }) {
 
       {/* Cart Drawer */}
       {showCart && (
-        <CartDrawer
-          cart={cart}
-          onClose={() => setShowCart(false)}
-          onChangeQty={changeQty}
-          onCheckout={(total) => { setShowCart(false); setCheckoutTotal(total); }}
+        <CartDrawer 
+          cart={cart} 
+          onChangeQty={changeQty} 
+          onClose={() => setShowCart(false)} 
+          onCheckout={(total) => { setShowCart(false); setCheckoutTotal(total); }} 
         />
+      )}
+
+      {/* Member Login Modal */}
+      {showLogin && (
+        <div className="fixed inset-0 z-[2000] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-card w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 border border-muted">
+            <div className="p-6 border-b flex justify-between items-center bg-primary/5">
+              <h3 className="text-xl font-black flex items-center gap-2">
+                <User className="text-primary" /> Member Login
+              </h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowLogin(false)} className="rounded-lg hover:bg-rose-500/10 hover:text-rose-500">
+                <X size={20} />
+              </Button>
+            </div>
+            <form onSubmit={handleMemberLogin} className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-zinc-500 uppercase">Nomor HP</label>
+                <Input 
+                  value={loginPhone}
+                  onChange={e => setLoginPhone(e.target.value)}
+                  placeholder="0812xxxxxx"
+                  className="rounded-lg h-12 bg-background font-mono"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-zinc-500 uppercase">Kata Sandi</label>
+                <Input 
+                  type="password"
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="rounded-lg h-12 bg-background font-mono"
+                  required
+                />
+              </div>
+              <Button 
+                type="submit" 
+                disabled={loginLoading}
+                className="w-full h-12 font-black rounded-lg mt-4 shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all"
+              >
+                {loginLoading ? 'Memproses...' : 'Masuk Sekarang'}
+              </Button>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

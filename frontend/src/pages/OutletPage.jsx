@@ -196,58 +196,58 @@ const OutletPage = () => {
       {/* Modal Form */}
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="w-full max-w-xl shadow-2xl bg-card border-none rounded-lg overflow-hidden">
-            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between p-10">
-               <div className="space-y-1">
-                  <CardTitle className="text-2xl font-black uppercase tracking-tighter">{editingOutlet ? 'Modify Node' : 'Initialize New Node'}</CardTitle>
-                  <CardDescription className="uppercase font-black tracking-[0.2em] text-[10px] text-amber-500">Outlet Infrastructure Setup</CardDescription>
+          <Card className="w-full max-w-lg shadow-2xl bg-card border border-border rounded-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between p-5">
+               <div className="space-y-0.5">
+                  <CardTitle className="text-lg font-black uppercase tracking-tighter">{editingOutlet ? 'Modify Node' : 'Initialize New Node'}</CardTitle>
+                  <CardDescription className="uppercase font-black tracking-[0.2em] text-[9px] text-amber-500">Outlet Infrastructure Setup</CardDescription>
                </div>
-               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg hover:bg-background" onClick={() => setShowModal(false)}><X size={20} /></Button>
+               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background" onClick={() => setShowModal(false)}><X size={18} /></Button>
             </CardHeader>
-            <form onSubmit={handleSubmit}>
-               <CardContent className="p-10 space-y-6">
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 ml-1">Node Identification Name</label>
+            <form onSubmit={handleSubmit} className="overflow-y-auto custom-scrollbar flex-1">
+               <CardContent className="p-5 space-y-4">
+                  <div className="space-y-1.5">
+                     <label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 ml-1">Node Identification Name</label>
                      <Input 
                        required
-                       className="h-14 bg-background border-border rounded-lg font-bold px-6 focus:ring-amber-500"
+                       className="h-11 bg-background border-border rounded-md font-bold px-4 focus:ring-amber-500 text-sm"
                        value={formData.name}
                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                        placeholder="e.g. BrewMaster - Central Sudirman"
                      />
                   </div>
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 ml-1">Physical Coordinates (Address)</label>
+                  <div className="space-y-1.5">
+                     <label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 ml-1">Physical Coordinates (Address)</label>
                      <textarea 
                        rows="3"
-                       className="w-full bg-background border border-border rounded-lg p-6 font-medium focus:ring-2 focus:ring-amber-500 outline-none transition-all"
+                       className="w-full bg-background border border-border rounded-md p-4 text-xs font-bold focus:ring-2 focus:ring-amber-500 outline-none transition-all text-foreground"
                        value={formData.address}
                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                        placeholder="Complete building, floor, and city details..."
                      />
                   </div>
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 ml-1">Secure Contact Line</label>
+                  <div className="space-y-1.5">
+                     <label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 ml-1">Secure Contact Line</label>
                      <Input 
-                       className="h-14 bg-background border-border rounded-lg font-black font-mono tabular-nums px-6"
+                       className="h-11 bg-background border-border rounded-md font-black font-mono tabular-nums px-4 text-sm"
                        value={formData.phone}
                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                        placeholder="+62 812 XXXX"
                      />
                   </div>
-                  <div className="flex items-center gap-4 p-4 bg-background rounded-lg border border-border">
+                  <div className="flex items-center gap-3 p-3 bg-background rounded-md border border-border">
                      <input 
                        type="checkbox" id="is_active"
-                       className="w-6 h-6 rounded-lg border-border text-amber-500 focus:ring-amber-500 transition-all cursor-pointer"
+                       className="w-5 h-5 rounded border-border text-amber-500 focus:ring-amber-500 transition-all cursor-pointer"
                        checked={formData.is_active}
                        onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                     />
-                     <label htmlFor="is_active" className="text-xs font-black uppercase tracking-widest text-foreground cursor-pointer">Operational Readiness Active</label>
+                      />
+                     <label htmlFor="is_active" className="text-[10px] font-black uppercase tracking-widest text-foreground cursor-pointer">Operational Readiness Active</label>
                   </div>
                </CardContent>
-               <CardFooter className="bg-background p-8 border-t border-border flex gap-4">
-                  <Button type="button" variant="ghost" className="flex-1 h-14 font-black uppercase tracking-widest text-[10px] rounded-lg" onClick={() => setShowModal(false)}>Cancel</Button>
-                  <Button variant="primary" type="submit" className="flex-1 h-14 font-black uppercase tracking-[0.2em] text-[10px] rounded-lg">
+               <CardFooter className="bg-background p-4 border-t border-border flex gap-3">
+                  <Button type="button" variant="ghost" className="flex-1 h-11 font-black uppercase tracking-widest text-[9px] rounded-md" onClick={() => setShowModal(false)}>Cancel</Button>
+                  <Button variant="primary" type="submit" className="flex-1 h-11 font-black uppercase tracking-[0.2em] text-[9px] rounded-md">
                      {editingOutlet ? 'UPDATE INFRASTRUCTURE' : 'INITIALIZE NODE'}
                   </Button>
                </CardFooter>

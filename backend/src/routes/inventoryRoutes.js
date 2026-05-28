@@ -18,12 +18,16 @@ const bahanSchema = z.object({
     name: z.string().min(1, "Nama bahan wajib diisi"),
     category: z.string().min(1, "Kategori bahan wajib diisi"),
     unit: z.string().min(1, "Satuan unit dasar wajib diisi"),
-    price: z.number().nonnegative("Harga bahan tidak boleh minus"),
+    price: z.number().nonnegative("Harga bahan tidak boleh minus").optional().default(0),
+    cost: z.number().nonnegative("Harga bahan tidak boleh minus").optional().default(0),
     min_stock: z.number().nonnegative("Stok minimum tidak boleh minus").optional().default(0),
     stock: z.number().nonnegative("Stok awal tidak boleh minus").optional().default(0),
+    supplier_id: z.union([z.string().uuid(), z.literal(''), z.null()]).optional().transform(val => val === '' ? null : val),
     conversions: z.array(conversionSchema).optional(),
+    bom: z.array(z.any()).optional().default([]),
     notes: z.string().optional()
 });
+
 
 
 /**
@@ -80,8 +84,28 @@ router.put('/:id', permissionGuard('inventory', 'update'), validateBody(bahanSch
 
 /**
  * @route DELETE /api/inventory/:id
- * @desc Soft-Delete material
+ * @desc Safe delete/archive a raw material
  */
 router.delete('/:id', permissionGuard('inventory', 'delete'), inventoryController.deleteInventory);
+
+/**
+ * @route POST /api/inventory/assemble
+ */
+router.post('/assemble', permissionGuard('inventory', 'create'), inventoryController.assembleInventory);
+
+/**
+ * @route GET /api/inventory/categories
+ */
+router.get('/categories', permissionGuard('inventory', 'view'), inventoryController.getCategories);
+
+/**
+ * @route POST /api/inventory/categories
+ */
+router.post('/categories', permissionGuard('inventory', 'create'), inventoryController.createCategory);
+
+/**
+ * @route DELETE /api/inventory/categories/:id
+ */
+router.delete('/categories/:id', permissionGuard('inventory', 'delete'), inventoryController.deleteCategory);
 
 module.exports = router;

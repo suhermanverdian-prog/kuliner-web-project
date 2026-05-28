@@ -46,12 +46,17 @@ const getResource = (prop) => {
     'getBahan': 'inventory',
     'saveBahan': 'inventory',
     'updateBahan': 'inventory',
+    'deleteBahan': 'inventory',
     'getInventory': 'inventory',
     'getLowStock': 'inventory/low-stock',
     'getInventoryMeta': 'inventory/meta',
     'getInventoryPredictions': 'inventory/predictions',
     'getInventoryLogs': 'inventory/logs',
     'getInventoryLogistics': 'inventory/logistics',
+    'getCategories': 'inventory/categories',
+    'createCategory': 'inventory/categories',
+    'deleteCategory': 'inventory/categories',
+    'assembleInventory': 'inventory/assemble',
     
     // System & Shifts
     'getShifts': 'shifts',
@@ -82,6 +87,8 @@ const getResource = (prop) => {
     'checkout': 'transactions',
     'confirmPayment': 'transactions', // Will append /id/confirm in logic
     'updateKdsStatus': 'transactions',
+    'requestVoid': 'transactions',
+    'approveVoid': 'transactions',
     
     // User Management
     'saveUser': 'users',
@@ -104,6 +111,7 @@ const getResource = (prop) => {
     'addSupplier': 'p/suppliers',
     'getConversions': 'p/conversions',
     'addGRN': 'p/grns',
+    'addSimplePurchase': 'p/simple-purchase',
     
     // Laporan (Reports)
     'getLaporanSummary': 'laporan/summary',
@@ -125,7 +133,13 @@ const getResource = (prop) => {
     // Accounting
     'getAccountingSummary': 'accounting/summary',
     'getAccounts': 'accounting/accounts',
-    'getJournals': 'accounting/journals'
+    'getJournals': 'accounting/journals',
+
+    // Budgeting
+    'getBudgets': 'accounting/budgets',
+    'saveBudget': 'accounting/budgets',
+    'deleteBudget': 'accounting/budgets',
+    'getBudgetVariance': 'accounting/budgets/variance',
   };
   return map[prop] || prop.replace(/get|add|update|delete|save/i, '').toLowerCase();
 };
@@ -144,13 +158,17 @@ const apiBase = {
     try {
       const response = await fetch(url, options);
       if (!response.ok) {
-        // --- KEN ENTERPRISE: GLOBAL 401/403 INTERCEPTOR ---
-        if (response.status === 401 || response.status === 403) {
-          console.warn(`[KEN API] 401/403 Detected. Forcing logout to prevent stale session...`);
-          localStorage.removeItem('ken-enterprise-storage');
-          localStorage.removeItem('token');
-          localStorage.removeItem('tenantId');
-          window.location.href = '/#/login';
+        // --- KEN ENTERPRISE: GLOBAL 401 INTERCEPTOR ---
+        if (response.status === 401) {
+          const isGuestApp = window.location.hash.includes('/guest') || window.location.hash.includes('/store');
+          
+          if (!isGuestApp) {
+            console.warn(`[KEN API] 401 Unauthorized Detected. Forcing logout to prevent stale session...`);
+            localStorage.removeItem('ken-enterprise-storage');
+            localStorage.removeItem('token');
+            localStorage.removeItem('tenantId');
+            window.location.href = '/#/login';
+          }
         }
 
         const error = await response.json().catch(() => ({}));
@@ -221,20 +239,29 @@ const apiProxy = new Proxy(apiBase, {
 
       // 1. Detect Method
       if (prop.startsWith('get')) method = 'GET';
-      else if (prop.startsWith('add') || prop.startsWith('post') || prop === 'login' || prop === 'closeShift') method = 'POST';
+      else if (prop.startsWith('add') || prop.startsWith('post') || prop.startsWith('create') || prop.startsWith('assemble') || prop === 'login' || prop === 'closeShift') method = 'POST';
       else if (prop.startsWith('update') || prop.startsWith('put') || prop === 'confirmPayment') method = 'PUT';
       else if (prop.startsWith('delete')) method = 'DELETE';
-      else if (prop === 'checkout') method = 'POST';
+      else if (prop === 'checkout' || prop === 'requestVoid' || prop === 'approveVoid') method = 'POST';
       else if (prop.startsWith('save')) {
          // Custom logic for saveXXX(data). If data has an 'id', use PUT, otherwise POST.
-         method = idOrData?.id ? 'PUT' : 'POST';
+         if (prop === 'saveSettings' || prop === 'saveSettingsLoyalty') {
+             method = 'POST'; // Settings always use POST for upsert
+         } else {
+             method = idOrData?.id ? 'PUT' : 'POST';
+         }
       }
 
       // 2. Argument & Action Handling
-      if (prop.startsWith('save')) {
-        // Pattern: save(data) -> /resource or /resource/id
+      if (prop === 'requestVoid' || prop === 'approveVoid') {
+         url += `/${idOrData}`;
+         payload = { reason: optionalData || 'Pembatalan transaksi POS' };
+      } else if (prop.startsWith('save')) {
+         // Pattern: save(data) -> /resource or /resource/id
         payload = idOrData;
-        if (idOrData?.id) url += `/${idOrData.id}`;
+        if (idOrData?.id && prop !== 'saveSettings' && prop !== 'saveSettingsLoyalty') {
+            url += `/${idOrData.id}`;
+        }
       } else if (optionalData !== null) {
         // Pattern: method(id, data) -> /resource/id/action
         url += `/${idOrData}`;
@@ -267,6 +294,8 @@ const apiProxy = new Proxy(apiBase, {
       if (prop.startsWith('close') && prop.endsWith('Shift')) url += '/close';
       if (prop === 'confirmPayment') url += '/confirm';
       if (prop === 'updateKdsStatus') url += '/kds';
+      if (prop === 'requestVoid') url += '/request-void';
+      if (prop === 'approveVoid') url += '/approve-void';
 
       // --- ENTERPRISE QUERY ENGINE ---
       if (method === 'GET' && payload && typeof payload === 'object') {

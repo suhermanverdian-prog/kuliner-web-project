@@ -7,8 +7,8 @@ import {
   ShoppingCart, Search, CheckCircle2,
   Wallet, CreditCard, Banknote, Landmark,
   Plus, Minus, X, Coffee,
-  ShoppingBag, Lock, Zap,
-  AlertCircle, Smartphone, Check
+  ShoppingBag, Lock, Zap, Clock,
+  AlertCircle, Smartphone, Check, Gift, Heart
 } from 'lucide-react';
 import { ReceiptTemplate } from '../components/ReceiptTemplate';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
@@ -197,10 +197,12 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
   const [loading, setLoading] = useState(false);
   const [cashReceived, setCashReceived] = useState('');
   const [dynamicMethods, setDynamicMethods] = useState([]);
+  const [complimentaryReason, setComplimentaryReason] = useState('');
 
+  const isComplimentary = payMethod === 'Complimentary' || payMethod === 'Staff Benefit';
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const taxAmount = Math.round(subtotal * 0.11);
-  const total = subtotal + taxAmount;
+  const taxAmount = isComplimentary ? 0 : Math.round(subtotal * 0.11);
+  const total = isComplimentary ? 0 : subtotal + taxAmount;
   const changeAmount = Number(cashReceived) - total;
 
   useEffect(() => {
@@ -238,6 +240,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
 
   const handlePay = async () => {
     if (payMethod === 'Tunai' && Number(cashReceived) < total) return alert('Uang kurang!');
+    if (isComplimentary && !complimentaryReason.trim()) return alert('Alasan Complimentary wajib diisi!');
     setLoading(true);
     try {
       const res = await api.checkout({
@@ -245,8 +248,9 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
         total,
         tax: taxAmount,
         payment_method: payMethod,
-        cash_received: Number(cashReceived) || total,
+        cash_received: isComplimentary ? 0 : (Number(cashReceived) || total),
         table_type: orderType === 'Dine-in' ? `Meja ${tableNum}` : orderType,
+        customer_name: isComplimentary ? `${payMethod}: ${complimentaryReason}` : (tableNum ? `Meja ${tableNum}` : 'Tamu'),
         tenant_id: user?.tenant_id,
         cashier_name: user?.name || user?.username || 'Kasir'
       });
@@ -258,11 +262,15 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
     }
   };
 
-  const methods = dynamicMethods.length > 0 ? dynamicMethods : [
-    { id: 'Tunai', icon: Banknote },
-    { id: 'QRIS', icon: Wallet },
-    { id: 'Kartu Debit', icon: CreditCard },
-    { id: 'Transfer', icon: Landmark }
+  const methods = [
+    ...(dynamicMethods.length > 0 ? dynamicMethods : [
+      { id: 'Tunai', icon: Banknote },
+      { id: 'QRIS', icon: Wallet },
+      { id: 'Kartu Debit', icon: CreditCard },
+      { id: 'Transfer', icon: Landmark }
+    ]),
+    { id: 'Complimentary', icon: Gift },
+    { id: 'Staff Benefit', icon: Heart }
   ];
 
   return (
@@ -339,6 +347,20 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
               ))}
             </div>
           </div>
+
+          {isComplimentary && (
+            <div className="space-y-1.5 p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
+              <label className="text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400">Nama Penerima & Alasan</label>
+              <input
+                type="text"
+                value={complimentaryReason}
+                onChange={e => setComplimentaryReason(e.target.value)}
+                className="w-full h-12 px-4 text-xs font-black bg-card dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground placeholder-zinc-400 dark:placeholder-zinc-500"
+                placeholder={payMethod === 'Staff Benefit' ? "Contoh: Budi (Barista) - Break Sore" : "Contoh: Jatah Manajer, Owner Visit, Tamu VIP Mitra"}
+                required
+              />
+            </div>
+          )}
 
           {payMethod === 'Tunai' && (
             <div className="grid grid-cols-2 gap-4 p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
@@ -424,6 +446,34 @@ export default function KasirPage({ user }) {
   const taxAmount = Math.round(subtotal * 0.11);
   const total = subtotal + taxAmount;
 
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyTxs, setHistoryTxs] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const openHistory = async () => {
+      setShowHistory(true);
+      setHistoryLoading(true);
+      try {
+          const txs = await api.getTransactions();
+          setHistoryTxs(Array.isArray(txs) ? txs : []);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setHistoryLoading(false);
+      }
+  };
+
+  const handleRequestVoid = async (txId) => {
+      if (!window.confirm("Apakah Anda yakin ingin membatalkan transaksi ini? (VOID)")) return;
+      try {
+          await api.requestVoid(txId);
+          setHistoryTxs(prev => prev.map(t => t.id === txId ? {...t, payment_status: 'pending_void_approval'} : t));
+      } catch (e) {
+          alert(e.message || "Gagal request void");
+      }
+  };
+
+
   if (loading) return <div className="p-8 max-w-7xl mx-auto w-full"><KasirSkeleton /></div>;
 
   return (
@@ -449,14 +499,19 @@ export default function KasirPage({ user }) {
 
       <div className="flex-1 flex flex-col space-y-6 overflow-hidden">
         <div className="space-y-4">
-          <div className="relative group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-amber-500 transition-colors" size={20} />
-            <Input 
-              className="pl-14 h-14 rounded-lg border border-border bg-card dark:bg-zinc-900 text-foreground placeholder:text-zinc-400 focus-visible:ring-amber-500/20 shadow-sm font-bold text-base" 
-              placeholder="Cari menu terbaik Anda..." 
-              value={search} 
-              onChange={e => setSearch(e.target.value)} 
-            />
+          <div className="flex gap-4">
+            <div className="relative group flex-1">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-amber-500 transition-colors" size={20} />
+              <Input 
+                className="pl-14 h-14 rounded-lg border border-border bg-card dark:bg-zinc-900 text-foreground placeholder:text-zinc-400 focus-visible:ring-amber-500/20 shadow-sm font-bold text-base" 
+                placeholder="Cari menu terbaik Anda..." 
+                value={search} 
+                onChange={e => setSearch(e.target.value)} 
+              />
+            </div>
+            <Button variant="outline" className="h-14 px-6 rounded-lg font-bold flex items-center gap-2 border-border bg-card" onClick={openHistory}>
+              <Clock size={18} /> Riwayat
+            </Button>
           </div>
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             {MENU_CATEGORIES.map(c => (
@@ -629,6 +684,58 @@ export default function KasirPage({ user }) {
       )}
 
       {selectedPendingTx && <ConfirmPaymentModal tx={selectedPendingTx} onClose={() => setSelectedPendingTx(null)} onSuccess={() => { setSelectedPendingTx(null); fetchMenuAndOrders(); }} />}
+
+      {/* MODAL RIWAYAT TRANSAKSI KASIR */}
+      {showHistory && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-3xl flex flex-col h-[80vh] border-none shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 bg-card">
+            <CardHeader className="border-b bg-background p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl">Riwayat Transaksi</CardTitle>
+                  <CardDescription>Daftar transaksi pada shift hari ini.</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setShowHistory(false)}><X size={20} /></Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0 overflow-y-auto custom-scrollbar flex-1 bg-zinc-50/50 dark:bg-zinc-900/50">
+              {historyLoading ? (
+                <div className="p-8 text-center"><Skeleton className="h-20 w-full mb-4" /><Skeleton className="h-20 w-full" /></div>
+              ) : historyTxs.length === 0 ? (
+                <div className="p-20 text-center text-zinc-500">Belum ada transaksi.</div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {historyTxs.map(tx => (
+                    <div key={tx.id} className="p-6 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-mono font-black text-amber-600 dark:text-amber-400">#{tx.id.substring(0, 8).toUpperCase()}</span>
+                          {tx.payment_status === 'paid' && <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold uppercase">Lunas</span>}
+                          {tx.payment_status === 'pending_void_approval' && <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-bold uppercase">Void Tertunda</span>}
+                          {tx.payment_status === 'void' && <span className="text-[10px] bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-bold uppercase">Void Disetujui</span>}
+                        </div>
+                        <p className="text-xs text-zinc-500 font-bold uppercase">{tx.customer_name} • {tx.payment_method}</p>
+                        <p className="text-sm mt-2">{tx.items ? (typeof tx.items === 'string' ? JSON.parse(tx.items) : tx.items).map(i => `${i.qty}x ${i.name}`).join(', ') : ''}</p>
+                      </div>
+                      <div className="flex items-center gap-4 text-right">
+                        <div>
+                           <p className="text-xl font-black font-mono tabular-nums">{formatRupiah(tx.total)}</p>
+                           <p className="text-[10px] text-zinc-500 font-bold">{new Date(tx.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        {tx.payment_status === 'paid' && (
+                          <Button variant="outline" className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-bold ml-2" onClick={() => handleRequestVoid(tx.id)}>
+                            Batalkan (VOID)
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

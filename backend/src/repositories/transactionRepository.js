@@ -118,7 +118,7 @@ class TransactionRepository {
 
   // --- Journaling ---
   async getSettings(tenantId) {
-    const { data } = await supabase.from('settings').select('accounting_map').eq('tenant_id', tenantId).maybeSingle();
+    const { data } = await supabase.from('settings').select('void_approvers').eq('tenant_id', tenantId).maybeSingle();
     return data || {};
   }
 
@@ -141,7 +141,7 @@ class TransactionRepository {
   }
 
   async logAudit(payload) {
-    await supabase.from('audit_logs').insert([payload]);
+    await supabase.from('activity_logs').insert([payload]);
   }
 
   // --- Reports ---

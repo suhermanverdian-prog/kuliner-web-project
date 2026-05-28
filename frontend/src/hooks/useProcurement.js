@@ -17,6 +17,7 @@ export function useProcurement() {
   const [newSupplier, setNewSupplier] = useState({ name: '', contact: '', address: '' });
   const [receivingPo, setReceivingPo] = useState(null);
   const [receivingItems, setReceivingItems] = useState([]);
+  const [cancelConfirmPO, setCancelConfirmPO] = useState(null); // PO yang akan dibatalkan
 
   const loadBaseData = useCallback(async () => {
     setLoading(true);
@@ -202,6 +203,39 @@ export function useProcurement() {
     }
   };
 
+  const handleSimplePurchase = async () => {
+    const validItems = poItems.filter(i => i.bahanId);
+    if (!selectedSupplier || validItems.length === 0) {
+      alert('Pilih supplier dan tambahkan item terlebih dahulu.');
+      return;
+    }
+    
+    setActionLoading(true);
+    try {
+      const payload = {
+        supplierId: selectedSupplier,
+        items: validItems.map(i => ({
+          bahanId: i.bahanId,
+          qtyReceived: Number(i.purchaseQty),
+          unitPrice: Number(i.unitPrice)
+        }))
+      };
+      
+      await api.addSimplePurchase(payload);
+      alert('Pembelian Langsung berhasil diproses! Stok terupdate & Kas Kecil (1-1000) terpotong.');
+      
+      setPoItems([]); 
+      setSelectedSupplier(''); 
+      setNotes('');
+      loadBaseData();
+      setActiveTab('finance'); // Pindah ke tab Payables/Finance untuk melihat invoice
+    } catch (err) {
+      alert("Gagal melakukan pembelian langsung: " + err.message);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleReceivePO = (po) => {
     // Guard: pastikan po.items ada dan bukan array kosong
     const rawItems = Array.isArray(po.items) ? po.items : [];
@@ -260,31 +294,51 @@ export function useProcurement() {
     }
   };
 
-  const handleCancelPO = async (po) => {
-    const confirmed = window.confirm(
-      `Batalkan PO ${po.po_number}?\n\nPO ini akan ditandai CANCELLED dan tidak bisa diproses lebih lanjut.\nTindakan ini tidak dapat dibatalkan.`
-    );
-    if (!confirmed) return;
+  const [payConfirmInvoice, setPayConfirmInvoice] = useState(null); // Invoice yang akan dibayar
+
+  // --- Cancel PO ----------------------------------------------------------
+  // Langkah 1: Tampilkan modal konfirmasi cancel PO
+  const handleCancelPO = (po) => {
+    setCancelConfirmPO(po);
+  };
+
+  // Langkah 2: User konfirmasi → eksekusi cancel ke API
+  const doConfirmCancel = async () => {
+    if (!cancelConfirmPO) return;
     setActionLoading(true);
     try {
-      await api.request(`${api.url}/procurement/pos/${po.id}/cancel`, 'PATCH', { status: 'cancelled' });
+      await api.request(
+        `${api.url}/p/pos/${cancelConfirmPO.id}/cancel`,
+        'PATCH',
+        { status: 'cancelled' }
+      );
+      setCancelConfirmPO(null);
       loadBaseData();
     } catch (err) {
-      // Fallback: jika endpoint belum ada, update langsung via API PO list
-      alert('Cancel PO gagal: ' + err.message);
+      alert('Gagal membatalkan PO: ' + (err.message || 'Terjadi kesalahan pada server'));
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handlePayInvoice = async (id) => {
-    if (!window.confirm("Konfirmasi pembayaran?")) return;
+  // --- Pay Invoice --------------------------------------------------------
+  // Buka modal konfirmasi pembayaran
+  const handlePayInvoice = (invoice) => {
+    setPayConfirmInvoice(invoice);
+  };
+
+  const doConfirmPay = async () => {
+    if (!payConfirmInvoice) return;
     setActionLoading(true);
     try {
-      await api.updatePurchaseInvoice({ id, status: 'paid' });
+      await api.request(
+        `${api.url}/p/invoices/${payConfirmInvoice.id}/pay`,
+        'POST'
+      );
+      setPayConfirmInvoice(null);
       loadBaseData();
     } catch (err) {
-      alert("Payment Error: " + err.message);
+      alert('Gagal membayar invoice: ' + (err.message || 'Terjadi kesalahan pada server'));
     } finally {
       setActionLoading(false);
     }
@@ -321,6 +375,8 @@ export function useProcurement() {
     newSupplier, setNewSupplier,
     receivingPo, setReceivingPo,
     receivingItems, setReceivingItems,
+    cancelConfirmPO, setCancelConfirmPO,
+    payConfirmInvoice, setPayConfirmInvoice,
     loadBaseData,
     handlePrintPO,
     addItemToPo,
@@ -331,6 +387,9 @@ export function useProcurement() {
     confirmReceipt,
     handlePayInvoice,
     handleCancelPO,
-    handleSaveSupplier
+    doConfirmCancel,
+    doConfirmPay,
+    handleSaveSupplier,
+    handleSimplePurchase
   };
 }

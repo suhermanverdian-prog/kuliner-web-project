@@ -108,6 +108,18 @@ class ProcurementController {
       res.status(500).json({ error: err.message });
     }
   }
+
+  async processSimplePurchase(req, res) {
+    try {
+      const { tenantId, role } = req.userContext || {};
+      const { supplierId, items } = req.body;
+      const result = await ProcurementService.processSimplePurchase(supplierId, items, tenantId, role);
+      res.json(result);
+    } catch (err) {
+      console.error('🚨 [Simple Purchase Controller Error]:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
 }
 
 module.exports = new ProcurementController();

@@ -14,15 +14,17 @@ import {
   Truck,
   Box,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Leaf,
+  FlaskConical
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { cn } from "../lib/utils";
 
-export default function InventoryFormModal({ isOpen, onClose, onSave, initialData, inventoryMeta, isSaving }) {
-  const categories = inventoryMeta?.categories?.length > 0 ? inventoryMeta.categories : ['Bahan Baku', 'Minuman', 'Makanan', 'Kemasan', 'Lainnya'];
+export default function InventoryFormModal({ isOpen, onClose, onSave, initialData, inventoryMeta, isSaving, bahanList }) {
+  const categories = inventoryMeta?.categories?.length > 0 ? inventoryMeta.categories : ['Bahan Baku', 'Assembly / Setengah Jadi', 'Kemasan', 'Lainnya'];
   const suppliers = inventoryMeta?.suppliers || [];
   const masterUnits = ['ml', 'L', 'Gram', 'Kg', 'Pcs', 'Unit', 'Sachet', 'Botol', 'Dus', 'Pack', 'Karton', 'Can', 'Zak'];
 
@@ -32,8 +34,10 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
     supplier_id: '',
     unit: 'ml',
     conversions: [],
+    bom: [],
     minStock: '',
-    notes: ''
+    notes: '',
+    isAssembly: false
   };
 
   const [form, setForm] = useState(initialFormState);
@@ -41,14 +45,29 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
   useEffect(() => {
     if (isOpen) {
       if (initialData) {
+        const hasBom = Array.isArray(initialData.bom) && initialData.bom.length > 0;
+        const cat = (initialData.category || '').toUpperCase();
+        const initialIsAssembly = hasBom || cat.includes('ASSEMBLY') || cat.includes('SETENGAH JADI');
+
         setForm({
           ...initialFormState,
           ...initialData,
           supplier_id: initialData.supplier_id || '',
-          conversions: initialData.conversions || []
+          conversions: initialData.conversions || [],
+          bom: (initialData.bom || []).map(b => ({
+            bahanId: String(b.bahanId || b.bahan_id || ''),
+            qty: b.qty
+          })),
+          minStock: initialData.min_stock !== undefined ? initialData.min_stock : (initialData.minStock || ''),
+          isAssembly: initialIsAssembly
         });
       } else {
-        setForm({ ...initialFormState, category: categories[0], supplier_id: suppliers[0]?.id || '' });
+        setForm({ 
+          ...initialFormState, 
+          category: categories[0], 
+          supplier_id: suppliers[0]?.id || '',
+          isAssembly: false
+        });
       }
     }
   }, [isOpen, initialData]);
@@ -84,10 +103,33 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
 
   const handleSave = () => {
     if (!form.name?.trim() || !form.unit?.trim()) return alert('Nama dan Satuan Dasar wajib diisi!');
+    
+    const mappedConversions = form.conversions
+      .filter(c => c.unit && c.multiplier)
+      .map(c => ({
+        unit: c.unit,
+        to_unit: c.to_unit || form.unit,
+        multiplier: Number(c.multiplier) || 1
+      }));
+
+    const mappedBom = form.isAssembly ? (form.bom || [])
+      .filter(b => b.bahanId && String(b.bahanId) !== 'undefined' && String(b.bahanId) !== 'null' && b.qty)
+      .map(b => ({
+        bahanId: String(b.bahanId),
+        qty: Number(b.qty) || 0
+      })) : [];
+
+    if (form.isAssembly && mappedBom.length === 0) {
+      return alert('Bahan Baku Assembly wajib memiliki minimal 1 bahan penyusun dalam BOM!');
+    }
+
     onSave({
       ...form,
-      minStock: Number(form.minStock) || 0,
-      conversions: form.conversions.filter(c => c.unit && c.multiplier)
+      price: Number(form.cost || form.price || 0),
+      min_stock: Number(form.minStock || form.min_stock || 0),
+      stock: Number(form.stock || 0),
+      conversions: mappedConversions,
+      bom: mappedBom
     });
   };
 
@@ -127,7 +169,7 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase tracking-wide text-zinc-500 dark:text-zinc-400 ml-1">Kategori</label>
                   <select className="h-12 w-full rounded-md border border-zinc-200 dark:border-zinc-700 bg-card px-4 text-xs font-black text-zinc-800 dark:text-zinc-200" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                    {categories.map((c, idx) => <option key={idx} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -136,6 +178,58 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                     <option value="">Pilih Supplier...</option>
                     {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
+                </div>
+              </div>
+
+              {/* Tipe Bahan Baku Selection Card Matrix */}
+              <div className="space-y-3">
+                <label className="text-xs font-black uppercase tracking-wide text-zinc-500 dark:text-zinc-400 ml-1">Tipe Bahan Baku</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div 
+                    onClick={() => {
+                      setForm({ ...form, isAssembly: false, bom: [] });
+                    }}
+                    className={cn(
+                      "p-4 rounded-lg border-2 cursor-pointer transition-all flex items-center gap-3 active:scale-95",
+                      !form.isAssembly 
+                        ? "border-amber-500 bg-amber-500/5 text-amber-600 dark:border-amber-400 dark:text-amber-400" 
+                        : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900/30 text-zinc-650"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-8 h-8 rounded-md flex items-center justify-center shrink-0",
+                      !form.isAssembly ? "bg-amber-500/10 text-amber-500" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
+                    )}>
+                      <Leaf size={16} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-tight text-zinc-850 dark:text-zinc-100">Bahan Baku Murni</p>
+                      <p className="text-[10px] text-zinc-500 font-medium">Bahan murni tanpa komposisi BOM penyusun</p>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => {
+                      setForm({ ...form, isAssembly: true, bom: form.bom?.length > 0 ? form.bom : [{ bahanId: '', qty: '' }] });
+                    }}
+                    className={cn(
+                      "p-4 rounded-lg border-2 cursor-pointer transition-all flex items-center gap-3 active:scale-95",
+                      form.isAssembly 
+                        ? "border-amber-500 bg-amber-500/5 text-amber-600 dark:border-amber-400 dark:text-amber-400" 
+                        : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900/30 text-zinc-650"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-8 h-8 rounded-md flex items-center justify-center shrink-0",
+                      form.isAssembly ? "bg-amber-500/10 text-amber-500" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400"
+                    )}>
+                      <FlaskConical size={16} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-tight text-zinc-850 dark:text-zinc-100">Bahan Baku Assembly</p>
+                      <p className="text-[10px] text-zinc-500 font-medium">Bahan setengah jadi yang butuh komposisi BOM</p>
+                    </div>
+                  </div>
                 </div>
               </div>
               {/* Logic & Thresholds */}
@@ -206,6 +300,68 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                   ))}
                 </div>
               </div>
+              
+              {form.isAssembly && (
+                <div className="space-y-4 p-5 bg-amber-500/5 rounded-md border border-amber-500/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                      <label className="text-xs font-black uppercase tracking-wide text-amber-600 dark:text-amber-500">Resep / BOM Produksi (Formula)</label>
+                    </div>
+                    <Button variant="ghost" type="button" className="h-8 px-4 text-xs font-black uppercase text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 border border-amber-500/20 rounded-md" onClick={() => setForm({ ...form, bom: [...(form.bom || []), { bahanId: '', qty: '' }] })}>
+                      + Tambah Bahan Penyusun
+                    </Button>
+                  </div>
+                  <div className="space-y-3 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                    {(form.bom || []).length === 0 && (
+                      <div className="py-8 text-center text-xs text-zinc-400 dark:text-zinc-500 uppercase italic font-bold">
+                        Belum ada bahan penyusun yang ditambahkan
+                      </div>
+                    )}
+                    {(form.bom || []).map((row, i) => (
+                      <div key={i} className="flex gap-4 items-center p-3 bg-card rounded-md border border-zinc-200 dark:border-zinc-700">
+                        <select
+                          className="h-10 flex-1 rounded-md border border-zinc-200 dark:border-zinc-700 bg-card px-4 text-xs font-black text-zinc-800 dark:text-zinc-200"
+                          value={row.bahanId || row.bahan_id || ''}
+                          onChange={e => {
+                            const next = [...form.bom];
+                            next[i].bahanId = e.target.value;
+                            setForm({ ...form, bom: next });
+                          }}
+                        >
+                          <option value="">Pilih Bahan Dasar...</option>
+                          {bahanList?.filter(b => String(b.id) !== String(initialData?.id)).map(b => (
+                            <option key={b.id} value={String(b.id)}>{b.name.toUpperCase()} (per {b.unit})</option>
+                          ))}
+                        </select>
+                        <Input
+                          type="number"
+                          placeholder="Takaran"
+                          className="h-10 w-32 bg-card border-zinc-200 dark:border-zinc-700 rounded-md font-mono text-center"
+                          value={row.qty}
+                          onChange={e => {
+                            const next = [...form.bom];
+                            next[i].qty = e.target.value;
+                            setForm({ ...form, bom: next });
+                          }}
+                        />
+                        <span className="text-xs font-black text-zinc-500 font-mono">
+                          {bahanList?.find(b => String(b.id) === String(row.bahanId || row.bahan_id))?.unit || ''}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          type="button"
+                          className="h-10 w-10 text-rose-500 hover:bg-rose-500/10 rounded-md"
+                          onClick={() => setForm({ ...form, bom: form.bom.filter((_, idx) => idx !== i) })}
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             {/* RIGHT: Summary & Actions */}
             <div className="col-span-4 bg-card/50 rounded-lg p-8 space-y-10 border border-zinc-200/80 dark:border-zinc-800/80 relative shadow-inner overflow-hidden">
@@ -220,7 +376,9 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                   <h4 className="text-2xl font-black uppercase tracking-tighter text-foreground">{form.name || 'REGISTERING...'}</h4>
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    <p className="text-xs font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{form.category || 'NO CATEGORY'}</p>
+                    <p className="text-xs font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      {form.category || 'NO CATEGORY'} · <span className="text-amber-500 font-bold">{form.isAssembly ? 'ASSEMBLY (BOM)' : 'MURNI'}</span>
+                    </p>
                   </div>
                 </div>
               </div>

@@ -14,29 +14,41 @@ export function useAkunPage({ user }) {
   const [search, setSearch] = useState('');
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [savingExpense, setSavingExpense] = useState(false);
+  const [showTopupModal, setShowTopupModal] = useState(false);
+  const [savingTopup, setSavingTopup] = useState(false);
 
   const getHeaders = useCallback(() => {
+    let token = null;
+    let tenantId = null;
+
+    // 1. Try to get from Zustand Storage (Primary)
     const storageStr = localStorage.getItem('ken-enterprise-storage');
-    let token = '';
-    let tenantId = '';
-    
     if (storageStr) {
       try {
         const storage = JSON.parse(storageStr);
-        const authData = storage.state?.user;
-        if (authData) {
-          token = authData.token || '';
-          const innerUser = authData.user || authData;
-          tenantId = innerUser.tenant_id || '';
+        const state = storage.state || storage;
+        const user = state.user || state;
+        if (user) {
+          token = user.token;
+          const innerUser = user.user || user;
+          tenantId = innerUser.tenant_id || user.tenant_id;
         }
       } catch (e) {}
     }
 
-    return { 
-      'Content-Type': 'application/json', 
-      'Authorization': token ? `Bearer ${token}` : '',
-      'x-tenant-id': tenantId 
-    };
+    // 2. Fallback to Direct Keys
+    token = token || localStorage.getItem('token');
+    tenantId = tenantId || localStorage.getItem('tenantId');
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (token && token !== 'null' && token !== 'undefined') {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (tenantId && tenantId !== 'null' && tenantId !== 'undefined') {
+      headers['x-tenant-id'] = tenantId;
+    }
+    
+    return headers;
   }, []);
 
   const loadData = useCallback(async () => {
@@ -85,6 +97,21 @@ export function useAkunPage({ user }) {
     finally { setSavingExpense(false); }
   };
 
+  const handleSaveTopup = async (formData) => {
+    setSavingTopup(true);
+    try {
+      const res = await fetch(`${API}/accounting/topup`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({...formData, amount: Number(formData.amount)})
+      });
+      if (!res.ok) throw new Error('Gagal simpan top-up');
+      setShowTopupModal(false);
+      loadData();
+    } catch (err) { alert(err.message); }
+    finally { setSavingTopup(false); }
+  };
+
   const is = summary?.incomeStatement || {};
   const bs = summary?.balanceSheet || {};
   const cf = summary?.cashFlow || {};
@@ -111,6 +138,9 @@ export function useAkunPage({ user }) {
     handlePrint,
     handleExcelExport,
     handleSaveExpense,
+    showTopupModal, setShowTopupModal,
+    savingTopup, setSavingTopup,
+    handleSaveTopup,
     is, bs, cf,
     grossMargin, netMargin,
     filteredJournals

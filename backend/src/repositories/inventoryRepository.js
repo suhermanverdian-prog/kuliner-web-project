@@ -20,13 +20,22 @@ class InventoryRepository {
   }
 
   async getLogs(tenantId) {
-    let query = supabase.from('inventory_logs').select('*');
+    // Join bahan untuk mendapatkan unit satuan (ml, gram, kg, dll)
+    let query = supabase
+      .from('inventory_logs')
+      .select('*, bahan:bahan_id(unit)');
     if (tenantId) query = query.eq('tenant_id', tenantId);
     const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
-    
+
     if (error && error.code === 'PGRST205') return [];
     if (error) throw error;
-    return data || [];
+
+    // Flatten: ambil unit dari join, fallback ke field unit yg sudah ada di log jika ada
+    return (data || []).map(log => ({
+      ...log,
+      unit: log.unit || log.bahan?.unit || null,
+      bahan: undefined  // bersihkan nested object agar response tetap flat
+    }));
   }
 
   async getCategoriesAndUnits(tenantId) {
@@ -88,29 +97,55 @@ class InventoryRepository {
   }
 
   async softDeleteBahan(id, tenantId) {
-    const { data, error } = await supabase
+    // 1. Try to soft-delete by setting is_active = false
+    const { data: softData, error: softErr } = await supabase
       .from('bahan')
       .update({ is_active: false })
       .eq('id', id)
       .eq('tenant_id', tenantId)
       .select()
-      .single();
-    if (error) {
-       // Fallback for schema missing is_active
-       if (error.code === 'PGRST204' || error.message.includes('column "is_active"')) {
-           throw new Error("Hard delete ditolak. Tambahkan kolom is_active pada tabel bahan.");
-       }
-       throw error;
+      .maybeSingle();
+
+    if (softErr) {
+      // 2. Fallback to safe hard delete if is_active column is missing
+      if (softErr.message?.includes('column "is_active"') || softErr.code === 'PGRST204') {
+        const { data: delData, error: delErr } = await supabase
+          .from('bahan')
+          .delete()
+          .eq('id', id)
+          .eq('tenant_id', tenantId)
+          .select()
+          .maybeSingle();
+
+        if (delErr) {
+          // Handle foreign key constraint violations (if materials have transactions/movements/BOM references)
+          if (delErr.code === '23503' || delErr.message?.includes('foreign key constraint')) {
+            throw new Error("Bahan baku ini sudah digunakan dalam transaksi pembelian, histori stok, atau resep menu. Untuk menjaga integritas akuntansi, bahan baku ini tidak dapat dihapus secara fisik.");
+          }
+          throw delErr;
+        }
+        return delData;
+      }
+      throw softErr;
     }
-    return data;
+    return softData;
   }
 
   // --- Neural Mapping related repos ---
-  async getLatestSuppliersInfo() {
+  async getLatestSuppliersInfo(tenantId) {
+    let suppliersQuery = supabase.from('suppliers').select('id, name');
+    let poItemsQuery = supabase.from('purchase_order_items').select('bahan_id, po_id');
+    let posQuery = supabase.from('purchase_orders').select('id, supplier_id, created_at');
+    
+    if (tenantId) {
+      suppliersQuery = suppliersQuery.eq('tenant_id', tenantId);
+      posQuery = posQuery.eq('tenant_id', tenantId);
+    }
+    
     const [suppliersRes, itemsRes, posRes] = await Promise.all([
-      supabase.from('suppliers').select('id, name'),
-      supabase.from('purchase_order_items').select('bahan_id, po_id'),
-      supabase.from('purchase_orders').select('id, supplier_id, created_at')
+      suppliersQuery,
+      poItemsQuery,
+      posQuery
     ]);
     return {
       suppliers: suppliersRes.data || [],

@@ -1,6 +1,7 @@
 import React from 'react';
 import { printReport } from '../utils/reportPrinter';
 import { useLaporan } from '../hooks/useLaporan';
+import api from '../api';
 import { 
   BarChart3, TrendingUp, TrendingDown, Package, 
   ShoppingCart, Wallet, DollarSign, PieChart,
@@ -164,6 +165,18 @@ export default function LaporanPage({ onNavigate }) {
     { key: 'hpp', label: 'HPP (COGS)' },
     { key: 'laba-rugi', label: 'Laba Rugi' },
   ];
+
+  const handleApproveVoid = async (txId) => {
+      if (!window.confirm("Setujui pembatalan (VOID) transaksi ini? Stok dan jurnal akan dikembalikan otomatis.")) return;
+      try {
+          await api.approveVoid(txId);
+          setTransactions(prev => prev.map(t => t.id === txId ? {...t, payment_status: 'void'} : t));
+          // Update total kalau mau lebih sinkron, tapi biasanya refresh halaman cukup
+      } catch (e) {
+          alert(e.message || "Gagal menyetujui void. Pastikan Anda memiliki otoritas yang tepat di Pengaturan.");
+      }
+  };
+
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-8">
@@ -673,7 +686,21 @@ export default function LaporanPage({ onNavigate }) {
                           <td className="px-8 py-6 text-[10px] font-bold text-zinc-500 dark:text-zinc-100 font-mono tabular-nums">
                             {new Date(tx.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).toUpperCase()}
                           </td>
-                          <td className="px-8 py-6 font-bold text-foreground">{tx.customer_name || 'Tamu'}</td>
+                          <td className="px-8 py-6">
+                            <div className="font-bold text-foreground">
+                              {tx.customer_name || 'Tamu'}
+                            </div>
+                            {(tx.payment_method === 'Complimentary' || tx.payment_method === 'Staff Benefit') && (
+                              <div className="mt-1 flex items-center gap-1.5">
+                                <span className="inline-block px-1.5 py-0.5 rounded-sm text-[8px] font-black uppercase tracking-wider bg-amber-500/20 text-amber-600 dark:bg-amber-400/20 dark:text-amber-400 border border-amber-500/30">
+                                  GRATIS
+                                </span>
+                                <span className="text-[9px] font-black text-zinc-500 uppercase tracking-wider">
+                                  Non-Sales
+                                </span>
+                              </div>
+                            )}
+                          </td>
                           <td className="px-8 py-6">
                              <div className="flex items-center gap-2">
                                 <Wallet size={12} className="text-zinc-500 dark:text-zinc-100" />
@@ -684,10 +711,23 @@ export default function LaporanPage({ onNavigate }) {
                           <td className="px-8 py-6 text-center">
                             <span className={cn(
                               "px-4 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest",
-                              tx.payment_status === 'paid' ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400" : "bg-amber-50 dark:bg-amber-950/30 text-amber-500 dark:text-amber-400"
+                              tx.payment_status === 'paid' ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400" :
+                              tx.payment_status === 'pending_void_approval' ? "bg-amber-50 dark:bg-amber-950/30 text-amber-500 dark:text-amber-400" : 
+                              tx.payment_status === 'void' ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400" : "bg-amber-50 text-amber-500"
                             )}>
-                              {tx.payment_status}
+                              {tx.payment_status === 'pending_void_approval' ? 'Void Tertunda' : tx.payment_status}
                             </span>
+                            {tx.payment_status === 'pending_void_approval' && (
+                               <div className="mt-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline" 
+                                    className="h-7 text-[10px] border-amber-200 text-amber-600 hover:bg-amber-50 font-bold" 
+                                    onClick={() => handleApproveVoid(tx.id)}>
+                                    Approve Void
+                                  </Button>
+                               </div>
+                            )}
                           </td>
                         </tr>
                       ))}

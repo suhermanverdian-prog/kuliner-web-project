@@ -158,7 +158,6 @@ class ProcurementService {
             
             if (idx >= 0) {
                 invs[idx].status = status;
-                if (status === 'paid') invs[idx].paid_at = new Date().toISOString();
                 parsed.purchase_invoices = invs;
                 fs.writeFileSync(dataPath, JSON.stringify(parsed, null, 2), 'utf8');
 
@@ -181,26 +180,91 @@ class ProcurementService {
         updatePayload.paid_at = new Date().toISOString();
     }
 
+    // Update ke Supabase - HARUS BERHASIL
     await ProcurementRepository.updateInvoice(id, updatePayload);
+
+    // Update local backup juga
+    if (fs.existsSync(dataPath)) {
+        try {
+            const content = fs.readFileSync(dataPath, 'utf8');
+            const parsed = JSON.parse(content);
+            const invs = parsed.purchase_invoices || [];
+            const idx = invs.findIndex(i => String(i.id) === String(id));
+            if (idx >= 0) {
+                invs[idx].status = status;
+                parsed.purchase_invoices = invs;
+                fs.writeFileSync(dataPath, JSON.stringify(parsed, null, 2), 'utf8');
+            }
+        } catch (e) {
+            console.warn('⚠️ Local backup failed:', e.message);
+        }
+    }
 
     if (status === 'paid') {
         const paymentAmount = Number(invoice.total) || 0;
-        await this.createPaymentJournal(tenantId, id, paymentAmount);
+        try {
+            await this.createPaymentJournal(tenantId, id, paymentAmount);
+        } catch (e) {
+            console.warn('⚠️ Journal creation failed:', e.message);
+        }
     }
 
     return { ...invoice, ...updatePayload };
   }
 
   static async payInvoice(id, tenantId) {
-    const invoice = await ProcurementRepository.getInvoiceById(id);
+    let invoice;
+    try {
+      invoice = await ProcurementRepository.getInvoiceById(id);
+    } catch (err) {
+      // Jika tidak ditemukan di Supabase, coba cari di local data.json
+      const dataPath = path.join(__dirname, '../../db/data.json');
+      if (fs.existsSync(dataPath)) {
+        try {
+          const content = fs.readFileSync(dataPath, 'utf8');
+          const parsed = JSON.parse(content);
+          const localInvoices = parsed.purchase_invoices || [];
+          invoice = localInvoices.find(i => String(i.id) === String(id));
+        } catch (e) {}
+      }
+      
+      if (!invoice) {
+        throw new Error('Invoice tidak ditemukan: ' + id);
+      }
+    }
+
     if (invoice.status === 'paid') return { message: 'Already paid' };
     
+    // Update status di Supabase - HARUS BERHASIL
     await ProcurementRepository.updateInvoice(id, { status: 'paid', paid_at: new Date().toISOString() });
     
+    // Update local data.json juga (backup)
+    const dataPath = path.join(__dirname, '../../db/data.json');
+    if (fs.existsSync(dataPath)) {
+      try {
+        const content = fs.readFileSync(dataPath, 'utf8');
+        const parsed = JSON.parse(content);
+        const localInvoices = parsed.purchase_invoices || [];
+        const idx = localInvoices.findIndex(i => String(i.id) === String(id));
+        if (idx >= 0) {
+          localInvoices[idx].status = 'paid';
+          parsed.purchase_invoices = localInvoices;
+          fs.writeFileSync(dataPath, JSON.stringify(parsed, null, 2), 'utf8');
+        }
+      } catch (e) {
+        console.warn('⚠️ Local backup failed:', e.message);
+      }
+    }
+    
     const paymentAmount = Number(invoice.total) || 0;
-    const journalEntry = await this.createPaymentJournal(tenantId, id, paymentAmount);
+    let journalEntry = null;
+    try {
+      journalEntry = await this.createPaymentJournal(tenantId, id, paymentAmount);
+    } catch (e) {
+      console.warn('⚠️ Failed to create payment journal in DB:', e.message);
+    }
 
-    return { invoice, journal: journalEntry };
+    return { invoice: { ...invoice, status: 'paid' }, journal: journalEntry, message: 'Invoice berhasil dibayar' };
   }
 
   // ==========================================
@@ -397,23 +461,26 @@ class ProcurementService {
         try {
             const headerPayload = {
                 tenant_id: tenantId,
+                reference: `GRN-${po_id ? String(po_id).slice(-6) : Date.now().toString().slice(-6)}`,
                 date: new Date().toISOString(),
                 description: `GRN Receipt: ${totalValue > 0 ? 'Verified Physical Items' : 'Adjustment'} (PO: ${po_id})`,
-                total: totalValue
+                total_amount: totalValue
             };
             const linesPayload = [
                 { account_code: '1-2000', debit: totalValue, credit: 0, tenant_id: tenantId },
                 { account_code: '2-1000', debit: 0, credit: totalValue, tenant_id: tenantId }
             ];
             await ProcurementRepository.createJournal(headerPayload, linesPayload);
-        } catch (e) {}
+        } catch (e) {
+            console.error('❌ [ProcurementService.processGRN] Journal creation failed:', e.message);
+        }
 
         const invoicePayload = {
-            id: 'inv-' + Date.now(),
+            id: require('crypto').randomUUID(),
             tenant_id: tenantId,
             supplier_id: supplier_id || null,
-            po_id: po_id || null,
-            grn_id: grnId,
+            reference_id: po_id || null,
+            invoice_number: `INV-${Date.now().toString().slice(-6)}`,
             total: totalValue,
             status: 'unpaid',
             created_at: new Date().toISOString()
@@ -481,14 +548,60 @@ class ProcurementService {
     }
   }
 
+  static async processSimplePurchase(supplierId, items, tenantId, userRole) {
+    // 1. Process GRN (which creates invoice, journals, and updates stock)
+    const grnRecord = await this.processGRN(supplierId, null, items, tenantId, userRole);
+    
+    // 2. Find the invoice created by processGRN
+    let invoice = null;
+    try {
+      const { supabase: sb } = require('../supabase');
+      // Look for the latest unpaid invoice for this supplier
+      const { data } = await sb
+        .from('purchase_invoices')
+        .select('id, total')
+        .eq('tenant_id', tenantId)
+        .eq('supplier_id', supplierId || null)
+        .eq('status', 'unpaid')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) invoice = data;
+    } catch (e) {}
+    
+    if (!invoice) {
+      // Look in local data.json
+      const dataPath = path.join(__dirname, '../../db/data.json');
+      if (fs.existsSync(dataPath)) {
+        try {
+          const content = fs.readFileSync(dataPath, 'utf8');
+          const parsed = JSON.parse(content);
+          const localInvoices = parsed.purchase_invoices || [];
+          const unpaid = localInvoices.filter(i => i.status === 'unpaid' && String(i.supplier_id) === String(supplierId));
+          if (unpaid.length > 0) {
+            invoice = unpaid[unpaid.length - 1];
+          }
+        } catch (err) {}
+      }
+    }
+    
+    // 3. Pay/Settle the invoice immediately using Kas Kecil (1-1000)
+    if (invoice) {
+      await this.payInvoice(invoice.id, tenantId);
+    }
+    
+    return { success: true, grn: grnRecord, invoice };
+  }
+
   // Helper
   static async createPaymentJournal(tenantId, invoiceId, paymentAmount) {
     try {
         const headerPayload = {
             tenant_id: tenantId,
+            reference: `PAY-${String(invoiceId).slice(-6)}`,
             date: new Date().toISOString(),
             description: `Payment for Invoice ${invoiceId}`,
-            total: paymentAmount
+            total_amount: paymentAmount
         };
         const linesPayload = [
             { account_code: '2-1000', debit: paymentAmount, credit: 0, tenant_id: tenantId },

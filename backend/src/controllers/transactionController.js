@@ -110,9 +110,9 @@ class TransactionController {
     try {
       const { id } = req.params;
       const { reason } = req.body;
-      const { role } = req.userContext || {};
+      const { role, name, tenantId } = req.userContext || {};
 
-      await TransactionService.requestVoid(id, reason, role);
+      await TransactionService.requestVoid(id, reason, role, name, tenantId);
       res.json({ ok: true, message: 'Permintaan Void dikirim ke Manager' });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -122,11 +122,13 @@ class TransactionController {
   async approveVoid(req, res) {
     try {
       const { id } = req.params;
-      const { role } = req.userContext || {};
+      const { role, name, tenantId } = req.userContext || {};
+      console.log('🔍 [Debug Approve Void] Params:', { id, role, name, tenantId });
       
-      await TransactionService.approveVoid(id, role);
+      await TransactionService.approveVoid(id, role, name, tenantId);
       res.json({ ok: true });
     } catch (error) {
+      console.error('❌ [Debug Approve Void] Error:', error.message);
       res.status(error.message.includes('RBAC') ? 403 : 500).json({ error: error.message });
     }
   }

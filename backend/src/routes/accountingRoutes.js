@@ -55,4 +55,38 @@ router.post('/expenses', validateBody(expenseSchema), accountingController.recor
  */
 router.post('/payroll', validateBody(payrollSchema), accountingController.recordPayroll);
 
+/**
+ * @route POST /api/accounting/topup
+ * @desc Record a petty cash top-up
+ */
+router.post('/topup', accountingController.recordTopup);
+
+// ============================================================
+// BUDGETING ROUTES
+// ============================================================
+
+/**
+ * @route GET /api/accounting/budgets
+ * @desc Get all budgets for tenant (filter: ?year=2026&month=6)
+ */
+router.get('/budgets', permissionGuard('keuangan', 'view'), accountingController.getBudgets);
+
+/**
+ * @route GET /api/accounting/budgets/variance
+ * @desc Get variance report: Budget vs Actual for a specific period
+ */
+router.get('/budgets/variance', permissionGuard('keuangan', 'view'), accountingController.getVarianceReport);
+
+/**
+ * @route POST /api/accounting/budgets
+ * @desc Create or update budget entry (supports single object or array for batch)
+ */
+router.post('/budgets', permissionGuard('keuangan', 'create'), accountingController.saveBudget);
+
+/**
+ * @route DELETE /api/accounting/budgets/:id
+ * @desc Delete a budget entry
+ */
+router.delete('/budgets/:id', permissionGuard('keuangan', 'delete'), accountingController.deleteBudget);
+
 module.exports = router;

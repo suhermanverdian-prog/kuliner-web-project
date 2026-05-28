@@ -21,7 +21,7 @@ const posTransactionSchema = z.object({
     discountAmount: z.number().nonnegative().optional().default(0),
     taxAmount: z.number().nonnegative().optional().default(0),
     uniqueCode: z.number().optional().default(0),
-    total: z.number().positive("Total transaksi harus bernilai positif"),
+    total: z.number().nonnegative("Total transaksi tidak boleh bernilai negatif"),
     items: z.array(transactionItemSchema).min(1, "Transaksi minimal harus memiliki 1 barang"),
     created_at: z.string().optional()
 });

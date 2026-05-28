@@ -161,7 +161,8 @@ class SystemController {
         geofence_radius: req.body.geofence_radius || req.body.radius || 100,
         ai_provider: req.body.ai_provider,
         ai_api_key: req.body.ai_api_key,
-        is_ai_enabled: req.body.is_ai_enabled
+        is_ai_enabled: req.body.is_ai_enabled,
+        void_approvers: req.body.void_approvers
       };
 
       const result = await SystemService.upsertSettings(payload, tenantId);

@@ -752,6 +752,86 @@ export default function PengaturanPage() {
                 )}
               </div>
 
+              <div className="pt-6 border-t space-y-6">
+                <div>
+                  <h4 className="font-bold flex items-center gap-2">
+                    <ShieldCheck className="text-amber-600 dark:text-amber-400" size={18} />
+                    Otoritas Persetujuan VOID (Pembatalan)
+                  </h4>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider mt-1">
+                    Pilih jabatan yang diizinkan untuk menyetujui pembatalan transaksi
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {[
+                    { key: 'owner', label: 'Owner' },
+                    { key: 'manager', label: 'Manager / Admin' },
+                    { key: 'accounting', label: 'Akuntan / Accounting' },
+                    { key: 'kasir', label: 'Kasir' },
+                    { key: 'chef', label: 'Koki / Barista' }
+                  ].map(roleItem => {
+                    const currentApprovers = settings.void_approvers || ['owner', 'manager'];
+                    
+                    // Support dual-key checking for UI selection alignment
+                    let isChecked = currentApprovers.includes(roleItem.key);
+                    if (roleItem.key === 'manager' && currentApprovers.includes('admin')) isChecked = true;
+                    if (roleItem.key === 'accounting' && currentApprovers.includes('akuntan')) isChecked = true;
+                    if (roleItem.key === 'chef' && currentApprovers.includes('koki')) isChecked = true;
+                    
+                    return (
+                      <div
+                        key={roleItem.key}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none",
+                          isChecked
+                            ? "bg-amber-50 dark:bg-amber-950/20 border-amber-500/30 text-amber-900 dark:text-amber-400"
+                            : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
+                        )}
+                        onClick={() => {
+                          let newApprovers = [...currentApprovers];
+                          
+                          if (isChecked) {
+                            // Turn OFF both dual-keys
+                            if (roleItem.key === 'manager') {
+                              newApprovers = newApprovers.filter(r => r !== 'manager' && r !== 'admin');
+                            } else if (roleItem.key === 'accounting') {
+                              newApprovers = newApprovers.filter(r => r !== 'accounting' && r !== 'akuntan');
+                            } else if (roleItem.key === 'chef') {
+                              newApprovers = newApprovers.filter(r => r !== 'chef' && r !== 'koki');
+                            } else {
+                              newApprovers = newApprovers.filter(r => r !== roleItem.key);
+                            }
+                          } else {
+                            // Turn ON both dual-keys
+                            if (roleItem.key === 'manager') {
+                              newApprovers.push('manager', 'admin');
+                            } else if (roleItem.key === 'accounting') {
+                              newApprovers.push('accounting', 'akuntan');
+                            } else if (roleItem.key === 'chef') {
+                              newApprovers.push('chef', 'koki');
+                            } else {
+                              newApprovers.push(roleItem.key);
+                            }
+                          }
+                          
+                          // Deduplicate
+                          newApprovers = Array.from(new Set(newApprovers));
+                          setSettings({ ...settings, void_approvers: newApprovers });
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          readOnly
+                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 dark:focus:ring-amber-400 accent-amber-500 cursor-pointer"
+                        />
+                        <span className="text-xs font-bold uppercase tracking-wider">{roleItem.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="pt-6 border-t">
                 <div className="flex items-center gap-2 mb-4">
                   <CreditCard size={18} className="text-zinc-500 dark:text-zinc-100" />

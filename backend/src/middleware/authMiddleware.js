@@ -37,7 +37,7 @@ const authMiddleware = (req, res, next) => {
       return next();
     } catch (err) {
       if (!publicPaths.includes(req.path) && !req.path.startsWith('/uploads')) {
-        return res.status(403).json({ error: 'Forbidden: Invalid or expired token' });
+        return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
       }
     }
   }

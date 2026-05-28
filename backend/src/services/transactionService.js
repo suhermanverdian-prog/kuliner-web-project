@@ -27,7 +27,7 @@ class TransactionService {
     const readableId = 'TRX-' + Date.now().toString().slice(-6) + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
     const supabaseId = crypto.randomUUID();
     const isSelfOrder = cashierName === 'Self Service' || cashierName === 'System';
-    const paymentStatus = (isSelfOrder && paymentMethod !== 'Tunai') ? 'pending_payment' : 'paid';
+    const paymentStatus = (isSelfOrder && paymentMethod !== 'Tunai' && !cashierName.includes('(Paid)')) ? 'pending_payment' : 'paid';
 
     // 2. FINANCIAL INTEGRITY: Re-calculate totals on Backend
     let calculatedSubtotal = 0;
@@ -62,14 +62,19 @@ class TransactionService {
         name: item.name || menuNamesMap[item.id] || 'Menu Item'
     }));
 
+    const isComplimentary = paymentMethod === 'Complimentary' || paymentMethod === 'Staff Benefit';
+    const finalTotal = isComplimentary ? 0 : calculatedTotal;
+    const finalTax = isComplimentary ? 0 : cleanTax;
+    const finalDiscount = isComplimentary ? calculatedSubtotal : cleanDiscount;
+
     const trxPayload = {
         id: supabaseId,
         order_number: readableId,
         tenant_id: tenantId,
         outlet_id: outletId || null,
-        total: calculatedTotal, 
-        tax: cleanTax,
-        discount: cleanDiscount,
+        total: finalTotal, 
+        tax: finalTax,
+        discount: finalDiscount,
         payment_method: paymentMethod,
         payment_status: paymentStatus,
         customer_name: customerName,
@@ -272,7 +277,8 @@ class TransactionService {
             amap.sales || '4-1000', 
             amap.hpp || '5-1000', 
             amap.inventory || '1-2000',
-            amap.tax || '2-2000'
+            amap.tax || '2-2000',
+            '5-2000'
         ];
         const accounts = await TransactionRepository.getAccountsByCodes(codes);
         
@@ -283,29 +289,50 @@ class TransactionService {
         const taxAmount = Math.round(trxData.tax || 0);
         const netRevenue = totalAmount - taxAmount;
 
+        const isComplimentary = trxData.payment_method === 'Complimentary' || trxData.payment_method === 'Staff Benefit';
+
         const journalHeader = {
             id: journalId,
             tenant_id: tenantId,
             date: trxData.created_at || new Date().toISOString(),
             reference: trxData.order_number,
-            description: `Sales: ${trxData.order_number} (${trxData.customer_name})`,
-            total_amount: totalAmount
+            description: isComplimentary 
+                ? `Complimentary Order: ${trxData.order_number} (${trxData.customer_name}) - Method: ${trxData.payment_method}`
+                : `Sales: ${trxData.order_number} (${trxData.customer_name})`,
+            total_amount: isComplimentary ? Math.round(totalHpp || 0) : totalAmount
         };
 
-        const lines = [
-            { journal_id: journalId, account_id: getAccountId(amap.cash || '1-1000'), account_code: amap.cash || '1-1000', account_name: 'Kas/Bank', debit: totalAmount, credit: 0, tenant_id: tenantId },
-            { journal_id: journalId, account_id: getAccountId(amap.sales || '4-1000'), account_code: amap.sales || '4-1000', account_name: 'Pendapatan', debit: 0, credit: netRevenue, tenant_id: tenantId }
-        ];
+        let lines = [];
+        if (isComplimentary) {
+            const expenseCode = '5-2000';
+            const inventoryCode = amap.inventory || '1-2000';
+            const hppValue = Math.round(totalHpp || 0);
 
-        if (taxAmount > 0) {
-            lines.push({ journal_id: journalId, account_id: getAccountId(amap.tax || '2-2000'), account_code: amap.tax || '2-2000', account_name: 'Hutang Pajak (PPN)', debit: 0, credit: taxAmount, tenant_id: tenantId });
-        }
-
-        if (totalHpp > 0) {
+            if (hppValue > 0) {
+                lines.push(
+                    { journal_id: journalId, account_id: getAccountId(expenseCode) || getAccountId('5-2000'), account_code: expenseCode, account_name: 'Beban Operasional / Waste', debit: hppValue, credit: 0, tenant_id: tenantId },
+                    { journal_id: journalId, account_id: getAccountId(inventoryCode), account_code: inventoryCode, account_name: 'Persediaan', debit: 0, credit: hppValue, tenant_id: tenantId }
+                );
+            } else {
+                console.log(`ℹ️ [POS-Journal] Complimentary transaction ${trxData.order_number} has 0 HPP. Skipping journal creation.`);
+                return true; 
+            }
+        } else {
             lines.push(
-                { journal_id: journalId, account_id: getAccountId(amap.hpp || '5-1000'), account_code: amap.hpp || '5-1000', account_name: 'HPP', debit: Math.round(totalHpp), credit: 0, tenant_id: tenantId },
-                { journal_id: journalId, account_id: getAccountId(amap.inventory || '1-2000'), account_code: amap.inventory || '1-2000', account_name: 'Persediaan', debit: 0, credit: Math.round(totalHpp), tenant_id: tenantId }
+                { journal_id: journalId, account_id: getAccountId(amap.cash || '1-1000'), account_code: amap.cash || '1-1000', account_name: 'Kas/Bank', debit: totalAmount, credit: 0, tenant_id: tenantId },
+                { journal_id: journalId, account_id: getAccountId(amap.sales || '4-1000'), account_code: amap.sales || '4-1000', account_name: 'Pendapatan', debit: 0, credit: netRevenue, tenant_id: tenantId }
             );
+
+            if (taxAmount > 0) {
+                lines.push({ journal_id: journalId, account_id: getAccountId(amap.tax || '2-2000'), account_code: amap.tax || '2-2000', account_name: 'Hutang Pajak (PPN)', debit: 0, credit: taxAmount, tenant_id: tenantId });
+            }
+
+            if (totalHpp > 0) {
+                lines.push(
+                    { journal_id: journalId, account_id: getAccountId(amap.hpp || '5-1000'), account_code: amap.hpp || '5-1000', account_name: 'HPP', debit: Math.round(totalHpp), credit: 0, tenant_id: tenantId },
+                    { journal_id: journalId, account_id: getAccountId(amap.inventory || '1-2000'), account_code: amap.inventory || '1-2000', account_name: 'Persediaan', debit: 0, credit: Math.round(totalHpp), tenant_id: tenantId }
+                );
+            }
         }
 
         const validLines = lines.filter(l => l.account_id);
@@ -341,28 +368,35 @@ class TransactionService {
     return true;
   }
 
-  static async requestVoid(id, reason, role) {
+  static async requestVoid(id, reason, role, name, tenantId) {
+    const oldTx = await TransactionRepository.getTransactionById(id);
+    if (!oldTx) throw new Error('Transaksi tidak ditemukan');
+
     await TransactionRepository.logAudit({
-        action_type: 'REQUEST_VOID',
-        table_name: 'transactions',
-        description: `Kasir meminta VOID untuk transaksi ${id}. Alasan: ${reason}`,
-        user_name: role || 'Kasir'
+        tenant_id: tenantId || oldTx.tenant_id,
+        activity_type: 'ORDER_DELETE',
+        description: `Meminta VOID untuk transaksi #${oldTx.order_number}. Alasan: ${reason || '-'}`,
+        user_name: name || 'Kasir',
+        role: role || 'Kasir'
     });
     await TransactionRepository.updateTransaction(id, { payment_status: 'pending_void_approval' });
     return true;
   }
 
-  static async approveVoid(id, role) {
-    if (role !== 'manager' && role !== 'owner' && role !== 'superadmin' && role !== 'accounting') {
-        throw new Error('RBAC: Hanya Manager/Owner/Akunting yang dapat menyetujui VOID');
-    }
-
+  static async approveVoid(id, role, name, userTenantId) {
     const oldTx = await TransactionRepository.getTransactionById(id);
     if (!oldTx) throw new Error('Not found');
 
-    if (oldTx.payment_status === 'void') return true;
-
     const tenantId = oldTx.tenant_id;
+    const settings = await TransactionRepository.getSettings(tenantId);
+    const approvers = settings?.void_approvers || ['owner', 'manager'];
+    console.log('🔍 [Debug approveVoid Service] Settings loaded:', settings, 'Approvers:', approvers, 'Role:', role);
+
+    if (!approvers.includes(role) && role !== 'superadmin') {
+        throw new Error(`RBAC: Role '${role}' tidak diizinkan menyetujui VOID oleh pengaturan sistem.`);
+    }
+
+    if (oldTx.payment_status === 'void') return true;
     let itemsForStock = [];
     const items = await TransactionRepository.getTransactionItems(id);
     if (items && items.length > 0) {
@@ -434,7 +468,7 @@ class TransactionService {
 
         const journalHeader = {
             id: journalId,
-            tenant_id: tenantId,
+            tenant_id: oldTx.tenant_id,
             date: new Date().toISOString(),
             reference: 'VOID-' + oldTx.order_number,
             description: `VOID Sales: ${oldTx.order_number}`,
@@ -442,18 +476,18 @@ class TransactionService {
         };
 
         const lines = [
-            { journal_id: journalId, account_id: getAccountId(amap.cash || '1-1000'), account_code: amap.cash || '1-1000', account_name: 'Kas/Bank', debit: 0, credit: totalAmount, tenant_id: tenantId },
-            { journal_id: journalId, account_id: getAccountId(amap.sales || '4-1000'), account_code: amap.sales || '4-1000', account_name: 'Pendapatan', debit: netRevenue, credit: 0, tenant_id: tenantId }
+            { journal_id: journalId, account_id: getAccountId(amap.cash || '1-1000'), account_code: amap.cash || '1-1000', account_name: 'Kas/Bank', debit: 0, credit: totalAmount, tenant_id: oldTx.tenant_id },
+            { journal_id: journalId, account_id: getAccountId(amap.sales || '4-1000'), account_code: amap.sales || '4-1000', account_name: 'Pendapatan', debit: netRevenue, credit: 0, tenant_id: oldTx.tenant_id }
         ];
 
         if (taxAmount > 0) {
-            lines.push({ journal_id: journalId, account_id: getAccountId(amap.tax || '2-2000'), account_code: amap.tax || '2-2000', account_name: 'Hutang Pajak (PPN)', debit: taxAmount, credit: 0, tenant_id: tenantId });
+            lines.push({ journal_id: journalId, account_id: getAccountId(amap.tax || '2-2000'), account_code: amap.tax || '2-2000', account_name: 'Pajak', debit: taxAmount, credit: 0, tenant_id: oldTx.tenant_id });
         }
 
         if (totalHppReversed > 0) {
             lines.push(
-                { journal_id: journalId, account_id: getAccountId(amap.hpp || '5-1000'), account_code: amap.hpp || '5-1000', account_name: 'HPP', debit: 0, credit: Math.round(totalHppReversed), tenant_id: tenantId },
-                { journal_id: journalId, account_id: getAccountId(amap.inventory || '1-2000'), account_code: amap.inventory || '1-2000', account_name: 'Persediaan', debit: Math.round(totalHppReversed), credit: 0, tenant_id: tenantId }
+                { journal_id: journalId, account_id: getAccountId(amap.hpp || '5-1000'), account_code: amap.hpp || '5-1000', account_name: 'HPP', debit: 0, credit: Math.round(totalHppReversed), tenant_id: oldTx.tenant_id },
+                { journal_id: journalId, account_id: getAccountId(amap.inventory || '1-2000'), account_code: amap.inventory || '1-2000', account_name: 'Persediaan', debit: Math.round(totalHppReversed), credit: 0, tenant_id: oldTx.tenant_id }
             );
         }
 
@@ -469,12 +503,11 @@ class TransactionService {
     }
 
     await TransactionRepository.logAudit({
-        action_type: 'APPROVE_VOID',
-        table_name: 'transactions',
-        description: `Manager menyetujui VOID untuk transaksi ${id}.`,
-        user_name: role,
-        old_value: oldTx,
-        new_value: { ...oldTx, payment_status: 'void' }
+        tenant_id: oldTx.tenant_id,
+        activity_type: 'ORDER_DELETE',
+        description: `Menyetujui VOID transaksi #${oldTx.order_number}. Stok dipulihkan sebesar Rp ${totalHppReversed}.`,
+        user_name: name || 'System',
+        role: role || 'System'
     });
 
     await TransactionRepository.updateTransaction(id, { payment_status: 'void' });

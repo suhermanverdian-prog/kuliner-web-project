@@ -127,6 +127,7 @@ app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
     startServer();
   }
 } catch (error) {
+  console.error("❌ CRITICAL STARTUP ERROR:", error);
   const express = require('express');
   app = express();
   app.all('*', (req, res) => {

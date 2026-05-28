@@ -154,10 +154,28 @@ class ProcurementRepository {
   }
 
   async createJournal(headerPayload, linesPayload) {
+    const tenantId = headerPayload.tenant_id;
+    // Resolve account_id and account_name dynamically from accounts table to ensure database integrity
+    const codes = linesPayload.map(l => l.account_code).filter(Boolean);
+    const { data: accounts } = await supabase
+      .from('accounts')
+      .select('id, code, name')
+      .eq('tenant_id', tenantId)
+      .in('code', codes);
+
     const { data: journalEntry, error: jErr } = await supabase.from('journals').insert([headerPayload]).select().single();
     if (jErr) throw jErr;
 
-    const linesWithJId = linesPayload.map(l => ({ ...l, journal_id: journalEntry.id }));
+    const linesWithJId = linesPayload.map(l => {
+      const dbAcc = accounts?.find(a => a.code === l.account_code);
+      return {
+        ...l,
+        journal_id: journalEntry.id,
+        account_id: l.account_id || dbAcc?.id || null,
+        account_name: l.account_name || dbAcc?.name || 'Account ' + l.account_code
+      };
+    });
+
     const { error: lErr } = await supabase.from('journal_lines').insert(linesWithJId);
     if (lErr) throw lErr;
     

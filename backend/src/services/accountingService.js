@@ -158,6 +158,87 @@ class AccountingService {
     return journal.id;
   }
 
+  static async recordTopup(payload, tenantId) {
+    const { description, amount, source, date } = payload;
+    const cashCode = '1-1000'; // Kas Tunai / Kas Kecil
+    const bankCode = '1-1010'; // Rekening Bank
+    const equityCode = '3-1000'; // Modal Pemilik
+
+    const sourceCode = source === 'Modal' ? equityCode : bankCode;
+
+    let cashAccount = await AccountingRepository.getAccountByCode(tenantId, cashCode);
+    let sourceAccount = await AccountingRepository.getAccountByCode(tenantId, sourceCode);
+
+    if (!cashAccount) {
+        try {
+            cashAccount = await AccountingRepository.createAccount({
+                tenant_id: tenantId,
+                code: cashCode,
+                name: 'Kas Tunai / Kas Kecil',
+                category: 'Asset',
+                normal_balance: 'Debit'
+            });
+        } catch(e) {
+            cashAccount = { id: null, code: cashCode, name: 'Kas Tunai' };
+        }
+    }
+
+    if (!sourceAccount) {
+        try {
+            sourceAccount = await AccountingRepository.createAccount({
+                tenant_id: tenantId,
+                code: sourceCode,
+                name: source === 'Modal' ? 'Modal Pemilik (Ekuitas)' : 'Rekening Bank',
+                category: source === 'Modal' ? 'Equity' : 'Asset',
+                normal_balance: source === 'Modal' ? 'Credit' : 'Debit'
+            });
+        } catch(e) {
+            sourceAccount = { id: null, code: sourceCode, name: source === 'Modal' ? 'Modal Pemilik' : 'Rekening Bank' };
+        }
+    }
+
+    const journalRef = `TOP-${Date.now()}`;
+    const journalDesc = `[Top-up Kas - ${source}] ${description}`;
+
+    const journal = await AccountingRepository.createJournalHeader({
+      tenant_id: tenantId,
+      reference: journalRef,
+      description: journalDesc,
+      date: date || new Date().toISOString(),
+      total_amount: amount
+    });
+
+    const journalLines = [
+      {
+        tenant_id: tenantId,
+        journal_id: journal.id,
+        account_id: cashAccount.id,
+        account_code: cashAccount.code,
+        account_name: cashAccount.name,
+        debit: amount,
+        credit: 0
+      },
+      {
+        tenant_id: tenantId,
+        journal_id: journal.id,
+        account_id: sourceAccount.id,
+        account_code: sourceAccount.code,
+        account_name: sourceAccount.name,
+        debit: 0,
+        credit: amount
+      }
+    ];
+
+    try {
+        await AccountingRepository.createJournalLines(journalLines);
+    } catch(e) {
+        await AccountingRepository.deleteJournal(journal.id);
+        throw new Error(`Gagal membuat garis jurnal topup (Rolled Back): ${e.message}`);
+    }
+
+    return journal.id;
+  }
+
   static async recordPayroll(payload, tenantId, currentUserId, currentUserName) {
     const { employee_id, base_salary, allowances, month, year } = payload;
     const totalSalary = base_salary + allowances;

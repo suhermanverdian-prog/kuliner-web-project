@@ -3,8 +3,10 @@ import {
   BookOpen, TrendingUp, TrendingDown, DollarSign, Wallet,
   ArrowUpRight, ArrowDownRight, Download, Printer, RefreshCw,
   ChevronDown, ChevronRight, Filter, Plus, CheckCircle2,
-  AlertTriangle, FileText, Building2, Scale, CreditCard
+  AlertTriangle, FileText, Building2, Scale, CreditCard,
+  Target, Save, Trash2, BarChart3, CalendarDays
 } from 'lucide-react';
+import { useBudgetPage } from '../hooks/useBudgetPage';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -27,6 +29,7 @@ const TABS = [
   { key: 'summary',  label: 'Ringkasan Keuangan', icon: TrendingUp },
   { key: 'ledger',   label: 'Buku Besar (Jurnal)', icon: BookOpen },
   { key: 'coa',      label: 'Chart of Accounts',  icon: Scale },
+  { key: 'budget',   label: 'Anggaran',           icon: Target },
 ];
 
 const COA_COLORS = {
@@ -153,6 +156,85 @@ function AddExpenseModal({ onClose, onSave, loading, accounts }) {
   );
 }
 
+function AddTopupModal({ onClose, onSave, loading }) {
+  const [form, setForm] = useState({ description: '', amount: '', source: 'Modal', date: new Date().toISOString().split('T')[0] });
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
+      <Card className="w-full max-w-lg shadow-2xl animate-in zoom-in-95 border-none rounded-lg">
+        <CardHeader className="border-b bg-background">
+          <CardTitle className="text-xl flex items-center gap-2"><Wallet className="text-emerald-600 dark:text-emerald-400" /> Pengisian Saldo Kas Kecil / Top-up</CardTitle>
+          <CardDescription>Menambah saldo Kas Tunai toko dari sumber dana eksternal</CardDescription>
+        </CardHeader>
+        <CardContent className="p-8 space-y-5">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-100 tracking-widest">Deskripsi Pengisian</label>
+            <Input placeholder="Contoh: Setoran Modal Awal Kas Kecil Toko" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+             <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-100 tracking-widest">Jumlah Top-up (Rp)</label>
+                <Input type="number" className="font-mono tabular-nums" value={form.amount} onChange={e => setForm({...form, amount: e.target.value})} />
+             </div>
+             <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase text-zinc-500 dark:text-zinc-100 tracking-widest">Sumber Dana</label>
+                <Select value={form.source} onChange={e => setForm({...form, source: e.target.value})}>
+                  <option value="Modal">Modal Pemilik (Owner Equity)</option>
+                  <option value="Bank">Transfer dari Rekening Bank Toko</option>
+                </Select>
+             </div>
+          </div>
+        </CardContent>
+        <CardFooter className="p-6 border-t bg-background gap-4">
+           <Button variant="ghost" className="flex-1 font-bold" onClick={onClose}>Batal</Button>
+           <button 
+             type="button" 
+             className="flex-[2] h-11 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white dark:text-zinc-900 shadow-md shadow-emerald-500/10 active:scale-95 transition-all text-xs font-black uppercase rounded-md flex items-center justify-center disabled:opacity-50"
+             onClick={() => onSave(form)} 
+             disabled={loading || !form.description || !form.amount}
+           >
+             {loading ? 'Menyimpan...' : 'SIMPAN TOP-UP KAS'}
+           </button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
+const fmtBudget = (n) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
+
+function BudgetStatusBadge({ status, percent }) {
+  const config = {
+    under_budget: { label: 'Under Budget', cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' },
+    on_budget: { label: 'On Track', cls: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border-amber-200 dark:border-amber-800' },
+    over_budget: { label: 'Over Budget', cls: 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border-rose-200 dark:border-rose-800' },
+  };
+  const c = config[status] || config.on_budget;
+  return (
+    <span className={cn('px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border', c.cls)}>
+      {c.label} ({percent}%)
+    </span>
+  );
+}
+
+function VarianceProgressBar({ percent, status }) {
+  const clampedPercent = Math.min(percent, 150);
+  const barWidth = Math.min((clampedPercent / 100) * 100, 100);
+  const barColor = status === 'over_budget'
+    ? 'bg-rose-500 dark:bg-rose-400'
+    : status === 'under_budget'
+      ? 'bg-emerald-500 dark:bg-emerald-400'
+      : 'bg-amber-500 dark:bg-amber-400';
+
+  return (
+    <div className="w-full bg-zinc-100 dark:bg-zinc-700 rounded-md h-2 overflow-hidden">
+      <div
+        className={cn('h-full rounded-md transition-all duration-500', barColor)}
+        style={{ width: `${barWidth}%` }}
+      />
+    </div>
+  );
+}
+
 export default function AkunPage({ user }) {
   const {
     tab, setTab,
@@ -164,6 +246,9 @@ export default function AkunPage({ user }) {
     search, setSearch,
     showExpenseModal, setShowExpenseModal,
     savingExpense,
+    showTopupModal, setShowTopupModal,
+    savingTopup,
+    handleSaveTopup,
     loadData,
     handlePrint,
     handleExcelExport,
@@ -172,6 +257,8 @@ export default function AkunPage({ user }) {
     grossMargin, netMargin,
     filteredJournals
   } = useAkunPage({ user });
+
+  const budgetHook = useBudgetPage({ accounts });
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in duration-500">
@@ -203,6 +290,13 @@ export default function AkunPage({ user }) {
           <Button variant="primary" size="sm" className="gap-2 h-8" onClick={() => setShowExpenseModal(true)}>
             <Plus size={14} /> Tambah Biaya
           </Button>
+          <button 
+            type="button"
+            className="flex items-center gap-2 px-4 h-8 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white dark:text-zinc-900 shadow-md shadow-emerald-500/10 active:scale-95 transition-all text-xs font-black uppercase rounded-md" 
+            onClick={() => setShowTopupModal(true)}
+          >
+            <Plus size={14} /> Top-up Kas
+          </button>
           <Button variant="outline" size="sm" className="gap-2 h-8" onClick={loadData}>
             <RefreshCw size={14} /> Refresh
           </Button>
@@ -400,6 +494,245 @@ export default function AkunPage({ user }) {
               </Card>
             </div>
           )}
+
+          {/* ====== TAB: BUDGET ====== */}
+          {tab === 'budget' && (
+            <div className="space-y-6">
+              {/* Period Selector + Sub-view Toggle */}
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 bg-background p-1 rounded-lg border">
+                    <button
+                      onClick={() => budgetHook.setSubView('input')}
+                      className={cn('flex items-center gap-2 px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all',
+                        budgetHook.subView === 'input'
+                          ? 'bg-amber-500 dark:bg-amber-400 text-white dark:text-zinc-900 shadow'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100')}
+                    >
+                      <CalendarDays size={14} /> Input Anggaran
+                    </button>
+                    <button
+                      onClick={() => budgetHook.setSubView('variance')}
+                      className={cn('flex items-center gap-2 px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all',
+                        budgetHook.subView === 'variance'
+                          ? 'bg-amber-500 dark:bg-amber-400 text-white dark:text-zinc-900 shadow'
+                          : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100')}
+                    >
+                      <BarChart3 size={14} /> Laporan Varians
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={budgetHook.selectedMonth}
+                    onChange={e => budgetHook.setSelectedMonth(Number(e.target.value))}
+                    className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md px-4 py-2 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-amber-500/20"
+                  >
+                    {budgetHook.MONTH_NAMES.map((name, i) => (
+                      <option key={i + 1} value={i + 1}>{name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={budgetHook.selectedYear}
+                    onChange={e => budgetHook.setSelectedYear(Number(e.target.value))}
+                    className="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md px-4 py-2 text-sm font-bold text-zinc-900 dark:text-zinc-100 focus:ring-2 focus:ring-amber-500/20"
+                  >
+                    {[2025, 2026, 2027, 2028].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {budgetHook.loading ? (
+                <div className="flex items-center justify-center py-24">
+                  <div className="w-10 h-10 border-4 border-amber-500 dark:border-amber-400 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {/* === SUB-VIEW: INPUT ANGGARAN === */}
+                  {budgetHook.subView === 'input' && (
+                    <Card className="border-none shadow-xl bg-card overflow-hidden">
+                      <CardHeader className="border-b bg-background">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-lg flex items-center gap-2">
+                              <Target size={18} className="text-amber-600 dark:text-amber-400" />
+                              Input Anggaran — {budgetHook.MONTH_NAMES[budgetHook.selectedMonth - 1]} {budgetHook.selectedYear}
+                            </CardTitle>
+                            <CardDescription>Tentukan batas anggaran untuk setiap akun beban dan aset</CardDescription>
+                          </div>
+                          <button
+                            onClick={budgetHook.handleSaveAll}
+                            disabled={budgetHook.saving}
+                            className="flex items-center gap-2 px-6 py-2 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-95 transition-all text-xs font-black uppercase rounded-md disabled:opacity-50"
+                          >
+                            <Save size={14} />
+                            {budgetHook.saving ? 'Menyimpan...' : 'Simpan Semua'}
+                          </button>
+                        </div>
+                      </CardHeader>
+                      <div className="overflow-x-auto">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="bg-background text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 border-b">
+                              <th className="px-6 py-4 text-left">Kode</th>
+                              <th className="px-6 py-4 text-left">Nama Akun</th>
+                              <th className="px-6 py-4 text-left">Kategori</th>
+                              <th className="px-6 py-4 text-right w-48">Anggaran (Rp)</th>
+                              <th className="px-6 py-4 text-left">Catatan</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                            {budgetHook.budgetableAccounts.length === 0 ? (
+                              <tr>
+                                <td colSpan={5} className="py-16 text-center text-zinc-500 dark:text-zinc-400 text-sm">
+                                  Tidak ada akun Beban/Aset ditemukan. Pastikan Chart of Accounts sudah diisi.
+                                </td>
+                              </tr>
+                            ) : budgetHook.budgetableAccounts.map(acc => {
+                              const edit = budgetHook.editedBudgets[acc.id] || { amount: '', notes: '' };
+                              return (
+                                <tr key={acc.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
+                                  <td className="px-6 py-4 font-mono text-xs font-black text-amber-600 dark:text-amber-400">{acc.code}</td>
+                                  <td className="px-6 py-4 text-sm font-bold text-zinc-900 dark:text-zinc-100">{acc.name}</td>
+                                  <td className="px-6 py-4">
+                                    <span className={cn('px-2 py-1 rounded-md text-[9px] font-black border uppercase tracking-widest', COA_COLORS[acc.category] || 'bg-background text-zinc-500 dark:text-zinc-400')}>
+                                      {acc.category}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="10000"
+                                      value={edit.amount || ''}
+                                      onChange={e => budgetHook.updateBudgetField(acc.id, 'amount', e.target.value)}
+                                      placeholder="0"
+                                      className="w-full text-right font-mono tabular-nums text-sm font-bold bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md px-4 py-2 focus:ring-2 focus:ring-amber-500/20 dark:focus:ring-amber-400/20 focus:border-amber-500 dark:focus:border-amber-400 outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+                                    />
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <input
+                                      type="text"
+                                      value={edit.notes || ''}
+                                      onChange={e => budgetHook.updateBudgetField(acc.id, 'notes', e.target.value)}
+                                      placeholder="Catatan opsional..."
+                                      className="w-full text-sm bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md px-4 py-2 focus:ring-2 focus:ring-amber-500/20 dark:focus:ring-amber-400/20 focus:border-amber-500 dark:focus:border-amber-400 outline-none transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+                                    />
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* === SUB-VIEW: LAPORAN VARIANS === */}
+                  {budgetHook.subView === 'variance' && (
+                    <div className="space-y-6">
+                      {/* Totals Summary Cards */}
+                      {budgetHook.variance?.totals && (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <Card className="border-none shadow-lg bg-card">
+                            <CardContent className="p-6">
+                              <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Total Anggaran</p>
+                              <p className="text-xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100 mt-1">{fmtBudget(budgetHook.variance.totals.total_budget)}</p>
+                            </CardContent>
+                          </Card>
+                          <Card className="border-none shadow-lg bg-card">
+                            <CardContent className="p-6">
+                              <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Total Aktual</p>
+                              <p className="text-xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100 mt-1">{fmtBudget(budgetHook.variance.totals.total_actual)}</p>
+                            </CardContent>
+                          </Card>
+                          <Card className="border-none shadow-lg bg-card">
+                            <CardContent className="p-6">
+                              <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Selisih (Varians)</p>
+                              <p className={cn('text-xl font-black font-mono tabular-nums mt-1',
+                                budgetHook.variance.totals.total_variance >= 0
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-rose-600 dark:text-rose-400'
+                              )}>
+                                {budgetHook.variance.totals.total_variance >= 0 ? '+' : ''}{fmtBudget(budgetHook.variance.totals.total_variance)}
+                              </p>
+                            </CardContent>
+                          </Card>
+                          <Card className="border-none shadow-lg bg-card">
+                            <CardContent className="p-6">
+                              <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Pemakaian</p>
+                              <p className={cn('text-xl font-black font-mono tabular-nums mt-1',
+                                budgetHook.variance.totals.total_percent_used > 100
+                                  ? 'text-rose-600 dark:text-rose-400'
+                                  : 'text-amber-600 dark:text-amber-400'
+                              )}>
+                                {budgetHook.variance.totals.total_percent_used}%
+                              </p>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      )}
+
+                      {/* Variance Table */}
+                      <Card className="border-none shadow-xl bg-card overflow-hidden">
+                        <CardHeader className="border-b bg-background">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <BarChart3 size={18} className="text-amber-600 dark:text-amber-400" />
+                            Laporan Varians — {budgetHook.MONTH_NAMES[budgetHook.selectedMonth - 1]} {budgetHook.selectedYear}
+                          </CardTitle>
+                          <CardDescription>Perbandingan anggaran vs pengeluaran aktual dari jurnal</CardDescription>
+                        </CardHeader>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="bg-background text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 border-b">
+                                <th className="px-6 py-4 text-left">Kode</th>
+                                <th className="px-6 py-4 text-left">Nama Akun</th>
+                                <th className="px-6 py-4 text-right">Anggaran</th>
+                                <th className="px-6 py-4 text-right">Aktual</th>
+                                <th className="px-6 py-4 text-right">Selisih</th>
+                                <th className="px-6 py-4 text-center w-48">Progress</th>
+                                <th className="px-6 py-4 text-center">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                              {(!budgetHook.variance?.items || budgetHook.variance.items.length === 0) ? (
+                                <tr>
+                                  <td colSpan={7} className="py-16 text-center text-zinc-500 dark:text-zinc-400 text-sm">
+                                    Belum ada anggaran untuk periode ini. Silakan isi anggaran di tab "Input Anggaran" terlebih dahulu.
+                                  </td>
+                                </tr>
+                              ) : budgetHook.variance.items.map(item => (
+                                <tr key={item.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors">
+                                  <td className="px-6 py-4 font-mono text-xs font-black text-amber-600 dark:text-amber-400">{item.account_code}</td>
+                                  <td className="px-6 py-4 text-sm font-bold text-zinc-900 dark:text-zinc-100">{item.account_name}</td>
+                                  <td className="px-6 py-4 text-right font-mono tabular-nums text-sm font-bold text-zinc-900 dark:text-zinc-100">{fmtBudget(item.budget_amount)}</td>
+                                  <td className="px-6 py-4 text-right font-mono tabular-nums text-sm font-bold text-zinc-900 dark:text-zinc-100">{fmtBudget(item.actual_amount)}</td>
+                                  <td className={cn('px-6 py-4 text-right font-mono tabular-nums text-sm font-black',
+                                    item.variance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                  )}>
+                                    {item.variance >= 0 ? '+' : ''}{fmtBudget(item.variance)}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <VarianceProgressBar percent={item.percent_used} status={item.status} />
+                                  </td>
+                                  <td className="px-6 py-4 text-center">
+                                    <BudgetStatusBadge status={item.status} percent={item.percent_used} />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </Card>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </>
       )}
       {showExpenseModal && (
@@ -408,6 +741,13 @@ export default function AkunPage({ user }) {
           loading={savingExpense}
           accounts={accounts}
           onSave={handleSaveExpense}
+        />
+      )}
+      {showTopupModal && (
+        <AddTopupModal 
+          onClose={() => setShowTopupModal(false)} 
+          loading={savingTopup}
+          onSave={handleSaveTopup}
         />
       )}
     </div>

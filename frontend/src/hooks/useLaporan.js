@@ -69,6 +69,30 @@ export function useLaporan() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  const fetchTransactions = useCallback(async () => {
+    setLoadingTrx(true);
+    try {
+      const limit = 10;
+      const res = await api.getTransactions({ page: currentPage, limit });
+      if (res) {
+        // Handle cases where response might be direct array or wrapped object
+        const list = Array.isArray(res) ? res : (res.data || []);
+        const totalCount = Array.isArray(res) ? res.length : (res.count || list.length);
+        setTransactions(list);
+        setTotalPages(Math.ceil(totalCount / limit) || 1);
+        setTotalTrx(totalCount);
+      }
+    } catch (e) {
+      console.error("Failed to fetch transactions ledger", e);
+    } finally {
+      setLoadingTrx(false);
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
   const handleExcel = async (type) => {
     setExporting(true);
     try {

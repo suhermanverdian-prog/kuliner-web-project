@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { supabase } = require('../supabase');
 const InventoryRepository = require('../repositories/inventoryRepository');
 const TransactionRepository = require('../repositories/transactionRepository');
 
@@ -8,16 +9,41 @@ class InventoryService {
   static async getAllInventory(tenantId, role) {
     const data = await InventoryRepository.getBahan(tenantId);
     
-    // Neural Supplier Mapping
+    // Neural Supplier Mapping & Virtual Column Recovery
     try {
-      const { suppliers, poItems, pos } = await InventoryRepository.getLatestSuppliersInfo();
+      const { suppliers, poItems, pos } = await InventoryRepository.getLatestSuppliersInfo(tenantId);
 
       return (data || []).map(bahan => {
-          const latestPOItem = poItems.find(i => i.bahan_id === bahan.id);
-          const po = latestPOItem ? pos.find(p => p.id === latestPOItem.po_id) : null;
-          const supplier = po ? suppliers.find(s => s.id === po.supplier_id) : null;
+          let supplierId = bahan.supplier_id || null;
+          let cleanBom = [];
+          
+          if (Array.isArray(bahan.bom)) {
+            bahan.bom.forEach(item => {
+              if (item && item.isSupplierMarker) {
+                if (!supplierId) supplierId = item.supplierId;
+              } else {
+                cleanBom.push(item);
+              }
+            });
+          }
 
-          return { ...bahan, supplier: supplier || null };
+          // Fallback to latest PO item mapping if no virtual supplier is found
+          if (!supplierId) {
+            const latestPOItem = poItems.find(i => i.bahan_id === bahan.id);
+            const po = latestPOItem ? pos.find(p => p.id === latestPOItem.po_id) : null;
+            if (po) {
+              supplierId = po.supplier_id;
+            }
+          }
+
+          const supplier = supplierId ? suppliers.find(s => s.id === supplierId) : null;
+
+          return { 
+            ...bahan, 
+            bom: cleanBom,
+            supplier_id: supplierId,
+            supplier: supplier || null 
+          };
       });
     } catch (err) {
       console.error('⚠️ [Inventory Mapping Error]:', err.message);
@@ -26,6 +52,25 @@ class InventoryService {
   }
 
   static async createInventory(bahanData, conversions, tenantId) {
+    // ---- Duplicate Name Guard ----
+    const { data: existing } = await supabase
+      .from('bahan')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('name', bahanData.name)
+      .single();
+    if (existing) {
+      throw new Error(`Material dengan nama "${bahanData.name}" sudah ada di tenant ini.`);
+    }
+
+    const supplierId = bahanData.supplier_id || bahanData.supplierId || null;
+    const rawBom = bahanData.bom || [];
+    // Remove any existing supplier marker just in case
+    const cleanBom = rawBom.filter(item => !(item && item.isSupplierMarker));
+    if (supplierId) {
+      cleanBom.push({ supplierId, qty: 0, isSupplierMarker: true });
+    }
+
     const cleanBahan = {
       tenant_id: tenantId,
       name: bahanData.name,
@@ -33,7 +78,8 @@ class InventoryService {
       unit: bahanData.unit,
       cost: bahanData.price,
       min_stock: bahanData.min_stock,
-      stock: bahanData.stock
+      stock: bahanData.stock,
+      bom: cleanBom
     };
 
     let cleanConversions = [];
@@ -49,12 +95,36 @@ class InventoryService {
   }
 
   static async updateInventory(id, updateData, conversions, tenantId) {
+    // Normalize: empty string '' treated as null (no supplier selected)
+    const supplierId = (updateData.supplier_id && updateData.supplier_id !== '') 
+      ? updateData.supplier_id 
+      : (updateData.supplierId && updateData.supplierId !== '') 
+        ? updateData.supplierId 
+        : null;
+    
+    const rawBom = updateData.bom || [];
+
+    // Clean BOM: remove any existing supplier marker, then re-inject if supplierId exists
+    const cleanBom = rawBom
+      .filter(item => item && !item.isSupplierMarker)
+      .map(item => ({
+        ...item,
+        bahanId: item.bahanId && String(item.bahanId) !== 'undefined' && String(item.bahanId) !== 'null' ? item.bahanId : null,
+        bahan_id: item.bahan_id && String(item.bahan_id) !== 'undefined' && String(item.bahan_id) !== 'null' ? item.bahan_id : null
+      }));
+    if (supplierId) {
+      cleanBom.push({ supplierId, qty: 0, isSupplierMarker: true });
+    }
+
+
     const cleanBahan = {
       name: updateData.name,
       category: updateData.category,
       unit: updateData.unit,
       cost: updateData.price,
-      min_stock: updateData.min_stock
+      min_stock: updateData.min_stock,
+      stock: updateData.stock,
+      bom: cleanBom
     };
 
     let cleanConversions = [];
@@ -236,6 +306,193 @@ class InventoryService {
     } catch (err) {
       throw err;
     }
+  }
+
+  static async getCategories(tenantId) {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_categories')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('name');
+      
+      if (error && error.code === 'PGRST116') {
+        return [
+          { id: '1', name: 'Bahan Baku' },
+          { id: '2', name: 'Assembly / Setengah Jadi' },
+          { id: '3', name: 'Kemasan' },
+          { id: '4', name: 'Lainnya' }
+        ];
+      }
+      if (error) {
+        return [
+          { id: '1', name: 'Bahan Baku' },
+          { id: '2', name: 'Assembly / Setengah Jadi' },
+          { id: '3', name: 'Kemasan' },
+          { id: '4', name: 'Lainnya' }
+        ];
+      }
+      
+      if (!data || data.length === 0) {
+        const defaults = [
+          { tenant_id: tenantId, name: 'Bahan Baku' },
+          { tenant_id: tenantId, name: 'Assembly / Setengah Jadi' },
+          { tenant_id: tenantId, name: 'Kemasan' },
+          { tenant_id: tenantId, name: 'Lainnya' }
+        ];
+        try {
+          const { data: inserted } = await supabase.from('inventory_categories').insert(defaults).select();
+          if (inserted && inserted.length > 0) return inserted;
+        } catch (err) {
+          console.warn("Failed to seed dynamic categories:", err.message);
+        }
+        return defaults.map((d, i) => ({ id: String(i+1), ...d }));
+      }
+      
+      return data;
+    } catch (err) {
+      return [
+        { id: '1', name: 'Bahan Baku' },
+        { id: '2', name: 'Assembly / Setengah Jadi' },
+        { id: '3', name: 'Kemasan' },
+        { id: '4', name: 'Lainnya' }
+      ];
+    }
+  }
+
+  static async createCategory(name, tenantId) {
+    const { data, error } = await supabase
+      .from('inventory_categories')
+      .insert([{ name, tenant_id: tenantId }])
+      .select()
+      .single();
+    if (error) throw new Error('Gagal membuat kategori: ' + error.message);
+    return data;
+  }
+
+  static async deleteCategory(id, tenantId) {
+    const { data, error } = await supabase
+      .from('inventory_categories')
+      .delete()
+      .eq('id', id)
+      .eq('tenant_id', tenantId);
+    if (error) throw new Error('Gagal menghapus kategori: ' + error.message);
+    return data;
+  }
+
+  static async assembleInventory(targetBahanId, produceQty, tenantId) {
+    const { data: targetBahan, error: tErr } = await supabase
+      .from('bahan')
+      .select('*')
+      .eq('id', targetBahanId)
+      .eq('tenant_id', tenantId)
+      .single();
+    if (tErr || !targetBahan) throw new Error('Bahan target perakitan tidak ditemukan: ' + (tErr?.message || ''));
+
+    const bom = (targetBahan.bom || []).filter(item => item && !item.isSupplierMarker);
+    if (bom.length === 0) throw new Error('Bahan target tidak memiliki formula resep (BOM) produksi.');
+
+    // Extract valid ingredient IDs, ignoring any placeholder or malformed entries
+    const ingredientIds = bom
+      .map(item => item.bahanId || item.bahan_id)
+      .filter(id => id && String(id) !== 'undefined' && String(id) !== 'null');
+    if (ingredientIds.length === 0) {
+      throw new Error('BOM tidak memiliki bahan dasar yang valid untuk perakitan.');
+    }
+    const { data: ingredients, error: iErr } = await supabase
+      .from('bahan')
+      .select('*')
+      .in('id', ingredientIds)
+      .eq('tenant_id', tenantId);
+    if (iErr) throw new Error('Gagal mengambil data bahan dasar: ' + iErr.message);
+
+    const ingredientMap = {};
+    ingredients.forEach(ing => {
+      ingredientMap[ing.id] = ing;
+    });
+
+    const updates = [];
+    const logs = [];
+    let totalHppCost = 0;
+
+    for (const row of bom) {
+      // Resolve ingredient ID (camelCase atau snake_case)
+      const ingId = row.bahanId || row.bahan_id;
+      const ing = ingredientMap[ingId];
+      if (!ing) throw new Error(`Bahan dasar dengan ID ${ingId} tidak ditemukan.`);
+
+      const neededQty = Number(row.qty) * Number(produceQty);
+      const currentStock = Number(ing.stock || 0);
+
+      if (currentStock < neededQty) {
+        throw new Error(`Stok bahan dasar '${ing.name}' tidak mencukupi. Dibutuhkan: ${neededQty} ${ing.unit}, Tersedia: ${currentStock} ${ing.unit}.`);
+      }
+
+      const newIngStock = currentStock - neededQty;
+      const ingCost = Number(ing.cost || 0);
+
+      const ingredientHppValue = neededQty * ingCost;
+      totalHppCost += ingredientHppValue;
+
+      updates.push({ id: ing.id, stock: newIngStock });
+      logs.push({
+        tenant_id: tenantId,
+        bahan_id: ing.id,
+        bahan_name: ing.name,
+        type: 'Pengurangan',
+        change_qty: -neededQty,
+        prev_stock: currentStock,
+        next_stock: newIngStock,
+        reference_id: `ASSY-${targetBahan.name.slice(0,6).toUpperCase()}`,
+        created_at: new Date().toISOString()
+      });
+    }
+
+    const incomingUnitCost = totalHppCost / Number(produceQty);
+    const prevStock = Number(targetBahan.stock || 0);
+    const prevCost = Number(targetBahan.cost || 0);
+    const nextStock = prevStock + Number(produceQty);
+
+    let nextCost = incomingUnitCost;
+    if (nextStock > 0) {
+      nextCost = ((prevStock * prevCost) + (Number(produceQty) * incomingUnitCost)) / nextStock;
+    }
+    nextCost = Math.round(nextCost * 100) / 100;
+
+    for (const up of updates) {
+      await supabase.from('bahan').update({ stock: up.stock }).eq('id', up.id);
+    }
+
+    const { data: updatedTarget, error: utErr } = await supabase
+      .from('bahan')
+      .update({ stock: nextStock, cost: nextCost })
+      .eq('id', targetBahanId)
+      .select()
+      .single();
+    if (utErr) throw new Error('Gagal memperbarui stok bahan setengah jadi: ' + utErr.message);
+
+    logs.push({
+      tenant_id: tenantId,
+      bahan_id: targetBahanId,
+      bahan_name: targetBahan.name,
+      type: 'Penambahan',
+      change_qty: Number(produceQty),
+      prev_stock: prevStock,
+      next_stock: nextStock,
+      reference_id: `ASSY-${targetBahan.name.slice(0,6).toUpperCase()}`,
+      created_at: new Date().toISOString()
+    });
+
+    await supabase.from('inventory_logs').insert(logs);
+
+    return {
+      success: true,
+      message: 'Assembly perakitan bahan setengah jadi berhasil!',
+      produced: targetBahan.name,
+      qty: produceQty,
+      unitCost: nextCost,
+      newStock: nextStock
+    };
   }
 
   // --- Stock Reservation Helpers ---

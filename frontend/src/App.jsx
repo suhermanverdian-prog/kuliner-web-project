@@ -148,6 +148,8 @@ function AppRoutes() {
         <Route path="/guest/*" element={<GuestMenuPage />} />
         <Route path="/guest-menu" element={<GuestMenuPage />} />
         <Route path="/order" element={<GuestMenuPage />} />
+        <Route path="/store/:tenantId/:tableNumber" element={<GuestMenuPage />} />
+        <Route path="/store/:tenantId" element={<GuestMenuPage />} />
         <Route path="/absensi" element={<AbsensiPage />} />
 
         {/* Enterprise Layout (Protected) */}

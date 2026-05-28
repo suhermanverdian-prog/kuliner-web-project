@@ -100,5 +100,76 @@
         ]
       }
     }
+  ],
+  "grn_items": [
+    {
+      "id": "gi-3offp59zl",
+      "grn_id": "d702d8f1-714b-4b25-b60a-47e28b7f4f7c",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "bahan_id": "7a19cca9-27bb-4909-ad3c-7cf3844b62d1",
+      "qty_received": 3,
+      "price_unit": 90000
+    },
+    {
+      "id": "gi-mtegahn7z",
+      "grn_id": "0ca56624-6f51-494f-b2f2-87f001f8e098",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "bahan_id": "7a19cca9-27bb-4909-ad3c-7cf3844b62d1",
+      "qty_received": 2,
+      "price_unit": 15000
+    },
+    {
+      "id": "gi-3ght2i2s5",
+      "grn_id": "9a49a036-4c2e-4f4b-bb51-1f0dd5aee5e4",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "bahan_id": "37ac7f56-324e-40a0-b5f8-c1104905e261",
+      "qty_received": 2,
+      "price_unit": 60000
+    },
+    {
+      "id": "gi-f7jiw0397",
+      "grn_id": "2b0b8cff-5728-4a14-acb0-ae269c496062",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "bahan_id": "d9c5d04b-d899-4e7c-a2fd-d8dbccce209d",
+      "qty_received": 1,
+      "price_unit": 500000
+    },
+    {
+      "id": "gi-ncnak2551",
+      "grn_id": "9d540067-8e2c-4586-8bb0-ef3e9c071b60",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "bahan_id": "37ac7f56-324e-40a0-b5f8-c1104905e261",
+      "qty_received": 1,
+      "price_unit": 60000
+    },
+    {
+      "id": "gi-odbs8l9ml",
+      "grn_id": "51225d37-cbf7-4dad-984c-7ee79311269f",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "bahan_id": "afc7a294-2887-4cd9-8670-64932daef6b3",
+      "qty_received": 3,
+      "price_unit": 80000
+    },
+    {
+      "id": "gi-ztjkrlxqi",
+      "grn_id": "4d1ed323-cf3a-49b6-b39a-c93a72d9edee",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "bahan_id": "fcc13ef7-5e10-4ad8-a25b-f6dccb57f9a8",
+      "qty_received": 1,
+      "price_unit": 85000
+    }
+  ],
+  "purchase_invoices": [
+    {
+      "id": "inv-1779885477169",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "supplier_id": "1e8f4c0f-f44e-414c-a343-89d22a15e455",
+      "po_id": "590edb92-b894-42f7-8c21-3f3227292595",
+      "grn_id": "d702d8f1-714b-4b25-b60a-47e28b7f4f7c",
+      "total": 270000,
+      "status": "paid",
+      "created_at": "2026-05-27T12:37:57.169Z",
+      "paid_at": "2026-05-27T17:19:42.470Z"
+    }
   ]
 }

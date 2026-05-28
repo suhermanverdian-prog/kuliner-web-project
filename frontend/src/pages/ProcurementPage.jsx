@@ -1,7 +1,7 @@
 import React from 'react';
 import { useProcurement } from '../hooks/useProcurement';
 import { 
-  ShoppingCart, Plus, Trash2, Truck, Wallet, Boxes, Settings, Loader2, ShieldCheck, Printer, X
+  ShoppingCart, Plus, Trash2, Truck, Wallet, Boxes, Settings, Loader2, ShieldCheck, Printer, X, AlertTriangle, CheckCircle2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -41,12 +41,13 @@ export default function ProcurementPage() {
     confirmReceipt,
     handlePayInvoice,
     handleCancelPO,
-    handleSaveSupplier
+    handleSaveSupplier,
+    handleSimplePurchase,
+    cancelConfirmPO, setCancelConfirmPO,
+    doConfirmCancel,
+    payConfirmInvoice, setPayConfirmInvoice,
+    doConfirmPay
   } = useProcurement();
-
-  const formatCurrency = (n) => new Intl.NumberFormat('id-ID', { 
-    style: 'currency', currency: 'IDR', maximumFractionDigits: 0 
-  }).format(n || 0);
 
   // 💡 Dynamic Supplier-Material Mapping & Grouping (STRICT SAFE VERSION)
   const getBahanOptions = () => {
@@ -238,15 +239,24 @@ export default function ProcurementPage() {
                   <div className="text-4xl font-black text-primary-foreground font-mono tabular-nums tracking-tighter mb-8 tabular-nums">
                     {formatCurrency(poItems.reduce((acc, item) => acc + (item.purchaseQty * item.unitPrice), 0))}
                   </div>
-                  <Button 
-                    variant="secondary"
-                    size="lg"
-                    className="w-full bg-primary-foreground text-primary hover:bg-background shadow-2xl" 
-                    onClick={handleSavePO} 
-                    disabled={actionLoading || poItems.filter(i => i.bahanId).length === 0}
-                  >
-                    {actionLoading ? <Loader2 className="animate-spin" /> : "GENERATE PURCHASE ORDER"}
-                  </Button>
+                  <div className="flex flex-col gap-3">
+                    <button 
+                      type="button"
+                      className="w-full h-12 bg-white hover:bg-zinc-50 border border-zinc-200 text-amber-500 dark:bg-zinc-900 dark:text-amber-400 dark:hover:bg-zinc-800 dark:border-zinc-800 shadow-sm active:scale-95 transition-all font-black text-xs uppercase tracking-wider rounded-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:scale-100" 
+                      onClick={handleSavePO} 
+                      disabled={actionLoading || poItems.filter(i => i.bahanId).length === 0}
+                    >
+                      {actionLoading ? <Loader2 className="animate-spin" size={16} /> : "GENERATE PURCHASE ORDER"}
+                    </button>
+                    <button 
+                      type="button"
+                      className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white dark:text-zinc-900 shadow-lg shadow-emerald-500/20 active:scale-95 transition-all font-black text-xs uppercase tracking-wider rounded-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:scale-100" 
+                      onClick={handleSimplePurchase} 
+                      disabled={actionLoading || poItems.filter(i => i.bahanId).length === 0}
+                    >
+                      {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <><CheckCircle2 size={15} /> DIRECT CASH PURCHASE</>}
+                    </button>
+                  </div>
                </Card>
 
                <Card className="p-6 space-y-4">
@@ -452,7 +462,7 @@ export default function ProcurementPage() {
                          </TableCell>
                          <TableCell className="text-right">
                             {inv.status === 'unpaid' && (
-                              <Button size="sm" variant="outline" onClick={() => handlePayInvoice(inv.id)} disabled={actionLoading}>
+                              <Button size="sm" variant="outline" onClick={() => handlePayInvoice(inv)} disabled={actionLoading}>
                                 {actionLoading ? <Loader2 className="animate-spin" size={12} /> : "SETTLE"}
                               </Button>
                             )}
@@ -712,6 +722,119 @@ export default function ProcurementPage() {
               </Button>
             </CardFooter>
           </Card>
+        </div>
+      )}
+      {/* 🚫 CANCEL PO CONFIRMATION MODAL */}
+      {cancelConfirmPO && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setCancelConfirmPO(null)} />
+          <div className="relative w-full max-w-md bg-card border border-rose-200 dark:border-rose-800 rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-rose-500" />
+
+            <div className="p-8">
+              {/* Icon */}
+              <div className="w-14 h-14 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 flex items-center justify-center mb-6">
+                <AlertTriangle size={28} className="text-rose-600 dark:text-rose-400" />
+              </div>
+
+              {/* Heading */}
+              <h3 className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100 mb-2">
+                Batalkan Purchase Order?
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed mb-1">
+                Anda akan membatalkan:
+              </p>
+              <div className="px-4 py-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg mb-6">
+                <p className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-mono tabular-nums">
+                  {cancelConfirmPO.po_number || `PO-${cancelConfirmPO.id?.toString().slice(0,8).toUpperCase()}`}
+                </p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-bold mt-0.5">
+                  {cancelConfirmPO.supplier?.name} &bull; {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(cancelConfirmPO.total_amount || 0)}
+                </p>
+              </div>
+              <p className="text-[11px] text-rose-600 dark:text-rose-400 font-bold uppercase tracking-wide mb-6">
+                ⚠ Tindakan ini tidak dapat dibatalkan. PO akan dikunci permanen.
+              </p>
+
+              {/* Actions */}
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setCancelConfirmPO(null)}
+                  disabled={actionLoading}
+                  className="flex-1 h-12 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-black uppercase tracking-widest hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={doConfirmCancel}
+                  disabled={actionLoading}
+                  className="flex-1 h-12 rounded-lg bg-rose-600 hover:bg-rose-700 dark:bg-rose-500 dark:hover:bg-rose-600 text-white text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98] shadow-lg shadow-rose-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {actionLoading
+                    ? <Loader2 size={16} className="animate-spin" />
+                    : <><X size={14} /> Ya, Batalkan PO</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 💳 PAY INVOICE CONFIRMATION MODAL */}
+      {payConfirmInvoice && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6">
+          <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setPayConfirmInvoice(null)} />
+          <div className="relative w-full max-w-md bg-card border border-emerald-200 dark:border-emerald-800 rounded-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500" />
+
+            <div className="p-8">
+              {/* Icon */}
+              <div className="w-14 h-14 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mb-6">
+                <CheckCircle2 size={28} className="text-emerald-600 dark:text-emerald-400" />
+              </div>
+
+              {/* Heading */}
+              <h3 className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100 mb-2">
+                Konfirmasi Pembayaran
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed mb-1">
+                Anda akan menyelesaikan pembayaran untuk invoice:
+              </p>
+              <div className="px-4 py-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg mb-6">
+                <p className="text-sm font-black text-zinc-900 dark:text-zinc-100 font-mono tabular-nums">
+                  #{payConfirmInvoice.id?.slice(0, 8).toUpperCase()}
+                </p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-bold mt-0.5">
+                  {payConfirmInvoice.supplier?.name} &bull; {formatCurrency(payConfirmInvoice.total || 0)}
+                </p>
+              </div>
+              <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wide mb-6">
+                ✓ Invoice ini akan ditandai lunas dan jurnal akuntansi otomatis diperbarui.
+              </p>
+
+              {/* Actions */}
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setPayConfirmInvoice(null)}
+                  disabled={actionLoading}
+                  className="flex-1 h-12 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-black uppercase tracking-widest hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={doConfirmPay}
+                  disabled={actionLoading}
+                  className="flex-1 h-12 rounded-lg bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-widest transition-all active:scale-[0.98] shadow-lg shadow-emerald-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {actionLoading
+                    ? <Loader2 size={16} className="animate-spin" />
+                    : <><CheckCircle2 size={14} /> Settle Sekarang</>}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
