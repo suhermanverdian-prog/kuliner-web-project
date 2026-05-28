@@ -28,27 +28,27 @@ function KPICard({ label, value, sub, icon: Icon, delta, colorClass }) {
   const isUp = delta >= 0;
   return (
     <Card className="bg-card border border-border shadow-sm font-mono tabular-nums relative overflow-hidden rounded-md">
-      <CardContent className="p-5 relative">
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/5 blur-3xl rounded-lg pointer-events-none" />
+      <CardContent className="p-4 relative">
+        <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/5 blur-2xl rounded-lg pointer-events-none" />
         
         <div className="flex justify-between items-start relative z-10">
-          <div className="space-y-1.5 min-w-0 flex-1">
-            <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest truncate">{label}</p>
-            <h3 className="text-xl font-black tracking-tight font-mono tabular-nums text-zinc-900 dark:text-zinc-100 truncate">{value}</h3>
-            {sub && <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-bold uppercase truncate">{sub}</p>}
+          <div className="space-y-1 min-w-0 flex-1">
+            <p className="text-[8px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest truncate">{label}</p>
+            <h3 className="text-lg font-black tracking-tight font-mono tabular-nums text-zinc-900 dark:text-zinc-100 truncate">{value}</h3>
+            {sub && <p className="text-[8px] text-zinc-400 dark:text-zinc-500 font-bold uppercase truncate">{sub}</p>}
           </div>
-          <div className="w-10 h-10 rounded-md bg-amber-50 text-amber-600 border border-amber-200/50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800/40 flex items-center justify-center shrink-0 ml-2 shadow-sm transition-all duration-300">
-            <Icon size={18} strokeWidth={2.5} />
+          <div className="w-8 h-8 rounded-md bg-amber-50 text-amber-600 border border-amber-200/50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800/40 flex items-center justify-center shrink-0 ml-2 shadow-sm transition-all duration-350">
+            <Icon size={14} strokeWidth={2.5} />
           </div>
         </div>
         
         {delta !== undefined && (
-          <div className="mt-4 flex items-center gap-3 relative z-10">
+          <div className="mt-3 flex items-center gap-2 relative z-10">
             <div className={cn(
-              "flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
+              "flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
               isUp ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50" : "bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/50"
             )}>
-              {isUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+              {isUp ? <TrendingUp size={8} /> : <TrendingDown size={8} />}
               <span className="font-mono tabular-nums">{Math.abs(delta)}%</span>
             </div>
             <span className="text-[8px] text-zinc-500 dark:text-zinc-400 font-black uppercase tracking-wider">vs benchmark</span>
@@ -194,7 +194,7 @@ export default function LaporanPage({ onNavigate }) {
       <div className="space-y-6">
         <div className="flex items-center gap-6">
            <div className="w-2.5 h-12 bg-amber-500 rounded-sm" />
-           <h2 className="text-6xl font-black tracking-tighter text-zinc-900 dark:text-zinc-100 uppercase italic leading-none">Data Analytics</h2>
+           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tighter text-zinc-900 dark:text-zinc-100 uppercase italic leading-none">Data Analytics</h2>
         </div>
         <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.5em] max-w-lg leading-loose ">Quantum Financial Intelligence & Velocity Matrix</p>
       </div>
@@ -302,7 +302,7 @@ export default function LaporanPage({ onNavigate }) {
       {activeTab === 'summary' ? (
         <div className="space-y-12">
           {/* KPI Cards - Elite Adaptive Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
             <KPICard label="Revenue" value={formatRupiah(summary.totalRevenue)} sub="Gross Income" icon={DollarSign} delta={summary.vsYesterday?.revenue} colorClass="bg-amber-500" />
             <KPICard label="Spending" value={formatRupiah(summary.totalPurchasing)} sub="Inventory Cost" icon={ShoppingBag} colorClass="bg-amber-500" />
             <KPICard label="Gross Profit" value={formatRupiah(summary.grossProfit)} sub={`${summary.marginPct || 0}% Margin`} icon={TrendingUp} delta={12} colorClass="bg-amber-500" />
