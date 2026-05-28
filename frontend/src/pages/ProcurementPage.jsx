@@ -50,6 +50,8 @@ export default function ProcurementPage() {
     editingSupplierId, setEditingSupplierId
   } = useProcurement();
   const [searchInvoiceSupplier, setSearchInvoiceSupplier] = React.useState('');
+  const [sortField, setSortField] = React.useState('due_date');
+  const [sortDirection, setSortDirection] = React.useState('asc');
 
   // 💡 Dynamic Supplier-Material Mapping & Grouping (STRICT SAFE VERSION)
   const getBahanOptions = () => {
@@ -423,8 +425,54 @@ export default function ProcurementPage() {
             if (!searchInvoiceSupplier) return true;
             return inv.supplier?.name?.toLowerCase().includes(searchInvoiceSupplier.toLowerCase());
           });
+
+          // Dynamic Client-side Sorting Logic
+          const sortedInvoices = [...filteredInvoices].sort((a, b) => {
+            let valA = a[sortField];
+            let valB = b[sortField];
+
+            if (sortField === 'due_date') {
+              if (!valA) return 1;
+              if (!valB) return -1;
+              return sortDirection === 'asc' 
+                ? new Date(valA) - new Date(valB) 
+                : new Date(valB) - new Date(valA);
+            }
+            
+            if (sortField === 'supplier') {
+              valA = a.supplier?.name || '';
+              valB = b.supplier?.name || '';
+            }
+
+            if (typeof valA === 'string') {
+              return sortDirection === 'asc'
+                ? valA.localeCompare(valB)
+                : valB.localeCompare(valA);
+            } else {
+              return sortDirection === 'asc'
+                ? (valA || 0) - (valB || 0)
+                : (valB || 0) - (valA || 0);
+            }
+          });
+
           const totalUnpaidAll = invoices.reduce((acc, inv) => acc + (inv.status === 'unpaid' ? inv.total : 0), 0);
           const totalUnpaidFiltered = filteredInvoices.reduce((acc, inv) => acc + (inv.status === 'unpaid' ? inv.total : 0), 0);
+
+          const toggleSort = (field) => {
+            if (sortField === field) {
+              setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+            } else {
+              setSortField(field);
+              setSortDirection('asc');
+            }
+          };
+
+          const renderSortIcon = (field) => {
+            if (sortField !== field) return <span className="ml-1.5 opacity-30 select-none text-[9px]">↕</span>;
+            return sortDirection === 'asc' 
+              ? <span className="ml-1.5 text-amber-500 font-bold select-none text-[10px]">▲</span> 
+              : <span className="ml-1.5 text-amber-500 font-bold select-none text-[10px]">▼</span>;
+          };
 
           return (
             <div className="space-y-6">
@@ -484,21 +532,46 @@ export default function ProcurementPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Invoice ID</TableHead>
-                        <TableHead>Vendor Entity</TableHead>
-                        <TableHead className="text-center">Jatuh Tempo (Due)</TableHead>
-                        <TableHead className="text-right">Settlement Amount</TableHead>
-                        <TableHead className="text-center">State</TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40 select-none py-3"
+                          onClick={() => toggleSort('id')}
+                        >
+                          Invoice ID {renderSortIcon('id')}
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40 select-none py-3"
+                          onClick={() => toggleSort('supplier')}
+                        >
+                          Vendor Entity {renderSortIcon('supplier')}
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40 select-none py-3 text-center"
+                          onClick={() => toggleSort('due_date')}
+                        >
+                          Jatuh Tempo (Due) {renderSortIcon('due_date')}
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40 select-none py-3 text-right"
+                          onClick={() => toggleSort('total')}
+                        >
+                          Settlement Amount {renderSortIcon('total')}
+                        </TableHead>
+                        <TableHead 
+                          className="cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/40 select-none py-3 text-center"
+                          onClick={() => toggleSort('status')}
+                        >
+                          State {renderSortIcon('status')}
+                        </TableHead>
                         <TableHead className="text-right">Control</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredInvoices.length === 0 && (
+                      {sortedInvoices.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={6} className="h-32 text-center text-zinc-500 dark:text-zinc-100 italic">No settlement liabilities recorded.</TableCell>
                         </TableRow>
                       )}
-                      {filteredInvoices.map(inv => (
+                      {sortedInvoices.map(inv => (
                         <TableRow key={inv.id} className="h-16">
                           <TableCell className="font-mono tabular-nums text-zinc-500 dark:text-zinc-100 font-bold">#{inv.id.slice(0,8).toUpperCase()}</TableCell>
                           <TableCell className="font-black text-sm">{inv.supplier?.name}</TableCell>
