@@ -48,6 +48,7 @@ export default function ProcurementPage() {
     payConfirmInvoice, setPayConfirmInvoice,
     doConfirmPay
   } = useProcurement();
+  const [searchInvoiceSupplier, setSearchInvoiceSupplier] = React.useState('');
 
   // 💡 Dynamic Supplier-Material Mapping & Grouping (STRICT SAFE VERSION)
   const getBahanOptions = () => {
@@ -416,64 +417,112 @@ export default function ProcurementPage() {
           </>
         )}
 
-        {activeTab === 'finance' && (
-           <Card className="border border-zinc-200 dark:border-zinc-800 shadow-2xl">
-             <CardHeader className="flex flex-row items-center justify-between p-8">
-                <div>
-                   <CardTitle className="text-2xl">Accounts Payable Ledger</CardTitle>
-                   <CardDescription>Financial settlement & liability management</CardDescription>
-                </div>
-                <div className="px-6 py-2 bg-background rounded-lg border border-border flex items-center gap-6 shadow-inner">
-                   <div className="flex flex-col">
-                      <p className="text-[8px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">Current Liability</p>
-                      <p className="text-2xl font-black font-mono tabular-nums text-foreground tabular-nums tracking-tighter">
-                        {formatCurrency(invoices.reduce((acc, inv) => acc + (inv.status === 'unpaid' ? inv.total : 0), 0))}
-                      </p>
-                   </div>
-                </div>
-             </CardHeader>
-             <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Invoice ID</TableHead>
-                      <TableHead>Vendor Entity</TableHead>
-                      <TableHead className="text-right">Settlement Amount</TableHead>
-                      <TableHead className="text-center">State</TableHead>
-                      <TableHead className="text-right">Control</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invoices.length === 0 && (
+        {activeTab === 'finance' && (() => {
+          const filteredInvoices = invoices.filter(inv => {
+            if (!searchInvoiceSupplier) return true;
+            return inv.supplier?.name?.toLowerCase().includes(searchInvoiceSupplier.toLowerCase());
+          });
+          const totalUnpaidAll = invoices.reduce((acc, inv) => acc + (inv.status === 'unpaid' ? inv.total : 0), 0);
+          const totalUnpaidFiltered = filteredInvoices.reduce((acc, inv) => acc + (inv.status === 'unpaid' ? inv.total : 0), 0);
+
+          return (
+            <div className="space-y-6">
+              {/* Financial Dashboard Summary Panels */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="p-6 border border-zinc-200 dark:border-zinc-800 shadow-xl flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-rose-600 dark:text-rose-400 uppercase tracking-[0.2em]">Total Hutang Dagang (Semua)</p>
+                    <p className="text-3xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-50">{formatCurrency(totalUnpaidAll)}</p>
+                  </div>
+                  <div className="px-4 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-[10px] font-black uppercase tracking-widest text-rose-700 dark:text-rose-400">
+                    {invoices.filter(inv => inv.status === 'unpaid').length} Invoice Belum Lunas
+                  </div>
+                </Card>
+
+                <Card className="p-6 border border-zinc-200 dark:border-zinc-800 shadow-xl flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em]">Hutang Supplier Terfilter</p>
+                    <p className="text-3xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-50">
+                      {formatCurrency(totalUnpaidFiltered)}
+                    </p>
+                  </div>
+                  <div className="px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">
+                    {filteredInvoices.filter(inv => inv.status === 'unpaid').length} Terfilter
+                  </div>
+                </Card>
+              </div>
+
+              {/* Main Ledger Card */}
+              <Card className="border border-zinc-200 dark:border-zinc-800 shadow-2xl">
+                <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-8 border-b border-border bg-background">
+                  <div>
+                    <CardTitle className="text-2xl font-black uppercase tracking-tight">Accounts Payable Ledger</CardTitle>
+                    <CardDescription className="text-xs font-bold text-zinc-500">Financial settlement & liability management</CardDescription>
+                  </div>
+                  <div className="w-full md:w-80">
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder="Cari Supplier..."
+                        value={searchInvoiceSupplier}
+                        onChange={(e) => setSearchInvoiceSupplier(e.target.value)}
+                        className="w-full h-12 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 text-sm font-bold placeholder:italic rounded-lg"
+                      />
+                      {searchInvoiceSupplier && (
+                        <button 
+                          onClick={() => setSearchInvoiceSupplier('')} 
+                          className="absolute right-3 top-3.5 text-xs text-zinc-400 hover:text-zinc-600 font-bold"
+                        >
+                          RESET
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="h-32 text-center text-zinc-500 dark:text-zinc-100 italic">No settlement liabilities recorded.</TableCell>
+                        <TableHead>Invoice ID</TableHead>
+                        <TableHead>Vendor Entity</TableHead>
+                        <TableHead className="text-right">Settlement Amount</TableHead>
+                        <TableHead className="text-center">State</TableHead>
+                        <TableHead className="text-right">Control</TableHead>
                       </TableRow>
-                    )}
-                    {invoices.map(inv => (
-                      <TableRow key={inv.id} className="h-16">
-                         <TableCell className="font-mono tabular-nums text-zinc-500 dark:text-zinc-100 font-bold">#{inv.id.slice(0,8).toUpperCase()}</TableCell>
-                         <TableCell className="font-black text-sm">{inv.supplier?.name}</TableCell>
-                         <TableCell className="text-right font-mono tabular-nums font-black text-foreground tabular-nums text-sm">{formatCurrency(inv.total)}</TableCell>
-                         <TableCell className="text-center">
+                    </TableHeader>
+                    <TableBody>
+                      {filteredInvoices.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="h-32 text-center text-zinc-500 dark:text-zinc-100 italic">No settlement liabilities recorded.</TableCell>
+                        </TableRow>
+                      )}
+                      {filteredInvoices.map(inv => (
+                        <TableRow key={inv.id} className="h-16">
+                          <TableCell className="font-mono tabular-nums text-zinc-500 dark:text-zinc-100 font-bold">#{inv.id.slice(0,8).toUpperCase()}</TableCell>
+                          <TableCell className="font-black text-sm">{inv.supplier?.name}</TableCell>
+                          <TableCell className="text-right font-mono tabular-nums font-black text-foreground tabular-nums text-sm">{formatCurrency(inv.total)}</TableCell>
+                          <TableCell className="text-center">
                             <span className={cn(
                               "inline-flex items-center px-4 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] shadow-sm",
                               inv.status === 'paid' ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" : "bg-primary/10 text-primary border border-primary/20"
                             )}>{inv.status}</span>
-                         </TableCell>
-                         <TableCell className="text-right">
+                          </TableCell>
+                          <TableCell className="text-right">
                             {inv.status === 'unpaid' && (
                               <Button size="sm" variant="outline" onClick={() => handlePayInvoice(inv)} disabled={actionLoading}>
                                 {actionLoading ? <Loader2 className="animate-spin" size={12} /> : "SETTLE"}
                               </Button>
                             )}
-                         </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-             </CardContent>
-           </Card>
-        )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })()}
 
         {activeTab === 'supplier' && (
            <div className="space-y-6">
