@@ -744,69 +744,68 @@ export default function ProcurementPage() {
       {showSupplierModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 overflow-y-auto">
           <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setShowSupplierModal(false)} />
-          <Card className="relative w-full max-w-lg border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-card rounded-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto flex flex-col max-h-[90vh]">
-            <CardHeader className="p-6 border-b border-border bg-background flex-shrink-0">
+          <Card className="relative w-full max-w-lg border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-card rounded-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto flex flex-col">
+            <CardHeader className="p-4 px-6 border-b border-border bg-background flex-shrink-0">
               <div className="flex justify-between items-center">
                 <div>
-                   <div className="inline-flex items-center gap-2 px-4 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800 mb-2">Vendor Registry</div>
-                  <CardTitle className="text-2xl font-black uppercase tracking-tight">
+                  <CardTitle className="text-lg font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50">
                     {editingSupplierId ? "Edit Vendor Entity" : "Add New Vendor"}
                   </CardTitle>
                 </div>
                 <button 
                   onClick={() => setShowSupplierModal(false)}
-                  className="w-10 h-10 rounded-lg hover:bg-background flex items-center justify-center text-zinc-500 dark:text-zinc-100 hover:text-foreground transition-colors"
+                  className="w-8 h-8 rounded-lg hover:bg-background flex items-center justify-center text-zinc-500 dark:text-zinc-100 hover:text-foreground transition-colors"
                 >
-                  <Plus className="rotate-45" size={20} />
+                  <Plus className="rotate-45" size={16} />
                 </button>
               </div>
             </CardHeader>
-            <CardContent className="p-6 space-y-4 overflow-y-auto max-h-[50vh] no-scrollbar">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Vendor Name</label>
+            <CardContent className="p-6 py-4 space-y-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Vendor Name</label>
                 <Input 
                   placeholder="e.g. GLOBAL SUPPLY HQ" 
-                  className="h-12 bg-background border-border/80 focus:bg-background rounded-lg font-bold text-sm"
+                  className="h-10 bg-background border-border/80 focus:bg-background rounded-lg font-bold text-xs"
                   value={newSupplier.name}
                   onChange={e => setNewSupplier({ ...newSupplier, name: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Contact Lead / Phone</label>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Contact Lead / Phone</label>
                 <Input 
                   placeholder="e.g. +62 812-3456-789" 
-                  className="h-12 bg-background border-border/80 focus:bg-background rounded-lg font-bold text-sm"
+                  className="h-10 bg-background border-border/80 focus:bg-background rounded-lg font-bold text-xs"
                   value={newSupplier.contact}
                   onChange={e => setNewSupplier({ ...newSupplier, contact: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Headquarters Address</label>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Headquarters Address</label>
                 <Input 
                   placeholder="e.g. Jakarta, Indonesia" 
-                  className="h-12 bg-background border-border/80 focus:bg-background rounded-lg font-bold text-sm"
+                  className="h-10 bg-background border-border/80 focus:bg-background rounded-lg font-bold text-xs"
                   value={newSupplier.address}
                   onChange={e => setNewSupplier({ ...newSupplier, address: e.target.value })}
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Term of Payment (Hari)</label>
+              <div className="space-y-1">
+                <label className="text-[9px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Term of Payment (Hari)</label>
                 <Input 
                   type="number"
                   placeholder="e.g. 14" 
-                  className="h-12 bg-background border-border/80 focus:bg-background rounded-lg font-bold text-sm"
+                  className="h-10 bg-background border-border/80 focus:bg-background rounded-lg font-bold text-xs"
                   value={newSupplier.payment_terms_days || ''}
                   onChange={e => setNewSupplier({ ...newSupplier, payment_terms_days: parseInt(e.target.value) || 0 })}
                 />
               </div>
             </CardContent>
-            <CardFooter className="p-6 bg-background border-t border-border flex-shrink-0">
+            <CardFooter className="p-4 px-6 bg-background border-t border-border flex-shrink-0">
                <Button 
-                 className="w-full h-14 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all font-black uppercase tracking-widest rounded-lg"
+                 className="w-full h-11 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all font-black uppercase tracking-widest rounded-lg text-xs"
                  onClick={handleSaveSupplier}
                  disabled={actionLoading || !newSupplier.name}
                >
-                 {actionLoading ? <Loader2 className="animate-spin" /> : (editingSupplierId ? "Update Vendor Partner" : "Save Vendor Partner")}
+                 {actionLoading ? <Loader2 className="animate-spin" size={14} /> : (editingSupplierId ? "Update Vendor Partner" : "Save Vendor Partner")}
                </Button>
             </CardFooter>
           </Card>
