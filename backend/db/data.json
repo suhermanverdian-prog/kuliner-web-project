@@ -157,6 +157,22 @@
       "bahan_id": "fcc13ef7-5e10-4ad8-a25b-f6dccb57f9a8",
       "qty_received": 1,
       "price_unit": 85000
+    },
+    {
+      "id": "gi-93hwyzhvz",
+      "grn_id": "4d734470-4afe-480b-b7b8-c407a145b620",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "bahan_id": "7a19cca9-27bb-4909-ad3c-7cf3844b62d1",
+      "qty_received": 5,
+      "price_unit": 90000
+    },
+    {
+      "id": "gi-l8b66pxbk",
+      "grn_id": "27c29128-dd24-4589-b368-2db2c3a696e7",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "bahan_id": "7a19cca9-27bb-4909-ad3c-7cf3844b62d1",
+      "qty_received": 1,
+      "price_unit": 90000
     }
   ],
   "purchase_invoices": [

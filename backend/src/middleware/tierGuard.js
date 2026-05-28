@@ -53,6 +53,11 @@ const requireFeature = (featureKey) => {
       let tenant = cache.get(cacheKey);
       
       if (!tenant) {
+        // Validate supabase client
+        if (!supabase || typeof supabase.from !== 'function') {
+          console.error('Supabase client not properly initialized');
+          return res.status(500).json({ error: 'Backend misconfiguration: Supabase client unavailable' });
+        }
         const { data, error } = await supabase.from('tenants').select('tier, feature_overrides').eq('id', tenantId).single();
         if (error || !data) return res.status(403).json({ error: 'Akses ditolak: Tenant tidak ditemukan atau ID tidak valid' });
         tenant = data;

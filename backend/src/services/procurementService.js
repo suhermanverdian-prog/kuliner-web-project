@@ -343,9 +343,11 @@ class ProcurementService {
 
             let conversionFactor = 1;
             try {
-                const poItem = await ProcurementRepository.getPOItemForConversion(po_id, item.bahanId);
-                const purchaseUnit = poItem?.purchase_unit;
-                const baseUnit = poItem?.bahan?.unit;
+                const bInfo = await ProcurementRepository.getBahanStock(item.bahanId);
+                const baseUnit = bInfo?.unit;
+                
+                const poItem = po_id ? await ProcurementRepository.getPOItemForConversion(po_id, item.bahanId) : null;
+                const purchaseUnit = item.purchaseUnit || item.purchase_unit || item.unit || poItem?.purchase_unit;
 
                 if (purchaseUnit && baseUnit) {
                     const allConvs = await ProcurementRepository.getConversionsByBahanId(item.bahanId);
@@ -368,7 +370,9 @@ class ProcurementService {
 
                     conversionFactor = resolveChain(purchaseUnit, baseUnit);
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error("Conversion resolution error in GRN:", e);
+            }
 
             const qtyAdded = (Number(item.qtyReceived) || 0) * conversionFactor;
             const newStock = currentStock + qtyAdded;

@@ -39,7 +39,6 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
     notes: '',
     isAssembly: false
   };
-
   const [form, setForm] = useState(initialFormState);
 
   useEffect(() => {
@@ -49,11 +48,26 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
         const cat = (initialData.category || '').toUpperCase();
         const initialIsAssembly = hasBom || cat.includes('ASSEMBLY') || cat.includes('SETENGAH JADI');
 
+        // Normalize conversions data keys (from_unit -> unit) and casing
+        const normalizedConversions = (initialData.conversions || []).map(c => {
+          const rawUnit = c.unit || c.from_unit || '';
+          const matchedUnit = masterUnits.find(mu => mu.toLowerCase() === rawUnit.toLowerCase()) || rawUnit;
+          
+          const rawToUnit = c.to_unit || initialData.unit || '';
+          const matchedToUnit = masterUnits.find(mu => mu.toLowerCase() === rawToUnit.toLowerCase()) || rawToUnit;
+
+          return {
+            unit: matchedUnit,
+            to_unit: matchedToUnit,
+            multiplier: c.multiplier !== undefined ? String(c.multiplier) : '1'
+          };
+        });
+
         setForm({
           ...initialFormState,
           ...initialData,
           supplier_id: initialData.supplier_id || '',
-          conversions: initialData.conversions || [],
+          conversions: normalizedConversions,
           bom: (initialData.bom || []).map(b => ({
             bahanId: String(b.bahanId || b.bahan_id || ''),
             qty: b.qty

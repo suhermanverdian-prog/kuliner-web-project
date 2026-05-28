@@ -217,7 +217,8 @@ export function useProcurement() {
         items: validItems.map(i => ({
           bahanId: i.bahanId,
           qtyReceived: Number(i.purchaseQty),
-          unitPrice: Number(i.unitPrice)
+          unitPrice: Number(i.unitPrice),
+          purchaseUnit: i.purchaseUnit || 'Unit'
         }))
       };
       
@@ -280,7 +281,8 @@ export function useProcurement() {
         items: itemsWithBahan.map(i => ({
           bahanId: i.bahan_id || i.bahanId,
           qtyReceived: Number(i.qtyReceived),
-          unitPrice: Number(i.unit_price) || 0
+          unitPrice: Number(i.unit_price) || 0,
+          purchaseUnit: i.purchase_unit || i.purchaseUnit || i.unit
         }))
       };
       await api.addGRN(payload);

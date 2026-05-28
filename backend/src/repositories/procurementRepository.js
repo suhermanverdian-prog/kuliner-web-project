@@ -135,7 +135,7 @@ class ProcurementRepository {
   }
 
   async getBahanStock(bahanId) {
-    const { data, error } = await supabase.from('bahan').select('stock, cost').eq('id', bahanId).single();
+    const { data, error } = await supabase.from('bahan').select('stock, cost, unit').eq('id', bahanId).single();
     if (error) throw error;
     return data;
   }
