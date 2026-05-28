@@ -742,10 +742,10 @@ export default function ProcurementPage() {
       )}
       {/* 📦 ADD VENDOR MODAL */}
       {showSupplierModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6 overflow-y-auto">
           <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setShowSupplierModal(false)} />
-          <Card className="relative w-full max-w-lg border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-card rounded-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <CardHeader className="p-8 border-b border-border bg-background">
+          <Card className="relative w-full max-w-lg border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-card rounded-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto flex flex-col max-h-[90vh]">
+            <CardHeader className="p-6 border-b border-border bg-background flex-shrink-0">
               <div className="flex justify-between items-center">
                 <div>
                    <div className="inline-flex items-center gap-2 px-4 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800 mb-2">Vendor Registry</div>
@@ -761,7 +761,7 @@ export default function ProcurementPage() {
                 </button>
               </div>
             </CardHeader>
-            <CardContent className="p-8 space-y-6">
+            <CardContent className="p-6 space-y-4 overflow-y-auto max-h-[50vh] no-scrollbar">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Vendor Name</label>
                 <Input 
@@ -800,7 +800,7 @@ export default function ProcurementPage() {
                 />
               </div>
             </CardContent>
-            <CardFooter className="p-8 bg-background border-t border-border">
+            <CardFooter className="p-6 bg-background border-t border-border flex-shrink-0">
                <Button 
                  className="w-full h-14 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all font-black uppercase tracking-widest rounded-lg"
                  onClick={handleSaveSupplier}
