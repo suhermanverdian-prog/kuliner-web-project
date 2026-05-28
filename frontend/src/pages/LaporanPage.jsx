@@ -27,34 +27,31 @@ const PERIODS = [
 function KPICard({ label, value, sub, icon: Icon, delta, colorClass }) {
   const isUp = delta >= 0;
   return (
-    <Card className="bg-card border border-border shadow-sm font-mono tabular-nums relative overflow-hidden">
-      <CardContent className="p-8 relative">
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/5 blur-3xl rounded-lg group-hover: transition-opacity duration-700" />
+    <Card className="bg-card border border-border shadow-sm font-mono tabular-nums relative overflow-hidden rounded-md">
+      <CardContent className="p-5 relative">
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/5 blur-3xl rounded-lg pointer-events-none" />
         
         <div className="flex justify-between items-start relative z-10">
-          <div className="space-y-3 min-w-0 flex-1">
-            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em] truncate">{label}</p>
-            <h3 className="text-2xl font-black tracking-tight font-mono tabular-nums text-zinc-900 dark:text-zinc-100 truncate">{value}</h3>
-            {sub && <p className="text-[10px] text-zinc-500 font-bold tracking-tight uppercase truncate">{sub}</p>}
+          <div className="space-y-1.5 min-w-0 flex-1">
+            <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest truncate">{label}</p>
+            <h3 className="text-xl font-black tracking-tight font-mono tabular-nums text-zinc-900 dark:text-zinc-100 truncate">{value}</h3>
+            {sub && <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-bold uppercase truncate">{sub}</p>}
           </div>
-          <div className={cn(
-            "w-14 h-14 rounded-lg flex items-center justify-center shadow-2xl transition-all duration-500 group-hover:rotate-6 group-hover:scale-110 shrink-0 ml-4",
-            colorClass.includes('amber') ? "bg-amber-500 text-zinc-950" : "bg-amber-500 text-amber-500"
-          )}>
-            <Icon size={28} strokeWidth={2.5} />
+          <div className="w-10 h-10 rounded-md bg-amber-50 text-amber-600 border border-amber-200/50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-800/40 flex items-center justify-center shrink-0 ml-2 shadow-sm transition-all duration-300">
+            <Icon size={18} strokeWidth={2.5} />
           </div>
         </div>
         
         {delta !== undefined && (
-          <div className="mt-6 flex items-center gap-4 relative z-10">
+          <div className="mt-4 flex items-center gap-3 relative z-10">
             <div className={cn(
-              "flex items-center gap-1.5 px-4 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider",
-              isUp ? "bg-amber-500/10 text-amber-500" : "bg-amber-500/10 text-zinc-400"
+              "flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
+              isUp ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50" : "bg-zinc-100 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700/50"
             )}>
-              {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              {isUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               <span className="font-mono tabular-nums">{Math.abs(delta)}%</span>
             </div>
-            <span className="text-[9px] text-zinc-600 font-black uppercase tracking-[0.2em] ">vs benchmark</span>
+            <span className="text-[8px] text-zinc-500 dark:text-zinc-400 font-black uppercase tracking-wider">vs benchmark</span>
           </div>
         )}
       </CardContent>
@@ -305,7 +302,7 @@ export default function LaporanPage({ onNavigate }) {
       {activeTab === 'summary' ? (
         <div className="space-y-12">
           {/* KPI Cards - Elite Adaptive Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
             <KPICard label="Revenue" value={formatRupiah(summary.totalRevenue)} sub="Gross Income" icon={DollarSign} delta={summary.vsYesterday?.revenue} colorClass="bg-amber-500" />
             <KPICard label="Spending" value={formatRupiah(summary.totalPurchasing)} sub="Inventory Cost" icon={ShoppingBag} colorClass="bg-amber-500" />
             <KPICard label="Gross Profit" value={formatRupiah(summary.grossProfit)} sub={`${summary.marginPct || 0}% Margin`} icon={TrendingUp} delta={12} colorClass="bg-amber-500" />
