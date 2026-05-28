@@ -190,16 +190,17 @@ export default function LaporanPage({ onNavigate }) {
 
   return (
     <div className="space-y-16 pb-20 min-h-screen">
-      {/* Header & Filter - Enterprise Grade */}
-      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-12">
-        <div className="space-y-6">
-          <div className="flex items-center gap-6">
-             <div className="w-2.5 h-12 " />
-             <h2 className="text-6xl font-black tracking-tighter text-zinc-900 dark:text-zinc-100 uppercase italic leading-none">Data Analytics</h2>
-          </div>
-          <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.5em] max-w-lg leading-loose ">Quantum Financial Intelligence & Velocity Matrix</p>
+      {/* Header - Enterprise Grade */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-6">
+           <div className="w-2.5 h-12 bg-amber-500 rounded-sm" />
+           <h2 className="text-6xl font-black tracking-tighter text-zinc-900 dark:text-zinc-100 uppercase italic leading-none">Data Analytics</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-6 bg-card p-4 rounded-lg border border-border shadow-sm">
+        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.5em] max-w-lg leading-loose ">Quantum Financial Intelligence & Velocity Matrix</p>
+      </div>
+
+      {/* Filter Row - Moved below Header */}
+      <div className="flex flex-wrap items-center gap-6 bg-card p-4 rounded-lg border border-border shadow-sm w-fit">
           <div className="flex p-1 gap-1">
             {PERIODS.map(p => (
               <button 
@@ -255,7 +256,6 @@ export default function LaporanPage({ onNavigate }) {
             )}
           </div>
         </div>
-      </div>
 
       {/* Tab Switcher - Elite Style */}
       <div className="flex gap-12 border-b border-white/5 relative">
