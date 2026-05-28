@@ -302,7 +302,7 @@ export default function LaporanPage({ onNavigate }) {
       {activeTab === 'summary' ? (
         <div className="space-y-12">
           {/* KPI Cards - Elite Adaptive Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6 gap-4">
             <KPICard label="Revenue" value={formatRupiah(summary.totalRevenue)} sub="Gross Income" icon={DollarSign} delta={summary.vsYesterday?.revenue} colorClass="bg-amber-500" />
             <KPICard label="Spending" value={formatRupiah(summary.totalPurchasing)} sub="Inventory Cost" icon={ShoppingBag} colorClass="bg-amber-500" />
             <KPICard label="Gross Profit" value={formatRupiah(summary.grossProfit)} sub={`${summary.marginPct || 0}% Margin`} icon={TrendingUp} delta={12} colorClass="bg-amber-500" />
