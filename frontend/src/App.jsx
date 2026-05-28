@@ -43,6 +43,7 @@ const LogisticsHubPage = lazy(() => import('@/pages/LogisticsHubPage'));
 const ProcurementPage = lazy(() => import('@/pages/ProcurementPage'));
 const TaxReportPage = lazy(() => import('@/pages/TaxReportPage'));
 const InventoryIntelligencePage = lazy(() => import('@/pages/InventoryIntelligencePage'));
+const BudgetPage = lazy(() => import('@/pages/BudgetPage'));
 
 // Elite Loading Component
 const PageLoader = () => (
@@ -159,6 +160,7 @@ function AppRoutes() {
           <Route path="/menu" element={<MenuPage user={user} />} />
           <Route path="/inventory" element={<InventoriPage user={user} />} />
           <Route path="/reports" element={<LaporanPage />} />
+          <Route path="/budget" element={<BudgetPage />} />
           <Route path="/settings" element={<PengaturanPage />} />
           <Route path="/kds" element={<KdsPage />} />
           <Route path="/customers" element={<PelangganPage />} />

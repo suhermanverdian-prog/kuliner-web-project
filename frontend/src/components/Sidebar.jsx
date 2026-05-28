@@ -48,6 +48,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     { group: 'Bisnis', items: [
       { id: '/marketplace', icon: ShoppingBag,    label: 'Omnichannel',   roles: ['owner','manager'],                   perm: 'akses_gudang' },
       { id: '/reports',   icon: BarChart3,  label: 'Laporan',       roles: ['owner','manager','accounting'],      perm: 'lihat_laba' },
+      { id: '/budget',    icon: Landmark,   label: 'Anggaran / Budget', roles: ['owner','manager','accounting'],      perm: 'lihat_laba' },
       { id: '/revenue-intel', icon: TrendingUp, label: 'Revenue Intel', roles: ['owner','manager'],                   perm: 'lihat_laba' },
       { id: '/tax-report', icon: Landmark,      label: 'Laporan Pajak', roles: ['owner','manager','accounting'],      perm: 'lihat_laba' },
       { id: '/report-builder', icon: FileStack, label: 'FlexReport',   roles: ['owner','manager'],                   perm: 'lihat_laba' },
