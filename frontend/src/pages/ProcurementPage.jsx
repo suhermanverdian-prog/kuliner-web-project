@@ -46,7 +46,8 @@ export default function ProcurementPage() {
     cancelConfirmPO, setCancelConfirmPO,
     doConfirmCancel,
     payConfirmInvoice, setPayConfirmInvoice,
-    doConfirmPay
+    doConfirmPay,
+    editingSupplierId, setEditingSupplierId
   } = useProcurement();
   const [searchInvoiceSupplier, setSearchInvoiceSupplier] = React.useState('');
 
@@ -537,7 +538,11 @@ export default function ProcurementPage() {
                        <CardDescription>Verified supply chain partners and entities</CardDescription>
                     </div>
                      <Button 
-                        onClick={() => setShowSupplierModal(true)}
+                        onClick={() => {
+                          setEditingSupplierId(null);
+                          setNewSupplier({ name: '', contact: '', address: '', payment_terms_days: 14 });
+                          setShowSupplierModal(true);
+                        }}
                         className="bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-lg h-12 px-8 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all font-black"
                      >
                         <Plus size={18} className="mr-2" /> Add New Vendor
@@ -574,7 +579,24 @@ export default function ProcurementPage() {
                                    <span className="px-4 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-widest border border-emerald-200 dark:border-emerald-800">VERIFIED</span>
                                 </TableCell>
                                 <TableCell className="text-right">
-                                   <Button variant="ghost" size="icon" className="rounded-lg text-zinc-500 dark:text-zinc-100 group-hover:text-primary"><Settings size={14} /></Button>
+                                   <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="rounded-lg text-zinc-500 dark:text-zinc-100 hover:text-amber-500 active:scale-90 transition-all"
+                                      onClick={() => {
+                                        setEditingSupplierId(s.id);
+                                        setNewSupplier({
+                                          name: s.name,
+                                          contact: s.contact || '',
+                                          address: s.address || '',
+                                          payment_terms_days: s.payment_terms_days || 14
+                                        });
+                                        setShowSupplierModal(true);
+                                      }}
+                                      title="Edit Vendor"
+                                    >
+                                      <Settings size={14} />
+                                    </Button>
                                 </TableCell>
                              </TableRow>
                           ))}
@@ -726,7 +748,9 @@ export default function ProcurementPage() {
               <div className="flex justify-between items-center">
                 <div>
                    <div className="inline-flex items-center gap-2 px-4 py-1 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-200 dark:border-amber-800 mb-2">Vendor Registry</div>
-                  <CardTitle className="text-2xl font-black uppercase tracking-tight">Add New Vendor</CardTitle>
+                  <CardTitle className="text-2xl font-black uppercase tracking-tight">
+                    {editingSupplierId ? "Edit Vendor Entity" : "Add New Vendor"}
+                  </CardTitle>
                 </div>
                 <button 
                   onClick={() => setShowSupplierModal(false)}
@@ -778,11 +802,11 @@ export default function ProcurementPage() {
             <CardFooter className="p-8 bg-background border-t border-border">
                <Button 
                  className="w-full h-14 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all font-black uppercase tracking-widest rounded-lg"
-                onClick={handleSaveSupplier}
-                disabled={actionLoading || !newSupplier.name}
-              >
-                {actionLoading ? <Loader2 className="animate-spin" /> : "Save Vendor Partner"}
-              </Button>
+                 onClick={handleSaveSupplier}
+                 disabled={actionLoading || !newSupplier.name}
+               >
+                 {actionLoading ? <Loader2 className="animate-spin" /> : (editingSupplierId ? "Update Vendor Partner" : "Save Vendor Partner")}
+               </Button>
             </CardFooter>
           </Card>
         </div>

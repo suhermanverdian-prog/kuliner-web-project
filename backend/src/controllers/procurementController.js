@@ -109,6 +109,17 @@ class ProcurementController {
     }
   }
 
+  async updateSupplier(req, res) {
+    try {
+      const { tenantId } = req.userContext || {};
+      const { id } = req.params;
+      const result = await ProcurementService.updateSupplier(id, req.body, tenantId);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
   async processSimplePurchase(req, res) {
     try {
       const { tenantId, role } = req.userContext || {};

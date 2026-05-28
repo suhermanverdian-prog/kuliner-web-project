@@ -15,6 +15,7 @@ export function useProcurement() {
   const [notes, setNotes] = useState('');
   const [showSupplierModal, setShowSupplierModal] = useState(false);
   const [newSupplier, setNewSupplier] = useState({ name: '', contact: '', address: '', payment_terms_days: 14 });
+  const [editingSupplierId, setEditingSupplierId] = useState(null);
   const [receivingPo, setReceivingPo] = useState(null);
   const [receivingItems, setReceivingItems] = useState([]);
   const [cancelConfirmPO, setCancelConfirmPO] = useState(null); // PO yang akan dibatalkan
@@ -350,12 +351,17 @@ export function useProcurement() {
     if (!newSupplier.name) return;
     setActionLoading(true);
     try {
-      await api.addSupplier(newSupplier);
+      if (editingSupplierId) {
+        await api.request(`${api.url}/p/suppliers/${editingSupplierId}`, 'PUT', newSupplier);
+      } else {
+        await api.addSupplier(newSupplier);
+      }
       setShowSupplierModal(false);
       setNewSupplier({ name: '', contact: '', address: '', payment_terms_days: 14 });
+      setEditingSupplierId(null);
       loadBaseData();
     } catch (err) {
-      alert("Error adding vendor: " + err.message);
+      alert("Error saving vendor: " + err.message);
     } finally {
       setActionLoading(false);
     }
@@ -392,6 +398,7 @@ export function useProcurement() {
     doConfirmCancel,
     doConfirmPay,
     handleSaveSupplier,
-    handleSimplePurchase
+    handleSimplePurchase,
+    editingSupplierId, setEditingSupplierId
   };
 }

@@ -112,6 +112,12 @@ class ProcurementRepository {
     return data;
   }
 
+  async updateSupplier(id, payload) {
+    const { data, error } = await supabase.from('suppliers').update(payload).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
   // --- Metadata & Misc ---
   async getUnitConversions(tenantId) {
     let query = supabase.from('unit_conversions').select('*, bahan(name)');

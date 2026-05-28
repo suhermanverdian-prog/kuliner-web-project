@@ -22,6 +22,9 @@ router.post('/pos', permissionGuard('procurement', 'create'), procurementControl
 // 6. ADD NEW SUPPLIER
 router.post('/suppliers', permissionGuard('procurement', 'create'), procurementController.createSupplier);
 
+// 6b. UPDATE EXISTING SUPPLIER
+router.put('/suppliers/:id', permissionGuard('procurement', 'update'), procurementController.updateSupplier);
+
 // 7. ADD NEW GRN (Good Receipt Note)
 router.post('/grns', permissionGuard('procurement', 'create'), journalGuard, procurementController.processGRN);
 

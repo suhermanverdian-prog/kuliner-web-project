@@ -573,6 +573,36 @@ class ProcurementService {
     }
   }
 
+  static async updateSupplier(id, payload, tenantId) {
+    const updatePayload = {
+      name: payload.name,
+      contact: payload.contact || payload.phone || null,
+      address: payload.address || null,
+      payment_terms_days: payload.payment_terms_days !== undefined ? Number(payload.payment_terms_days) : 14
+    };
+
+    try {
+        const data = await ProcurementRepository.updateSupplier(id, updatePayload);
+        return data;
+    } catch (e) {
+        const dataPath = path.join(__dirname, '../../db/data.json');
+        if (fs.existsSync(dataPath)) {
+            try {
+                const content = fs.readFileSync(dataPath, 'utf8');
+                const parsed = JSON.parse(content);
+                const suppliersList = parsed.suppliers || [];
+                const idx = suppliersList.findIndex(s => String(s.id) === String(id));
+                if (idx >= 0) {
+                    suppliersList[idx] = { ...suppliersList[idx], ...updatePayload };
+                    parsed.suppliers = suppliersList;
+                    fs.writeFileSync(dataPath, JSON.stringify(parsed, null, 2), 'utf8');
+                }
+            } catch (localErr) {}
+        }
+        return { id, tenant_id: tenantId, ...updatePayload };
+    }
+  }
+
   static async processSimplePurchase(supplierId, items, tenantId, userRole) {
     // 1. Process GRN (which creates invoice, journals, and updates stock)
     const grnRecord = await this.processGRN(supplierId, null, items, tenantId, userRole);
