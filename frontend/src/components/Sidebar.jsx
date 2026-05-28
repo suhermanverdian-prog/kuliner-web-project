@@ -128,14 +128,17 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                   key={item.id}
                   to={item.id}
                   className={({ isActive }) => cn(
-                    "flex items-center gap-4 px-4 py-2.5 rounded-lg transition-all duration-300 group",
+                    "flex items-center transition-all duration-300 group",
+                    isCollapsed 
+                      ? "justify-center w-10 h-10 mx-auto px-0 rounded-lg" 
+                      : "gap-4 px-4 py-2.5 rounded-lg",
                     isActive
                       ? "bg-amber-50 text-amber-600 dark:bg-zinc-800 dark:text-amber-400 font-bold shadow-sm border border-amber-500/20 dark:border-zinc-700/50"
                       : "text-muted-foreground hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:-translate-y-[1px]"
                   )}
                   onClick={onClose}
                 >
-                  <Icon size={20} className={cn(isCollapsed && "mx-auto")} />
+                  <Icon size={20} className="flex-shrink-0" />
                   {!isCollapsed && <span className="text-sm tracking-tight">{item.label}</span>}
                 </NavLink>
               );
