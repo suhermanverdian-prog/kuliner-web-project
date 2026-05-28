@@ -314,9 +314,15 @@ export default function MenuPage({ user }) {
                     <FlaskConical size={10} className="text-zinc-500 dark:text-zinc-100" />
                     <span className="text-[8px] font-black text-zinc-500 dark:text-zinc-100 uppercase">{item.bom?.length || 0} Resep</span>
                  </div>
-                 <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-sm text-amber-600 dark:text-amber-400 font-black text-[8px] font-mono tabular-nums shrink-0">
-                    {item.price > 0 ? Math.round(((item.price - item.cost) / item.price) * 100) : 0}% Mg
-                 </div>
+                 {item.cost > item.price ? (
+                    <div className="flex items-center gap-1 bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800 px-2 py-0.5 rounded-sm font-black text-[8px] font-mono tabular-nums shrink-0">
+                       ⚠️ RUGI
+                    </div>
+                 ) : (
+                    <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/20 px-2 py-0.5 rounded-sm text-amber-600 dark:text-amber-400 font-black text-[8px] font-mono tabular-nums shrink-0">
+                       {item.price > 0 ? Math.round(((item.price - item.cost) / item.price) * 100) : 0}% Mg
+                    </div>
+                 )}
               </CardFooter>
             </Card>
           ))}
@@ -364,10 +370,16 @@ export default function MenuPage({ user }) {
                     <td className="px-6 py-4 text-right font-black text-sm font-mono tabular-nums text-foreground">{formatRupiah(item.price)}</td>
                     <td className="px-6 py-4 text-right font-bold text-primary text-sm font-mono tabular-nums">{formatRupiah(item.cost)}</td>
                     <td className="px-6 py-4 text-center">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 text-[9px] font-black font-mono tabular-nums border border-amber-500/10">
-                        <ArrowUpRight size={10} />
-                        {item.price > 0 ? Math.round(((item.price - item.cost) / item.price) * 100) : 0}%
-                      </div>
+                      {item.cost > item.price ? (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800 text-[9px] font-black font-mono tabular-nums">
+                          ⚠️ RUGI
+                        </div>
+                      ) : (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-sm bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 text-[9px] font-black font-mono tabular-nums border border-amber-500/10">
+                          <ArrowUpRight size={10} />
+                          {item.price > 0 ? Math.round(((item.price - item.cost) / item.price) * 100) : 0}%
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-1  group-hover: transition-opacity">

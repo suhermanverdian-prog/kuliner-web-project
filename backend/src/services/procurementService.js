@@ -376,9 +376,10 @@ class ProcurementService {
 
             const qtyAdded = (Number(item.qtyReceived) || 0) * conversionFactor;
             const newStock = currentStock + qtyAdded;
+            const baseUnitCost = (Number(item.unitPrice) || 0) / (conversionFactor || 1);
             
             try {
-                await ProcurementRepository.updateBahanStockAndCost(item.bahanId, newStock, Number(item.unitPrice) || 0);
+                await ProcurementRepository.updateBahanStockAndCost(item.bahanId, newStock, baseUnitCost);
             } catch (e) {}
 
             if (fs.existsSync(dataPath)) {
@@ -389,7 +390,8 @@ class ProcurementService {
                     const idx = bahanList.findIndex(b => String(b.id) === String(item.bahanId));
                     if (idx >= 0) {
                         bahanList[idx].stock = (Number(bahanList[idx].stock) || 0) + qtyAdded;
-                        bahanList[idx].price = Number(item.unitPrice) || bahanList[idx].price;
+                        bahanList[idx].cost = baseUnitCost;
+                        bahanList[idx].price = baseUnitCost;
                         parsed.bahan = bahanList;
                         fs.writeFileSync(dataPath, JSON.stringify(parsed, null, 2), 'utf8');
                     }
