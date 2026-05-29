@@ -12,8 +12,12 @@ const expenseSchema = z.object({
   description: z.string().min(1, 'Deskripsi biaya wajib diisi'),
   amount: z.number().positive('Jumlah biaya harus lebih besar dari 0'),
   category: z.string().min(1, 'Kategori biaya wajib diisi'),
-  payment_method: z.string().min(1, 'Metode pembayaran wajib diisi'),
+  paymentMethod: z.string().optional().nullable(),
+  payment_method: z.string().optional().nullable(),
   date: z.string().optional().nullable()
+}).refine(data => data.paymentMethod || data.payment_method, {
+  message: 'Metode pembayaran wajib diisi',
+  path: ['payment_method']
 });
 
 const payrollSchema = z.object({

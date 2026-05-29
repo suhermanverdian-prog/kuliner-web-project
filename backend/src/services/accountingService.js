@@ -81,9 +81,10 @@ class AccountingService {
   }
 
   static async recordExpense(payload, tenantId) {
-    const { description, amount, category, payment_method, date } = payload;
+    const { description, amount, category, payment_method, paymentMethod, date } = payload;
+    const activePaymentMethod = payment_method || paymentMethod;
     const expenseCode = '5-2000'; 
-    const paymentCode = payment_method === 'Tunai' ? '1-1000' : '1-1010'; 
+    const paymentCode = activePaymentMethod === 'Tunai' ? '1-1000' : '1-1010'; 
 
     let expenseAccount = await AccountingRepository.getAccountByCode(tenantId, expenseCode);
     let paymentAccount = await AccountingRepository.getAccountByCode(tenantId, paymentCode);
