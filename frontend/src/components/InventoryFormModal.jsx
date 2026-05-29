@@ -172,13 +172,29 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
     const multiplier = getUnitMultiplier(form.minStockUnit || form.unit);
     const convertedMinStock = Number(form.minStock || 0) * multiplier;
 
+    // Convert current stock if the base unit changed
+    let finalStock = Number(form.stock || 0);
+    const oldUnit = (initialData?.unit || '').toLowerCase();
+    const newUnit = (form.unit || '').toLowerCase();
+    if (oldUnit && newUnit && oldUnit !== newUnit) {
+      const conv = form.conversions.find(c => c.unit.toLowerCase() === oldUnit && c.to_unit.toLowerCase() === newUnit);
+      if (conv) {
+        finalStock = finalStock * (Number(conv.multiplier) || 1);
+      } else {
+        const revConv = form.conversions.find(c => c.unit.toLowerCase() === newUnit && c.to_unit.toLowerCase() === oldUnit);
+        if (revConv && Number(revConv.multiplier) > 0) {
+          finalStock = finalStock / Number(revConv.multiplier);
+        }
+      }
+    }
+
     onSave({
       ...form,
-      unit: (form.unit || '').toLowerCase(),
+      unit: newUnit,
       minStockUnit: (form.minStockUnit || form.unit || '').toLowerCase(),
       price: Number(form.cost || form.price || 0),
       min_stock: convertedMinStock,
-      stock: Number(form.stock || 0),
+      stock: finalStock,
       conversions: mappedConversions,
       bom: mappedBom
     });
