@@ -300,6 +300,9 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                       }));
                     }}
                   >
+                    {!masterUnits.some(u => u.toLowerCase() === (form.unit || '').toLowerCase()) && form.unit && (
+                      <option value={form.unit}>{form.unit.toUpperCase()}</option>
+                    )}
                     {masterUnits.map(u => <option key={u} value={u}>{u.toUpperCase()}</option>)}
                   </select>
                 </div>
