@@ -63,15 +63,6 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
           };
         });
 
-        setForm({
-          ...initialFormState,
-          ...initialData,
-          supplier_id: initialData.supplier_id || '',
-          conversions: normalizedConversions,
-          bom: (initialData.bom || []).map(b => ({
-            bahanId: String(b.bahanId || b.bahan_id || ''),
-            qty: b.qty
-          })),
         // Find if min_stock can be represented in any conversion unit cleanly
         let selectedMinStockUnit = initialData.unit || 'ml';
         let displayedMinStock = initialData.min_stock !== undefined ? initialData.min_stock : (initialData.minStock || 0);
