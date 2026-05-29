@@ -209,7 +209,7 @@ class SystemService {
         ai_api_key: data.ai_api_key,
         is_ai_enabled: data.is_ai_enabled,
         void_approvers: data.void_approvers,
-        approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : true
+        approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : false
       };
     }
 
@@ -225,7 +225,7 @@ class SystemService {
       radius: 100,
       geofence_radius: 100,
       is_ai_enabled: false,
-      approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : true
+      approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : false
     };
   }
 

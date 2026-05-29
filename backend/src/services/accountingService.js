@@ -102,8 +102,8 @@ class AccountingService {
 
     // 3. Approval Workflow Check with Toggle
     const SystemService = require('./systemService');
-    const settings = await SystemService.getSettings(tenantId).catch(() => ({ approval_workflow_enabled: true }));
-    const approvalEnabled = settings?.approval_workflow_enabled !== false;
+    const settings = await SystemService.getSettings(tenantId).catch(() => ({ approval_workflow_enabled: false }));
+    const approvalEnabled = !!settings?.approval_workflow_enabled;
     
     let status = 'APPROVED';
     const amountThreshold = 10000000; // Rp 10.000.000
