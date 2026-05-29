@@ -8,8 +8,12 @@ const menuController = require('../controllers/menuController');
 // Zod Schema for Menu Validation (KEN Enterprise Standard)
 // ====================================================================
 const menuBomItemSchema = z.object({
-  bahan_id: z.string().uuid("ID Bahan Baku harus berupa UUID yang valid"),
+  bahanId: z.string().uuid().optional().nullable(),
+  bahan_id: z.string().uuid().optional().nullable(),
   qty: z.number().min(0, "Kuantitas bahan baku tidak boleh negatif")
+}).refine(data => data.bahanId || data.bahan_id, {
+  message: "ID Bahan Baku harus berupa UUID yang valid",
+  path: ["bahan_id"]
 });
 
 const menuSchema = z.object({

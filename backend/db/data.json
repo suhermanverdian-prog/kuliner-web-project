@@ -189,6 +189,14 @@
       "bahan_id": "bcbc0bc0-a027-4396-b1f6-f3b8acff274f",
       "qty_received": 1,
       "price_unit": 45000
+    },
+    {
+      "id": "gi-v1plhkk60",
+      "grn_id": "10875f94-4526-46e7-ae64-b60ad999e5f4",
+      "tenant_id": "00000000-0000-0000-0000-000000000000",
+      "bahan_id": "bb3a1794-7146-49be-950e-18b0aa36cc41",
+      "qty_received": 10,
+      "price_unit": 41000
     }
   ],
   "purchase_invoices": [
