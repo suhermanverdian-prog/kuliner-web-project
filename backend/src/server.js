@@ -86,16 +86,30 @@ app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
       const filePath = `public/${fileName}`;
       
       // Upload ke Supabase Storage (bucket: 'uploads')
-      const { data, error } = await supabase.storage
+      let uploadRes = await supabase.storage
         .from('uploads')
         .upload(filePath, req.file.buffer, {
           contentType: req.file.mimetype,
           upsert: true
         });
         
-      if (error) {
-        console.error('Supabase Storage Error:', error);
-        return res.status(500).json({ error: 'Gagal mengupload ke storage. Pastikan bucket "uploads" sudah dibuat dan public di Supabase Anda.' });
+      if (uploadRes.error && uploadRes.error.message.includes('Bucket not found')) {
+        console.warn('⚠️ [Upload Engine] Bucket "uploads" not found, initiating self-healing bucket creation...');
+        const { error: createErr } = await supabase.storage.createBucket('uploads', { public: true });
+        if (!createErr) {
+          console.log('✅ [Upload Engine] Bucket "uploads" successfully created programmatically. Retrying upload...');
+          uploadRes = await supabase.storage
+            .from('uploads')
+            .upload(filePath, req.file.buffer, {
+              contentType: req.file.mimetype,
+              upsert: true
+            });
+        }
+      }
+        
+      if (uploadRes.error) {
+        console.error('Supabase Storage Error:', uploadRes.error);
+        return res.status(500).json({ error: 'Gagal mengupload ke storage. Pastikan bucket "uploads" sudah dibuat di Supabase.' });
       }
       
       const { data: publicUrlData } = supabase.storage
