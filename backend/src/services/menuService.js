@@ -22,7 +22,14 @@ class MenuService {
   }
 
   async createMenu(menuData, bomDataArray, tenantId, outletId) {
-    const finalMenuData = { ...menuData, tenant_id: tenantId };
+    const finalMenuData = {
+      name: menuData.name,
+      price: Number(menuData.price || 0),
+      image: menuData.image || null,
+      category: menuData.category || null,
+      is_active: menuData.is_active !== undefined ? menuData.is_active : true,
+      tenant_id: tenantId
+    };
     const newMenu = await MenuRepository.createMenu(finalMenuData);
 
     if (bomDataArray && Array.isArray(bomDataArray) && newMenu) {
@@ -40,7 +47,14 @@ class MenuService {
   }
 
   async updateMenu(menuId, menuData, bomDataArray, tenantId, outletId) {
-    await MenuRepository.updateMenu(menuId, tenantId, menuData);
+    const finalMenuData = {
+      name: menuData.name,
+      price: Number(menuData.price || 0),
+      image: menuData.image || null,
+      category: menuData.category || null,
+      is_active: menuData.is_active !== undefined ? menuData.is_active : true
+    };
+    await MenuRepository.updateMenu(menuId, tenantId, finalMenuData);
 
     if (bomDataArray && Array.isArray(bomDataArray)) {
       // Refresh BOM: delete old and insert new
