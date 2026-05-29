@@ -30,6 +30,32 @@ function saveLocalTables(tables) {
   }
 }
 
+function getLocalSettings() {
+  try {
+    if (fs.existsSync(dataPath)) {
+      const content = fs.readFileSync(dataPath, 'utf8');
+      const parsed = JSON.parse(content);
+      return parsed.settings || {};
+    }
+  } catch (err) {}
+  return {};
+}
+
+function saveLocalSettings(settings) {
+  try {
+    let parsed = {};
+    if (fs.existsSync(dataPath)) {
+      const content = fs.readFileSync(dataPath, 'utf8');
+      parsed = JSON.parse(content);
+    }
+    parsed.settings = settings;
+    fs.writeFileSync(dataPath, JSON.stringify(parsed, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 class SystemService {
   
   static async getTables(tenantId) {
@@ -164,6 +190,7 @@ class SystemService {
 
   static async getSettings(tenantId) {
     const { data } = await SystemRepository.getSettings(tenantId);
+    const localSet = getLocalSettings();
     if (data) {
       return {
         id: data.id,
@@ -181,7 +208,8 @@ class SystemService {
         ai_provider: data.ai_provider,
         ai_api_key: data.ai_api_key,
         is_ai_enabled: data.is_ai_enabled,
-        void_approvers: data.void_approvers
+        void_approvers: data.void_approvers,
+        approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : true
       };
     }
 
@@ -196,7 +224,8 @@ class SystemService {
       longitude: 0,
       radius: 100,
       geofence_radius: 100,
-      is_ai_enabled: false
+      is_ai_enabled: false,
+      approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : true
     };
   }
 
@@ -223,9 +252,20 @@ class SystemService {
 
   static async upsertSettings(payload, tenantId) {
     payload.tenant_id = tenantId;
+    
+    // Save approval_workflow_enabled to local config
+    if (payload.approval_workflow_enabled !== undefined) {
+      const localSet = getLocalSettings();
+      localSet.approval_workflow_enabled = !!payload.approval_workflow_enabled;
+      saveLocalSettings(localSet);
+    }
+    
+    // Extract approval_workflow_enabled to prevent pg insert error if Supabase column doesn't exist
+    const { approval_workflow_enabled, ...cleanPayload } = payload;
+    
     const { data: existing } = await SystemRepository.getSettings(tenantId);
     const existingId = existing?.id;
-    const data = await SystemRepository.upsertSettings(payload, existingId);
+    const data = await SystemRepository.upsertSettings(cleanPayload, existingId);
     return data[0];
   }
 

@@ -80,6 +80,63 @@ class AccountingService {
     }));
   }
 
+  static async saveJournalEntry(header, lines, tenantId) {
+    // 1. Enforce Debit === Credit Validation
+    const debitTotal = lines.reduce((sum, l) => sum + (Number(l.debit) || 0), 0);
+    const creditTotal = lines.reduce((sum, l) => sum + (Number(l.credit) || 0), 0);
+    
+    const roundedDebit = Number(debitTotal.toFixed(2));
+    const roundedCredit = Number(creditTotal.toFixed(2));
+    
+    if (Math.abs(roundedDebit - roundedCredit) > 0.01) {
+      throw new Error(`Jurnal tidak seimbang: Total Debit (Rp ${roundedDebit.toLocaleString()}) harus sama dengan Total Kredit (Rp ${roundedCredit.toLocaleString()}).`);
+    }
+
+    // 2. Resolve or Validate Account structure
+    for (const l of lines) {
+      const isValidCode = /^[1-5]-[0-9]{4}$/.test(l.account_code);
+      if (!isValidCode) {
+        throw new Error(`Format Kode Akun tidak valid: ${l.account_code} harus mematuhi pola standarisasi Chart of Accounts (COA) [1-5]-XXXX.`);
+      }
+    }
+
+    // 3. Approval Workflow Check with Toggle
+    const SystemService = require('./systemService');
+    const settings = await SystemService.getSettings(tenantId).catch(() => ({ approval_workflow_enabled: true }));
+    const approvalEnabled = settings?.approval_workflow_enabled !== false;
+    
+    let status = 'APPROVED';
+    const amountThreshold = 10000000; // Rp 10.000.000
+    const totalAmount = header.total_amount || roundedDebit;
+    
+    if (approvalEnabled && totalAmount >= amountThreshold) {
+      status = 'PENDING_APPROVAL';
+    }
+    
+    header.status = status;
+
+    // 4. Create Header
+    const journal = await AccountingRepository.createJournalHeader(header);
+
+    // 5. Create Lines (with strict rounded decimals & dynamic linking)
+    const journalLines = lines.map(l => ({
+      ...l,
+      journal_id: journal.id,
+      debit: Number(Number(l.debit || 0).toFixed(2)),
+      credit: Number(Number(l.credit || 0).toFixed(2))
+    }));
+
+    try {
+      await AccountingRepository.createJournalLines(journalLines);
+    } catch(e) {
+      // Compensating Transaction (Rollback)
+      await AccountingRepository.deleteJournal(journal.id).catch(() => {});
+      throw new Error(`Gagal menyimpan detail transaksi jurnal. Jurnal dibatalkan (Rolled Back). Detail: ${e.message}`);
+    }
+
+    return journal;
+  }
+
   static async recordExpense(payload, tenantId) {
     const { description, amount, category, payment_method, paymentMethod, date } = payload;
     const activePaymentMethod = payment_method || paymentMethod;
@@ -120,18 +177,17 @@ class AccountingService {
     const journalRef = `EXP-${Date.now()}`;
     const journalDesc = `[${category} - ${payment_method}] ${description}`;
 
-    const journal = await AccountingRepository.createJournalHeader({
+    const header = {
       tenant_id: tenantId,
       reference: journalRef,
       description: journalDesc,
       date: date || new Date().toISOString(),
       total_amount: amount
-    });
+    };
 
-    const journalLines = [
+    const lines = [
       {
         tenant_id: tenantId,
-        journal_id: journal.id,
         account_id: expenseAccount.id,
         account_code: expenseAccount.code,
         account_name: expenseAccount.name,
@@ -140,7 +196,6 @@ class AccountingService {
       },
       {
         tenant_id: tenantId,
-        journal_id: journal.id,
         account_id: paymentAccount.id,
         account_code: paymentAccount.code,
         account_name: paymentAccount.name,
@@ -149,13 +204,7 @@ class AccountingService {
       }
     ];
 
-    try {
-        await AccountingRepository.createJournalLines(journalLines);
-    } catch(e) {
-        await AccountingRepository.deleteJournal(journal.id);
-        throw new Error(`Gagal membuat garis jurnal (Rolled Back): ${e.message}`);
-    }
-
+    const journal = await this.saveJournalEntry(header, lines, tenantId);
     return journal.id;
   }
 
@@ -201,18 +250,17 @@ class AccountingService {
     const journalRef = `TOP-${Date.now()}`;
     const journalDesc = `[Top-up Kas - ${source}] ${description}`;
 
-    const journal = await AccountingRepository.createJournalHeader({
+    const header = {
       tenant_id: tenantId,
       reference: journalRef,
       description: journalDesc,
       date: date || new Date().toISOString(),
       total_amount: amount
-    });
+    };
 
-    const journalLines = [
+    const lines = [
       {
         tenant_id: tenantId,
-        journal_id: journal.id,
         account_id: cashAccount.id,
         account_code: cashAccount.code,
         account_name: cashAccount.name,
@@ -221,7 +269,6 @@ class AccountingService {
       },
       {
         tenant_id: tenantId,
-        journal_id: journal.id,
         account_id: sourceAccount.id,
         account_code: sourceAccount.code,
         account_name: sourceAccount.name,
@@ -230,13 +277,7 @@ class AccountingService {
       }
     ];
 
-    try {
-        await AccountingRepository.createJournalLines(journalLines);
-    } catch(e) {
-        await AccountingRepository.deleteJournal(journal.id);
-        throw new Error(`Gagal membuat garis jurnal topup (Rolled Back): ${e.message}`);
-    }
-
+    const journal = await this.saveJournalEntry(header, lines, tenantId);
     return journal.id;
   }
 
@@ -288,18 +329,17 @@ class AccountingService {
     const journalRef = `PAY-${Date.now()}`;
     const journalDesc = `[Payroll - ${employee.name}] Gaji Periode ${monthName} ${year}`;
 
-    const journal = await AccountingRepository.createJournalHeader({
+    const header = {
       tenant_id: tenantId,
       reference: journalRef,
       description: journalDesc,
       date: new Date().toISOString(),
       total_amount: totalSalary
-    });
+    };
 
-    const journalLines = [
+    const lines = [
       {
         tenant_id: tenantId,
-        journal_id: journal.id,
         account_id: expenseAccount.id,
         account_code: expenseAccount.code,
         account_name: expenseAccount.name,
@@ -308,7 +348,6 @@ class AccountingService {
       },
       {
         tenant_id: tenantId,
-        journal_id: journal.id,
         account_id: paymentAccount.id,
         account_code: paymentAccount.code,
         account_name: paymentAccount.name,
@@ -317,12 +356,7 @@ class AccountingService {
       }
     ];
 
-    try {
-        await AccountingRepository.createJournalLines(journalLines);
-    } catch (e) {
-        await AccountingRepository.deleteJournal(journal.id);
-        throw new Error(`Gagal membuat garis jurnal (Rolled Back): ${e.message}`);
-    }
+    const journal = await this.saveJournalEntry(header, lines, tenantId);
 
     await AccountingRepository.createActivityLog({
       tenant_id: tenantId,

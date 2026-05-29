@@ -832,6 +832,26 @@ export default function PengaturanPage() {
                 </div>
               </div>
 
+              <div className="pt-6 border-t space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold flex items-center gap-2">
+                      <ShieldCheck className="text-amber-600 dark:text-amber-400" size={18} />
+                      Alur Persetujuan Jurnal Beban Besar
+                    </h4>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider mt-1">
+                      Pencatatan beban ≥ Rp 10.000.000 wajib disetujui Owner sebelum diposting ke Buku Besar.
+                    </p>
+                  </div>
+                  <input 
+                    type="checkbox" 
+                    className="w-10 h-6 accent-amber-500 cursor-pointer shrink-0" 
+                    checked={settings.approval_workflow_enabled !== false} 
+                    onChange={e => setSettings({ ...settings, approval_workflow_enabled: e.target.checked })} 
+                  />
+                </div>
+              </div>
+
               <div className="pt-6 border-t">
                 <div className="flex items-center gap-2 mb-4">
                   <CreditCard size={18} className="text-zinc-500 dark:text-zinc-100" />
