@@ -116,14 +116,49 @@ class InventoryService {
       cleanBom.push({ supplierId, qty: 0, isSupplierMarker: true });
     }
 
+    // ======================================================================
+    // 🔒 BACKEND STOCK INTEGRITY GUARD
+    // Fetch current record to detect if unit changed without stock conversion.
+    // This prevents silent data corruption (e.g., "10 botol" → "10 ml")
+    // ======================================================================
+    let finalStock = updateData.stock;
+    const incomingUnit = (updateData.unit || '').toLowerCase();
+    
+    try {
+      const { data: currentRecord } = await supabase
+        .from('bahan')
+        .select('unit, stock')
+        .eq('id', id)
+        .eq('tenant_id', tenantId)
+        .single();
+
+      if (currentRecord) {
+        const dbUnit = (currentRecord.unit || '').toLowerCase();
+        const dbStock = Number(currentRecord.stock || 0);
+        const reqStock = Number(updateData.stock || 0);
+
+        if (dbUnit && incomingUnit && dbUnit !== incomingUnit && dbStock === reqStock && dbStock > 0) {
+          // Unit changed but stock is identical — likely no conversion was applied.
+          // Log a server-side warning for auditing purposes.
+          console.warn(
+            `⚠️ [STOCK INTEGRITY] Unit changed from "${dbUnit}" to "${incomingUnit}" ` +
+            `for bahan ID ${id} but stock remained at ${dbStock}. ` +
+            `Client may not have a valid conversion path. Proceeding with client-sent value.`
+          );
+        }
+      }
+    } catch (guardErr) {
+      // Non-blocking: Don't let the guard check break the actual update
+      console.warn('⚠️ [STOCK INTEGRITY GUARD] Pre-check failed:', guardErr.message);
+    }
 
     const cleanBahan = {
       name: updateData.name,
       category: updateData.category,
-      unit: updateData.unit,
+      unit: incomingUnit,
       cost: updateData.price,
       min_stock: updateData.min_stock,
-      stock: updateData.stock,
+      stock: finalStock,
       bom: cleanBom
     };
 

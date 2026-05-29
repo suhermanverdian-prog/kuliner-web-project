@@ -172,19 +172,51 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
     const multiplier = getUnitMultiplier(form.minStockUnit || form.unit);
     const convertedMinStock = Number(form.minStock || 0) * multiplier;
 
-    // Convert current stock if the base unit changed
+    // ======================================================================
+    // 🔒 CRITICAL STOCK INTEGRITY GUARD
+    // Prevent silent stock corruption when base unit is changed.
+    // If old unit = "botol" and new unit = "ml", stock=10 must NOT become
+    // "10 ml" (should remain "10 botol" or be converted properly).
+    // ======================================================================
     let finalStock = Number(form.stock || 0);
     const oldUnit = (initialData?.unit || '').toLowerCase();
     const newUnit = (form.unit || '').toLowerCase();
-    if (oldUnit && newUnit && oldUnit !== newUnit) {
-      const conv = form.conversions.find(c => c.unit.toLowerCase() === oldUnit && c.to_unit.toLowerCase() === newUnit);
-      if (conv) {
-        finalStock = finalStock * (Number(conv.multiplier) || 1);
+
+    if (initialData && oldUnit && newUnit && oldUnit !== newUnit && finalStock > 0) {
+      // Try to find a conversion path: old unit → new unit
+      const directConv = mappedConversions.find(
+        c => c.unit === oldUnit && c.to_unit === newUnit
+      );
+      const reverseConv = mappedConversions.find(
+        c => c.unit === newUnit && c.to_unit === oldUnit
+      );
+      // Also check if base unit is involved in any chain conversion
+      const chainConv = mappedConversions.find(
+        c => c.unit === oldUnit || c.to_unit === oldUnit
+      );
+
+      if (directConv) {
+        // Direct path found: oldUnit → newUnit (e.g., 1 botol = 500 ml)
+        finalStock = finalStock * (Number(directConv.multiplier) || 1);
+      } else if (reverseConv && Number(reverseConv.multiplier) > 0) {
+        // Reverse path found: newUnit → oldUnit (e.g., 1 ml = 0.002 botol)
+        finalStock = finalStock / Number(reverseConv.multiplier);
       } else {
-        const revConv = form.conversions.find(c => c.unit.toLowerCase() === newUnit && c.to_unit.toLowerCase() === oldUnit);
-        if (revConv && Number(revConv.multiplier) > 0) {
-          finalStock = finalStock / Number(revConv.multiplier);
-        }
+        // ❌ NO CONVERSION PATH EXISTS — BLOCK THE SAVE!
+        // This prevents "10 botol" from silently becoming "10 ml"
+        const confirm = window.confirm(
+          `⚠️ PERINGATAN INTEGRITAS STOK!\n\n` +
+          `Anda mengubah satuan dasar dari "${oldUnit.toUpperCase()}" ke "${newUnit.toUpperCase()}", ` +
+          `namun TIDAK ADA konversi yang terdefinisi antara kedua satuan ini.\n\n` +
+          `Stok saat ini: ${finalStock} ${oldUnit.toUpperCase()}\n\n` +
+          `Jika dilanjutkan, angka stok (${finalStock}) akan tetap sama dengan satuan baru (${newUnit.toUpperCase()}). ` +
+          `Ini bisa menyebabkan data TIDAK AKURAT!\n\n` +
+          `Contoh: 10 BOTOL akan menjadi 10 ${newUnit.toUpperCase()}.\n\n` +
+          `Apakah Anda yakin ingin melanjutkan?\n` +
+          `(Disarankan: Tambahkan konversi unit terlebih dahulu)`
+        );
+        if (!confirm) return; // User chose to cancel — abort save
+        // User confirmed they understand the risk — proceed with same number
       }
     }
 
