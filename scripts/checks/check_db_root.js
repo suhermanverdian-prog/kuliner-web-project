@@ -1,4 +1,4 @@
-const { supabase } = require('./backend/src/supabase');
+const { supabase } = require('../../backend/src/supabase');
 
 async function checkSettingsTables() {
     console.log('--- SETTINGS TABLES AUDIT ---');

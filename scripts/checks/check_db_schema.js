@@ -1,5 +1,5 @@
 const { Client } = require('pg');
-require('dotenv').config();
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
 async function checkSchema() {
   const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL; 

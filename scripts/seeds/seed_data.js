@@ -1,4 +1,4 @@
-const { supabase } = require('./backend/src/supabase');
+const { supabase } = require('../../backend/src/supabase');
 
 async function seedData() {
     console.log('🚀 SEEDING INITIAL ENTERPRISE DATA...\n');

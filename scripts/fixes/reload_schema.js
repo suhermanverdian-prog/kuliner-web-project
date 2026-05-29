@@ -1,5 +1,5 @@
-require('dotenv').config();
-const { supabase } = require('./backend/src/supabase');
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+const { supabase } = require('../../backend/src/supabase');
 
 async function reload() {
   console.log('Reloading Supabase schema cache...');

@@ -1,4 +1,4 @@
-const { supabase } = require('./backend/src/supabase');
+const { supabase } = require('../../backend/src/supabase');
 
 async function simulateLogin(username, password) {
     const { data, error } = await supabase

@@ -1,4 +1,4 @@
-const AccountingRepository = require('./backend/src/repositories/accountingRepository');
+const AccountingRepository = require('../../backend/src/repositories/accountingRepository');
 
 async function testLocal() {
   console.log("=== 🔍 TESTING ACCOUNTING REPOSITORY DIRECTLY ===");

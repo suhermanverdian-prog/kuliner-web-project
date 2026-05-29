@@ -1,4 +1,4 @@
-const { supabase } = require('./backend/src/supabase');
+const { supabase } = require('../../backend/src/supabase');
 
 async function debugData() {
     console.log('--- Checking Tenants ---');

@@ -1,4 +1,4 @@
-const { supabase } = require('./backend/src/supabase');
+const { supabase } = require('../../backend/src/supabase');
 
 async function checkRLS() {
     const { data, error } = await supabase.rpc('get_policies'); // This might not work if RPC is not defined

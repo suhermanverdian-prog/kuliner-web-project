@@ -1,4 +1,4 @@
-const { supabase } = require('./backend/src/supabase');
+const { supabase } = require('../../backend/src/supabase');
 
 async function auditDatabase() {
     console.log('🔍 KEN ERP DATABASE AUDIT\n');

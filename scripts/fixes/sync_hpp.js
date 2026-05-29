@@ -1,4 +1,4 @@
-const { supabase } = require('./backend/src/supabase');
+const { supabase } = require('../../backend/src/supabase');
 const mapping = { 
   '101': 'Biji Kopi Arabica', 
   '102': 'Susu Segar', 

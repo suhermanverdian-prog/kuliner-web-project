@@ -1,4 +1,4 @@
-const { supabase } = require('./backend/src/supabase');
+const { supabase } = require('../../backend/src/supabase');
 
 async function auditData() {
   console.log("=== 🔍 SUPABASE AUDIT ===");

@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { supabase } = require('./backend/src/supabase');
+const { supabase } = require('../../backend/src/supabase');
 
 const DB_PATH = path.join(__dirname, 'backend', 'src', 'db', 'data.json');
 
