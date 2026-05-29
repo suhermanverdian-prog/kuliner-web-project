@@ -293,11 +293,18 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                     value={form.unit} 
                     onChange={e => {
                       const newUnit = e.target.value;
-                      setForm(prev => ({
-                        ...prev,
-                        unit: newUnit,
-                        minStockUnit: prev.minStockUnit === prev.unit ? newUnit : prev.minStockUnit
-                      }));
+                      setForm(prev => {
+                        const updatedConversions = (prev.conversions || []).map(c => ({
+                          ...c,
+                          to_unit: newUnit
+                        }));
+                        return {
+                          ...prev,
+                          unit: newUnit,
+                          conversions: updatedConversions,
+                          minStockUnit: prev.minStockUnit === prev.unit ? newUnit : (updatedConversions.some(c => c.unit === prev.minStockUnit) ? prev.minStockUnit : newUnit)
+                        };
+                      });
                     }}
                   >
                     {!masterUnits.some(u => u.toLowerCase() === (form.unit || '').toLowerCase()) && form.unit && (
@@ -365,7 +372,18 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                           </p>
                         </div>
                       </div>
-                      <button onClick={() => setForm({ ...form, conversions: form.conversions.filter((_, i) => i !== idx) })} className="h-10 w-10 flex items-center justify-center text-zinc-400 hover:text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:bg-rose-950/30 rounded-md transition-all">
+                      <button 
+                        onClick={() => {
+                          const nextConvs = form.conversions.filter((_, i) => i !== idx);
+                          const isValidMinUnit = nextConvs.some(c => c.unit === form.minStockUnit) || form.minStockUnit === form.unit;
+                          setForm({ 
+                            ...form, 
+                            conversions: nextConvs,
+                            minStockUnit: isValidMinUnit ? form.minStockUnit : form.unit
+                          });
+                        }} 
+                        className="h-10 w-10 flex items-center justify-center text-zinc-400 hover:text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:bg-rose-950/30 rounded-md transition-all"
+                      >
                         <Trash2 size={18} />
                       </button>
                     </div>
