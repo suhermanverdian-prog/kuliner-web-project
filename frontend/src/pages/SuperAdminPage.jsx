@@ -197,10 +197,10 @@ export default function SuperAdminPage() {
       </Card>
 
       {/* Security Info Banner */}
-       <div className="p-10 ">
-         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent  group-hover: transition-opacity" />
-         <div className="w-20 h-20 ">
-            <ShieldCheck size={40} />
+       <div className="p-10 relative flex items-center gap-8 rounded-lg border border-border bg-card overflow-hidden">
+         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent pointer-events-none" />
+         <div className="w-20 h-20 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 relative z-10">
+            <ShieldCheck size={40} className="text-amber-500" />
          </div>
          <div className="flex-1 space-y-2 text-center md:text-left relative z-10">
             <p className="text-2xl font-black text-zinc-900 dark:text-zinc-100 tracking-tighter uppercase">Enterprise Security Protocol <span className="text-amber-500 italic">v4.0</span></p>
@@ -208,7 +208,7 @@ export default function SuperAdminPage() {
                Sistem dalam pengawasan enkripsi end-to-end. Seluruh mutasi tier, suspend, dan akses data tenant dicatat dalam Immutable Ledger untuk audit kepatuhan global.
             </p>
          </div>
-         <Button className="bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800">Audit Log</Button>
+         <Button className="bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800 relative z-10 shrink-0">Audit Log</Button>
       </div>
 
       {/* Feature Flag Modal */}
