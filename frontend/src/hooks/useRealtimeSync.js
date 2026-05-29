@@ -13,15 +13,25 @@ const isLocalNetwork = () => {
   );
 };
 
-const SOCKET_URL = isLocalNetwork()
-  ? `http://${window.location.hostname}:3001`
-  : '/'; // Asumsi production satu domain
+const getSocketUrl = () => {
+  const customApiUrl = import.meta.env.VITE_API_URL;
+  if (customApiUrl) {
+    // Extract base server domain (e.g., https://backend.com/api -> https://backend.com)
+    return customApiUrl.replace(/\/api\/?$/, '');
+  }
+  return isLocalNetwork()
+    ? `http://${window.location.hostname}:3001`
+    : '/';
+};
+
+const SOCKET_URL = getSocketUrl();
 
 export function useRealtimeSync(events) {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    if (!isLocalNetwork()) {
+    const hasCustomBackend = !!import.meta.env.VITE_API_URL;
+    if (!isLocalNetwork() && !hasCustomBackend) {
       console.log('ℹ️ [RealTime] WebSockets disabled in production Vercel environment.');
       return;
     }
