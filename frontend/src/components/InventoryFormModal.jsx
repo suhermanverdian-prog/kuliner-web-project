@@ -72,7 +72,34 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
             bahanId: String(b.bahanId || b.bahan_id || ''),
             qty: b.qty
           })),
-          minStock: initialData.min_stock !== undefined ? initialData.min_stock : (initialData.minStock || ''),
+        // Find if min_stock can be represented in any conversion unit cleanly
+        let selectedMinStockUnit = initialData.unit || 'ml';
+        let displayedMinStock = initialData.min_stock !== undefined ? initialData.min_stock : (initialData.minStock || 0);
+
+        for (let i = normalizedConversions.length - 1; i >= 0; i--) {
+          const conv = normalizedConversions[i];
+          let multiplier = 1;
+          for (let j = 0; j <= i; j++) {
+            multiplier *= Number(normalizedConversions[j].multiplier) || 1;
+          }
+          if (multiplier > 1 && displayedMinStock % multiplier === 0 && displayedMinStock > 0) {
+            displayedMinStock = displayedMinStock / multiplier;
+            selectedMinStockUnit = conv.unit;
+            break;
+          }
+        }
+
+        setForm({
+          ...initialFormState,
+          ...initialData,
+          supplier_id: initialData.supplier_id || '',
+          conversions: normalizedConversions,
+          bom: (initialData.bom || []).map(b => ({
+            bahanId: String(b.bahanId || b.bahan_id || ''),
+            qty: b.qty
+          })),
+          minStock: String(displayedMinStock),
+          minStockUnit: selectedMinStockUnit,
           isAssembly: initialIsAssembly
         });
       } else {
@@ -80,6 +107,7 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
           ...initialFormState, 
           category: categories[0], 
           supplier_id: suppliers[0]?.id || '',
+          minStockUnit: 'ml',
           isAssembly: false
         });
       }
@@ -137,10 +165,26 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
       return alert('Bahan Baku Assembly wajib memiliki minimal 1 bahan penyusun dalam BOM!');
     }
 
+    const getUnitMultiplier = (targetUnit) => {
+      if (targetUnit === form.unit) return 1;
+      const idx = form.conversions.findIndex(c => c.unit === targetUnit);
+      if (idx !== -1) {
+        let mult = 1;
+        for (let i = 0; i <= idx; i++) {
+          mult *= Number(form.conversions[i].multiplier) || 1;
+        }
+        return mult;
+      }
+      return 1;
+    };
+
+    const multiplier = getUnitMultiplier(form.minStockUnit || form.unit);
+    const convertedMinStock = Number(form.minStock || 0) * multiplier;
+
     onSave({
       ...form,
       price: Number(form.cost || form.price || 0),
-      min_stock: Number(form.minStock || form.min_stock || 0),
+      min_stock: convertedMinStock,
       stock: Number(form.stock || 0),
       conversions: mappedConversions,
       bom: mappedBom
@@ -253,15 +297,35 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                 </div>
                 <div className="space-y-2 relative z-10">
                   <label className="text-xs font-black uppercase tracking-wide text-amber-600 dark:text-amber-500 ml-1">System Base Unit (Anchor)</label>
-                  <select className="h-12 w-full bg-card border-2 border-amber-500/30 rounded-md text-sm font-black font-mono tabular-nums text-amber-600 dark:text-amber-500" value={form.unit} onChange={e => setForm({ ...form, unit: e.target.value })}>
+                  <select 
+                    className="h-12 w-full bg-card border-2 border-amber-500/30 rounded-md text-sm font-black font-mono tabular-nums text-amber-600 dark:text-amber-500" 
+                    value={form.unit} 
+                    onChange={e => {
+                      const newUnit = e.target.value;
+                      setForm(prev => ({
+                        ...prev,
+                        unit: newUnit,
+                        minStockUnit: prev.minStockUnit === prev.unit ? newUnit : prev.minStockUnit
+                      }));
+                    }}
+                  >
                     {masterUnits.map(u => <option key={u} value={u}>{u.toUpperCase()}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2 relative z-10">
                   <label className="text-xs font-black uppercase tracking-wide text-zinc-500 dark:text-zinc-400 ml-1">Safety Threshold (Min. Stock)</label>
-                  <div className="relative">
-                    <Input type="number" className="h-12 w-full bg-card border-zinc-200 dark:border-zinc-700 rounded-md text-center font-mono tabular-nums text-amber-600 dark:text-amber-500" value={form.minStock} onChange={e => setForm({ ...form, minStock: e.target.value })} />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-600 dark:text-zinc-300 bg-card px-2 py-1 rounded-md border border-zinc-300 dark:border-zinc-700 font-mono tabular-nums">{form.unit}</span>
+                  <div className="relative flex gap-2">
+                    <Input type="number" className="h-12 flex-1 bg-card border-zinc-200 dark:border-zinc-700 rounded-md text-center font-mono tabular-nums text-amber-600 dark:text-amber-500" value={form.minStock} onChange={e => setForm({ ...form, minStock: e.target.value })} />
+                    <select 
+                      className="h-12 w-32 rounded-md border border-zinc-200 dark:border-zinc-700 bg-card px-3 text-xs font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300"
+                      value={form.minStockUnit || form.unit}
+                      onChange={e => setForm({ ...form, minStockUnit: e.target.value })}
+                    >
+                      <option value={form.unit}>{form.unit.toUpperCase()} (BASE)</option>
+                      {(form.conversions || []).filter(c => c.unit).map(c => (
+                        <option key={c.unit} value={c.unit}>{c.unit.toUpperCase()}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -419,7 +483,7 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                   <div className="flex justify-between items-end">
                     <div>
                       <p className="text-xs font-black text-zinc-500 dark:text-zinc-400 uppercase mb-1">Safety Margin</p>
-                      <p className="text-lg font-black font-mono tabular-nums text-rose-600 dark:text-rose-400">{form.minStock || 0} <span className="text-xs">{form.unit}</span></p>
+                      <p className="text-lg font-black font-mono tabular-nums text-rose-600 dark:text-rose-400">{form.minStock || 0} <span className="text-xs uppercase">{form.minStockUnit || form.unit}</span></p>
                     </div>
                     <Truck size={24} className="text-zinc-500 dark:text-zinc-400" />
                   </div>
