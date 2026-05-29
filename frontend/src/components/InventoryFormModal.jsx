@@ -48,23 +48,20 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
         const cat = (initialData.category || '').toUpperCase();
         const initialIsAssembly = hasBom || cat.includes('ASSEMBLY') || cat.includes('SETENGAH JADI');
 
-        // Normalize conversions data keys (from_unit -> unit) and casing
+        // Normalize conversions data keys and casing to lowercase
         const normalizedConversions = (initialData.conversions || []).map(c => {
-          const rawUnit = c.unit || c.from_unit || '';
-          const matchedUnit = masterUnits.find(mu => mu.toLowerCase() === rawUnit.toLowerCase()) || rawUnit;
-          
-          const rawToUnit = c.to_unit || initialData.unit || '';
-          const matchedToUnit = masterUnits.find(mu => mu.toLowerCase() === rawToUnit.toLowerCase()) || rawToUnit;
+          const rawUnit = (c.unit || c.from_unit || '').toLowerCase();
+          const rawToUnit = (c.to_unit || initialData.unit || '').toLowerCase();
 
           return {
-            unit: matchedUnit,
-            to_unit: matchedToUnit,
+            unit: rawUnit,
+            to_unit: rawToUnit,
             multiplier: c.multiplier !== undefined ? String(c.multiplier) : '1'
           };
         });
 
         // Find if min_stock can be represented in any conversion unit cleanly
-        let selectedMinStockUnit = initialData.unit || 'ml';
+        let selectedMinStockUnit = (initialData.unit || 'ml').toLowerCase();
         let displayedMinStock = initialData.min_stock !== undefined ? initialData.min_stock : (initialData.minStock || 0);
 
         for (let i = normalizedConversions.length - 1; i >= 0; i--) {
@@ -83,6 +80,7 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
         setForm({
           ...initialFormState,
           ...initialData,
+          unit: (initialData.unit || 'ml').toLowerCase(),
           supplier_id: initialData.supplier_id || '',
           conversions: normalizedConversions,
           bom: (initialData.bom || []).map(b => ({
@@ -109,19 +107,19 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
 
   const handleAddTier = () => {
     const lastTier = form.conversions[form.conversions.length - 1];
-    const newUnit = lastTier ? lastTier.to_unit : 'Dus';
-    const newToUnit = form.unit;
+    const newUnit = lastTier ? lastTier.to_unit : 'dus';
+    const newToUnit = (form.unit || '').toLowerCase();
     setForm({
       ...form,
-      conversions: [...form.conversions, { unit: newUnit, multiplier: '1', to_unit: newToUnit }]
+      conversions: [...form.conversions, { unit: newUnit.toLowerCase(), multiplier: '1', to_unit: newToUnit }]
     });
   };
 
   const handleConversionChange = (index, field, value) => {
     const newConversions = [...form.conversions];
-    newConversions[index][field] = value;
+    newConversions[index][field] = value.toLowerCase();
     if (field === 'to_unit' && newConversions[index + 1]) {
-      newConversions[index + 1].unit = value;
+      newConversions[index + 1].unit = value.toLowerCase();
     }
     setForm({ ...form, conversions: newConversions });
   };
@@ -140,8 +138,8 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
     const mappedConversions = form.conversions
       .filter(c => c.unit && c.multiplier)
       .map(c => ({
-        unit: c.unit,
-        to_unit: c.to_unit || form.unit,
+        unit: c.unit.toLowerCase(),
+        to_unit: (c.to_unit || form.unit).toLowerCase(),
         multiplier: Number(c.multiplier) || 1
       }));
 
@@ -157,8 +155,10 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
     }
 
     const getUnitMultiplier = (targetUnit) => {
-      if (targetUnit === form.unit) return 1;
-      const idx = form.conversions.findIndex(c => c.unit === targetUnit);
+      const tUnit = (targetUnit || '').toLowerCase();
+      const bUnit = (form.unit || '').toLowerCase();
+      if (tUnit === bUnit) return 1;
+      const idx = form.conversions.findIndex(c => (c.unit || '').toLowerCase() === tUnit);
       if (idx !== -1) {
         let mult = 1;
         for (let i = 0; i <= idx; i++) {
@@ -174,6 +174,8 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
 
     onSave({
       ...form,
+      unit: (form.unit || '').toLowerCase(),
+      minStockUnit: (form.minStockUnit || form.unit || '').toLowerCase(),
       price: Number(form.cost || form.price || 0),
       min_stock: convertedMinStock,
       stock: Number(form.stock || 0),
@@ -290,9 +292,9 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                   <label className="text-xs font-black uppercase tracking-wide text-amber-600 dark:text-amber-500 ml-1">System Base Unit (Anchor)</label>
                   <select 
                     className="h-12 w-full bg-card border-2 border-amber-500/30 rounded-md text-sm font-black font-mono tabular-nums text-amber-600 dark:text-amber-500" 
-                    value={form.unit} 
+                    value={(form.unit || '').toLowerCase()} 
                     onChange={e => {
-                      const newUnit = e.target.value;
+                      const newUnit = e.target.value.toLowerCase();
                       setForm(prev => {
                         const updatedConversions = (prev.conversions || []).map(c => ({
                           ...c,
@@ -302,15 +304,19 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                           ...prev,
                           unit: newUnit,
                           conversions: updatedConversions,
-                          minStockUnit: prev.minStockUnit === prev.unit ? newUnit : (updatedConversions.some(c => c.unit === prev.minStockUnit) ? prev.minStockUnit : newUnit)
+                          minStockUnit: (prev.minStockUnit || '').toLowerCase() === (prev.unit || '').toLowerCase() 
+                            ? newUnit 
+                            : (updatedConversions.some(c => c.unit.toLowerCase() === (prev.minStockUnit || '').toLowerCase()) 
+                                ? (prev.minStockUnit || '').toLowerCase() 
+                                : newUnit)
                         };
                       });
                     }}
                   >
                     {!masterUnits.some(u => u.toLowerCase() === (form.unit || '').toLowerCase()) && form.unit && (
-                      <option value={form.unit}>{form.unit.toUpperCase()}</option>
+                      <option value={form.unit.toLowerCase()}>{form.unit.toUpperCase()}</option>
                     )}
-                    {masterUnits.map(u => <option key={u} value={u}>{u.toUpperCase()}</option>)}
+                    {masterUnits.map(u => <option key={u} value={u.toLowerCase()}>{u.toUpperCase()}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2 relative z-10">
@@ -318,13 +324,13 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                   <div className="relative flex gap-2">
                     <Input type="number" className="h-12 flex-1 bg-card border-zinc-200 dark:border-zinc-700 rounded-md text-center font-mono tabular-nums text-amber-600 dark:text-amber-500" value={form.minStock} onChange={e => setForm({ ...form, minStock: e.target.value })} />
                     <select 
-                      className="h-12 w-32 rounded-md border border-zinc-200 dark:border-zinc-700 bg-card px-3 text-xs font-black uppercase tracking-widest text-zinc-600 dark:text-zinc-300"
-                      value={form.minStockUnit || form.unit}
-                      onChange={e => setForm({ ...form, minStockUnit: e.target.value })}
+                      className="h-12 w-32 rounded-md border border-zinc-200 dark:border-zinc-700 bg-card px-3 text-xs font-black uppercase tracking-widest text-zinc-650 dark:text-zinc-300"
+                      value={(form.minStockUnit || form.unit || '').toLowerCase()}
+                      onChange={e => setForm({ ...form, minStockUnit: e.target.value.toLowerCase() })}
                     >
-                      <option value={form.unit}>{form.unit.toUpperCase()} (BASE)</option>
+                      <option value={(form.unit || '').toLowerCase()}>{(form.unit || '').toUpperCase()} (BASE)</option>
                       {(form.conversions || []).filter(c => c.unit).map(c => (
-                        <option key={c.unit} value={c.unit}>{c.unit.toUpperCase()}</option>
+                        <option key={c.unit} value={c.unit.toLowerCase()}>{c.unit.toUpperCase()}</option>
                       ))}
                     </select>
                   </div>
@@ -352,8 +358,8 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                       <div className="w-10 h-10 rounded-md bg-card flex items-center justify-center text-xs font-black text-zinc-500 dark:text-zinc-600 border border-zinc-200 dark:border-zinc-700 shadow-inner">L{idx + 1}</div>
                       <div className="grid grid-cols-11 gap-4 flex-1 items-center">
                         <div className="col-span-3">
-                          <select className="w-full h-10 bg-card border border-zinc-300 dark:border-zinc-700 rounded-md px-4 text-xs font-black uppercase outline-none focus:ring-1 ring-amber-500" value={conv.unit} onChange={e => handleConversionChange(idx, 'unit', e.target.value)} disabled={idx > 0}>
-                            {masterUnits.map(u => <option key={u} value={u}>{u}</option>)}
+                          <select className="w-full h-10 bg-card border border-zinc-300 dark:border-zinc-700 rounded-md px-4 text-xs font-black uppercase outline-none focus:ring-1 ring-amber-500" value={(conv.unit || '').toLowerCase()} onChange={e => handleConversionChange(idx, 'unit', e.target.value.toLowerCase())} disabled={idx > 0}>
+                            {masterUnits.map(u => <option key={u} value={u.toLowerCase()}>{u.toUpperCase()}</option>)}
                           </select>
                         </div>
                         <div className="col-span-1 text-center font-black text-amber-500 text-xl">=</div>
@@ -361,14 +367,14 @@ export default function InventoryFormModal({ isOpen, onClose, onSave, initialDat
                           <Input type="number" className="h-10 w-full bg-card border border-zinc-300 dark:border-zinc-700 text-xs font-black text-center font-mono tabular-nums rounded-md focus:ring-1 ring-amber-500" value={conv.multiplier} onChange={e => handleConversionChange(idx, 'multiplier', e.target.value)} />
                         </div>
                         <div className="col-span-3">
-                          <select className="w-full h-10 bg-card border border-zinc-300 dark:border-zinc-700 rounded-md px-4 text-xs font-black uppercase outline-none focus:ring-1 ring-amber-500" value={conv.to_unit} onChange={e => handleConversionChange(idx, 'to_unit', e.target.value)}>
-                            <option value={form.unit}>{form.unit.toUpperCase()} (BASE)</option>
-                            {masterUnits.filter(u => u !== conv.unit && u !== form.unit).map(u => <option key={u} value={u}>{u}</option>)}
+                          <select className="w-full h-10 bg-card border border-zinc-300 dark:border-zinc-700 rounded-md px-4 text-xs font-black uppercase outline-none focus:ring-1 ring-amber-500" value={(conv.to_unit || '').toLowerCase()} onChange={e => handleConversionChange(idx, 'to_unit', e.target.value.toLowerCase())}>
+                            <option value={(form.unit || '').toLowerCase()}>{(form.unit || '').toUpperCase()} (BASE)</option>
+                            {masterUnits.filter(u => u.toLowerCase() !== (conv.unit || '').toLowerCase() && u.toLowerCase() !== (form.unit || '').toLowerCase()).map(u => <option key={u} value={u.toLowerCase()}>{u.toUpperCase()}</option>)}
                           </select>
                         </div>
                         <div className="col-span-2 text-right">
                           <p className="text-xs font-black text-amber-600 dark:text-amber-500 font-mono tabular-nums">
-                            {conv.multiplier} <span className="text-xs text-zinc-700 dark:text-zinc-300 font-bold uppercase ml-1 px-2 py-0.5 bg-card rounded border border-zinc-300 dark:border-zinc-700 font-mono tabular-nums">{conv.to_unit}</span>
+                            {conv.multiplier} <span className="text-xs text-zinc-700 dark:text-zinc-300 font-bold uppercase ml-1 px-2 py-0.5 bg-card rounded border border-zinc-300 dark:border-zinc-700 font-mono tabular-nums">{(conv.to_unit || '').toUpperCase()}</span>
                           </p>
                         </div>
                       </div>
