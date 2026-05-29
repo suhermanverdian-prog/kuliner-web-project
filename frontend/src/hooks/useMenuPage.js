@@ -65,11 +65,23 @@ export function useMenuPage() {
 
   const handleSave = async (data) => {
     try {
-      const payload = { ...data };
-      delete payload.cost; // cost dihitung dinamis, tidak ada di schema db
+      const payload = {
+        name: data.name,
+        price: Number(data.price || 0),
+        image: data.image || null,
+        sku: data.sku || null,
+        category: data.category || null,
+        is_active: data.is_active !== undefined ? data.is_active : true,
+        bom: (data.bom || [])
+          .filter(b => b.bahanId || b.bahan_id)
+          .map(b => ({
+            bahan_id: b.bahanId || b.bahan_id,
+            qty: Number(b.qty || 0)
+          }))
+      };
 
-      if (payload.id) {
-        await api.updateMenu(payload.id, payload);
+      if (data.id) {
+        await api.updateMenu(data.id, payload);
       } else {
         await api.addMenu(payload);
       }

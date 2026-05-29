@@ -10,7 +10,7 @@ const menuController = require('../controllers/menuController');
 const menuBomItemSchema = z.object({
   bahanId: z.string().uuid().optional().nullable(),
   bahan_id: z.string().uuid().optional().nullable(),
-  qty: z.number().min(0, "Kuantitas bahan baku tidak boleh negatif")
+  qty: z.coerce.number().min(0, "Kuantitas bahan baku tidak boleh negatif")
 }).refine(data => data.bahanId || data.bahan_id, {
   message: "ID Bahan Baku harus berupa UUID yang valid",
   path: ["bahan_id"]
@@ -18,7 +18,7 @@ const menuBomItemSchema = z.object({
 
 const menuSchema = z.object({
   name: z.string().min(1, "Nama menu wajib diisi"),
-  price: z.number().min(0, "Harga menu tidak boleh negatif"),
+  price: z.coerce.number().min(0, "Harga menu tidak boleh negatif"),
   image: z.string().optional().nullable(),
   sku: z.string().optional().nullable(),
   category: z.string().optional().nullable(),
