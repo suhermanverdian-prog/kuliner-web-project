@@ -1,7 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+const isLocalNetwork = () => {
+  const hostname = window.location.hostname;
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('10.') ||
+    hostname.startsWith('172.') ||
+    hostname.endsWith('.local')
+  );
+};
+
+const SOCKET_URL = isLocalNetwork()
   ? `http://${window.location.hostname}:3001`
   : '/'; // Asumsi production satu domain
 
@@ -9,8 +21,7 @@ export function useRealtimeSync(events) {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    if (!isLocal) {
+    if (!isLocalNetwork()) {
       console.log('ℹ️ [RealTime] WebSockets disabled in production Vercel environment.');
       return;
     }
