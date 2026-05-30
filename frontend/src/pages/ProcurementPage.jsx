@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { useProcurement } from '../hooks/useProcurement';
 import { 
   ShoppingCart, Plus, Trash2, Truck, Wallet, Boxes, Settings, Loader2, ShieldCheck, Printer, X, AlertTriangle, CheckCircle2
@@ -49,9 +50,18 @@ export default function ProcurementPage() {
     doConfirmPay,
     editingSupplierId, setEditingSupplierId
   } = useProcurement();
+  const location = useLocation();
   const [searchInvoiceSupplier, setSearchInvoiceSupplier] = React.useState('');
   const [sortField, setSortField] = React.useState('due_date');
   const [sortDirection, setSortDirection] = React.useState('asc');
+
+  React.useEffect(() => {
+    if (location.state?.triggerAutoReplenish) {
+      handleAutoReplenish();
+      // Clean up state in window history to prevent looping
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, handleAutoReplenish]);
 
   // 💡 Dynamic Supplier-Material Mapping & Grouping (STRICT SAFE VERSION)
   const getBahanOptions = () => {

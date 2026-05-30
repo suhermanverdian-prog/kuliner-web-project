@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatRupiah } from '../utils/formatters';
 import { useInventori } from '../hooks/useInventori';
 import InventoryFormModal from '../components/InventoryFormModal';
@@ -104,6 +105,7 @@ function getMaterialType(item) {
 
 
 export default function InventoriPage() {
+  const navigate = useNavigate();
   const {
     user,
     search, setSearch,
@@ -573,7 +575,10 @@ export default function InventoriPage() {
                       </p>
                    </div>
                 </div>
-                <Button className="w-full h-12 mt-4 font-black uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 text-white">
+                <Button 
+                  onClick={() => navigate('/procurement', { state: { triggerAutoReplenish: true } })}
+                  className="w-full h-12 mt-4 font-black uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 text-white active:scale-95 transition-all"
+                >
                     GENERATE PURCHASE ORDER
                 </Button>
              </div>
