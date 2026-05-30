@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import api from '../api';
 import { formatRupiah } from '../utils/formatters';
 import { useInventori } from '../hooks/useInventori';
 import InventoryFormModal from '../components/InventoryFormModal';
@@ -138,6 +139,11 @@ export default function InventoriPage() {
   const [selectedAssemblyBahanId, setSelectedAssemblyBahanId] = useState('');
   const [produceQty, setProduceQty] = useState('');
   const [newCatName, setNewCatName] = useState('');
+  const [showPoHubModal, setShowPoHubModal] = useState(false);
+  const [poHubGroups, setPoHubGroups] = useState([]);
+  const [poHubLoading, setPoHubLoading] = useState(false);
+  const [suppliersList, setSuppliersList] = useState([]);
+  const [unassignedSupplierId, setUnassignedSupplierId] = useState('');
 
 
   const getStockStatus = (item) => {
@@ -576,11 +582,55 @@ export default function InventoriPage() {
                    </div>
                 </div>
                 <Button 
-                  onClick={() => navigate('/procurement', { state: { triggerAutoReplenish: true } })}
-                  className="w-full h-12 mt-4 font-black uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 text-white active:scale-95 transition-all"
-                >
-                    GENERATE PURCHASE ORDER
-                </Button>
+                    onClick={async () => {
+                      try {
+                        setPoHubLoading(true);
+                        // Panggil saran prediksi AI cerdas yang sudah mencakup logika anti double-ordering OTW
+                        const suggestions = await api.getReplenishmentPredictions();
+                        
+                        // Filter: Hanya ambil bahan kritis yang memiliki suggestedQty > 0 dan isOtw = false
+                        const criticals = suggestions.filter(s => s.status === 'Kritis' && !s.isOtw && s.suggestedQty > 0);
+                        
+                        if (criticals.length === 0) {
+                          alert("🎉 Semua bahan baku terpantau aman (atau sudah memiliki Purchase Order yang sedang berjalan)!");
+                          return;
+                        }
+
+                        // Hubungkan dengan data supplier untuk mendapatkan nama supplier
+                        const sData = await api.getSuppliers();
+                        setSuppliersList(sData || []);
+                        if (sData && sData.length > 0) {
+                          setUnassignedSupplierId(sData[0].id);
+                        }
+
+                        const supplierMap = {};
+                        (sData || []).forEach(s => { supplierMap[s.id] = s.name; });
+
+                        // Kelompokkan bahan kritis berdasarkan supplier_id
+                        const groups = {};
+                        criticals.forEach(c => {
+                          const sId = c.supplier_id || 'unassigned';
+                          const sName = supplierMap[sId] || 'Tanpa Supplier / Vendor Lain';
+                          if (!groups[sId]) {
+                            groups[sId] = { id: sId, name: sName, items: [] };
+                          }
+                          groups[sId].items.push(c);
+                        });
+
+                        setPoHubGroups(Object.values(groups));
+                        setShowPoHubModal(true);
+                      } catch (e) {
+                        alert("Gagal memproses saran pengadaan AI: " + e.message);
+                      } finally {
+                        setPoHubLoading(false);
+                      }
+                    }}
+                    disabled={poHubLoading}
+                    className="w-full h-12 mt-4 font-black uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 text-white active:scale-95 transition-all flex items-center justify-center gap-2"
+                 >
+                      {poHubLoading ? <RefreshCw className="animate-spin" size={14} /> : <BrainCircuit size={14} />}
+                      {poHubLoading ? 'MEMPROSES REKOMENDASI...' : 'GENERATE PURCHASE ORDER'}
+                 </Button>
              </div>
              </div>
           </div>
@@ -936,7 +986,106 @@ export default function InventoriPage() {
                 </CardContent>
              </Card>
           </div>
-       )}
+        )}
+
+        {/* 🤖 AI Multi-PO Hub Confirmation Modal */}
+        {showPoHubModal && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 font-mono tabular-nums">
+            <Card className="w-full max-w-2xl shadow-2xl animate-in zoom-in-95 border border-border rounded-lg bg-card text-card-foreground overflow-hidden max-h-[85vh] flex flex-col">
+              <CardHeader className="border-b border-zinc-200 dark:border-zinc-800 p-6 bg-zinc-50 dark:bg-zinc-900 shrink-0">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <BrainCircuit className="text-amber-500 animate-pulse" size={24} />
+                    <div>
+                      <CardTitle className="text-lg font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50">🤖 AI Multi-PO Generation Hub</CardTitle>
+                      <CardDescription className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mt-1">Saran pengadaan cerdas terkelompok berdasarkan supplier</CardDescription>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setShowPoHubModal(false)}><X size={20} /></Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 overflow-y-auto flex-1 space-y-6 custom-scrollbar bg-background">
+                <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 border border-dashed border-amber-200 dark:border-amber-800 rounded-md text-xs text-amber-700 dark:text-amber-400 font-bold leading-relaxed">
+                  💡 AI berhasil menyusun rencana pengadaan cerdas. Bahan baku kritis dikelompokkan secara terpisah berdasarkan vendor masing-masing. Silakan klik <strong>Eksekusi PO</strong> pada vendor pilihan Anda untuk menyesuaikan kuantitas dan harga secara manual sebelum diajukan.
+                </div>
+
+                <div className="space-y-4">
+                  {poHubGroups.map((group, gIdx) => (
+                    <div key={gIdx} className="border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden shadow-sm bg-card">
+                      <div className="bg-[#fafaf9]/85/85 dark:bg-zinc-900/50 p-4 border-b border-zinc-200 dark:border-zinc-800 flex justify-between items-center gap-4 flex-wrap sm:flex-nowrap">
+                        <span className="text-xs font-black uppercase text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                          <Truck size={14} className="text-amber-500 shrink-0" /> {group.name}
+                        </span>
+                        
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {group.id === 'unassigned' ? (
+                            <div className="flex items-center gap-2 bg-white dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-700 rounded px-2 py-1 shadow-sm">
+                              <span className="text-[9px] text-zinc-500 dark:text-zinc-400 font-bold uppercase shrink-0">Alokasikan Supplier:</span>
+                              <select
+                                className="bg-transparent text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 outline-none cursor-pointer focus:ring-0"
+                                value={unassignedSupplierId}
+                                onChange={(e) => setUnassignedSupplierId(e.target.value)}
+                              >
+                                {suppliersList.map(s => (
+                                  <option key={s.id} value={s.id} className="text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-800">{s.name.toUpperCase()}</option>
+                                ))}
+                              </select>
+                            </div>
+                          ) : (
+                            <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 rounded text-[9px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">{group.items.length} Item</span>
+                          )}
+
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              const sId = group.id === 'unassigned' ? unassignedSupplierId : group.id;
+                              if (!sId) {
+                                alert("⚠️ Harap alokasikan supplier terlebih dahulu!");
+                                return;
+                              }
+                              setShowPoHubModal(false);
+                              navigate('/procurement', {
+                                state: {
+                                  prefilledPo: {
+                                    supplierId: sId,
+                                    items: group.items.map(it => ({
+                                      bahanId: it.id,
+                                      purchaseQty: it.suggestedQty,
+                                      purchaseUnit: it.unit || 'Unit',
+                                      unitPrice: 0
+                                    }))
+                                  }
+                                }
+                              });
+                            }}
+                            className="h-8 px-3 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 text-white rounded text-[10px] font-black uppercase active:scale-95 transition-all shadow-md flex items-center gap-1.5"
+                          >
+                            <ShoppingCart size={11} /> Eksekusi PO
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="p-4 divide-y divide-zinc-100 dark:divide-zinc-800 space-y-2">
+                        {group.items.map((item, iIdx) => (
+                          <div key={iIdx} className="flex justify-between items-center py-2 text-xs">
+                            <span className="font-bold text-zinc-800 dark:text-zinc-200 uppercase">{item.name}</span>
+                            <span className="font-mono font-black text-amber-600 dark:text-amber-400">
+                              Order: {item.suggestedQty.toLocaleString('id-ID')} <span className="text-[10px] font-bold text-zinc-400 uppercase">{item.unit}</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter className="p-6 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 shrink-0">
+                <Button className="w-full h-12 font-black uppercase text-xs rounded-md bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 active:scale-95 transition-all" onClick={() => setShowPoHubModal(false)}>
+                  Tutup AI Hub
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+        )}
 
       </div>
    );

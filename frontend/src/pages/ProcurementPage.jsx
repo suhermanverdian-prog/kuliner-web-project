@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useProcurement } from '../hooks/useProcurement';
 import { 
   ShoppingCart, Plus, Trash2, Truck, Wallet, Boxes, Settings, Loader2, ShieldCheck, Printer, X, AlertTriangle, CheckCircle2
@@ -51,6 +51,7 @@ export default function ProcurementPage() {
     editingSupplierId, setEditingSupplierId
   } = useProcurement();
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchInvoiceSupplier, setSearchInvoiceSupplier] = React.useState('');
   const [sortField, setSortField] = React.useState('due_date');
   const [sortDirection, setSortDirection] = React.useState('asc');
@@ -59,9 +60,27 @@ export default function ProcurementPage() {
     if (location.state?.triggerAutoReplenish) {
       handleAutoReplenish();
       // Clean up state in window history to prevent looping
-      window.history.replaceState({}, document.title);
+      try {
+        navigate(location.pathname, { replace: true, state: {} });
+      } catch (e) {
+        window.history.replaceState({}, document.title);
+      }
+    } else if (location.state?.prefilledPo) {
+      const { supplierId, items } = location.state.prefilledPo;
+      if (supplierId) {
+        setSelectedSupplier(supplierId);
+      }
+      if (items && items.length > 0) {
+        setPoItems(items);
+      }
+      // Clean up state in window history to prevent looping
+      try {
+        navigate(location.pathname, { replace: true, state: {} });
+      } catch (e) {
+        window.history.replaceState({}, document.title);
+      }
     }
-  }, [location.state, handleAutoReplenish]);
+  }, [location.state?.triggerAutoReplenish, location.state?.prefilledPo]);
 
   // 💡 Dynamic Supplier-Material Mapping & Grouping (STRICT SAFE VERSION)
   const getBahanOptions = () => {
@@ -143,9 +162,21 @@ export default function ProcurementPage() {
                 <div>
                    <CardTitle className="text-2xl">Material Requisition</CardTitle>
                    <CardDescription>Master level supply chain oversight</CardDescription>
-                   <Button variant="outline" size="sm" onClick={handleAutoReplenish} className="h-6 px-2 rounded-lg border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 active:scale-[0.98] transition-all">
-                       <Plus size={10} className="mr-1" /> AUTO-SCAN LOW STOCK
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={handleAutoReplenish} className="h-7 px-3 rounded-md border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 active:scale-[0.98] transition-all flex items-center gap-1.5 font-bold">
+                         <Plus size={12} /> AUTO-SCAN LOW STOCK
+                      </Button>
+                      <Button onClick={async () => {
+                        try {
+                          const res = await api.getReplenishmentPredictions();
+                          alert("🤖 AI ARIMA Replenishment Suggestions:\n\n" + res.map(r => `• ${r.name}: ${r.status} (Sisa ${r.daysRemaining} Hari) -> Saran PO: ${r.suggestedQty} ${r.unit}`).join("\n"));
+                        } catch (e) {
+                          alert("Gagal memuat prediksi: " + e.message);
+                        }
+                      }} className="h-7 px-3 rounded-md bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 shadow-md flex items-center gap-1.5 font-bold transition-all active:scale-95">
+                         <span className="animate-pulse">✨</span> REKOMENDASI AI
+                      </Button>
+                    </div>
                 </div>
                 <div className="w-72">
                   <Select 
