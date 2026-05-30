@@ -304,7 +304,7 @@ const apiProxy = new Proxy(apiBase, {
 
       // 1. Detect Method
       if (prop.startsWith('get')) method = 'GET';
-      else if (prop.startsWith('add') || prop.startsWith('post') || prop.startsWith('create') || prop.startsWith('assemble') || prop === 'login' || prop === 'closeShift') method = 'POST';
+      else if (prop.startsWith('add') || prop.startsWith('post') || prop.startsWith('create') || prop.startsWith('assemble') || prop.startsWith('start') || prop.startsWith('record') || prop.startsWith('complete') || prop.startsWith('approve') || prop.startsWith('cancel') || prop === 'login' || prop === 'closeShift') method = 'POST';
       else if (prop.startsWith('update') || prop.startsWith('put') || prop === 'confirmPayment') method = 'PUT';
       else if (prop.startsWith('delete')) method = 'DELETE';
       else if (prop === 'checkout' || prop === 'requestVoid' || prop === 'approveVoid') method = 'POST';
