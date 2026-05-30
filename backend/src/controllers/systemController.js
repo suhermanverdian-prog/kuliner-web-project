@@ -199,6 +199,26 @@ class SystemController {
       res.json([]);
     }
   }
+
+  async verifySystemIntegrity(req, res) {
+    try {
+      const { tenantId, role } = req.userContext || {};
+      
+      // 🔒 OWNER-ONLY: Pemindaian integritas kriptografis hanya untuk Owner & Superadmin
+      const allowedRoles = ['owner', 'superadmin'];
+      if (!allowedRoles.includes(role?.toLowerCase())) {
+        return res.status(403).json({ 
+          error: 'Akses Ditolak: Hanya Owner atau Superadmin yang dapat menjalankan pemindaian integritas sistem.' 
+        });
+      }
+
+      const TamperAuditService = require('../services/tamperAuditService');
+      const report = await TamperAuditService.verifySystemIntegrity(tenantId);
+      res.json(report);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 }
 
 module.exports = new SystemController();

@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.92% </span>
+                <span class="strong">3.27% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/51</span>
+                <span class='fraction'>2/61</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/42</span>
+                <span class='fraction'>0/56</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>0/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">5.4% </span>
+                <span class="strong">4.34% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/37</span>
+                <span class='fraction'>2/46</span>
             </div>
         
             
@@ -155,7 +155,28 @@
 <a name='L90'></a><a href='#L90'>90</a>
 <a name='L91'></a><a href='#L91'>91</a>
 <a name='L92'></a><a href='#L92'>92</a>
-<a name='L93'></a><a href='#L93'>93</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -202,10 +223,31 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -268,9 +310,9 @@ class ReportRepository {
     let query = <span class="cstat-no" title="statement not covered" >supabase.from('journal_lines')</span>
         .select('debit')
         .ilike('account_code', accountCodePattern)
-        .gte('date', dateFilterStr);
+        .gte('created_at', dateFilterStr);
     
-<span class="cstat-no" title="statement not covered" >    if (tenantId) <span class="cstat-no" title="statement not covered" >query = query.eq('journals.tenant_id', tenantId);</span></span>
+<span class="cstat-no" title="statement not covered" >    if (tenantId) <span class="cstat-no" title="statement not covered" >query = query.eq('tenant_id', tenantId);</span></span>
     
     const { data, error } = <span class="cstat-no" title="statement not covered" >await query;</span>
 <span class="cstat-no" title="statement not covered" >    if (error) <span class="cstat-no" title="statement not covered" >throw error;</span></span>
@@ -291,14 +333,35 @@ class ReportRepository {
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  as</span>ync getTopProducts(tenantId) {
-    let query = <span class="cstat-no" title="statement not covered" >supabase.from('transaction_items')</span>
-        .select('qty, price, menu(name, icon), transactions!inner(tenant_id)');
+    let query = <span class="cstat-no" title="statement not covered" >supabase.from('transactions')</span>
+        .select('items')
+        .eq('payment_status', 'paid');
         
-<span class="cstat-no" title="statement not covered" >    if (tenantId) <span class="cstat-no" title="statement not covered" >query = query.eq('transactions.tenant_id', tenantId);</span></span>
+<span class="cstat-no" title="statement not covered" >    if (tenantId) <span class="cstat-no" title="statement not covered" >query = query.eq('tenant_id', tenantId);</span></span>
     
     const { data, error } = <span class="cstat-no" title="statement not covered" >await query;</span>
 <span class="cstat-no" title="statement not covered" >    if (error) <span class="cstat-no" title="statement not covered" >throw error;</span></span>
-<span class="cstat-no" title="statement not covered" >    return data || [];</span>
+    
+    const parsedItems = <span class="cstat-no" title="statement not covered" >[];</span>
+<span class="cstat-no" title="statement not covered" >    (data || []).forEach(<span class="fstat-no" title="function not covered" >tx</span> =&gt; {</span>
+      let itemsArray = <span class="cstat-no" title="statement not covered" >[];</span>
+<span class="cstat-no" title="statement not covered" >      if (typeof tx.items === 'string') {</span>
+<span class="cstat-no" title="statement not covered" >        try { <span class="cstat-no" title="statement not covered" >itemsArray = JSON.parse(tx.items); </span>} catch(e) {}</span>
+      } else <span class="cstat-no" title="statement not covered" >if (Array.isArray(tx.items)) {</span>
+<span class="cstat-no" title="statement not covered" >        itemsArray = tx.items;</span>
+      }
+<span class="cstat-no" title="statement not covered" >      itemsArray.forEach(<span class="fstat-no" title="function not covered" >it</span>em =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        parsedItems.push({</span>
+          qty: item.qty || item.quantity || 0,
+          price: item.price || 0,
+          menu: {
+            name: item.name || item.menu_name || 'Unknown',
+            icon: item.icon || '☕'
+          }
+        });
+      });
+    });
+<span class="cstat-no" title="statement not covered" >    return parsedItems;</span>
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  as</span>ync getPaymentMethods(tenantId) {
@@ -346,7 +409,7 @@ module.exports = new ReportRepository();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-26T12:19:34.266Z
+                at 2026-05-30T10:26:30.605Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

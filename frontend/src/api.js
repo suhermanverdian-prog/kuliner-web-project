@@ -112,6 +112,7 @@ const getResource = (prop) => {
     'getConversions': 'p/conversions',
     'addGRN': 'p/grns',
     'addSimplePurchase': 'p/simple-purchase',
+    'getReplenishmentPredictions': 'p/replenishment-predictions',
     
     // Laporan (Reports)
     'getLaporanSummary': 'laporan/summary',
@@ -149,7 +150,7 @@ const getResource = (prop) => {
     'completeOpname': 'opname',
     'approveOpname': 'opname',
     'cancelOpname': 'opname',
-    'getOpnameOutletSummary': 'opname/outlet',
+    // NOTE: getOpnameOutletSummary is handled as a direct method below (not proxy)
   };
   return map[prop] || prop.replace(/get|add|update|delete|save/i, '').toLowerCase();
 };
@@ -277,6 +278,16 @@ const apiBase = {
 
   async getOpnameReconciliation() {
     return this.request(`${API_URL}/opname/accounting/reconciliation`, 'GET');
+  },
+
+  // FIX: outletId harus dikirim sebagai URL path param, bukan body (GET tidak boleh punya body)
+  async getOpnameOutletSummary(outletId) {
+    return this.request(`${API_URL}/opname/outlet/${outletId}/summary`, 'GET');
+  },
+
+  // Owner Security Audit: Endpoint verifikasi integritas kriptografis log audit
+  async getSystemIntegrity() {
+    return this.request(`${API_URL}/system/integrity`, 'GET');
   }
 };
 
@@ -357,9 +368,11 @@ const apiProxy = new Proxy(apiBase, {
       if (prop === 'getOpnameOutletSummary') url += '/summary';
 
       // --- ENTERPRISE QUERY ENGINE ---
-      if (method === 'GET' && payload && typeof payload === 'object') {
-        const params = new URLSearchParams(payload).toString();
-        if (params) url += (url.includes('?') ? '&' : '?') + params;
+      if (method === 'GET' && payload) {
+        if (typeof payload === 'object') {
+          const params = new URLSearchParams(payload).toString();
+          if (params) url += (url.includes('?') ? '&' : '?') + params;
+        }
         payload = null; // GET requests don't have bodies
       }
 

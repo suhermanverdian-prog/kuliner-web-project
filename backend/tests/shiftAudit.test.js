@@ -22,7 +22,7 @@ jest.mock('../src/supabase', () => {
 });
 
 
-const { app } = require('../src/server');
+const app = require('../src/server');
 
 describe('GET /api/shifts/:id/audit', () => {
   afterEach(() => {

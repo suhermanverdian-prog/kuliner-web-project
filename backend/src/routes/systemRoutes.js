@@ -105,4 +105,10 @@ router.put('/outlets/:id', systemController.updateOutlet);
  */
 router.delete('/outlets/:id', systemController.deleteOutlet);
 
+/**
+ * @route GET /api/system/integrity
+ * @desc Run cryptographic tamper audit on all audit logs — OWNER ONLY
+ */
+router.get('/integrity', systemController.verifySystemIntegrity);
+
 module.exports = router;

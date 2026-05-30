@@ -7,7 +7,8 @@ import {
   RefreshCw, CheckCircle2, AlertCircle,
   User, ShieldCheck, Mail, Lock,
   Store, Percent, CreditCard, Layout,
-  Image as ImageIcon, Upload, LogOut, X, Search
+  Image as ImageIcon, Upload, LogOut, X, Search,
+  ShieldAlert, AlertTriangle, FileCheck2, Fingerprint, ScanLine
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -152,6 +153,214 @@ function AddUserModal({ onClose, onSave, loading }) {
 }
 
 
+// ================================================================
+// 🔐 SecurityAuditPanel — Owner-Only Cryptographic Audit Portal
+// ================================================================
+function SecurityAuditPanel({ user }) {
+  const [scanning, setScanning] = useState(false);
+  const [report, setReport] = useState(null);
+  const [error, setError] = useState(null);
+  const isOwner = ['owner', 'superadmin'].includes(user?.role?.toLowerCase());
+
+  const handleScan = async () => {
+    setScanning(true);
+    setError(null);
+    setReport(null);
+    try {
+      const result = await api.getSystemIntegrity();
+      setReport(result);
+    } catch (err) {
+      setError(err.message || 'Gagal menjalankan pemindaian integritas.');
+    } finally {
+      setScanning(false);
+    }
+  };
+
+  const isCompliant = report?.integrityStatus === 'COMPLIANT';
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header Card */}
+      <Card className="border-none shadow-xl bg-card overflow-hidden">
+        <div className="h-1 w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600" />
+        <CardHeader className="border-b bg-background">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center shrink-0">
+                <Fingerprint className="text-amber-600 dark:text-amber-400" size={24} />
+              </div>
+              <div>
+                <CardTitle className="text-xl text-zinc-900 dark:text-zinc-100">Audit Integritas Kriptografis</CardTitle>
+                <CardDescription className="mt-1">
+                  Pemindaian real-time seluruh log audit menggunakan verifikasi tanda tangan HMAC-SHA256 untuk mendeteksi manipulasi data secara instan.
+                </CardDescription>
+              </div>
+            </div>
+            {report && (
+              <div className={cn(
+                "px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest flex items-center gap-2 shrink-0",
+                isCompliant
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800"
+                  : "bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-800"
+              )}>
+                {isCompliant ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+                {isCompliant ? 'COMPLIANT' : 'PELANGGARAN TERDETEKSI'}
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="p-8">
+          {/* Access Guard */}
+          {!isOwner ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center gap-6">
+              <div className="w-20 h-20 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+                <Shield size={40} className="text-zinc-400 dark:text-zinc-600" />
+              </div>
+              <div>
+                <p className="text-xl font-black text-zinc-900 dark:text-zinc-100">Akses Dibatasi</p>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2 max-w-sm">Fitur Audit Integritas Kriptografis hanya dapat diakses oleh <strong>Owner</strong> atau <strong>Superadmin</strong>.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Info boxes */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { icon: Fingerprint, label: 'Algoritma', value: 'HMAC-SHA256', color: 'text-amber-600 dark:text-amber-400' },
+                  { icon: ScanLine, label: 'Cakupan', value: 'Seluruh Audit Log', color: 'text-amber-600 dark:text-amber-400' },
+                  { icon: ShieldCheck, label: 'Standar', value: 'SCBD Grade Enterprise', color: 'text-amber-600 dark:text-amber-400' },
+                ].map((item, i) => (
+                  <div key={i} className="p-4 rounded-lg bg-background border border-zinc-200 dark:border-zinc-700 flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center shrink-0">
+                      <item.icon size={18} className={item.color} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">{item.label}</p>
+                      <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{item.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Scan Button & Radar Animation */}
+              <div className="flex flex-col items-center justify-center gap-6">
+                {scanning && (
+                  <div className="relative w-40 h-40 rounded-full border-4 border-amber-500/20 dark:border-amber-400/20 flex items-center justify-center overflow-hidden animate-pulse">
+                    <div className="absolute w-full h-full bg-gradient-to-tr from-transparent via-amber-500/10 to-amber-500/30 dark:via-amber-400/10 dark:to-amber-400/30 rounded-full animate-spin duration-1000" style={{ animationDuration: '1.5s' }} />
+                    <Fingerprint className="text-amber-500 dark:text-amber-400 w-16 h-16 animate-bounce" />
+                    <div className="absolute inset-0 border-t border-amber-500/40 dark:border-amber-400/40 rounded-full animate-spin duration-1000" />
+                  </div>
+                )}
+                
+                <Button
+                  onClick={handleScan}
+                  disabled={scanning}
+                  className={cn(
+                    "h-14 px-12 text-sm font-black uppercase tracking-widest rounded-lg transition-all active:scale-95 shadow-lg gap-3",
+                    "bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20",
+                    "dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 dark:shadow-amber-400/10"
+                  )}
+                >
+                  {scanning ? (
+                    <><RefreshCw size={20} className="animate-spin" /> Memindai Seluruh Log...</>
+                  ) : (
+                    <><ScanLine size={20} /> Jalankan Audit Integritas Sekarang</>
+                  )}
+                </Button>
+              </div>
+
+              {/* Error State */}
+              {error && (
+                <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 flex items-center gap-4">
+                  <AlertCircle className="text-rose-600 dark:text-rose-400 shrink-0" size={20} />
+                  <p className="text-sm font-bold text-rose-700 dark:text-rose-400">{error}</p>
+                </div>
+              )}
+
+              {/* Results */}
+              {report && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                      { label: 'Total Log Dipindai', value: report.totalLogsScanned, color: 'text-zinc-900 dark:text-zinc-100' },
+                      { label: 'Log Sehat & Valid', value: report.healthyLogsCount, color: 'text-emerald-600 dark:text-emerald-400' },
+                      { label: 'Log Terindikasi Manipulasi', value: report.tamperedLogsCount, color: report.tamperedLogsCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-zinc-500 dark:text-zinc-400' },
+                      { label: 'Status Sistem', value: report.integrityStatus, color: isCompliant ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400' },
+                    ].map((stat, i) => (
+                      <div key={i} className="p-4 rounded-lg bg-background border border-zinc-200 dark:border-zinc-700 text-center">
+                        <p className={cn("text-2xl font-black font-mono tabular-nums", stat.color)}>{stat.value}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400 mt-1">{stat.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Compliant Banner */}
+                  {isCompliant && (
+                    <div className="p-6 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 flex items-center gap-6">
+                      <div className="w-12 h-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center shrink-0">
+                        <FileCheck2 size={24} className="text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div>
+                        <p className="font-black text-emerald-700 dark:text-emerald-400 text-lg">Seluruh Log Audit Terverifikasi — Tidak Ada Manipulasi Terdeteksi</p>
+                        <p className="text-sm text-emerald-600/80 dark:text-emerald-500 mt-1">
+                          Semua <span className="font-black font-mono tabular-nums">{report.totalLogsScanned}</span> entri log memiliki signature HMAC-SHA256 yang valid dan belum pernah diubah.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Violated: Tampered Logs Table */}
+                  {!isCompliant && report.tamperedLogs?.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="p-4 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 flex items-center gap-4">
+                        <AlertTriangle size={20} className="text-rose-600 dark:text-rose-400 shrink-0" />
+                        <p className="text-sm font-bold text-rose-700 dark:text-rose-400">
+                          🚨 Terdeteksi <span className="font-black font-mono tabular-nums">{report.tamperedLogsCount}</span> entri log yang signature HMAC-nya tidak cocok. Kemungkinan data telah dimanipulasi secara langsung di database. Segera hubungi tim IT Anda.
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg border border-zinc-200 dark:border-zinc-700 overflow-hidden">
+                        <div className="bg-zinc-50 dark:bg-zinc-900 px-4 py-3 border-b border-zinc-200 dark:border-zinc-700">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Detail Log Terindikasi Dimanipulasi</p>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-zinc-50 dark:bg-zinc-900">
+                              <tr>
+                                {['ID Log', 'Penyebab', 'Action Type', 'Table'].map(h => (
+                                  <th key={h} className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-700">{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {report.tamperedLogs.map((log, i) => (
+                                <tr key={i} className={cn("border-b border-zinc-100 dark:border-zinc-800", i % 2 === 0 ? "bg-white dark:bg-zinc-800" : "bg-zinc-50/50 dark:bg-zinc-700/20")}>
+                                  <td className="px-4 py-3 font-mono tabular-nums text-xs text-zinc-500 dark:text-zinc-400">{String(log.id).slice(0, 8)}...</td>
+                                  <td className="px-4 py-3">
+                                    <span className="px-2 py-1 bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800 rounded text-[10px] font-black uppercase">{log.reason}</span>
+                                  </td>
+                                  <td className="px-4 py-3 font-mono text-xs text-zinc-700 dark:text-zinc-300">{log.record?.action_type || '-'}</td>
+                                  <td className="px-4 py-3 font-mono text-xs text-zinc-700 dark:text-zinc-300">{log.record?.table_name || '-'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 export default function PengaturanPage() {
   const fileInputRef = useRef(null);
   const {
@@ -199,7 +408,7 @@ export default function PengaturanPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2 bg-background p-1 rounded-lg border w-fit">
+      <div className="flex items-center gap-2 bg-background p-1 rounded-lg border w-fit flex-wrap">
         {[
           { key: 'users', label: 'Pengguna & Akses', icon: Users },
           { key: 'system', label: 'Pajak & Sistem', icon: Settings },
@@ -208,6 +417,7 @@ export default function PengaturanPage() {
           { key: 'marketplace', label: 'Marketplace', icon: Store },
           { key: 'subscription', label: 'Modul & Paket', icon: PackageOpen },
           { key: 'ai', label: 'Integrasi AI', icon: BrainCircuit },
+          { key: 'security', label: 'Keamanan & Audit', icon: ShieldAlert },
         ].map(t => (
           <button 
             key={t.key} 
@@ -220,6 +430,9 @@ export default function PengaturanPage() {
             <t.icon size={14} /> {t.label}
             {t.key === 'marketplace' && (!user?.tier || user?.tier === 'lite') && (
                <span className="text-white ">PRO</span>
+            )}
+            {t.key === 'security' && (
+              <span className="bg-amber-500 dark:bg-amber-400 text-white dark:text-zinc-900 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">BARU</span>
             )}
           </button>
         ))}
@@ -1297,6 +1510,11 @@ export default function PengaturanPage() {
           </Card>
         </div>
       )}
+
+      {/* ================================================================ */}
+      {/* TAB: KEAMANAN & AUDIT (OWNER-ONLY CRYPTOGRAPHIC SECURITY PORTAL) */}
+      {/* ================================================================ */}
+      {activeTab === 'security' && <SecurityAuditPanel user={user} />}
 
       {activeTab === 'ai' && (
         <Card className="border-none shadow-xl bg-card border-l-4 border-l-accent overflow-hidden">

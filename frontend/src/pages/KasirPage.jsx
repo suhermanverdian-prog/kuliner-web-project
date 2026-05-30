@@ -16,6 +16,7 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
 import { Skeleton } from "../components/ui/Skeleton";
+import DigitalReceipt from '../components/DigitalReceipt';
 
 const getImgUrl = (url) => {
   if (!url) return '';
@@ -672,6 +673,9 @@ export default function KasirPage({ user }) {
             <div>
               <h2 className="text-3xl font-black text-zinc-900 dark:text-zinc-50 mb-2">Transaksi Sukses!</h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">Pesanan telah dicatat dan masuk ke sistem KDS.</p>
+            </div>
+            <div className="flex justify-center max-h-[300px] overflow-y-auto border border-zinc-200 rounded-md p-2">
+              <DigitalReceipt transaction={lastTx} />
             </div>
             <div className="hidden"><div ref={receiptRef}><ReceiptTemplate tx={lastTx} user={user} /></div></div>
             <div className="grid grid-cols-2 gap-4">

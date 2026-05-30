@@ -20,6 +20,22 @@ const checkPeriodClosed = async (req, res, next) => {
       const isClosed = await ClosingService.checkDateClosed(tenantId, dateStr);
 
       if (isClosed) {
+        // Log secure audit trail for suspicious closed period mutation attempt (FR-1.3 & NFR-4)
+        try {
+          const TamperAuditService = require('../services/tamperAuditService');
+          await TamperAuditService.logSecureAudit({
+            action_type: 'VIOLATION_ATTEMPT',
+            table_name: 'transactions',
+            user_name: req.userContext?.name || 'Unknown User',
+            tenant_id: tenantId,
+            old_value: { method: req.method, path: req.originalUrl },
+            new_value: { body: req.body },
+            description: `Percobaan bypass penulisan transaksi di periode terkunci (${dateStr.slice(0, 10)})`
+          });
+        } catch (auditErr) {
+          console.warn('⚠️ [TamperAudit Warning] Gagal menulis secure audit log:', auditErr.message);
+        }
+
         return res.status(400).json({ 
           error: `Aksi ditolak: Periode akuntansi untuk tanggal ${dateStr.slice(0, 10)} sudah ditutup (Tutup Buku Bulanan).` 
         });

@@ -11,6 +11,7 @@ import {
 import { hasFeature, PAGE_FEATURE_MAP } from '../lib/featureFlags';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import SyncIndicator from './SyncIndicator';
 
 export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }) {
   const rawUser = useAppStore(state => state.user);
@@ -129,6 +130,11 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-2 py-4 space-y-6 custom-scrollbar">
+        {!isCollapsed && (
+          <div className="px-4 pb-2">
+            <SyncIndicator />
+          </div>
+        )}
         {navs.map((group, i) => (
           <div key={i} className="space-y-1">
             {!isCollapsed && (

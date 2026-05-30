@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">3.92% </span>
+                <span class="strong">3.22% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/51</span>
+                <span class='fraction'>2/62</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/32</span>
+                <span class='fraction'>0/42</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/11</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">5.26% </span>
+                <span class="strong">4.44% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/38</span>
+                <span class='fraction'>2/45</span>
             </div>
         
             
@@ -149,7 +149,25 @@
 <a name='L84'></a><a href='#L84'>84</a>
 <a name='L85'></a><a href='#L85'>85</a>
 <a name='L86'></a><a href='#L86'>86</a>
-<a name='L87'></a><a href='#L87'>87</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -172,6 +190,24 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -249,7 +285,7 @@ class AccountingRepository {
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  as</span>ync getAccounts(tenantId) {
-    let query = <span class="cstat-no" title="statement not covered" >supabase.from('accounts').select('*').order('code');</span>
+    let query = <span class="cstat-no" title="statement not covered" >supabase.from('accounts').select('id, tenant_id, code, name, category, normalBalance:normal_balance, is_active, created_at').order('code');</span>
 <span class="cstat-no" title="statement not covered" >    if (tenantId) <span class="cstat-no" title="statement not covered" >query = query.eq('tenant_id', tenantId);</span></span>
     
     const { data, error } = <span class="cstat-no" title="statement not covered" >await query;</span>
@@ -261,6 +297,24 @@ class AccountingRepository {
     let query = <span class="cstat-no" title="statement not covered" >supabase.from('journals').select('*, journal_lines(*)').order('date', { ascending: false });</span>
 <span class="cstat-no" title="statement not covered" >    if (tenantId) <span class="cstat-no" title="statement not covered" >query = query.eq('tenant_id', tenantId);</span></span>
     
+    const { data, error } = <span class="cstat-no" title="statement not covered" >await query;</span>
+<span class="cstat-no" title="statement not covered" >    if (error) <span class="cstat-no" title="statement not covered" >throw error;</span></span>
+<span class="cstat-no" title="statement not covered" >    return data || [];</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  as</span>ync getLedgerByAccount(tenantId, accountCode, startDate, endDate) {
+    let query = <span class="cstat-no" title="statement not covered" >supabase.from('journal_lines')</span>
+        .select(`
+            id, debit, credit, account_code, account_name, created_at,
+            journals!inner(id, date, reference, description, status)
+        `)
+        .eq('account_code', accountCode)
+        .order('created_at', { ascending: true });
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (tenantId) <span class="cstat-no" title="statement not covered" >query = query.eq('tenant_id', tenantId);</span></span>
+<span class="cstat-no" title="statement not covered" >    if (startDate) <span class="cstat-no" title="statement not covered" >query = query.gte('journals.date', startDate);</span></span>
+<span class="cstat-no" title="statement not covered" >    if (endDate) <span class="cstat-no" title="statement not covered" >query = query.lte('journals.date', endDate);</span></span>
+&nbsp;
     const { data, error } = <span class="cstat-no" title="statement not covered" >await query;</span>
 <span class="cstat-no" title="statement not covered" >    if (error) <span class="cstat-no" title="statement not covered" >throw error;</span></span>
 <span class="cstat-no" title="statement not covered" >    return data || [];</span>
@@ -328,7 +382,7 @@ module.exports = new AccountingRepository();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-26T12:19:34.266Z
+                at 2026-05-30T10:26:30.605Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

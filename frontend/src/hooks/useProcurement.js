@@ -167,18 +167,33 @@ export function useProcurement() {
   }, [bahanList]);
 
   const handleAutoReplenish = async () => {
+    if (!selectedSupplier) {
+      alert("Silakan pilih Supplier / Authorized Vendor terlebih dahulu!");
+      return;
+    }
     try {
       setActionLoading(true);
-      const lowStock = await api.getLowStock();
-      if (lowStock.length === 0) {
-        alert("Semua stok aman! Tidak ada bahan di bawah batas minimum.");
+      // Panggil saran prediksi AI cerdas yang sudah mencakup logika anti double-ordering OTW
+      const suggestions = await api.getReplenishmentPredictions();
+      
+      // Filter: Hanya bahan baku kritis milik selectedSupplier terpilih, yang OTW = false, dan memiliki suggestedQty > 0
+      const filtered = suggestions.filter(s => 
+        String(s.supplier_id) === String(selectedSupplier) && 
+        s.status === 'Kritis' && 
+        !s.isOtw &&
+        s.suggestedQty > 0
+      );
+      
+      if (filtered.length === 0) {
+        alert("Semua stok untuk Supplier ini terpantau aman (atau sudah memiliki Purchase Order yang sedang berjalan).");
         return;
       }
-      const newItems = lowStock.map(b => ({
+      
+      const newItems = filtered.map(b => ({
         bahanId: b.id,
-        purchaseQty: Math.max(10, b.min_stock * 2), // Suggestion: 2x min stock
+        purchaseQty: b.suggestedQty,
         purchaseUnit: b.unit || 'Unit',
-        unitPrice: b.cost || 0
+        unitPrice: Number(bahanList.find(x => x.id === b.id)?.cost) || 0
       }));
       setPoItems(newItems);
     } catch (err) {

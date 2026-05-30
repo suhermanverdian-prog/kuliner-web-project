@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">9.37% </span>
+                <span class="strong">9.09% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>3/32</span>
+                <span class='fraction'>3/33</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/29</span>
+                <span class='fraction'>0/45</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">10.71% </span>
+                <span class="strong">10.34% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>3/28</span>
+                <span class='fraction'>3/29</span>
             </div>
         
             
@@ -138,7 +138,21 @@
 <a name='L73'></a><a href='#L73'>73</a>
 <a name='L74'></a><a href='#L74'>74</a>
 <a name='L75'></a><a href='#L75'>75</a>
-<a name='L76'></a><a href='#L76'>76</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -163,10 +177,8 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -174,9 +186,25 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -237,7 +265,14 @@ class MenuService {
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  as</span>ync createMenu(menuData, bomDataArray, tenantId, outletId) {
-    const finalMenuData = <span class="cstat-no" title="statement not covered" >{ ...menuData, tenant_id: tenantId };</span>
+    const finalMenuData = <span class="cstat-no" title="statement not covered" >{</span>
+      name: menuData.name,
+      price: Number(menuData.price || 0),
+      image: menuData.image || null,
+      category: menuData.category || null,
+      is_active: menuData.is_active !== undefined ? menuData.is_active : true,
+      tenant_id: tenantId
+    };
     const newMenu = <span class="cstat-no" title="statement not covered" >await MenuRepository.createMenu(finalMenuData);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    if (bomDataArray &amp;&amp; Array.isArray(bomDataArray) &amp;&amp; newMenu) {</span>
@@ -255,7 +290,14 @@ class MenuService {
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  as</span>ync updateMenu(menuId, menuData, bomDataArray, tenantId, outletId) {
-<span class="cstat-no" title="statement not covered" >    await MenuRepository.updateMenu(menuId, tenantId, menuData);</span>
+    const finalMenuData = <span class="cstat-no" title="statement not covered" >{</span>
+      name: menuData.name,
+      price: Number(menuData.price || 0),
+      image: menuData.image || null,
+      category: menuData.category || null,
+      is_active: menuData.is_active !== undefined ? menuData.is_active : true
+    };
+<span class="cstat-no" title="statement not covered" >    await MenuRepository.updateMenu(menuId, tenantId, finalMenuData);</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    if (bomDataArray &amp;&amp; Array.isArray(bomDataArray)) {</span>
       // Refresh BOM: delete old and insert new
@@ -295,7 +337,7 @@ module.exports = new MenuService();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-26T12:19:34.266Z
+                at 2026-05-30T10:26:30.605Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

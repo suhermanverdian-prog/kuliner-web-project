@@ -7,6 +7,18 @@ const procurementController = require('../controllers/procurementController');
 // 1. GET ALL POS
 router.get('/pos', permissionGuard('procurement', 'view'), procurementController.getPurchaseOrders);
 
+// 1b. AI/ARIMA REPLENISHMENT PREDICTIONS
+router.get('/replenishment-predictions', permissionGuard('procurement', 'view'), async (req, res) => {
+  try {
+    const { tenantId } = req.userContext || {};
+    const PredictionService = require('../services/predictionService');
+    const suggestions = await PredictionService.getReplenishmentSuggestions(tenantId);
+    return res.json(suggestions);
+  } catch (err) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // 2. GET ALL INVOICES
 router.get('/invoices', permissionGuard('procurement', 'view'), procurementController.getInvoices);
 
