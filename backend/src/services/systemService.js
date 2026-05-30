@@ -209,7 +209,8 @@ class SystemService {
         ai_api_key: data.ai_api_key,
         is_ai_enabled: data.is_ai_enabled,
         void_approvers: data.void_approvers,
-        approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : false
+        approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : false,
+        opname_owner_approval_required: localSet.opname_owner_approval_required !== undefined ? localSet.opname_owner_approval_required : false
       };
     }
 
@@ -225,7 +226,8 @@ class SystemService {
       radius: 100,
       geofence_radius: 100,
       is_ai_enabled: false,
-      approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : false
+      approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : false,
+      opname_owner_approval_required: localSet.opname_owner_approval_required !== undefined ? localSet.opname_owner_approval_required : false
     };
   }
 
@@ -253,15 +255,23 @@ class SystemService {
   static async upsertSettings(payload, tenantId) {
     payload.tenant_id = tenantId;
     
-    // Save approval_workflow_enabled to local config
+    // Save approval_workflow_enabled & opname_owner_approval_required to local config
+    const localSet = getLocalSettings();
+    let changed = false;
     if (payload.approval_workflow_enabled !== undefined) {
-      const localSet = getLocalSettings();
       localSet.approval_workflow_enabled = !!payload.approval_workflow_enabled;
+      changed = true;
+    }
+    if (payload.opname_owner_approval_required !== undefined) {
+      localSet.opname_owner_approval_required = !!payload.opname_owner_approval_required;
+      changed = true;
+    }
+    if (changed) {
       saveLocalSettings(localSet);
     }
     
-    // Extract approval_workflow_enabled to prevent pg insert error if Supabase column doesn't exist
-    const { approval_workflow_enabled, ...cleanPayload } = payload;
+    // Extract local config variables to prevent pg insert error if columns don't exist
+    const { approval_workflow_enabled, opname_owner_approval_required, ...cleanPayload } = payload;
     
     const { data: existing } = await SystemRepository.getSettings(tenantId);
     const existingId = existing?.id;

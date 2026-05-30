@@ -42,6 +42,12 @@ router.get('/summary', permissionGuard('keuangan', 'view'), accountingController
 router.get('/accounts', accountingController.getAccounts);
 
 /**
+ * @route GET /api/accounting/ledger/:accountCode
+ * @desc Get General Ledger drill-down details for a specific account
+ */
+router.get('/ledger/:accountCode', accountingController.getLedgerDetails);
+
+/**
  * @route GET /api/accounting/journals
  * @desc Get Journal Entries
  */

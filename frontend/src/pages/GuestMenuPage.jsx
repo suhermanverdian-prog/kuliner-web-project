@@ -557,7 +557,7 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
 
 function CartDrawer({ cart, onClose, onChangeQty, onCheckout }) {
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const tax = Math.round(subtotal * 0.1);
+  const tax = Math.round(subtotal * 0.11);
   const total = subtotal + tax;
 
   return (
@@ -624,7 +624,7 @@ function CartDrawer({ cart, onClose, onChangeQty, onCheckout }) {
                 <span>{formatRupiah(subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm text-zinc-500 dark:text-zinc-100">
-                <span>Pajak (10%)</span>
+                <span>Pajak (11%)</span>
                 <span>{formatRupiah(tax)}</span>
               </div>
               <div className="flex justify-between text-lg font-black pt-2 border-t border-dashed">
@@ -737,15 +737,15 @@ export default function GuestMenuPage({ user }) {
       <header className="sticky top-0 z-[100] w-full border-b bg-background/80 backdrop-blur-xl">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-8 h-8 ">BM</div>
-            <span className="font-black text-xl tracking-tighter text-zinc-900 uppercase">KEN</span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500 text-zinc-950 font-black flex items-center justify-center text-sm shadow-md">BM</div>
+            <span className="font-black text-xl tracking-tighter text-zinc-900 dark:text-zinc-100 uppercase">BrewMaster</span>
           </div>
 
           <div className="flex items-center gap-4">
             {user ? (
-              <div className="flex items-center gap-2 bg-background py-1 pl-1 pr-3 rounded-lg border border-muted-foreground/10">
-                <div className="w-8 h-8 rounded-lg ">
-                  {user.name[0]}
+              <div className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg border border-border">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 text-zinc-900 font-bold flex items-center justify-center shadow-inner">
+                  {user.name[0].toUpperCase()}
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 leading-none">{user.points || 0} PTS</span>
@@ -776,24 +776,23 @@ export default function GuestMenuPage({ user }) {
         </div>
       </header>
 
-      {/* Hero Banner - Compact Version */}
-      <div className="relative overflow-hidden ">
+      {/* Hero Banner - Elegant Customer Theme */}
+      <div className="relative overflow-hidden py-10 bg-gradient-to-b from-amber-50/50 to-transparent dark:from-zinc-900/50">
         <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/20 dark:bg-amber-500/10 rounded-lg blur-[100px] -mr-32 -mt-32" />
         
-        <div className="max-w-3xl mx-auto relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="space-y-1">
-            <p className="text-amber-600 font-black uppercase tracking-[0.3em] text-[8px] mb-2">Dashboard KEN</p>
-            <h1 className="text-2xl md:text-3xl font-black text-zinc-900 tracking-tighter leading-none">
-              Ringkasan <span className="text-zinc-500 dark:text-zinc-400">Keuangan & Menu</span>
+        <div className="max-w-3xl mx-auto px-6 relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-amber-600 dark:text-amber-400 font-black uppercase tracking-[0.3em] text-[9px] mb-1">BrewMaster Culinary</p>
+            <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-zinc-50 tracking-tighter leading-none">
+              Crafted Coffee & <span className="text-amber-500 italic">Premium Desserts</span>
             </h1>
-            <p className="text-[10px] md:text-[11px] text-zinc-500 font-medium max-w-[240px] leading-tight">
-              Pantau operasional terintegrasi secara real-time.
+            <p className="text-[11px] md:text-xs text-zinc-500 dark:text-zinc-400 font-medium max-w-[400px] leading-relaxed">
+              Pilih menu favorit Anda, lakukan pemesanan secara praktis dari meja, dan nikmati karya racikan terbaik dari barista kami.
             </p>
           </div>
           <div className="hidden md:block pb-1">
              <div className="flex gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-lg "/> System Active</span>
-                <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-lg "/> v1.0.4</span>
+                <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse"/> Dapur Siap Melayani</span>
              </div>
           </div>
         </div>
@@ -864,15 +863,15 @@ export default function GuestMenuPage({ user }) {
                           <button 
                             id={`btn-tambah-${item.id}`}
                             onClick={() => addToCart(item)}
-                            className="w-10 h-10 rounded-lg "
+                            className="w-10 h-10 rounded-lg bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 flex items-center justify-center shadow-md active:scale-90 transition-all"
                           >
                             <Plus size={20} />
                           </button>
                         ) : (
                           <div className="flex items-center gap-4 bg-background/50 backdrop-blur-md rounded-lg p-1 border">
-                            <button onClick={() => changeQty(item.id, -1)} className="w-8 h-8 rounded-lg hover:bg-background transition-colors flex items-center justify-center"><Minus size={14} /></button>
-                            <span className="font-black text-sm">{qty}</span>
-                            <button onClick={() => changeQty(item.id, 1)} className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center"><Plus size={14} /></button>
+                            <button onClick={() => changeQty(item.id, -1)} className="w-8 h-8 rounded-lg hover:bg-background transition-colors flex items-center justify-center text-foreground"><Minus size={14} /></button>
+                            <span className="font-black text-sm text-foreground">{qty}</span>
+                            <button onClick={() => changeQty(item.id, 1)} className="w-8 h-8 rounded-lg bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 flex items-center justify-center shadow-md"><Plus size={14} /></button>
                           </div>
                         )}
                       </div>
@@ -913,10 +912,10 @@ export default function GuestMenuPage({ user }) {
               <Button 
                 onClick={() => {
                   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-                  const total = subtotal + Math.round(subtotal * 0.1);
+                  const total = subtotal + Math.round(subtotal * 0.11);
                   setCheckoutTotal(total);
                 }}
-                className=""
+                className="bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 flex-[2] h-10 md:h-14 font-black shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 rounded-lg active:scale-95 transition-all"
               >
                 Pesan <span className="hidden xs:inline ml-1">Sekarang</span>
                 <ChevronRight size={16} className="ml-1 md:ml-2 group-hover:translate-x-1 transition-transform md:w-6 md:h-6" />

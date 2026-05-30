@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const TransactionRepository = require('../repositories/transactionRepository');
+const FifoRepository = require('../repositories/fifoRepository');
 const { getConversion } = require('../utils/conversion');
 
 class TransactionService {
@@ -232,8 +233,14 @@ class TransactionService {
             const conv = getConversion(bInfo);
             const baseUsedQty = usedQty / conv.ratio;
 
-            const itemHpp = Math.round(baseUsedQty * (bInfo.cost || 0));
-            totalHpp += itemHpp;
+            try {
+                const itemHpp = await FifoRepository.deductStockFifo(tenantId, bInfo.id, baseUsedQty);
+                totalHpp += itemHpp;
+            } catch (fifoErr) {
+                console.error("⚠️ [FIFO Error] Gagal menghitung HPP via FIFO, fallback ke average cost:", fifoErr.message);
+                const itemHpp = Math.round(baseUsedQty * (bInfo.cost || 0));
+                totalHpp += itemHpp;
+            }
 
             const { error: updErr } = await TransactionRepository.decrementStockAtomic(bInfo.id, baseUsedQty, tenantId);
 

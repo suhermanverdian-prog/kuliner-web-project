@@ -8,6 +8,38 @@ const STATUS_CONFIG = {
   ready:   { next: 'served' },
 };
 
+// Premium Synthesizer Kitchen Chime Sound
+const playPremiumChime = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    const playNote = (freq, startTime, duration) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, startTime);
+      
+      gain.gain.setValueAtTime(0.15, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+    
+    // Play elegant kitchen chime (E5 -> A5)
+    playNote(659.25, ctx.currentTime, 0.3);
+    playNote(880.00, ctx.currentTime + 0.12, 0.6);
+  } catch (e) {
+    console.warn('⚠️ Gagal memutar suara KDS:', e.message);
+  }
+};
+
 const mapTransactionToOrder = (t) => {
   if (!t) return null;
   
@@ -61,6 +93,7 @@ export function useKDSPage() {
   useRealtimeSync({
     'NEW_TRANSACTION': (newOrder) => {
       console.log('🔔 [KDS] Pesanan Baru Diterima:', newOrder.order_number);
+      playPremiumChime();
       
       const formatted = mapTransactionToOrder(newOrder);
       if (formatted && formatted.paymentStatus === 'paid' && formatted.items.length > 0) {

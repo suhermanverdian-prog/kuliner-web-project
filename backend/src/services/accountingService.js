@@ -371,6 +371,56 @@ class AccountingService {
     return { journalId: journal.id, totalSalary };
   }
 
+  static async getLedgerDetails(tenantId, accountCode, period) {
+    let startDate = null;
+    let endDate = new Date().toISOString();
+    
+    if (period === 'today') {
+      const d = new Date();
+      d.setHours(0,0,0,0);
+      startDate = d.toISOString();
+    } else if (period === '7days') {
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      startDate = d.toISOString();
+    } else if (period === '30days') {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      startDate = d.toISOString();
+    }
+
+    const lines = await AccountingRepository.getLedgerByAccount(tenantId, accountCode, startDate, endDate);
+    const account = await AccountingRepository.getAccountByCode(tenantId, accountCode);
+    
+    if (!account) throw new Error('Akun tidak ditemukan');
+
+    // Calculate running balance
+    let runningBalance = 0;
+    const isDebitNormal = account.normal_balance === 'Debit';
+
+    const enrichedLines = lines.map(l => {
+      const debit = Number(l.debit) || 0;
+      const credit = Number(l.credit) || 0;
+      
+      if (isDebitNormal) {
+        runningBalance += (debit - credit);
+      } else {
+        runningBalance += (credit - debit);
+      }
+      
+      return {
+        ...l,
+        running_balance: runningBalance
+      };
+    });
+
+    return {
+      account,
+      period,
+      mutations: enrichedLines,
+      ending_balance: runningBalance
+    };
+  }
 }
 
 module.exports = AccountingService;

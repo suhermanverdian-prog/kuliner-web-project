@@ -44,6 +44,8 @@ const ProcurementPage = lazy(() => import('@/pages/ProcurementPage'));
 const TaxReportPage = lazy(() => import('@/pages/TaxReportPage'));
 const InventoryIntelligencePage = lazy(() => import('@/pages/InventoryIntelligencePage'));
 const BudgetPage = lazy(() => import('@/pages/BudgetPage'));
+const BukuBesarPage = lazy(() => import('@/pages/BukuBesarPage'));
+const StokOpnamePage = lazy(() => import('@/pages/StokOpnamePage'));
 
 // Elite Loading Component
 const PageLoader = () => (
@@ -172,6 +174,7 @@ function AppRoutes() {
           <Route path="/pembelian" element={<Navigate to="/procurement" replace />} />
           <Route path="/ai-assistant" element={<AIAssistantPage />} />
           <Route path="/accounting" element={<AkunPage />} />
+          <Route path="/buku-besar" element={<BukuBesarPage />} />
           <Route path="/command-center" element={<CommandCenterPage />} />
           <Route path="/revenue-intel" element={<RevenueIntelligencePage />} />
           <Route path="/report-builder" element={<ReportBuilderPage />} />
@@ -184,6 +187,7 @@ function AppRoutes() {
           <Route path="/laporan-absensi" element={<LaporanAbsensiPage />} />
           <Route path="/hrd" element={<LaporanHRDPage />} />
           <Route path="/marketplace" element={<MarketplacePage />} />
+          <Route path="/opname" element={<StokOpnamePage />} />
           <Route path="/customer" element={user?.role === 'customer' ? <CustomerPortalPage /> : <Navigate to="/login" replace />} />
         </Route>
 

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const ProcurementRepository = require('../repositories/procurementRepository');
+const FifoRepository = require('../repositories/fifoRepository');
 
 class ProcurementService {
   
@@ -380,7 +381,17 @@ class ProcurementService {
             
             try {
                 await ProcurementRepository.updateBahanStockAndCost(item.bahanId, newStock, baseUnitCost);
-            } catch (e) {}
+                // Menambahkan ke tabel FIFO Batches
+                await FifoRepository.addBatch({
+                    tenant_id: tenantId,
+                    bahan_id: item.bahanId,
+                    qty_initial: qtyAdded,
+                    cost_per_unit: baseUnitCost,
+                    po_id: po_id
+                });
+            } catch (e) {
+                console.error("Gagal update stok atau FIFO:", e);
+            }
 
             if (fs.existsSync(dataPath)) {
                 try {

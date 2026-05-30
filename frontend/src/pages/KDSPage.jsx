@@ -54,11 +54,20 @@ function WaitTime({ since }) {
     return () => clearInterval(t);
   }, [since]);
   
-  const color = mins < 5 ? "text-amber-500 dark:text-amber-400" : mins < 10 ? "text-amber-600 dark:text-amber-500" : "text-rose-600 dark:text-rose-400 dark:text-rose-400";
+  const isAlarm = mins >= 10;
+  const color = mins < 5 
+    ? "text-amber-500 dark:text-amber-400" 
+    : mins < 10 
+      ? "text-amber-600 dark:text-amber-500" 
+      : "text-rose-600 dark:text-rose-400 font-extrabold animate-bounce";
   
   return (
-    <div className={cn("flex items-center gap-2 px-4 py-1.5 rounded-lg bg-card border border-border shadow-lg", color)}>
-      <Timer size={14} className="animate-pulse font-mono tabular-nums" />
+    <div className={cn(
+      "flex items-center gap-2 px-4 py-1.5 rounded-lg border shadow-lg transition-all", 
+      isAlarm ? "bg-rose-500/10 border-rose-500/30" : "bg-card border-border",
+      color
+    )}>
+      <Timer size={14} className={cn("font-mono tabular-nums", isAlarm ? "animate-spin" : "animate-pulse")} />
       <span className="font-mono tabular-nums text-[11px] font-black uppercase tracking-[0.2em]">{mins}m</span>
     </div>
   );
@@ -147,24 +156,47 @@ export default function KDSPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-          {filtered.map(order => {
+          {filtered.map((order, idx) => {
             const cfg = STATUS_CONFIG[order.kdsStatus];
             if (!cfg) return null;
             const Icon = cfg.icon;
             const BtnIcon = cfg.btnIcon;
             
+            // FIFO Priority: Order pertama yang berstatus 'new' atau 'cooking' dalam antrean adalah prioritas utama
+            const isFifoPriority = order.id === filtered.find(o => o.kdsStatus === 'new' || o.kdsStatus === 'cooking')?.id;
+            
             return (
               <Card key={order.id} className={cn(
                 "border border-border shadow-xl overflow-hidden flex flex-col transition-all duration-300 rounded-lg hover:scale-[1.02] active:scale-[0.98]",
-                order.kdsStatus === 'new' ? "bg-card ring-2 ring-primary/20" : "bg-card"
+                isFifoPriority 
+                  ? "bg-card ring-4 ring-amber-500/40 dark:ring-amber-400/35 border-amber-500/50 shadow-amber-500/5 dark:shadow-amber-400/5 animate-pulse-subtle" 
+                  : order.kdsStatus === 'new' 
+                    ? "bg-card ring-2 ring-primary/20" 
+                    : "bg-card"
               )}>
                 {/* Status Header */}
-                <div className={cn("p-4 flex items-center justify-between border-b", cfg.bg)}>
+                <div className={cn(
+                  "p-4 flex items-center justify-between border-b transition-colors", 
+                  isFifoPriority ? "bg-amber-500/5 dark:bg-amber-400/5" : cfg.bg
+                )}>
                    <div className="flex items-center gap-2">
-                      <div className={cn("p-2 rounded-md bg-background/80 shadow-sm", cfg.color)}>
+                      <div className={cn(
+                        "p-2 rounded-md bg-background/80 shadow-sm", 
+                        isFifoPriority ? "text-amber-600 dark:text-amber-400" : cfg.color
+                      )}>
                          <Icon size={16} />
                       </div>
-                      <span className={cn("text-[10px] font-black uppercase tracking-widest", cfg.color)}>{cfg.label}</span>
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5", 
+                        isFifoPriority ? "text-amber-600 dark:text-amber-400" : cfg.color
+                      )}>
+                        {cfg.label}
+                        {isFifoPriority && (
+                          <span className="px-1.5 py-0.5 rounded-sm bg-amber-500 text-zinc-950 text-[8px] font-black tracking-widest animate-pulse leading-none">
+                            FIFO PRIORITY
+                          </span>
+                        )}
+                      </span>
                    </div>
                    <WaitTime since={order.paidAt || order.createdAt} />
                 </div>

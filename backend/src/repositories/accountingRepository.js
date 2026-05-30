@@ -29,6 +29,24 @@ class AccountingRepository {
     return data || [];
   }
 
+  async getLedgerByAccount(tenantId, accountCode, startDate, endDate) {
+    let query = supabase.from('journal_lines')
+        .select(`
+            id, debit, credit, account_code, account_name, created_at,
+            journals!inner(id, date, reference, description, status)
+        `)
+        .eq('account_code', accountCode)
+        .order('created_at', { ascending: true });
+
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+    if (startDate) query = query.gte('journals.date', startDate);
+    if (endDate) query = query.lte('journals.date', endDate);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
   async getAccountByCode(tenantId, code) {
     const { data, error } = await supabase.from('accounts')
         .select('*')

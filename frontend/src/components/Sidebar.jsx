@@ -6,7 +6,7 @@ import {
   Users, Settings, Lock, LogOut, Armchair,
   ChevronLeft, ChevronRight, Scale, Building2,
   BrainCircuit, Command, TrendingUp, FileStack, Landmark, 
-  Trash2, Truck
+  Trash2, Truck, ClipboardList
 } from 'lucide-react';
 import { hasFeature, PAGE_FEATURE_MAP } from '../lib/featureFlags';
 import { cn } from "@/lib/utils";
@@ -39,6 +39,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     ]},
     { group: 'Produk & Stok', items: [
       { id: '/inventory', icon: Layers,          label: 'Bahan Baku',     roles: ['owner','manager','chef','accounting','staff'],            perm: 'akses_gudang' },
+      { id: '/opname',    icon: ClipboardList,   label: 'Stok Opname',    roles: ['owner','manager','chef','accounting','staff'],            perm: 'akses_gudang' },
       { id: '/inventory-intel', icon: BrainCircuit, label: 'Stock Intelligence', roles: ['owner','manager','chef','accounting'], perm: 'akses_gudang' },
       { id: '/waste-monitoring', icon: Trash2,   label: 'Zero-Waste',     roles: ['owner','manager','chef'],            perm: 'akses_gudang' },
       { id: '/logistics-hub',    icon: Truck,    label: 'Logistics Hub',  roles: ['owner','manager'],                   perm: 'akses_gudang' },

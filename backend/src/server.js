@@ -64,17 +64,22 @@ app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
   const activityLog = require('./middleware/activityLog');
   app.use(activityLog);
 
+  const closingGuard = require('./middleware/closingGuard');
+
   app.use('/api', require('./routes/userRoutes'));
   app.use('/api/menu', require('./routes/menuRoutes'));
-  app.use('/api/transactions', require('./routes/transactionRoutes'));
+  app.use('/api/transactions', closingGuard, require('./routes/transactionRoutes'));
   app.use('/api/system', require('./routes/systemRoutes'));
   app.use('/api/inventory', requireFeature('inventory'), require('./routes/inventoryRoutes'));
-  app.use('/api/accounting', requireFeature('accounting'), require('./routes/accountingRoutes'));
+  app.use('/api/opname', requireFeature('inventory'), closingGuard, require('./routes/opnameRoutes'));
+  app.use('/api/accounting', requireFeature('accounting'), closingGuard, require('./routes/accountingRoutes'));
   app.use('/api/shifts', requireFeature('shift'), require('./routes/shiftRoutes'));
   app.use('/api/ai', requireFeature('ai_insights'), require('./routes/aiRoutes'));
   app.use('/api/p', requireFeature('procurement'), require('./routes/procurementRoutes'));
   app.use('/api/laporan', require('./routes/reportRoutes'));
   app.use('/api/promo-codes', require('./routes/promoCodeRoutes'));
+  app.use('/api/assets', requireFeature('accounting'), require('./routes/assetRoutes'));
+  app.use('/api/closings', requireFeature('accounting'), require('./routes/closingRoutes'));
 
   const { supabase } = require('./supabase');
   app.post('/api/upload', upload.single('image'), async (req, res) => {
@@ -129,11 +134,13 @@ app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
   const PORT = process.env.PORT || 3001;
   const { startSyncDaemon } = require('./services/syncService');
+  const { initJobs } = require('./jobs');
 
   startServer = () => {
     server.listen(PORT, () => {
       console.log(`🚀 KEN ENTERPRISE CORE ACTIVE ON PORT ${PORT}`);
       startSyncDaemon();
+      initJobs();
     });
   };
 

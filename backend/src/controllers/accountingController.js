@@ -35,6 +35,19 @@ class AccountingController {
     }
   }
 
+  async getLedgerDetails(req, res) {
+    try {
+      const { tenantId } = req.userContext || {};
+      const { accountCode } = req.params;
+      const { period } = req.query;
+      const result = await AccountingService.getLedgerDetails(tenantId, accountCode, period);
+      res.json(result);
+    } catch (err) {
+      console.error('❌ [Ledger Details Error]:', err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
   async recordExpense(req, res) {
     try {
       const { tenantId } = req.userContext || {};

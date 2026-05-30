@@ -140,6 +140,16 @@ const getResource = (prop) => {
     'saveBudget': 'accounting/budgets',
     'deleteBudget': 'accounting/budgets',
     'getBudgetVariance': 'accounting/budgets/variance',
+
+    // Stok Opname (Blind SO)
+    'getOpnameSessions': 'opname',
+    'getOpnameSessionById': 'opname',
+    'startOpname': 'opname',
+    'recordOpnameCount': 'opname',
+    'completeOpname': 'opname',
+    'approveOpname': 'opname',
+    'cancelOpname': 'opname',
+    'getOpnameOutletSummary': 'opname/outlet',
   };
   return map[prop] || prop.replace(/get|add|update|delete|save/i, '').toLowerCase();
 };
@@ -160,14 +170,15 @@ const apiBase = {
       if (!response.ok) {
         // --- KEN ENTERPRISE: GLOBAL 401 INTERCEPTOR ---
         if (response.status === 401) {
-          const isGuestApp = window.location.hash.includes('/guest') || window.location.hash.includes('/store');
+          const path = window.location.pathname;
+          const isGuestApp = path.includes('/guest') || path.includes('/store') || path.includes('/order');
           
           if (!isGuestApp) {
             console.warn(`[KEN API] 401 Unauthorized Detected. Forcing logout to prevent stale session...`);
             localStorage.removeItem('ken-enterprise-storage');
             localStorage.removeItem('token');
             localStorage.removeItem('tenantId');
-            window.location.href = '/#/login';
+            window.location.href = '/login'; // Correct BrowserRouter path
           }
         }
 
@@ -223,6 +234,49 @@ const apiBase = {
       body: JSON.stringify(data)
     });
     return res.json();
+  },
+
+  // ====================================================================
+  // Scheduled Opname & Accounting Integration Direct API Methods
+  // ====================================================================
+  async getOpnameSchedules() {
+    return this.request(`${API_URL}/opname/schedules`, 'GET');
+  },
+
+  async addOpnameSchedule(data) {
+    return this.request(`${API_URL}/opname/schedules`, 'POST', data);
+  },
+
+  async updateOpnameSchedule(id, data) {
+    return this.request(`${API_URL}/opname/schedules/${id}`, 'PUT', data);
+  },
+
+  async deleteOpnameSchedule(id) {
+    return this.request(`${API_URL}/opname/schedules/${id}`, 'DELETE');
+  },
+
+  async getOpnameScheduleHistory(id) {
+    return this.request(`${API_URL}/opname/schedules/${id}/history`, 'GET');
+  },
+
+  async getOpnameTemplates() {
+    return this.request(`${API_URL}/opname/accounting/templates`, 'GET');
+  },
+
+  async createOpnameTemplate(data) {
+    return this.request(`${API_URL}/opname/accounting/templates`, 'POST', data);
+  },
+
+  async createOpnameJournals(sessionId, templateId = null) {
+    return this.request(`${API_URL}/opname/${sessionId}/journals/create`, 'POST', { templateId });
+  },
+
+  async postOpnameJournals(sessionId, data) {
+    return this.request(`${API_URL}/opname/${sessionId}/journals/post`, 'POST', data);
+  },
+
+  async getOpnameReconciliation() {
+    return this.request(`${API_URL}/opname/accounting/reconciliation`, 'GET');
   }
 };
 
@@ -296,6 +350,11 @@ const apiProxy = new Proxy(apiBase, {
       if (prop === 'updateKdsStatus') url += '/kds';
       if (prop === 'requestVoid') url += '/request-void';
       if (prop === 'approveVoid') url += '/approve-void';
+      if (prop === 'recordOpnameCount') url += '/record';
+      if (prop === 'completeOpname') url += '/complete';
+      if (prop === 'approveOpname') url += '/approve';
+      if (prop === 'cancelOpname') url += '/cancel';
+      if (prop === 'getOpnameOutletSummary') url += '/summary';
 
       // --- ENTERPRISE QUERY ENGINE ---
       if (method === 'GET' && payload && typeof payload === 'object') {

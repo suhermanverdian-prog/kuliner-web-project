@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const InventoryService = require('../services/inventoryService');
+const OpnameScheduler = require('../services/opnameScheduler');
 const { supabase } = require('../supabase');
 
 /**
@@ -18,7 +19,6 @@ const initJobs = () => {
       
       for (const t of (tenants || [])) {
         await InventoryService.getStockPredictions(t.tenant_id);
-        // Di masa depan: Kirim notifikasi WA/Email jika ada yang kritis
       }
     } catch (err) {
       console.error('❌ [Worker] Inventory Check Failed:', err.message);
@@ -28,13 +28,22 @@ const initJobs = () => {
   // 2. Bersihkan Log Lama (Setiap Malam Jam 00:00)
   cron.schedule('0 0 * * *', async () => {
     console.log('🧹 [Worker] Nightly System Cleanup Started...');
-    // Logic: Archive transaction logs older than 2 years, etc.
   });
 
   // 3. Neural Prediction Pre-calculation (Setiap 6 Jam)
   cron.schedule('0 */6 * * *', async () => {
     console.log('🧠 [Worker] Updating Neural Stock Models...');
   });
+
+  // 4. Scheduled Opname Engine Trigger (Setiap Menit)
+  cron.schedule('* * * * *', async () => {
+    try {
+      await OpnameScheduler.executeScheduledJobs();
+    } catch (err) {
+      console.error('❌ [Worker] Scheduled Opname Job Failed:', err.message);
+    }
+  });
 };
 
 module.exports = { initJobs };
+

@@ -784,7 +784,7 @@ export default function PengaturanPage() {
                         className={cn(
                           "flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer select-none",
                           isChecked
-                            ? "bg-amber-50 dark:bg-amber-950/20 border-amber-500/30 text-amber-900 dark:text-amber-400"
+                            ? "bg-amber-500/10 dark:bg-amber-400/10 border-amber-500/30 text-amber-900 dark:text-amber-400"
                             : "bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-700/50"
                         )}
                         onClick={() => {
@@ -819,12 +819,18 @@ export default function PengaturanPage() {
                           setSettings({ ...settings, void_approvers: newApprovers });
                         }}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          readOnly
-                          className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 dark:focus:ring-amber-400 accent-amber-500 cursor-pointer"
-                        />
+                        <div className={cn(
+                          "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors",
+                          isChecked 
+                            ? "bg-amber-500 border-amber-500 dark:bg-amber-400 dark:border-amber-400" 
+                            : "bg-white border-zinc-300 dark:bg-zinc-800 dark:border-zinc-600"
+                        )}>
+                          {isChecked && (
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="text-white dark:text-zinc-900">
+                              <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                          )}
+                        </div>
                         <span className="text-xs font-bold uppercase tracking-wider">{roleItem.label}</span>
                       </div>
                     );
@@ -843,12 +849,46 @@ export default function PengaturanPage() {
                       Pencatatan beban ≥ Rp 10.000.000 wajib disetujui Owner sebelum diposting ke Buku Besar.
                     </p>
                   </div>
-                  <input 
-                    type="checkbox" 
-                    className="w-10 h-6 accent-amber-500 cursor-pointer shrink-0" 
-                    checked={settings.approval_workflow_enabled !== false} 
-                    onChange={e => setSettings({ ...settings, approval_workflow_enabled: e.target.checked })} 
-                  />
+                  <button 
+                    onClick={() => setSettings({ ...settings, approval_workflow_enabled: !(settings.approval_workflow_enabled !== false) })}
+                    className={cn(
+                      "w-12 h-6 rounded-full transition-all relative flex items-center shrink-0 border-2",
+                      settings.approval_workflow_enabled !== false 
+                        ? "bg-amber-500 border-amber-500 dark:bg-amber-400 dark:border-amber-400" 
+                        : "bg-zinc-200 dark:bg-zinc-700 border-transparent"
+                    )}
+                  >
+                    <span className={cn(
+                      "w-5 h-5 bg-white dark:bg-zinc-900 rounded-full shadow transition-transform absolute", 
+                      settings.approval_workflow_enabled !== false ? "translate-x-6" : "translate-x-0"
+                    )} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-dashed border-zinc-150 dark:border-zinc-800">
+                  <div>
+                    <h4 className="font-bold flex items-center gap-2">
+                      <ShieldCheck className="text-amber-600 dark:text-amber-400" size={18} />
+                      Otoritas Akhir Stok Opname (Owner Approval)
+                    </h4>
+                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 uppercase font-bold tracking-wider mt-1">
+                      Aktifkan jika penyesuaian stok wajib ditinjau langsung oleh Owner. Jika mati, Manajer yang Anda bayar dapat langsung menyetujui & memposting tanpa mengganggu Anda!
+                    </p>
+                  </div>
+                  <button 
+                    onClick={() => setSettings({ ...settings, opname_owner_approval_required: !(settings.opname_owner_approval_required === true) })}
+                    className={cn(
+                      "w-12 h-6 rounded-full transition-all relative flex items-center shrink-0 border-2",
+                      settings.opname_owner_approval_required === true 
+                        ? "bg-amber-500 border-amber-500 dark:bg-amber-400 dark:border-amber-400" 
+                        : "bg-zinc-200 dark:bg-zinc-700 border-transparent"
+                    )}
+                  >
+                    <span className={cn(
+                      "w-5 h-5 bg-white dark:bg-zinc-900 rounded-full shadow transition-transform absolute", 
+                      settings.opname_owner_approval_required === true ? "translate-x-6" : "translate-x-0"
+                    )} />
+                  </button>
                 </div>
               </div>
 
