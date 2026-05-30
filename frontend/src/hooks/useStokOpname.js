@@ -81,6 +81,10 @@ export function useStokOpname() {
   }, [loadSessions, loadOutlets]);
 
   const handleStartOpname = async () => {
+    if (!selectedOutletId) {
+      alert("⚠️ Gagal memulai: Silakan pilih Outlet terlebih dahulu. Pastikan server backend berjalan dan memuat data outlet.");
+      return;
+    }
     try {
       setSaving(true);
       const session = await api.startOpname({
