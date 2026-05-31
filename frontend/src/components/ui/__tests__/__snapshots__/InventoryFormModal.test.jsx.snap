@@ -319,62 +319,62 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ed
                   ML
                 </option>
                 <option
-                  value="L"
+                  value="l"
                 >
                   L
                 </option>
                 <option
-                  value="Gram"
+                  value="gram"
                 >
                   GRAM
                 </option>
                 <option
-                  value="Kg"
+                  value="kg"
                 >
                   KG
                 </option>
                 <option
-                  value="Pcs"
+                  value="pcs"
                 >
                   PCS
                 </option>
                 <option
-                  value="Unit"
+                  value="unit"
                 >
                   UNIT
                 </option>
                 <option
-                  value="Sachet"
+                  value="sachet"
                 >
                   SACHET
                 </option>
                 <option
-                  value="Botol"
+                  value="botol"
                 >
                   BOTOL
                 </option>
                 <option
-                  value="Dus"
+                  value="dus"
                 >
                   DUS
                 </option>
                 <option
-                  value="Pack"
+                  value="pack"
                 >
                   PACK
                 </option>
                 <option
-                  value="Karton"
+                  value="karton"
                 >
                   KARTON
                 </option>
                 <option
-                  value="Can"
+                  value="can"
                 >
                   CAN
                 </option>
                 <option
-                  value="Zak"
+                  value="zak"
                 >
                   ZAK
                 </option>
@@ -389,22 +389,32 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ed
                 Safety Threshold (Min. Stock)
               </label>
               <div
-                class="relative"
+                class="relative flex gap-2"
               >
                 <div
                   class="w-full"
                 >
                   <input
-                    class="flex border dark:bg-zinc-800 px-4 py-2 text-sm shadow-sm transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-amber-500 h-12 w-full bg-card border-zinc-200 dark:border-zinc-700 rounded-md text-center font-mono tabular-nums text-amber-600 dark:text-amber-500"
+                    class="flex w-full border dark:bg-zinc-800 px-4 py-2 text-sm shadow-sm transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-amber-500 h-12 flex-1 bg-card border-zinc-200 dark:border-zinc-700 rounded-md text-center font-mono tabular-nums text-amber-600 dark:text-amber-500"
                     type="number"
                     value="10"
                   />
                 </div>
-                <span
-                  class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-600 dark:text-zinc-300 bg-card px-2 py-1 rounded-md border border-zinc-300 dark:border-zinc-700 font-mono tabular-nums"
+                <select
+                  class="h-12 w-32 rounded-md border border-zinc-200 dark:border-zinc-700 bg-card px-3 text-xs font-black uppercase tracking-widest text-zinc-650 dark:text-zinc-300"
                 >
-                  Kg
-                </span>
+                  <option
+                    value="kg"
+                  >
+                    KG
+                     (BASE)
+                  </option>
+                  <option
+                    value="karton"
+                  >
+                    KARTON
+                  </option>
+                </select>
               </div>
             </div>
           </div>
@@ -476,67 +486,67 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ed
                       <option
                         value="ml"
                       >
-                        ml
+                        ML
                       </option>
                       <option
-                        value="L"
+                        value="l"
                       >
                         L
                       </option>
                       <option
-                        value="Gram"
+                        value="gram"
                       >
-                        Gram
+                        GRAM
                       </option>
                       <option
-                        value="Kg"
+                        value="kg"
                       >
-                        Kg
+                        KG
                       </option>
                       <option
-                        value="Pcs"
+                        value="pcs"
                       >
-                        Pcs
+                        PCS
                       </option>
                       <option
-                        value="Unit"
+                        value="unit"
                       >
-                        Unit
+                        UNIT
                       </option>
                       <option
-                        value="Sachet"
+                        value="sachet"
                       >
-                        Sachet
+                        SACHET
                       </option>
                       <option
-                        value="Botol"
+                        value="botol"
                       >
-                        Botol
+                        BOTOL
                       </option>
                       <option
-                        value="Dus"
+                        value="dus"
                       >
-                        Dus
+                        DUS
                       </option>
                       <option
-                        value="Pack"
+                        value="pack"
                       >
-                        Pack
+                        PACK
                       </option>
                       <option
-                        value="Karton"
+                        value="karton"
                       >
-                        Karton
+                        KARTON
                       </option>
                       <option
-                        value="Can"
+                        value="can"
                       >
-                        Can
+                        CAN
                       </option>
                       <option
-                        value="Zak"
+                        value="zak"
                       >
-                        Zak
+                        ZAK
                       </option>
                     </select>
                   </div>
@@ -565,7 +575,7 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ed
                       class="w-full h-10 bg-card border border-zinc-300 dark:border-zinc-700 rounded-md px-4 text-xs font-black uppercase outline-none focus:ring-1 ring-amber-500"
                     >
                       <option
-                        value="Kg"
+                        value="kg"
                       >
                         KG
                          (BASE)
@@ -573,57 +583,57 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ed
                       <option
                         value="ml"
                       >
-                        ml
+                        ML
                       </option>
                       <option
-                        value="L"
+                        value="l"
                       >
                         L
                       </option>
                       <option
-                        value="Gram"
+                        value="gram"
                       >
-                        Gram
+                        GRAM
                       </option>
                       <option
-                        value="Pcs"
+                        value="pcs"
                       >
-                        Pcs
+                        PCS
                       </option>
                       <option
-                        value="Unit"
+                        value="unit"
                       >
-                        Unit
+                        UNIT
                       </option>
                       <option
-                        value="Sachet"
+                        value="sachet"
                       >
-                        Sachet
+                        SACHET
                       </option>
                       <option
-                        value="Botol"
+                        value="botol"
                       >
-                        Botol
+                        BOTOL
                       </option>
                       <option
-                        value="Dus"
+                        value="dus"
                       >
-                        Dus
+                        DUS
                       </option>
                       <option
-                        value="Pack"
+                        value="pack"
                       >
-                        Pack
+                        PACK
                       </option>
                       <option
-                        value="Can"
+                        value="can"
                       >
-                        Can
+                        CAN
                       </option>
                       <option
-                        value="Zak"
+                        value="zak"
                       >
-                        Zak
+                        ZAK
                       </option>
                     </select>
                   </div>
@@ -638,7 +648,7 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ed
                       <span
                         class="text-xs text-zinc-700 dark:text-zinc-300 font-bold uppercase ml-1 px-2 py-0.5 bg-card rounded border border-zinc-300 dark:border-zinc-700 font-mono tabular-nums"
                       >
-                        Kg
+                        KG
                       </span>
                     </p>
                   </div>
@@ -794,7 +804,7 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ed
                   class="text-foreground font-mono tabular-nums bg-card px-4 py-1 rounded-lg ring-1 ring-zinc-300 dark:ring-white/10"
                 >
                   1 
-                  Kg
+                  kg
                 </span>
               </div>
               <div
@@ -805,7 +815,7 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ed
                   class="text-zinc-500 dark:text-zinc-400 uppercase tracking-widest"
                 >
                   1 
-                  Karton
+                  karton
                 </span>
                 <div
                   class="flex items-center gap-2"
@@ -845,9 +855,9 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ed
                     10
                      
                     <span
-                      class="text-xs"
+                      class="text-xs uppercase"
                     >
-                      Kg
+                      kg
                     </span>
                   </p>
                 </div>
@@ -1250,62 +1260,62 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ne
                   ML
                 </option>
                 <option
-                  value="L"
+                  value="l"
                 >
                   L
                 </option>
                 <option
-                  value="Gram"
+                  value="gram"
                 >
                   GRAM
                 </option>
                 <option
-                  value="Kg"
+                  value="kg"
                 >
                   KG
                 </option>
                 <option
-                  value="Pcs"
+                  value="pcs"
                 >
                   PCS
                 </option>
                 <option
-                  value="Unit"
+                  value="unit"
                 >
                   UNIT
                 </option>
                 <option
-                  value="Sachet"
+                  value="sachet"
                 >
                   SACHET
                 </option>
                 <option
-                  value="Botol"
+                  value="botol"
                 >
                   BOTOL
                 </option>
                 <option
-                  value="Dus"
+                  value="dus"
                 >
                   DUS
                 </option>
                 <option
-                  value="Pack"
+                  value="pack"
                 >
                   PACK
                 </option>
                 <option
-                  value="Karton"
+                  value="karton"
                 >
                   KARTON
                 </option>
                 <option
-                  value="Can"
+                  value="can"
                 >
                   CAN
                 </option>
                 <option
-                  value="Zak"
+                  value="zak"
                 >
                   ZAK
                 </option>
@@ -1320,22 +1330,27 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ne
                 Safety Threshold (Min. Stock)
               </label>
               <div
-                class="relative"
+                class="relative flex gap-2"
               >
                 <div
                   class="w-full"
                 >
                   <input
-                    class="flex border dark:bg-zinc-800 px-4 py-2 text-sm shadow-sm transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-amber-500 h-12 w-full bg-card border-zinc-200 dark:border-zinc-700 rounded-md text-center font-mono tabular-nums text-amber-600 dark:text-amber-500"
+                    class="flex w-full border dark:bg-zinc-800 px-4 py-2 text-sm shadow-sm transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:border-amber-500 h-12 flex-1 bg-card border-zinc-200 dark:border-zinc-700 rounded-md text-center font-mono tabular-nums text-amber-600 dark:text-amber-500"
                     type="number"
                     value=""
                   />
                 </div>
-                <span
-                  class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-600 dark:text-zinc-300 bg-card px-2 py-1 rounded-md border border-zinc-300 dark:border-zinc-700 font-mono tabular-nums"
+                <select
+                  class="h-12 w-32 rounded-md border border-zinc-200 dark:border-zinc-700 bg-card px-3 text-xs font-black uppercase tracking-widest text-zinc-650 dark:text-zinc-300"
                 >
-                  ml
-                </span>
+                  <option
+                    value="ml"
+                  >
+                    ML
+                     (BASE)
+                  </option>
+                </select>
               </div>
             </div>
           </div>
@@ -1530,7 +1545,7 @@ exports[`InventoryFormModal — KEN Enterprise Compliance > matches snapshot (ne
                     0
                      
                     <span
-                      class="text-xs"
+                      class="text-xs uppercase"
                     >
                       ml
                     </span>
