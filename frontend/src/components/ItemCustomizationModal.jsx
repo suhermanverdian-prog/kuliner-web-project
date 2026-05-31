@@ -718,7 +718,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             <span className="font-bold">{label}</span>
                           </div>
                           <span className="font-mono text-[9px] font-bold tabular-nums">
-                            {row.qty} <span className="uppercase text-[8px] font-medium">{unit}</span>
+                            {row.active ? row.qty : 0} <span className="uppercase text-[8px] font-medium">{unit}</span>
                           </span>
                         </div>
                       );
