@@ -32,11 +32,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "backend/src/server.js"
+      "destination": "/backend/src/server.js"
     },
     {
       "source": "/socket.io/(.*)",
-      "destination": "backend/src/server.js"
+      "destination": "/backend/src/server.js"
     },
     {
       "source": "/((?!assets/|manifest\\.json|favicon\\.|sw\\.js).*)",
