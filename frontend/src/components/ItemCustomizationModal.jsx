@@ -223,7 +223,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
         const matchedBahan = bahanList.find(b => String(b.id) === String(row.bahanId));
         const nameLower = (matchedBahan?.name || matchedBahan?.nama || '').toLowerCase();
         if (nameLower.includes('susu') || nameLower.includes('milk')) {
-          return { ...row, active: false };
+          return { ...row, active: false, isSystemToggled: true };
         }
         return row;
       });
@@ -283,6 +283,11 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
       return baseBom.map(row => {
         const existing = prev.find(x => String(x.bahanId) === String(row.bahanId));
         if (existing) {
+          // If system explicitly deactivates this row (e.g. no-milk), always use baseBom value
+          if (row.isSystemToggled) return row;
+          // If previous state was system-driven (e.g. switching back FROM no-milk), restore from baseBom
+          if (existing.isSystemToggled) return row;
+          // Otherwise, preserve the user's manual toggle
           return { ...row, active: existing.active };
         }
         return row;
@@ -416,34 +421,42 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
             {/* Left Column (col-span-4): Visual Preview, BOM & Checkout */}
             <div className="md:col-span-4 space-y-4">
               {/* Product Visual Card */}
-              <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-border rounded-lg p-2 flex items-center gap-2.5">
+              <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-border rounded-lg p-3 flex gap-3">
                 {item.image ? (
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-11 h-11 object-cover rounded-md border border-border shadow-sm shrink-0"
+                    className="w-20 h-20 object-cover rounded-md border border-border shadow-sm shrink-0"
                     onError={e => { e.target.style.display = 'none'; }}
                   />
                 ) : (
-                  <div className="w-11 h-11 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center border border-border shadow-sm shrink-0">
+                  <div className="w-20 h-20 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center border border-border shadow-sm shrink-0">
                     {isBeverage ? (
-                      <Coffee size={18} className="text-amber-500 dark:text-amber-400" />
+                      <Coffee size={32} className="text-amber-500 dark:text-amber-400" />
                     ) : (
-                      <Utensils size={18} className="text-amber-500 dark:text-amber-400" />
+                      <Utensils size={32} className="text-amber-500 dark:text-amber-400" />
                     )}
                   </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] uppercase font-bold tracking-widest text-zinc-400 dark:text-zinc-500">Pratinjau Item</span>
-                    <span className="px-1.5 py-0.5 rounded-sm bg-zinc-100 dark:bg-zinc-800 text-[8px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-widest">
-                      {item.category || 'Menu'}
-                    </span>
+                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <span className="text-[9px] uppercase font-bold tracking-widest text-zinc-400 dark:text-zinc-500">Pratinjau Item</span>
+                      <span className="px-1.5 py-0.5 rounded-sm bg-zinc-100 dark:bg-zinc-800 text-[9px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-widest">
+                        {item.category || 'Menu'}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-50 truncate leading-tight">{item.name}</h4>
                   </div>
-                  <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-50 truncate leading-tight mt-0.5">{item.name}</h4>
-                  <div className="flex items-center justify-between mt-1 text-[10px]">
-                    <span className="text-zinc-400 dark:text-zinc-500">Base: <span className="font-mono tabular-nums font-semibold text-zinc-600 dark:text-zinc-300">{formatRupiah(item.price)}</span></span>
-                    <span className="text-zinc-400 dark:text-zinc-500">Total: <span className="font-mono tabular-nums font-bold text-amber-600 dark:text-amber-400">{formatRupiah(item.price + (sizeObj?.priceAdd || 0) + strengthPriceAdd + milkPriceAdd + extrasPrice)}</span></span>
+                  <div className="space-y-0.5 mt-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-400 dark:text-zinc-500">Harga Dasar</span>
+                      <span className="font-mono tabular-nums font-semibold text-zinc-600 dark:text-zinc-300">{formatRupiah(item.price)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm font-bold border-t border-border pt-0.5 mt-0.5">
+                      <span className="text-zinc-700 dark:text-zinc-200">Total</span>
+                      <span className="font-mono tabular-nums text-amber-600 dark:text-amber-400">{formatRupiah(item.price + (sizeObj?.priceAdd || 0) + strengthPriceAdd + milkPriceAdd + extrasPrice)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
