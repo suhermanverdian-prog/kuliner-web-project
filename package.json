@@ -20,5 +20,9 @@
   "devDependencies": {
     "concurrently": "^8.2.2",
     "eslint": "^8.57.1"
-  }
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ]
 }
