@@ -335,11 +335,16 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
           temperature, // Heated vs normal temp
           extras: selectedExtras,
           note: note.trim(),
+          customRecipe // Inject modified BOM recipes for smart checkout stock deductions
         },
         customizationSummary: [
           size !== 'Regular' ? size : null,
           FOOD_TEMPERATURES.find(t => t.key === temperature)?.label || null,
           ...selectedExtras.map(eKey => FOOD_EXTRAS.find(e => e.key === eKey)?.label || eKey),
+          ...recipeIngredients.filter(row => !row.active).map(row => {
+            const b = bahanList.find(x => String(x.id) === String(row.bahanId));
+            return `Tanpa ${b?.name || b?.nama || 'Bahan'}`;
+          })
         ].filter(Boolean).join(' · '),
       });
     }
@@ -353,358 +358,398 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       {/* Backdrop */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Sheet panel */}
-      <div className="relative w-full sm:max-w-lg bg-card rounded-t-2xl sm:rounded-lg border border-border shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in slide-in-from-bottom sm:zoom-in-95 duration-300">
-
+      {/* Main Panel */}
+      <div className="relative w-full md:max-w-6xl sm:max-w-2xl bg-card rounded-lg border border-border shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-300">
+        
         {/* Header */}
-        <div className="flex items-start gap-4 p-6 border-b border-border bg-zinc-50 dark:bg-zinc-900/50 shrink-0">
-          {item.image ? (
-            <img
-              src={item.image}
-              alt={item.name}
-              className="w-16 h-16 rounded-lg object-cover border border-border shrink-0"
-              onError={e => { e.target.style.display = 'none'; }}
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-lg bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center shrink-0">
-              {isBeverage ? (
-                <Coffee size={28} className="text-amber-500 dark:text-amber-400" />
-              ) : (
-                <Utensils size={28} className="text-amber-500 dark:text-amber-400" />
-              )}
+        <div className="flex items-center justify-between p-4 border-b border-border bg-zinc-50 dark:bg-zinc-900/50 shrink-0">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-lg text-zinc-900 dark:text-white leading-tight truncate">
+                  {item.name}
+                </h3>
+                <span className="px-2 py-0.5 rounded-sm bg-zinc-100 dark:bg-zinc-800 text-[8px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-widest">
+                  {item.category || 'Menu'}
+                </span>
+              </div>
+              <p className="text-xs font-mono tabular-nums text-amber-600 dark:text-amber-400 font-bold mt-1">
+                Base Price: {formatRupiah(item.price)}
+              </p>
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-black text-lg text-zinc-900 dark:text-zinc-50 leading-tight truncate">{item.name}</h3>
-              <span className="px-2 py-0.5 rounded-sm bg-zinc-100 dark:bg-zinc-800 text-[8px] font-black uppercase text-zinc-500 dark:text-zinc-400 shrink-0 tracking-widest">{item.category || 'Menu'}</span>
-            </div>
-            <p className="text-sm font-mono tabular-nums text-amber-600 dark:text-amber-400 font-bold mt-0.5">
-              {formatRupiah(item.price)}
-            </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+            className="w-8 h-8 rounded-md flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Scrollable Options */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+        {/* Three Columns Container */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            
+            {/* Left Column (col-span-4): Size, Sweetness, Shots, Milk */}
+            <div className="md:col-span-4 space-y-6">
+              {isBeverage ? (
+                <>
+                  {/* SIZE */}
+                  <Section icon={<SlidersHorizontal size={14} />} title="Ukuran Cup">
+                    <div className="grid grid-cols-3 gap-2">
+                      {sizes.map(s => (
+                        <button
+                          key={s.key}
+                          onClick={() => setSize(s.key)}
+                          className={cn(
+                            'flex flex-col items-center justify-center h-12 rounded-md border-2 text-xs font-bold transition-all active:scale-95',
+                            size === s.key
+                              ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/20'
+                              : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
+                          )}
+                        >
+                          <span className="text-xs font-bold">{s.label} ({s.key})</span>
+                          {s.priceAdd > 0 && (
+                            <span className={cn('text-[9px] font-bold mt-0.5 font-mono', size === s.key ? 'text-white/80 dark:text-zinc-900/70' : 'text-zinc-400 dark:text-zinc-500')}>
+                              +{formatRupiah(s.priceAdd)}
+                            </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
 
-          {isBeverage ? (
-            <>
-              {/* SIZE */}
-              <Section icon={<SlidersHorizontal size={14} />} title="Ukuran Cup">
-                <div className="grid grid-cols-4 gap-2">
-                  {sizes.map(s => (
-                    <button
-                      key={s.key}
-                      onClick={() => setSize(s.key)}
-                      className={cn(
-                        'flex flex-col items-center justify-center h-14 rounded-lg border-2 text-xs font-black transition-all active:scale-95',
-                        size === s.key
-                          ? 'bg-amber-500 dark:bg-amber-400 border-amber-500 dark:border-amber-400 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20'
-                          : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-500'
-                      )}
-                    >
-                      <span className="text-sm font-black">{s.key}</span>
-                      {s.priceAdd > 0 && (
-                        <span className={cn('text-[9px] font-bold mt-0.5 font-mono', size === s.key ? 'text-white/80 dark:text-zinc-900/70' : 'text-zinc-400 dark:text-zinc-500')}>
-                          +{formatRupiah(s.priceAdd)}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </Section>
+                  {/* SWEETNESS */}
+                  <Section icon={<Candy size={14} />} title="Tingkat Kemanisan">
+                    <div className="flex gap-2 flex-wrap">
+                      {DEFAULT_SWEETNESS.map(s => (
+                        <button
+                          key={s.key}
+                          onClick={() => setSweetness(s.key)}
+                          className={cn(
+                            'h-8 px-4 rounded-md border-2 text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95',
+                            sweetness === s.key
+                              ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-sm shadow-amber-500/10'
+                              : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
+                          )}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
 
-              {/* TEMPERATURE */}
-              <Section icon={<Thermometer size={14} />} title="Suhu Minuman">
-                <div className="grid grid-cols-2 gap-2">
-                  {DEFAULT_TEMPERATURES.map(t => {
-                    const isHot = t.key === 'hot';
-                    return (
-                      <button
-                        key={t.key}
-                        onClick={() => setTemperature(t.key)}
-                        className={cn(
-                          'flex items-center justify-center gap-2 h-12 rounded-lg border-2 transition-all active:scale-95 font-black text-xs uppercase tracking-widest',
-                          temperature === t.key
-                            ? 'bg-amber-500 dark:bg-amber-400 border-amber-500 dark:border-amber-400 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20'
-                            : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-500'
-                        )}
-                      >
-                        {isHot ? <Flame size={14} className={temperature === t.key ? 'text-white dark:text-zinc-900' : 'text-zinc-500'} /> : <Snowflake size={14} className={temperature === t.key ? 'text-white dark:text-zinc-900' : 'text-zinc-500'} />}
-                        <span>{t.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </Section>
-
-              {/* SWEETNESS */}
-              <Section icon={<Candy size={14} />} title="Tingkat Kemanisan">
-                <div className="flex gap-2 flex-wrap">
-                  {DEFAULT_SWEETNESS.map(s => (
-                    <button
-                      key={s.key}
-                      onClick={() => setSweetness(s.key)}
-                      className={cn(
-                        'h-8 px-3 rounded-lg border-2 text-[10px] font-black uppercase tracking-wider transition-all active:scale-95',
-                        sweetness === s.key
-                          ? 'bg-amber-500 dark:bg-amber-400 border-amber-500 text-white dark:text-zinc-900 shadow-md shadow-amber-500/10'
-                          : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-500'
-                      )}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </Section>
-
-              {/* ESPRESSO SHOTS — COFFEE ONLY */}
-              {isCoffee && (
-                <Section icon={<Zap size={14} />} title="Kekuatan Kopi (Shots)">
-                  <div className="grid grid-cols-3 gap-2">
-                    {DEFAULT_STRENGTHS.map(s => (
-                      <button
-                        key={s.key}
-                        onClick={() => setStrength(s.key)}
-                        className={cn(
-                          'h-10 rounded-lg border-2 text-[10px] font-black uppercase tracking-wider transition-all active:scale-95',
-                          strength === s.key
-                            ? 'bg-amber-500 dark:bg-amber-400 border-amber-500 text-white dark:text-zinc-900'
-                            : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-500'
-                        )}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
-                </Section>
-              )}
-
-              {/* MILK SELECTION — COFFEE & CHOCOLATE ONLY */}
-              {(isCoffee || isNonCoffee) && (
-                <Section icon={<Droplets size={14} />} title="Opsi Susu Alternatif">
-                  <div className="flex gap-2 flex-wrap">
-                    {milksList.map(m => (
-                      <button
-                        key={m.key}
-                        onClick={() => setMilk(m.key)}
-                        className={cn(
-                          'h-8 px-3 rounded-lg border-2 text-[10px] font-black uppercase tracking-wider transition-all active:scale-95',
-                          milk === m.key
-                            ? 'bg-amber-500 dark:bg-amber-400 border-amber-500 text-white dark:text-zinc-900 shadow-md shadow-amber-500/10'
-                            : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-500'
-                        )}
-                      >
-                        {m.label}
-                      </button>
-                    ))}
-                  </div>
-                </Section>
-              )}
-
-              {/* EXTRAS */}
-              <Section icon={<Sparkles size={14} />} title={isTea ? "Topping Teh Premium" : "Tambahan Minuman"}>
-                <div className="grid grid-cols-2 gap-2">
-                  {extras.map(e => {
-                    const selected = selectedExtras.includes(e.key);
-                    return (
-                      <button
-                        key={e.key}
-                        onClick={() => toggleExtra(e.key)}
-                        className={cn(
-                          'flex items-center justify-between px-4 h-10 rounded-lg border-2 text-[10px] font-bold transition-all active:scale-95',
-                          selected
-                            ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500 text-amber-700 dark:text-amber-400'
-                            : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-500'
-                        )}
-                      >
-                        <span>{e.label}</span>
-                        {e.priceAdd > 0 && (
-                          <span className={cn('font-mono text-[9px] font-black', selected ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-400')}>
-                            +{formatRupiah(e.priceAdd)}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Section>
-
-              {/* Dynamic Recipe / BOM Modifiers Checklist */}
-              {recipeIngredients.length > 0 && (
-                <Section icon={<Sliders size={14} />} title="Modifikasi Resep (BOM Modifiers)">
-                  <div className="p-4 rounded-lg border border-border bg-zinc-50/50 dark:bg-zinc-900/30 space-y-2">
-                    <p className="text-[9px] text-zinc-400 leading-normal -mt-1 mb-2 font-sans font-bold">Uncheck bahan baku penyusun resep standar di bawah untuk mengurangi pemotongan stok aktual dan menyesuaikan HPP secara dinamis.</p>
-                    <div className="grid grid-cols-1 gap-2">
-                      {recipeIngredients.map(row => {
-                        const b = bahanList.find(x => String(x.id) === String(row.bahanId));
-                        const label = row.label || b?.name || b?.nama || 'Bahan Baku';
-                        const unit = b?.unit || b?.satuan || '';
-                        
-                        return (
-                          <div 
-                            key={row.id}
-                            onClick={() => toggleRecipeIngredient(row.id)}
+                  {/* ESPRESSO SHOTS — COFFEE ONLY */}
+                  {isCoffee && (
+                    <Section icon={<Zap size={14} />} title="Kekuatan Kopi (Shots)">
+                      <div className="grid grid-cols-4 gap-2">
+                        {DEFAULT_STRENGTHS.map(s => (
+                          <button
+                            key={s.key}
+                            onClick={() => setStrength(s.key)}
                             className={cn(
-                              "flex items-center justify-between p-3 rounded-md border text-xs cursor-pointer select-none transition-all active:scale-[0.99]",
-                              row.active 
-                                ? "bg-card border-border hover:border-amber-500/30 text-zinc-800 dark:text-zinc-200" 
-                                : "bg-zinc-100/50 dark:bg-zinc-900/50 border-transparent text-zinc-400 dark:text-zinc-600 line-through"
+                              'h-10 rounded-md border-2 text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95',
+                              strength === s.key
+                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900'
+                                : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
                             )}
                           >
-                            <div className="flex items-center gap-2.5">
-                              <div className={cn(
-                                "w-4 h-4 rounded border flex items-center justify-center transition-colors",
-                                row.active 
-                                  ? "bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900" 
-                                  : "bg-transparent border-zinc-300 dark:border-zinc-700"
-                              )}>
-                                {row.active && <CheckCircle2 size={10} strokeWidth={4} />}
-                              </div>
-                              <span className="font-bold">{label}</span>
-                            </div>
-                            <span className="font-mono text-[10px] font-bold tabular-nums">
-                              {row.qty} <span className="uppercase text-[9px] font-medium">{unit}</span>
+                            {s.label}
+                          </button>
+                        ))}
+                      </div>
+                    </Section>
+                  )}
+
+                  {/* MILK SELECTION — COFFEE & CHOCOLATE ONLY */}
+                  {(isCoffee || isNonCoffee) && (
+                    <Section icon={<Droplets size={14} />} title="Opsi Susu Alternatif">
+                      <div className="flex gap-2 flex-wrap">
+                        {milksList.map(m => (
+                          <button
+                            key={m.key}
+                            onClick={() => setMilk(m.key)}
+                            className={cn(
+                              'h-8 px-4 rounded-md border-2 text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95',
+                              milk === m.key
+                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-sm shadow-amber-500/10'
+                                : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
+                            )}
+                          >
+                            {m.label}
+                          </button>
+                        ))}
+                      </div>
+                    </Section>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* FOOD PORTION */}
+                  <Section icon={<SlidersHorizontal size={14} />} title="Porsi Makanan">
+                    <div className="grid grid-cols-2 gap-2">
+                      {FOOD_SIZES.map(s => (
+                        <button
+                          key={s.key}
+                          onClick={() => setSize(s.key)}
+                          className={cn(
+                            'flex flex-col items-center justify-center h-12 rounded-md border-2 text-xs font-bold transition-all active:scale-95',
+                            size === s.key
+                              ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/20'
+                              : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
+                          )}
+                        >
+                          <span className="text-sm font-bold">{s.label}</span>
+                          {s.priceAdd > 0 && (
+                            <span className={cn('text-[9px] font-bold mt-0.5 font-mono', size === s.key ? 'text-white/80 dark:text-zinc-900/70' : 'text-zinc-400 dark:text-zinc-500')}>
+                              +{formatRupiah(s.priceAdd)}
                             </span>
-                          </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
+                </>
+              )}
+            </div>
+
+            {/* Center Column (col-span-4): Temp, Extras, Note */}
+            <div className="md:col-span-4 space-y-6">
+              {isBeverage ? (
+                <>
+                  {/* TEMPERATURE */}
+                  <Section icon={<Thermometer size={14} />} title="Suhu Minuman">
+                    <div className="grid grid-cols-2 gap-2">
+                      {DEFAULT_TEMPERATURES.map(t => {
+                        const isHot = t.key === 'hot';
+                        return (
+                          <button
+                            key={t.key}
+                            onClick={() => setTemperature(t.key)}
+                            className={cn(
+                              'flex items-center justify-center gap-2 h-12 rounded-md border-2 transition-all active:scale-95 font-bold text-xs uppercase tracking-widest',
+                              temperature === t.key
+                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/20'
+                                : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
+                            )}
+                          >
+                            {isHot ? <Flame size={14} className={temperature === t.key ? 'text-white dark:text-zinc-900' : 'text-zinc-500'} /> : <Snowflake size={14} className={temperature === t.key ? 'text-white dark:text-zinc-900' : 'text-zinc-500'} />}
+                            <span>{t.label}</span>
+                          </button>
                         );
                       })}
                     </div>
-                  </div>
-                </Section>
+                  </Section>
+
+                  {/* EXTRAS */}
+                  <Section icon={<Sparkles size={14} />} title={isTea ? "Topping Teh Premium" : "Tambahan Minuman"}>
+                    <div className="grid grid-cols-2 gap-2">
+                      {extras.map(e => {
+                        const selected = selectedExtras.includes(e.key);
+                        return (
+                          <button
+                            key={e.key}
+                            onClick={() => toggleExtra(e.key)}
+                            className={cn(
+                              'flex items-center justify-between px-3 h-10 rounded-md border-2 text-[10px] font-bold transition-all active:scale-95',
+                              selected
+                                ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500 text-amber-700 dark:text-amber-400'
+                                : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
+                            )}
+                          >
+                            <span className="truncate">{e.label}</span>
+                            {e.priceAdd > 0 && (
+                              <span className={cn('font-mono text-[9px] font-bold ml-1', selected ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-400')}>
+                                +{formatRupiah(e.priceAdd)}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Section>
+                </>
+              ) : (
+                <>
+                  {/* FOOD SERVER TEMPERATURE */}
+                  <Section icon={<Flame size={14} />} title="Suhu Penyajian">
+                    <div className="grid grid-cols-2 gap-2">
+                      {FOOD_TEMPERATURES.map(t => (
+                        <button
+                          key={t.key}
+                          onClick={() => setTemperature(t.key)}
+                          className={cn(
+                            'flex flex-col items-center justify-center h-12 rounded-md border-2 transition-all active:scale-95 text-xs font-bold uppercase tracking-wider',
+                            temperature === t.key
+                              ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/20'
+                              : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
+                          )}
+                        >
+                          <span className="text-[10px] font-bold uppercase tracking-widest">{t.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </Section>
+
+                  {/* SAVORY EXTRAS FOOD */}
+                  <Section icon={<Sparkles size={14} />} title="Ekstra Topping Gurih">
+                    <div className="grid grid-cols-2 gap-2">
+                      {FOOD_EXTRAS.map(e => {
+                        const selected = selectedExtras.includes(e.key);
+                        return (
+                          <button
+                            key={e.key}
+                            onClick={() => toggleExtra(e.key)}
+                            className={cn(
+                              'flex items-center justify-between px-3 h-10 rounded-md border-2 text-[10px] font-bold transition-all active:scale-95',
+                              selected
+                                ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500 text-amber-700 dark:text-amber-400'
+                                : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
+                            )}
+                          >
+                            <span className="truncate">{e.label}</span>
+                            {e.priceAdd > 0 && (
+                              <span className="font-mono text-[9px] font-bold ml-1 text-amber-600 dark:text-amber-400">
+                                +{formatRupiah(e.priceAdd)}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Section>
+                </>
               )}
-            </>
-          ) : (
-            <>
-              {/* FOOD PORTION */}
-              <Section icon={<SlidersHorizontal size={14} />} title="Porsi Makanan">
-                <div className="grid grid-cols-2 gap-2">
-                  {FOOD_SIZES.map(s => (
-                    <button
-                      key={s.key}
-                      onClick={() => setSize(s.key)}
-                      className={cn(
-                        'flex flex-col items-center justify-center h-14 rounded-lg border-2 text-xs font-black transition-all active:scale-95',
-                        size === s.key
-                          ? 'bg-amber-500 dark:bg-amber-400 border-amber-500 dark:border-amber-400 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20'
-                          : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-500'
-                      )}
-                    >
-                      <span className="text-sm font-black">{s.label}</span>
-                      {s.priceAdd > 0 && (
-                        <span className={cn('text-[9px] font-bold mt-0.5 font-mono', size === s.key ? 'text-white/80 dark:text-zinc-900/70' : 'text-zinc-400 dark:text-zinc-500')}>
-                          +{formatRupiah(s.priceAdd)}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
+
+              {/* NOTE */}
+              <Section icon={<FileText size={14} />} title="Catatan Khusus">
+                <textarea
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                  placeholder={isBeverage ? "Contoh: Es batu dipisah, kurangi manis, dll..." : "Contoh: Sangat pedas, saus dipisah, dll..."}
+                  rows={2}
+                  className="w-full px-3 py-1.5 rounded-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:focus:border-amber-400 resize-none transition-all"
+                />
               </Section>
-
-              {/* FOOD SERVER TEMPERATURE */}
-              <Section icon={<Flame size={14} />} title="Suhu Penyajian">
-                <div className="grid grid-cols-2 gap-2">
-                  {FOOD_TEMPERATURES.map(t => (
-                    <button
-                      key={t.key}
-                      onClick={() => setTemperature(t.key)}
-                      className={cn(
-                        'flex flex-col items-center justify-center h-14 rounded-lg border-2 transition-all active:scale-95 text-xs font-black uppercase tracking-wider',
-                        temperature === t.key
-                          ? 'bg-amber-500 dark:bg-amber-400 border-amber-500 dark:border-amber-400 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20'
-                          : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-500'
-                      )}
-                    >
-                      <span className="text-[10px] font-black uppercase tracking-widest">{t.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </Section>
-
-              {/* SAVORY EXTRAS FOOD */}
-              <Section icon={<Sparkles size={14} />} title="Ekstra Topping Gurih">
-                <div className="grid grid-cols-3 gap-2">
-                  {FOOD_EXTRAS.map(e => {
-                    const selected = selectedExtras.includes(e.key);
-                    return (
-                      <button
-                        key={e.key}
-                        onClick={() => toggleExtra(e.key)}
-                        className={cn(
-                          'flex items-center justify-between px-3 h-10 rounded-lg border-2 text-[10px] font-bold transition-all active:scale-95',
-                          selected
-                            ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500 text-amber-700 dark:text-amber-400'
-                            : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-500'
-                        )}
-                      >
-                        <span>{e.label}</span>
-                        {e.priceAdd > 0 && (
-                          <span className="font-mono text-[9px] font-black text-amber-600 dark:text-amber-400">
-                            +{formatRupiah(e.priceAdd)}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              </Section>
-            </>
-          )}
-
-          {/* NOTE */}
-          <Section icon={<FileText size={14} />} title="Catatan Khusus">
-            <textarea
-              value={note}
-              onChange={e => setNote(e.target.value)}
-              placeholder={isBeverage ? "Contoh: Es batu dipisah, kurangi manis, tanpa kafein (decaf)..." : "Contoh: Sangat pedas, saus dipisah, tanpa mayones..."}
-              rows={2}
-              className="w-full px-4 py-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:focus:border-amber-400 resize-none transition-all"
-            />
-          </Section>
-        </div>
-
-        {/* Footer — Qty + Confirm */}
-        <div className="p-6 border-t border-border bg-zinc-50 dark:bg-zinc-900/50 shrink-0 space-y-4">
-          {/* Qty selector */}
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Jumlah</span>
-            <div className="flex items-center gap-4 bg-card border border-border rounded-lg p-1">
-              <button
-                onClick={() => setQty(q => Math.max(1, q - 1))}
-                className="w-8 h-8 rounded-md flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-500 transition-colors"
-              >
-                <Minus size={14} strokeWidth={3} />
-              </button>
-              <span className="w-8 text-center font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-50">{qty}</span>
-              <button
-                onClick={() => setQty(q => q + 1)}
-                className="w-8 h-8 rounded-md flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-emerald-500 transition-colors"
-              >
-                <Plus size={14} strokeWidth={3} />
-              </button>
             </div>
-          </div>
 
-          {/* Confirm */}
-          <button
-            onClick={handleConfirm}
-            className="w-full h-14 rounded-lg bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 font-black text-base shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all flex items-center justify-between px-6"
-          >
-            <span>Tambah ke Pesanan</span>
-            <span className="font-mono tabular-nums text-lg">{formatRupiah(finalPrice)}</span>
-          </button>
+            {/* Right Column (col-span-4): Visual Preview, BOM & Checkout */}
+            <div className="md:col-span-4 space-y-6">
+              {/* Product Visual Card */}
+              <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-border rounded-lg p-3 flex items-center gap-3">
+                {item.image ? (
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-16 h-16 object-cover rounded-md border border-border shadow-sm shrink-0"
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center border border-border shadow-sm shrink-0">
+                    {isBeverage ? (
+                      <Coffee size={24} className="text-amber-500 dark:text-amber-400" />
+                    ) : (
+                      <Utensils size={24} className="text-amber-500 dark:text-amber-400" />
+                    )}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="text-[9px] uppercase font-bold tracking-widest text-zinc-400 dark:text-zinc-500">Pratinjau Item</div>
+                  <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-50 truncate leading-tight">{item.name}</h4>
+                  <p className="font-mono tabular-nums text-amber-600 dark:text-amber-400 font-bold text-sm mt-0.5">
+                    {formatRupiah(item.price + (sizeObj?.priceAdd || 0) + strengthPriceAdd + milkPriceAdd + extrasPrice)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Real-time Dynamic BOM Checklist */}
+              {recipeIngredients.length > 0 && (
+                <div className="border border-border rounded-lg p-3 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col">
+                  <div className="flex items-center gap-2 mb-1.5 shrink-0">
+                    <span className="text-amber-500 dark:text-amber-400">
+                      <Sliders size={12} />
+                    </span>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                      BOM Modifiers
+                    </h4>
+                  </div>
+                  <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar pr-1">
+                    {recipeIngredients.map(row => {
+                      const b = bahanList.find(x => String(x.id) === String(row.bahanId));
+                      const label = row.label || b?.name || b?.nama || 'Bahan Baku';
+                      const unit = b?.unit || b?.satuan || '';
+                      
+                      return (
+                        <div 
+                          key={row.id}
+                          onClick={() => toggleRecipeIngredient(row.id)}
+                          className={cn(
+                            "flex items-center justify-between p-2 rounded-md border text-xs cursor-pointer select-none transition-all active:scale-[0.99]",
+                            row.active 
+                              ? "bg-card border-border hover:border-amber-500/30 text-zinc-800 dark:text-zinc-200" 
+                              : "bg-zinc-100/50 dark:bg-zinc-900/50 border-transparent text-zinc-400 dark:text-zinc-600 line-through"
+                          )}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={cn(
+                              "w-4 h-4 rounded border flex items-center justify-center transition-colors",
+                              row.active 
+                                ? "bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900" 
+                                : "bg-transparent border-zinc-300 dark:border-zinc-700"
+                            )}>
+                              {row.active && <CheckCircle2 size={10} strokeWidth={4} />}
+                            </div>
+                            <span className="font-bold">{label}</span>
+                          </div>
+                          <span className="font-mono text-[10px] font-bold tabular-nums">
+                            {row.qty} <span className="uppercase text-[9px] font-medium">{unit}</span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Quantity selector & Add button */}
+              <div className="space-y-4 pt-2 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Jumlah</span>
+                  <div className="flex items-center gap-4 bg-card border border-border rounded-md p-1">
+                    <button
+                      onClick={() => setQty(q => Math.max(1, q - 1))}
+                      className="w-8 h-8 rounded-md flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-500 transition-colors"
+                    >
+                      <Minus size={14} strokeWidth={3} />
+                    </button>
+                    <span className="w-8 text-center font-bold font-mono tabular-nums text-zinc-900 dark:text-zinc-50">{qty}</span>
+                    <button
+                      onClick={() => setQty(q => q + 1)}
+                      className="w-8 h-8 rounded-md flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-emerald-500 transition-colors"
+                    >
+                      <Plus size={14} strokeWidth={3} />
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleConfirm}
+                  className="w-full h-12 rounded-md bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 font-bold text-sm shadow-md shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all flex items-center justify-between px-4"
+                >
+                  <span>Tambah ke Pesanan</span>
+                  <span className="font-mono tabular-nums text-sm font-bold">{formatRupiah(finalPrice)}</span>
+                </button>
+              </div>
+
+            </div>
+
+          </div>
         </div>
+
       </div>
     </div>
   );
