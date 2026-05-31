@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   X, Plus, Minus, Coffee, Thermometer, Droplets, Zap, 
   SlidersHorizontal, Utensils, Flame, Sparkles, FileText, 
@@ -88,23 +88,38 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
   
   const isBeverage = isCoffee || isNonCoffee || isTea || cat.includes('beverage') || cat.includes('drink');
 
-  // Saved configs
-  const savedSizes = JSON.parse(localStorage.getItem('ken_custom_sizes'));
-  const savedExtras = JSON.parse(localStorage.getItem('ken_custom_extras'));
-  const savedMilks = JSON.parse(localStorage.getItem('ken_custom_milks'));
-  
-  const sizes = savedSizes || DEFAULT_SIZES;
-  const extras = isTea ? TEA_EXTRAS : (savedExtras || SWEET_EXTRAS);
-  
-  const milksList = [
-    { key: 'standard', label: 'Standard', priceAdd: 0 },
-    ...(savedMilks || [
+  // Memoized saved configs to guarantee stable references and avoid useEffect loops
+  const { sizes, extras, milksList } = useMemo(() => {
+    let sSizes = DEFAULT_SIZES;
+    let sExtras = SWEET_EXTRAS;
+    let sMilks = [
       { key: 'oat',     label: 'Oat Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
       { key: 'almond',  label: 'Almond Milk',  priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
       { key: 'soy',     label: 'Soy Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
-    ]),
-    { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 },
-  ];
+    ];
+
+    try {
+      const parsedSizes = JSON.parse(localStorage.getItem('ken_custom_sizes'));
+      if (parsedSizes) sSizes = parsedSizes;
+    } catch(e) {}
+    try {
+      const parsedExtras = JSON.parse(localStorage.getItem('ken_custom_extras'));
+      if (parsedExtras) sExtras = parsedExtras;
+    } catch(e) {}
+    try {
+      const parsedMilks = JSON.parse(localStorage.getItem('ken_custom_milks'));
+      if (parsedMilks) sMilks = parsedMilks;
+    } catch(e) {}
+
+    const resolvedExtras = isTea ? TEA_EXTRAS : sExtras;
+    const resolvedMilksList = [
+      { key: 'standard', label: 'Standard', priceAdd: 0 },
+      ...sMilks,
+      { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 },
+    ];
+
+    return { sizes: sSizes, extras: resolvedExtras, milksList: resolvedMilksList };
+  }, [isTea]);
 
   const [qty, setQty] = useState(1);
   const [size, setSize] = useState(() => {
@@ -263,7 +278,16 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
       }
     });
 
-    setRecipeIngredients(baseBom);
+    setRecipeIngredients(prev => {
+      if (prev.length === 0) return baseBom;
+      return baseBom.map(row => {
+        const existing = prev.find(x => String(x.bahanId) === String(row.bahanId));
+        if (existing) {
+          return { ...row, active: existing.active };
+        }
+        return row;
+      });
+    });
   }, [item.bom, bahanList, milk, strength, selectedExtras, isBeverage, extras]);
 
   // Size objects & calculations
