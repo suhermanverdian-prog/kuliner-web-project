@@ -26,6 +26,9 @@ const authMiddleware = (req, res, next) => {
     '/api/activeshift',
     '/api/v1/system/outletinfos',
     '/api/healthz',
+    '/manifest.json',
+    '/favicon.ico',
+    '/sw.js'
   ];
 
 
@@ -66,7 +69,15 @@ const authMiddleware = (req, res, next) => {
   }
 
   // 3. Izinkan rute publik dengan menyuntikkan Master Tenant Default
-  if (publicPaths.includes(req.path) || req.path.startsWith('/uploads')) {
+    if (publicPaths.includes(req.path) || req.path.startsWith('/uploads') || req.path === '/manifest.json' || req.path === '/favicon.ico' || req.path === '/sw.js') {
+      req.userContext = {
+        userId: 'guest-user',
+        role: 'guest',
+        tenantId: '00000000-0000-0000-0000-000000000000',
+        outletId: null
+      };
+      return next();
+    }
     req.userContext = {
       userId: 'guest-user',
       role: 'guest',

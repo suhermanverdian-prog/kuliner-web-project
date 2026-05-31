@@ -38,6 +38,11 @@ try {
   // Expose a getter for utils/realtimeNotifier to retrieve the Socket.IO instance
   app.getIo = () => io;
 
+  // Serve static frontend assets (PWA manifest, Service Worker, favicon) before auth middleware
+  app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+  // Ensure the static files are accessible without authentication
+  // This also covers /manifest.json, /favicon.ico, /sw.js
+
   app.use(cors());
   app.use(express.json());
   app.use('/api/uploads', express.static(path.join(__dirname, '../public/uploads')));
