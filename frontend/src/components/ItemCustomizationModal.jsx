@@ -677,7 +677,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                       BOM Modifiers
                     </h4>
                   </div>
-                  <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar pr-1">
+                  <div className="space-y-1.5 max-h-56 overflow-y-auto custom-scrollbar pr-1">
                     {recipeIngredients.map(row => {
                       const b = bahanList.find(x => String(x.id) === String(row.bahanId));
                       const label = row.label || b?.name || b?.nama || 'Bahan Baku';
