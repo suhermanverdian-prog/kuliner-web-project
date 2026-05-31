@@ -55,8 +55,8 @@ class OpnameScheduler {
       .from('opname_schedules')
       .insert([{
         tenant_id: tenantId,
-        outlet_id: data.outletId,
-        opname_type: data.opnameType || 'blind',
+        outlet_id: data.outlet_id || data.outletId,
+        opname_type: data.opname_type || data.opnameType || 'blind',
         frequency: data.frequency,
         scheduled_time: data.scheduled_time,
         timezone: data.timezone || 'Asia/Jakarta',
@@ -157,7 +157,7 @@ class OpnameScheduler {
           .from('opname_sessions')
           .select('id')
           .eq('outlet_id', schedule.outlet_id)
-          .in('status', ['active', 'completed']);
+          .in('status', ['in_progress', 'completed']);
 
         if (activeSessions && activeSessions.length > 0) {
           console.warn(`⚠️ [OpnameScheduler] Active/completed session already exists for Outlet ${schedule.outlet_id}. SKIPPING schedule.`);

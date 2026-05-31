@@ -50,7 +50,7 @@ class OpnameService {
   static async startOpname(tenantId, outletId, userId, type = 'blind') {
     // Check if there is an active session
     const sessions = await OpnameRepository.getSessions(tenantId);
-    const activeSession = sessions.find(s => s.status === 'active');
+    const activeSession = sessions.find(s => s.status === 'in_progress');
     if (activeSession) {
       throw new Error('Ada sesi Stok Opname yang sedang aktif. Harap selesaikan atau batalkan sesi tersebut terlebih dahulu.');
     }
@@ -63,14 +63,23 @@ class OpnameService {
       throw new Error('Tidak ada bahan baku aktif yang dapat di-opname.');
     }
 
+    // Generate session number: SO-YYYYMMDD-XXXXX
+    const now = new Date();
+    const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const randPart = Math.floor(10000 + Math.random() * 90000);
+    const sessionNumber = `SO-${datePart}-${randPart}`;
+
     // Create session
     const sessionData = {
       tenant_id: tenantId,
       outlet_id: outletId,
-      status: 'active',
-      type: type,
-      created_by: userId,
-      created_at: new Date().toISOString()
+      session_number: sessionNumber,
+      status: 'in_progress',
+      opname_type: type,
+      started_by: userId,
+      started_at: now.toISOString(),
+      total_items: activeMaterials.length,
+      items_counted: 0
     };
     
     const session = await OpnameRepository.createSession(sessionData);
@@ -94,7 +103,7 @@ class OpnameService {
   static async recordCount(sessionId, itemId, fisikValue, notes = '', userId, tenantId) {
     const session = await OpnameRepository.getSessionById(sessionId, tenantId);
     if (!session) throw new Error('Sesi opname tidak ditemukan.');
-    if (session.status !== 'active') throw new Error('Sesi opname sudah tidak aktif.');
+    if (session.status !== 'in_progress') throw new Error('Sesi opname sudah tidak aktif.');
 
     // Fetch the specific opname item to compare with system stock
     const { data: item, error } = await supabase
@@ -123,7 +132,7 @@ class OpnameService {
   static async completeOpname(sessionId, userId, tenantId) {
     const session = await OpnameRepository.getSessionById(sessionId, tenantId);
     if (!session) throw new Error('Sesi opname tidak ditemukan.');
-    if (session.status !== 'active') throw new Error('Sesi opname sudah tidak aktif.');
+    if (session.status !== 'in_progress') throw new Error('Sesi opname sudah tidak aktif.');
 
     const updateData = {
       status: 'completed',
@@ -319,7 +328,7 @@ class OpnameService {
     }
 
     return await OpnameRepository.updateSession(sessionId, tenantId, {
-      status: 'cancelled'
+      status: 'rejected'
     });
   }
 

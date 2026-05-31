@@ -55,6 +55,9 @@ export default function ProcurementPage() {
   const [searchInvoiceSupplier, setSearchInvoiceSupplier] = React.useState('');
   const [sortField, setSortField] = React.useState('due_date');
   const [sortDirection, setSortDirection] = React.useState('asc');
+  const [showKenModal, setShowKenModal] = React.useState(false);
+  const [kenPredictions, setKenPredictions] = React.useState([]);
+  const [kenLoading, setKenLoading] = React.useState(false);
 
   React.useEffect(() => {
     if (location.state?.triggerAutoReplenish) {
@@ -90,7 +93,9 @@ export default function ProcurementPage() {
 
     // Filter ketat: Hanya tampilkan bahan yang netral (tanpa supplier) ATAU yang supplier-nya cocok!
     const eligibleBahan = bahanList.filter(b => 
-      !b.supplier || String(b.supplier.id) === String(selectedSupplier)
+      !b.supplier || 
+      String(b.supplier.id) === String(selectedSupplier) || 
+      poItems.some(item => String(item.bahanId) === String(b.id))
     );
 
     return (
@@ -168,10 +173,15 @@ export default function ProcurementPage() {
                       </Button>
                       <Button onClick={async () => {
                         try {
+                          setKenLoading(true);
+                          setShowKenModal(true);
                           const res = await api.getReplenishmentPredictions();
-                          alert("🤖 AI ARIMA Replenishment Suggestions:\n\n" + res.map(r => `• ${r.name}: ${r.status} (Sisa ${r.daysRemaining} Hari) -> Saran PO: ${r.suggestedQty} ${r.unit}`).join("\n"));
+                          setKenPredictions(res || []);
                         } catch (e) {
                           alert("Gagal memuat prediksi: " + e.message);
+                          setShowKenModal(false);
+                        } finally {
+                          setKenLoading(false);
                         }
                       }} className="h-7 px-3 rounded-md bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 shadow-md flex items-center gap-1.5 font-bold transition-all active:scale-95">
                          <span className="animate-pulse">✨</span> REKOMENDASI AI
@@ -1036,6 +1046,108 @@ export default function ProcurementPage() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+      {/* 🤖 KEN ASSISTANT MODAL (PREMIUM REPLENISHMENT PREDICTIONS) */}
+      {showKenModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-6 overflow-y-auto">
+          <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={() => setShowKenModal(false)} />
+          <Card className="relative w-full max-w-3xl border border-zinc-200 dark:border-zinc-800 shadow-2xl bg-card rounded-lg overflow-hidden animate-in zoom-in-95 duration-200 my-auto flex flex-col">
+            <CardHeader className="p-6 border-b border-border bg-background flex-shrink-0">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 dark:bg-amber-400/10 flex items-center justify-center text-amber-500 font-black animate-pulse">
+                    <span className="text-lg">✨</span>
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                      KEN ASSISTANT <span className="text-amber-500 italic text-sm">Replenishment Intelligence</span>
+                    </CardTitle>
+                    <CardDescription className="text-xs font-bold text-zinc-500">
+                      Predictive SCM analysis and order quantity recommendation logs
+                    </CardDescription>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowKenModal(false)}
+                  className="w-8 h-8 rounded-lg hover:bg-background flex items-center justify-center text-zinc-500 dark:text-zinc-100 hover:text-foreground transition-colors"
+                >
+                  <Plus className="rotate-45" size={16} />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0 overflow-y-auto max-h-[60vh] custom-scrollbar">
+              {kenLoading ? (
+                <div className="py-20 flex flex-col items-center justify-center gap-4">
+                  <Loader2 className="w-10 h-10 animate-spin text-amber-500" />
+                  <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">Calculating ARIMA Stock Forecasts...</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader className="bg-background sticky top-0 z-10">
+                    <TableRow>
+                      <TableHead className="px-6 py-4">Bahan Baku</TableHead>
+                      <TableHead className="px-6 py-4 text-center">Stok Saat Ini</TableHead>
+                      <TableHead className="px-6 py-4 text-center">Konsumsi Harian</TableHead>
+                      <TableHead className="px-6 py-4 text-center">Estimasi Sisa</TableHead>
+                      <TableHead className="px-6 py-4 text-center">Status</TableHead>
+                      <TableHead className="px-6 py-4 text-right">Rekomendasi PO</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {kenPredictions.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="h-32 text-center text-zinc-550 italic">No prediction data found.</TableCell>
+                      </TableRow>
+                    ) : (
+                      kenPredictions.map((row) => (
+                        <TableRow key={row.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
+                          <TableCell className="px-6 py-4">
+                            <span className="font-black text-sm uppercase text-zinc-900 dark:text-zinc-100">{row.name}</span>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-center font-mono tabular-nums text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                            {row.currentStock} {row.unit}
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-center font-mono tabular-nums text-xs text-zinc-500">
+                            {row.dailyRate} {row.unit}/hari
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-center font-mono tabular-nums text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                            {row.daysRemaining} hari
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-center">
+                            <span className={cn(
+                              "inline-flex items-center px-3 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest border",
+                              row.status === 'Kritis' 
+                                ? "bg-rose-50 text-rose-750 dark:bg-rose-950/30 dark:text-rose-400 border-rose-200 dark:border-rose-800" 
+                                : "bg-emerald-50 text-emerald-755 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                            )}>
+                              {row.status}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-6 py-4 text-right">
+                            <span className={cn(
+                              "font-mono tabular-nums text-sm font-bold",
+                              row.suggestedQty > 0 ? "text-amber-500" : "text-zinc-400"
+                            )}>
+                              {row.suggestedQty > 0 ? `Order +${row.suggestedQty} ${row.unit}` : 'Stok Cukup'}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+            <CardFooter className="p-4 px-6 bg-background border-t border-border flex-shrink-0 flex justify-end">
+              <Button 
+                className="h-10 px-6 bg-amber-550 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-md font-black uppercase tracking-widest rounded-lg text-xs"
+                onClick={() => setShowKenModal(false)}
+              >
+                Close Insights
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       )}
     </div>

@@ -55,19 +55,33 @@ export function useGuestMenu({ user, tableFromQR }) {
 
   const totalItems = cart.reduce((s, i) => s + i.qty, 0);
 
-  const addToCart = (item) => {
+  const addToCart = (item, customization = null, finalPrice = null, customizationSummary = '') => {
     setCart(prev => {
-      const ex = prev.find(i => i.id === item.id);
-      if (ex) return prev.map(i => i.id === item.id ? { ...i, qty: i.qty + 1 } : i);
-      return [...prev, { ...item, qty: 1 }];
+      const itemPrice = finalPrice !== null ? finalPrice : item.price;
+      const customKey = customization 
+        ? `${item.id}-${JSON.stringify(customization)}` 
+        : `${item.id}-default`;
+      
+      const existingIndex = prev.findIndex(i => i.customKey === customKey);
+      if (existingIndex > -1) {
+        return prev.map((i, idx) => idx === existingIndex ? { ...i, qty: i.qty + (item.qty || 1) } : i);
+      }
+      return [...prev, { 
+        ...item, 
+        price: itemPrice, 
+        qty: item.qty || 1, 
+        customKey, 
+        customization,
+        customizationSummary
+      }];
     });
   };
 
-  const changeQty = (id, delta) => {
-    setCart(prev => prev.map(i => i.id === id ? { ...i, qty: i.qty + delta } : i).filter(i => i.qty > 0));
+  const changeQty = (key, delta) => {
+    setCart(prev => prev.map(i => (i.customKey === key || i.id === key) ? { ...i, qty: i.qty + delta } : i).filter(i => i.qty > 0));
   };
 
-  const getQty = (id) => cart.find(i => i.id === id)?.qty || 0;
+  const getQty = (key) => cart.find(i => i.customKey === key || i.id === key)?.qty || 0;
 
   return {
     category, setCategory,

@@ -42,7 +42,9 @@ class OpnameController {
   async startOpname(req, res) {
     try {
       const { tenantId, id: userId } = req.userContext || {};
-      const { outletId, type } = req.body;
+      // Note: normalizeKeys middleware converts camelCase → snake_case
+      const outletId = req.body.outlet_id || req.body.outletId;
+      const type = req.body.type;
       
       const session = await OpnameService.startOpname(tenantId, outletId, userId, type || 'blind');
       res.status(201).json(session);
@@ -55,7 +57,10 @@ class OpnameController {
     try {
       const { tenantId, id: userId } = req.userContext || {};
       const { sessionId } = req.params;
-      const { itemId, stockFisik, notes } = req.body;
+      // Note: normalizeKeys middleware converts camelCase → snake_case
+      const itemId = req.body.item_id || req.body.itemId;
+      const stockFisik = req.body.stock_fisik ?? req.body.stockFisik;
+      const { notes } = req.body;
 
       if (stockFisik === undefined || stockFisik === null) {
         return res.status(400).json({ error: 'Kuantitas fisik wajib diisi.' });

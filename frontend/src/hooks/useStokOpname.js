@@ -47,8 +47,8 @@ export function useStokOpname() {
       const data = await api.getOpnameSessions();
       setSessions(Array.isArray(data) ? data : []);
       
-      // Check if there is an active session
-      const active = data.find(s => s.status === 'active' || s.status === 'completed');
+      // Check if there is an active session (in_progress or completed awaiting approval)
+      const active = data.find(s => s.status === 'in_progress' || s.status === 'completed');
       if (active) {
         const detailed = await api.getOpnameSessionById(active.id);
         setActiveSession(detailed);

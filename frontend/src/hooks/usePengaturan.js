@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../api';
 import { useAppStore } from '../store/useAppStore';
 
@@ -9,7 +10,15 @@ export function usePengaturan() {
 
   const [users, setUsers] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [activeTab, setActiveTab] = useState('users');
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'users';
+  const setActiveTab = useCallback((newTab) => {
+    // Preserve other search parameters like standalone when switching tabs
+    const nextParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    nextParams.set('tab', newTab);
+    setSearchParams(nextParams);
+  }, [setSearchParams]);
   const [settings, setSettings] = useState({ storeName: '', taxPct: 0, servicePct: 0 });
   const [aiConfig, setAiConfig] = useState({ provider: 'openai', apiKey: '', isEnabled: false });
   const [userSubTab, setUserSubTab] = useState('profil');
@@ -73,6 +82,8 @@ export function usePengaturan() {
       setFeatureOverrides(tenant.feature_overrides);
     }
   }, []);
+
+
 
   const toggleRolePerm = useCallback((roleId, permKey) => {
     if (!selectedRole) return;

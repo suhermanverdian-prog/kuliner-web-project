@@ -140,7 +140,7 @@ export default function StokOpnamePage() {
     if (!window.confirm('Apakah Anda yakin ingin menonaktifkan/menghapus jadwal terjadwal ini?')) return;
     try {
       setLoadingSchedules(true);
-      await api.deleteSchedule(id);
+      await api.deleteOpnameSchedule(id);
       fetchSchedulesData();
     } catch (err) {
       alert(err.message || 'Gagal menghapus jadwal');
@@ -232,7 +232,7 @@ export default function StokOpnamePage() {
 
   // Safe HTTP Polling Simulator: 8s interval (For multi-outlet sync & concurrency prevention)
   useEffect(() => {
-    if (!activeSession || activeSession.status !== 'active') return;
+    if (!activeSession || activeSession.status !== 'in_progress') return;
 
     const interval = setInterval(() => {
       // Simulate real-time concurrency lock allocation among multi-users
@@ -440,7 +440,7 @@ export default function StokOpnamePage() {
           {!activeSession ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Active Session Creator */}
-              <Card className="lg:col-span-1 border border-zinc-250 dark:border-zinc-700/60 bg-card rounded-lg">
+              <Card className="lg:col-span-1 border border-zinc-200 dark:border-zinc-700/60 bg-card rounded-lg">
                 <CardHeader className="p-5 border-b border-zinc-200 dark:border-zinc-800">
                   <CardTitle className="text-xs font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-100">Mulai Sesi Baru</CardTitle>
                   <CardDescription className="text-xs text-zinc-500">Mulai sesi hitung fisik persediaan baru.</CardDescription>
@@ -531,17 +531,17 @@ export default function StokOpnamePage() {
               {activeSession && (
                 <div className="space-y-6">
                   {/* Visual Status Timeline (Linear Connected Dots) */}
-                  <Card className="border border-zinc-250 dark:border-zinc-800 bg-card rounded-lg p-5">
+                  <Card className="border border-zinc-200 dark:border-zinc-800 bg-card rounded-lg p-5">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                       <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Alur Progres Audit:</span>
                       <div className="flex items-center flex-wrap gap-2 md:gap-4">
                         {[
-                          { key: 'active', label: '1. Perhitungan (Fisik)' },
+                          { key: 'in_progress', label: '1. Perhitungan (Fisik)' },
                           { key: 'completed', label: '2. Selesai (Menunggu ACC)' },
                           { key: 'approved', label: '3. Disetujui (Jurnal Terposting)' }
                         ].map((step, sIdx) => {
                           const isActive = activeSession.status === step.key;
-                          const isPast = (activeSession.status === 'completed' && step.key === 'active') || 
+                          const isPast = (activeSession.status === 'completed' && step.key === 'in_progress') || 
                                          (activeSession.status === 'approved');
                           return (
                             <React.Fragment key={step.key}>
@@ -577,7 +577,7 @@ export default function StokOpnamePage() {
                   </Card>
 
                   {/* Active Session Info Banner */}
-                  <Card className="border border-zinc-250 dark:border-zinc-700/60 shadow-xl bg-card rounded-lg overflow-hidden">
+                  <Card className="border border-zinc-200 dark:border-zinc-700/60 shadow-xl bg-card rounded-lg overflow-hidden">
                     <CardContent className="p-0">
                       {/* Banner Info */}
                       <div className="p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800">
@@ -585,11 +585,11 @@ export default function StokOpnamePage() {
                           <div className="flex items-center gap-3">
                             <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
                             <h3 className="text-base font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-100 flex items-center gap-2 font-mono">
-                              <ClipboardList size={18} /> Sesi Stok Opname Aktif: OPN-{activeSession.id.slice(0, 8).toUpperCase()}
+                              <ClipboardList size={18} /> {activeSession.session_number || `OPN-${(activeSession.id || '').slice(0, 8).toUpperCase()}`}
                             </h3>
                           </div>
                           <p className="text-[10px] text-zinc-500 font-bold">
-                            Mulai: {new Date(activeSession.created_at).toLocaleString('id-ID')} | Paradigma: <span className="uppercase text-amber-500 font-extrabold">{activeSession.type} SO</span>
+                            Mulai: {new Date(activeSession.started_at || activeSession.created_at || Date.now()).toLocaleString('id-ID')} | Paradigma: <span className="uppercase text-amber-500 font-extrabold">{(activeSession.opname_type || activeSession.type || 'blind').toUpperCase()} SO</span>
                           </p>
                         </div>
 
@@ -607,13 +607,13 @@ export default function StokOpnamePage() {
                         </div>
 
                         {/* Status Action Buttons */}
-                        <div className="flex flex-wrap items-center gap-3">
-                          {activeSession.status === 'active' && (
-                            <>
+                        <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/80 p-2 rounded-md border border-zinc-200 dark:border-zinc-700 shadow-sm z-10">
+                          {activeSession.status === 'in_progress' && (
+                            <div className="flex items-center gap-2">
                               <Button
                                 onClick={handleCancelOpname}
                                 disabled={saving}
-                                className="h-9 px-4 text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-md"
+                                className="h-9 px-4 text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-md transition-all active:scale-95"
                               >
                                 Batalkan Sesi
                               </Button>
@@ -624,7 +624,7 @@ export default function StokOpnamePage() {
                               >
                                 <FileCheck2 size={12} /> Selesaikan Perhitungan
                               </Button>
-                            </>
+                            </div>
                           )}
 
                           {activeSession.status === 'completed' && (
@@ -728,7 +728,7 @@ export default function StokOpnamePage() {
               </div>
 
               {/* Material Counting Table */}
-              <Card className="border border-zinc-250 dark:border-zinc-700/60 shadow-xl bg-card overflow-hidden rounded-lg">
+              <Card className="border border-zinc-200 dark:border-zinc-700/60 shadow-xl bg-card overflow-hidden rounded-lg">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -736,7 +736,7 @@ export default function StokOpnamePage() {
                         <th className="px-6 py-4">Bahan Baku</th>
                         <th className="px-6 py-4 text-center">Satuan</th>
                         {/* Show system stock only if paradigma is standard, OR if the user is manager/owner in review phase */}
-                        {(!activeSession.type.includes('blind') || (activeSession.status === 'completed' && isManagerOrOwner)) && (
+                        {(!(activeSession.opname_type || activeSession.type || 'blind').includes('blind') || (activeSession.status === 'completed' && isManagerOrOwner)) && (
                           <>
                             <th className="px-6 py-4 text-right">Stok Sistem</th>
                             <th className="px-6 py-4 text-right">Selisih</th>
@@ -745,7 +745,7 @@ export default function StokOpnamePage() {
                         )}
                         <th className="px-6 py-4">Hitung Fisik</th>
                         <th className="px-6 py-4">Catatan Selisih</th>
-                        {activeSession.status === 'active' && <th className="px-6 py-4 text-center">Simpan</th>}
+                        {activeSession.status === 'in_progress' && <th className="px-6 py-4 text-center">Simpan</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
@@ -755,7 +755,7 @@ export default function StokOpnamePage() {
                         const diffVal = item.variance;
                         const cost = item.bahan?.cost || 0;
                         
-                        const showsSystemComparison = !activeSession.type.includes('blind') || (activeSession.status === 'completed' && isManagerOrOwner);
+                        const showsSystemComparison = !(activeSession.opname_type || activeSession.type || 'blind').includes('blind') || (activeSession.status === 'completed' && isManagerOrOwner);
 
                         // Keyboard Navigation Handler
                         const handleKeyDown = (e) => {
@@ -828,7 +828,7 @@ export default function StokOpnamePage() {
 
                               {/* Fisik Count Input */}
                               <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                {activeSession.status === 'active' ? (
+                                {activeSession.status === 'in_progress' ? (
                                   <div className="flex items-center gap-2 max-w-[120px]">
                                     <Input
                                       id={`count-input-${idx}`}
@@ -849,7 +849,7 @@ export default function StokOpnamePage() {
 
                               {/* Note Input */}
                               <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                                {activeSession.status === 'active' ? (
+                                {activeSession.status === 'in_progress' ? (
                                   <Input
                                     placeholder="Misal: Spoil/Bocor..."
                                     value={noteInputs[item.id] !== undefined ? noteInputs[item.id] : (item.notes || '')}
@@ -862,7 +862,7 @@ export default function StokOpnamePage() {
                               </td>
 
                               {/* Save Button for active state */}
-                              {activeSession.status === 'active' && (
+                              {activeSession.status === 'in_progress' && (
                                 <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
                                   <Button
                                     onClick={() => submitSingleCount(item.id)}
@@ -870,7 +870,7 @@ export default function StokOpnamePage() {
                                     className={cn(
                                       "h-8 w-8 p-0 rounded-md active:scale-95 transition-all flex items-center justify-center",
                                       savedFisik !== null 
-                                        ? "bg-zinc-150 text-zinc-650 dark:bg-zinc-800 dark:text-zinc-350 hover:bg-zinc-200" 
+                                        ? "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 hover:bg-zinc-200" 
                                         : "bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900"
                                     )}
                                   >
@@ -983,7 +983,7 @@ export default function StokOpnamePage() {
       {/* ========================================================================= */}
       {activeTab === 'history' && (
         <div className="space-y-6">
-          <Card className="border border-zinc-250 dark:border-zinc-700/60 bg-card rounded-lg">
+          <Card className="border border-zinc-200 dark:border-zinc-700/60 bg-card rounded-lg">
             <CardHeader className="p-5 border-b border-zinc-200 dark:border-zinc-800">
               <CardTitle className="text-sm font-black uppercase tracking-wider text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                 <History size={16} /> Riwayat Stok Opname Terdahulu
@@ -1015,10 +1015,10 @@ export default function StokOpnamePage() {
                     className="w-full h-9 px-3 rounded border border-zinc-200 dark:border-zinc-700 bg-card text-xs font-black uppercase tracking-wider focus:outline-none"
                   >
                     <option value="all">Semua Status</option>
-                    <option value="active">Sesi Aktif</option>
+                    <option value="in_progress">Sesi Aktif</option>
                     <option value="completed">Menunggu ACC</option>
                     <option value="approved">Selesai (ACC)</option>
-                    <option value="cancelled">Dibatalkan</option>
+                    <option value="rejected">Dibatalkan</option>
                   </select>
                 </div>
               </div>
@@ -1048,19 +1048,19 @@ export default function StokOpnamePage() {
                         const outletName = outlets.find(o => o.id === s.outlet_id)?.name || 'Outlet Utama';
                         return (
                           <tr key={s.id} className="text-xs hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-                            <td className="px-5 py-3 font-mono font-bold text-zinc-900 dark:text-zinc-100">#{s.id.slice(0, 8)}</td>
+                            <td className="px-5 py-3 font-mono font-bold text-zinc-900 dark:text-zinc-100">{s.session_number || `#${(s.id || '').slice(0, 8)}`}</td>
                             <td className="px-5 py-3 uppercase tracking-wider font-bold text-zinc-700 dark:text-zinc-300">{outletName}</td>
-                            <td className="px-5 py-3 uppercase tracking-wider font-semibold text-zinc-600 dark:text-zinc-400">{s.type}</td>
-                            <td className="px-5 py-3 text-zinc-500">{new Date(s.created_at).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
+                            <td className="px-5 py-3 uppercase tracking-wider font-semibold text-zinc-600 dark:text-zinc-400">{s.opname_type || s.type || 'blind'}</td>
+                            <td className="px-5 py-3 text-zinc-500">{new Date(s.started_at || s.created_at || Date.now()).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
                             <td className="px-5 py-3">
                               <span className={cn(
                                 "px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest",
-                                s.status === 'approved' && "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-250 dark:border-emerald-800",
-                                s.status === 'completed' && "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-250 dark:border-amber-800",
-                                s.status === 'active' && "bg-zinc-100 text-zinc-700 dark:bg-zinc-850 dark:text-zinc-300 border border-zinc-250 dark:border-zinc-700",
-                                s.status === 'cancelled' && "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-250 dark:border-rose-800"
+                                s.status === 'approved' && "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800",
+                                s.status === 'completed' && "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800",
+                                s.status === 'in_progress' && "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700",
+                                s.status === 'rejected' && "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
                               )}>
-                                {s.status === 'approved' ? 'SELESAI' : s.status === 'completed' ? 'MENUNGGU ACC' : s.status === 'active' ? 'AKTIF' : 'BATAL'}
+                                {s.status === 'approved' ? 'SELESAI' : s.status === 'completed' ? 'MENUNGGU ACC' : s.status === 'in_progress' ? 'AKTIF' : 'BATAL'}
                               </span>
                             </td>
                             <td className="px-5 py-3 text-center">
@@ -1074,7 +1074,7 @@ export default function StokOpnamePage() {
                                     alert('Gagal mengambil data lengkap sesi ini.');
                                   }
                                 }}
-                                className="h-7 px-3 text-[9px] font-black uppercase tracking-widest border border-zinc-200 dark:border-zinc-850 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                className="h-7 px-3 text-[9px] font-black uppercase tracking-widest border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                               >
                                 Buka Detail
                               </Button>
@@ -1218,11 +1218,11 @@ export default function StokOpnamePage() {
                       { label: 'Major (>=10% Selisih)', percent: 7, color: 'bg-rose-500' }
                     ].map((bar, bIdx) => (
                       <div key={bIdx} className="space-y-1.5">
-                        <div className="flex justify-between text-[10px] font-bold text-zinc-500 dark:text-zinc-450">
+                        <div className="flex justify-between text-[10px] font-bold text-zinc-500 dark:text-zinc-400">
                           <span>{bar.label}</span>
                           <span className="font-mono tabular-nums">{bar.percent}%</span>
                         </div>
-                        <div className="w-full bg-zinc-100 dark:bg-zinc-850 h-2.5 rounded-full overflow-hidden">
+                        <div className="w-full bg-zinc-100 dark:bg-zinc-800 h-2.5 rounded-full overflow-hidden">
                           <div className={cn("h-full rounded-full transition-all duration-1000", bar.color)} style={{ width: `${bar.percent}%` }} />
                         </div>
                       </div>
@@ -1240,7 +1240,7 @@ export default function StokOpnamePage() {
                   <div className="grid grid-cols-1 gap-2.5">
                     <Button
                       onClick={() => window.print()}
-                      className="w-full h-9 text-[10px] font-black uppercase tracking-wider bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-850 dark:text-zinc-200 dark:hover:bg-zinc-750 flex items-center justify-center gap-1.5 rounded-md"
+                      className="w-full h-9 text-[10px] font-black uppercase tracking-wider bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700 flex items-center justify-center gap-1.5 rounded-md"
                     >
                       Cetak Dokumen (Print)
                     </Button>
@@ -1281,7 +1281,7 @@ export default function StokOpnamePage() {
             <div className="flex flex-col items-center justify-center p-8 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg text-center bg-zinc-50/50 dark:bg-zinc-900/10">
               <BarChart3 className="w-16 h-16 text-zinc-400 mb-4 animate-pulse" />
               <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500">Tidak Ada Data Statistik Sesi Terintegrasi</h3>
-              <p className="text-[10px] text-zinc-450 mt-1 max-w-sm">Selesaikan dan setujui minimal 1 sesi Stok Opname di outlet ini untuk menghasilkan ringkasan visual performa.</p>
+              <p className="text-[10px] text-zinc-400 mt-1 max-w-sm">Selesaikan dan setujui minimal 1 sesi Stok Opname di outlet ini untuk menghasilkan ringkasan visual performa.</p>
             </div>
           )}
         </div>
@@ -1509,7 +1509,7 @@ export default function StokOpnamePage() {
                                 "text-[9px] font-black uppercase px-2 py-0.5 rounded border active:scale-95 transition-all",
                                 s.enabled 
                                   ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400 border-emerald-200" 
-                                  : "bg-zinc-100 text-zinc-500 dark:bg-zinc-850 dark:text-zinc-400 border-zinc-200"
+                                  : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border-zinc-200"
                               )}
                             >
                               {s.enabled ? 'Aktif' : 'Nonaktif'}
@@ -1533,7 +1533,7 @@ export default function StokOpnamePage() {
                       ))}
                       {schedules.length === 0 && (
                         <tr>
-                          <td colSpan={6} className="px-5 py-8 text-center text-zinc-455 font-bold">Tidak ada konfigurasi jadwal otomatis. Silakan buat satu jadwal di panel kiri.</td>
+                          <td colSpan={6} className="px-5 py-8 text-center text-zinc-500 font-bold">Tidak ada konfigurasi jadwal otomatis. Silakan buat satu jadwal di panel kiri.</td>
                         </tr>
                       )}
                     </tbody>
@@ -1551,7 +1551,7 @@ export default function StokOpnamePage() {
                     </div>
                     <button 
                       onClick={() => setSelectedScheduleId(null)}
-                      className="text-[9px] font-black text-zinc-400 hover:text-zinc-650 uppercase"
+                      className="text-[9px] font-black text-zinc-400 hover:text-zinc-600 uppercase"
                     >
                       Tutup
                     </button>
@@ -1586,7 +1586,7 @@ export default function StokOpnamePage() {
                         ))}
                         {scheduleHistory.length === 0 && (
                           <tr>
-                            <td colSpan={3} className="px-4 py-6 text-center text-zinc-450">Belum ada catatan aktivitas eksekusi untuk jadwal ini.</td>
+                            <td colSpan={3} className="px-4 py-6 text-center text-zinc-500">Belum ada catatan aktivitas eksekusi untuk jadwal ini.</td>
                           </tr>
                         )}
                       </tbody>
@@ -1716,7 +1716,7 @@ export default function StokOpnamePage() {
                     </div>
                     <button 
                       onClick={() => setJournalPreview(null)}
-                      className="text-[9px] font-black text-zinc-400 hover:text-zinc-650 uppercase"
+                      className="text-[9px] font-black text-zinc-400 hover:text-zinc-600 uppercase"
                     >
                       Batal
                     </button>
@@ -1786,7 +1786,7 @@ export default function StokOpnamePage() {
                 <div className="flex flex-col items-center justify-center p-8 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg text-center bg-zinc-50/50 dark:bg-zinc-900/10 min-h-[220px]">
                   <CircleDollarSign className="w-16 h-16 text-zinc-400 mb-4 animate-pulse" />
                   <h3 className="text-xs font-black uppercase tracking-widest text-zinc-500">Antrean Jurnal Akuntansi Kosong</h3>
-                  <p className="text-[10px] text-zinc-450 mt-1 max-w-sm">Belum ada sesi Stok Opname yang selesai dihitung dan siap diposting jurnal penyesuaian persediaannya.</p>
+                  <p className="text-[10px] text-zinc-400 mt-1 max-w-sm">Belum ada sesi Stok Opname yang selesai dihitung dan siap diposting jurnal penyesuaian persediaannya.</p>
                 </div>
               )}
             </div>

@@ -78,6 +78,7 @@ app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
   app.use('/api/p', requireFeature('procurement'), require('./routes/procurementRoutes'));
   app.use('/api/laporan', require('./routes/reportRoutes'));
   app.use('/api/promo-codes', require('./routes/promoCodeRoutes'));
+  app.use('/api/loyalty', require('./routes/loyaltyRoutes'));
   app.use('/api/assets', requireFeature('accounting'), require('./routes/assetRoutes'));
   app.use('/api/closings', requireFeature('accounting'), require('./routes/closingRoutes'));
 

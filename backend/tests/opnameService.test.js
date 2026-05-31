@@ -30,7 +30,7 @@ describe('OpnameService Integration Suite (SCBD Grade Standards)', () => {
 
   describe('startOpname', () => {
     it('should throw error if there is already an active session', async () => {
-      OpnameRepository.getSessions.mockResolvedValue([{ status: 'active' }]);
+      OpnameRepository.getSessions.mockResolvedValue([{ status: 'in_progress' }]);
 
       await expect(OpnameService.startOpname(tenantId, outletId, userId))
         .rejects.toThrow('Ada sesi Stok Opname yang sedang aktif');
@@ -53,7 +53,7 @@ describe('OpnameService Integration Suite (SCBD Grade Standards)', () => {
       ];
       InventoryRepository.getBahan.mockResolvedValue(mockMaterials);
 
-      const mockSession = { id: 'session-uuid', tenant_id: tenantId, status: 'active' };
+      const mockSession = { id: 'session-uuid', tenant_id: tenantId, status: 'in_progress' };
       OpnameRepository.createSession.mockResolvedValue(mockSession);
       OpnameRepository.createSessionItems.mockResolvedValue(true);
       
@@ -70,7 +70,7 @@ describe('OpnameService Integration Suite (SCBD Grade Standards)', () => {
       const result = await OpnameService.startOpname(tenantId, outletId, userId, 'blind');
 
       expect(result).toHaveProperty('id', 'session-uuid');
-      expect(result).toHaveProperty('status', 'active');
+      expect(result).toHaveProperty('status', 'in_progress');
       expect(OpnameRepository.createSessionItems).toHaveBeenCalled();
     });
   });
@@ -81,7 +81,7 @@ describe('OpnameService Integration Suite (SCBD Grade Standards)', () => {
       const itemId = 'item-123';
       const count = 92; // System had 100, variance should be -8
 
-      OpnameRepository.getSessionById.mockResolvedValue({ id: sessionId, status: 'active' });
+      OpnameRepository.getSessionById.mockResolvedValue({ id: sessionId, status: 'in_progress' });
       
       const mockItem = { id: itemId, stock_sistem: 100 };
       supabase.single.mockResolvedValue({ data: mockItem, error: null });
@@ -105,7 +105,7 @@ describe('OpnameService Integration Suite (SCBD Grade Standards)', () => {
 
   describe('getSessionById (Dynamic Neural Variance Analyzer)', () => {
     it('should dynamically calculate variance percentage and categorize on the fly', async () => {
-      const mockSession = { id: 'session-123', status: 'active' };
+      const mockSession = { id: 'session-123', status: 'in_progress' };
       const mockItems = [
         // 0% variance -> normal
         { id: 'i1', stock_sistem: 100, stock_fisik: 100, variance: 0, bahan: { name: 'Beans', cost: 100 } },
@@ -133,7 +133,7 @@ describe('OpnameService Integration Suite (SCBD Grade Standards)', () => {
 
   describe('approveOpname', () => {
     it('should throw error if opname session is not in completed state', async () => {
-      OpnameRepository.getSessionById.mockResolvedValue({ id: 'session-123', status: 'active' });
+      OpnameRepository.getSessionById.mockResolvedValue({ id: 'session-123', status: 'in_progress' });
 
       await expect(OpnameService.approveOpname('session-123', userId, tenantId))
         .rejects.toThrow('Hanya sesi opname berstatus "completed" yang dapat disetujui');

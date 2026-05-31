@@ -5,6 +5,7 @@ import { MENU_CATEGORIES } from '../utils/constants';
 import { api } from '../api';
 import { useGuestMenu } from '../hooks/useGuestMenu';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
+import ItemCustomizationModal from '../components/ItemCustomizationModal';
 import { 
   ShoppingBag, 
   Search, 
@@ -385,6 +386,32 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
     { key: 'E-Wallet',      label: 'E-Wallet',     icon: <Wallet size={20} />, desc: 'GoPay / OVO / Dana' },
   ];
   const [loading, setLoading] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoError, setPromoError] = useState('');
+
+  const discountAmount = appliedPromo ? appliedPromo.discountAmount : 0;
+  const finalTotal = Math.max(0, total - discountAmount);
+
+  const handleValidatePromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoError('');
+    try {
+      const res = await api.request(`${api.url}/promo-codes/validate`, 'POST', {
+        code: promoCode.trim().toUpperCase(),
+        subtotal: total
+      });
+      if (res && res.valid) {
+        setAppliedPromo(res);
+      } else {
+        setPromoError(res?.error || 'Kode promo tidak valid');
+        setAppliedPromo(null);
+      }
+    } catch (err) {
+      setPromoError(err.message || 'Gagal memvalidasi kode promo');
+      setAppliedPromo(null);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -393,7 +420,10 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
     try {
       const trxData = {
         items: cart,
-        total: total,
+        total: finalTotal,
+        discountAmount,
+        promo_code: appliedPromo?.code || null,
+        customer_phone: form.phone,
         paymentMethod: form.paymentMethod,
         tableType: form.orderType === 'Dine-in' ? (form.tableNum ? `Meja ${form.tableNum}` : 'Meja Umum') : 'Take Away',
         customerName: form.name,
@@ -491,6 +521,41 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
             </div>
           </section>
 
+          {/* Section: Promo Code */}
+          <section className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-1.5 h-6 bg-primary rounded-lg" />
+              <h2 className="text-lg font-black">Miliki Kode Promo?</h2>
+            </div>
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="MASUKKAN KODE PROMO"
+                  value={promoCode}
+                  onChange={e => setPromoCode(e.target.value)}
+                  className="h-12 font-black rounded-lg bg-background border-none uppercase focus-visible:ring-amber-500/20"
+                />
+                <Button 
+                  type="button"
+                  onClick={handleValidatePromo}
+                  className="h-12 px-6 rounded-lg bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 font-bold active:scale-95"
+                >
+                  Cek
+                </Button>
+              </div>
+              {appliedPromo && (
+                <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-3 rounded-lg">
+                  Diskon {appliedPromo.code} berhasil digunakan! (-Rp {Number(appliedPromo.discountAmount).toLocaleString('id-ID')})
+                </div>
+              )}
+              {promoError && (
+                <div className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-3 rounded-lg">
+                  {promoError}
+                </div>
+              )}
+            </div>
+          </section>
+
           {/* Section: Payment Method */}
           <section className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
@@ -532,22 +597,30 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
 
         {/* Floating Action Bar */}
         <div className="fixed bottom-0 left-0 right-0 p-6 bg-background/80 backdrop-blur-xl border-t z-30">
-          <div className="max-w-md mx-auto flex items-center gap-4">
-            <div className="flex-1">
-              <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Total Bayar</p>
-              <p className="text-xl font-black text-primary font-mono tabular-nums">{formatRupiah(total)}</p>
+          <div className="max-w-md mx-auto">
+            {discountAmount > 0 && (
+              <div className="flex justify-between items-center mb-2 px-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                <span>Diskon Promo ({appliedPromo?.code})</span>
+                <span className="font-mono tabular-nums">-{formatRupiah(discountAmount)}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Total Bayar</p>
+                <p className="text-xl font-black text-primary font-mono tabular-nums">{formatRupiah(finalTotal)}</p>
+              </div>
+              <Button 
+                onClick={handleSubmit} 
+                disabled={loading}
+                className="flex-[1.5] h-14 rounded-lg font-black text-lg shadow-xl shadow-primary/30"
+              >
+                {loading ? (
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-lg animate-spin" />
+                ) : (
+                  <>Konfirmasi & Pesan <ChevronRight size={20} className="ml-2" /></>
+                )}
+              </Button>
             </div>
-            <Button 
-              onClick={handleSubmit} 
-              disabled={loading}
-              className="flex-[1.5] h-14 rounded-lg font-black text-lg shadow-xl shadow-primary/30"
-            >
-              {loading ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-lg animate-spin" />
-              ) : (
-                <>Konfirmasi & Pesan <ChevronRight size={20} className="ml-2" /></>
-              )}
-            </Button>
           </div>
         </div>
       </div>
@@ -587,24 +660,30 @@ function CartDrawer({ cart, onClose, onChangeQty, onCheckout }) {
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className="flex gap-4 group">
+              <div key={item.customKey || item.id} className="flex gap-4 group">
                 <div className="w-16 h-16 rounded-lg overflow-hidden bg-background flex-shrink-0">
                   <ProductImage src={item.image} alt={item.name} icon={item.icon} className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0 py-1">
                   <h4 className="font-bold text-sm truncate">{item.name}</h4>
                   <p className="text-primary font-black text-sm mt-0.5 font-mono tabular-nums">{formatRupiah(item.price)}</p>
+                  {item.customizationSummary && (
+                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 italic leading-tight">{item.customizationSummary}</p>
+                  )}
+                  {item.customization?.note && (
+                    <p className="text-[10px] text-amber-600 dark:text-amber-500/70 mt-0.5 leading-tight font-medium">📋: "{item.customization.note}"</p>
+                  )}
                   
                   <div className="flex items-center gap-4 mt-4">
                     <button 
-                      onClick={() => onChangeQty(item.id, -1)}
+                      onClick={() => onChangeQty(item.customKey || item.id, -1)}
                       className="w-8 h-8 rounded-lg border border-muted-foreground/30 flex items-center justify-center hover:bg-background transition-colors"
                     >
                       <Minus size={14} />
                     </button>
                     <span className="font-bold text-sm min-w-[20px] text-center">{item.qty}</span>
                     <button 
-                      onClick={() => onChangeQty(item.id, 1)}
+                      onClick={() => onChangeQty(item.customKey || item.id, 1)}
                       className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
                     >
                       <Plus size={14} />
@@ -693,6 +772,8 @@ export default function GuestMenuPage({ user }) {
     changeQty,
     getQty
   } = useGuestMenu({ user, tableFromQR });
+
+  const [customizingItem, setCustomizingItem] = useState(null);
 
   if (activeOrderId) {
     return <OrderTracking orderId={activeOrderId} onBack={() => { setActiveOrderId(null); localStorage.removeItem('lastOrderId'); }} />;
@@ -862,7 +943,7 @@ export default function GuestMenuPage({ user }) {
                         {qty === 0 ? (
                           <button 
                             id={`btn-tambah-${item.id}`}
-                            onClick={() => addToCart(item)}
+                            onClick={() => setCustomizingItem(item)}
                             className="w-10 h-10 rounded-lg bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 flex items-center justify-center shadow-md active:scale-90 transition-all"
                           >
                             <Plus size={20} />
@@ -979,6 +1060,21 @@ export default function GuestMenuPage({ user }) {
             </form>
           </div>
         </div>
+      )}
+      {customizingItem && (
+        <ItemCustomizationModal
+          item={customizingItem}
+          onClose={() => setCustomizingItem(null)}
+          onConfirm={(customizedItem) => {
+            addToCart(
+              customizingItem,
+              customizedItem.customization,
+              customizedItem.finalPrice,
+              customizedItem.customizationSummary
+            );
+            setCustomizingItem(null);
+          }}
+        />
       )}
     </div>
   );

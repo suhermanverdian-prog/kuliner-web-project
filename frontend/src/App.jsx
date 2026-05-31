@@ -188,7 +188,7 @@ function AppRoutes() {
           <Route path="/hrd" element={<LaporanHRDPage />} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/opname" element={<StokOpnamePage />} />
-          <Route path="/customer" element={user?.role === 'customer' ? <CustomerPortalPage /> : <Navigate to="/login" replace />} />
+          <Route path="/customer" element={user?.role === 'customer' ? <CustomerPortalPage user={user} onLogout={() => setUser(null)} /> : <Navigate to="/login" replace />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

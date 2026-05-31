@@ -176,13 +176,19 @@ export function useProcurement() {
       // Panggil saran prediksi AI cerdas yang sudah mencakup logika anti double-ordering OTW
       const suggestions = await api.getReplenishmentPredictions();
       
-      // Filter: Hanya bahan baku kritis milik selectedSupplier terpilih, yang OTW = false, dan memiliki suggestedQty > 0
-      const filtered = suggestions.filter(s => 
-        String(s.supplier_id) === String(selectedSupplier) && 
-        s.status === 'Kritis' && 
-        !s.isOtw &&
-        s.suggestedQty > 0
-      );
+      // Filter: Hanya bahan baku kritis milik selectedSupplier terpilih (atau yang belum memiliki riwayat supplier), yang OTW = false, dan memiliki suggestedQty > 0
+      const filtered = suggestions.filter(s => {
+        const matchedBahan = bahanList.find(x => x.id === s.id);
+        const mappedSupplierId = s.supplier_id || (matchedBahan?.supplier?.id || matchedBahan?.supplier_id);
+        
+        // Jika bahan baku memiliki supplier terdaftar, ia wajib cocok secara presisi dengan selectedSupplier!
+        const matchesSupplier = mappedSupplierId ? String(mappedSupplierId) === String(selectedSupplier) : true;
+        
+        return matchesSupplier && 
+          s.status === 'Kritis' && 
+          !s.isOtw &&
+          s.suggestedQty > 0;
+      });
       
       if (filtered.length === 0) {
         alert("Semua stok untuk Supplier ini terpantau aman (atau sudah memiliki Purchase Order yang sedang berjalan).");

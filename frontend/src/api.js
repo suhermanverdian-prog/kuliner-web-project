@@ -76,6 +76,7 @@ const getResource = (prop) => {
     'getOutletInfo': 'system/outletinfos',
     'getSettingsLoyalty': 'system/settings/loyalty',
     'saveSettingsLoyalty': 'system/settings/loyalty',
+    'getSystemLogs': 'system/system-logs',
     
     // Menu
     'getMenu': 'menu',
@@ -337,7 +338,7 @@ const apiProxy = new Proxy(apiBase, {
       } else {
         // Pattern: method(data) -> /resource
         payload = idOrData;
-        if (method === 'DELETE' && idOrData && typeof idOrData !== 'object') {
+        if (idOrData && typeof idOrData !== 'object') {
            url += `/${idOrData}`;
            payload = null;
         }

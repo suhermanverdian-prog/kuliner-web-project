@@ -143,7 +143,7 @@ export default function InventoriPage() {
   const [poHubGroups, setPoHubGroups] = useState([]);
   const [poHubLoading, setPoHubLoading] = useState(false);
   const [suppliersList, setSuppliersList] = useState([]);
-  const [unassignedSupplierId, setUnassignedSupplierId] = useState('');
+  const [fallbackMap, setFallbackMap] = useState({});
 
 
   const getStockStatus = (item) => {
@@ -1023,8 +1023,8 @@ export default function InventoriPage() {
                               <span className="text-[9px] text-zinc-500 dark:text-zinc-400 font-bold uppercase shrink-0">Alokasikan Supplier:</span>
                               <select
                                 className="bg-transparent text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 outline-none cursor-pointer focus:ring-0"
-                                value={unassignedSupplierId}
-                                onChange={(e) => setUnassignedSupplierId(e.target.value)}
+                                value={fallbackMap[group.id] || ''}
+                                onChange={(e) => setFallbackMap({ ...fallbackMap, [group.id]: e.target.value })}
                               >
                                 {suppliersList.map(s => (
                                   <option key={s.id} value={s.id} className="text-zinc-900 dark:text-zinc-100 bg-white dark:bg-zinc-800">{s.name.toUpperCase()}</option>
@@ -1038,9 +1038,9 @@ export default function InventoriPage() {
                           <Button
                             size="sm"
                             onClick={() => {
-                              const sId = group.id === 'unassigned' ? unassignedSupplierId : group.id;
+                              const sId = group.id === 'unassigned' ? fallbackMap[group.id] : group.id;
                               if (!sId) {
-                                alert("⚠️ Harap alokasikan supplier terlebih dahulu!");
+                                alert('⚠️ Harap alokasikan supplier terlebih dahulu!');
                                 return;
                               }
                               setShowPoHubModal(false);

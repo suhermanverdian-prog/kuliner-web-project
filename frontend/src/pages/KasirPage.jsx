@@ -3,6 +3,7 @@ import { useKasir } from '../hooks/useKasir';
 import { formatRupiah } from '../utils/formatters';
 import { MENU_CATEGORIES } from '../utils/constants';
 import api from '../api';
+import ItemCustomizationModal from '../components/ItemCustomizationModal';
 import {
   ShoppingCart, Search, CheckCircle2,
   Wallet, CreditCard, Banknote, Landmark,
@@ -195,6 +196,11 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
   const [payMethod, setPayMethod] = useState('Tunai');
   const [tableNum, setTableNum] = useState('');
   const [orderType, setOrderType] = useState('Dine-in');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoError, setPromoError] = useState('');
   const [loading, setLoading] = useState(false);
   const [cashReceived, setCashReceived] = useState('');
   const [dynamicMethods, setDynamicMethods] = useState([]);
@@ -202,9 +208,31 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
 
   const isComplimentary = payMethod === 'Complimentary' || payMethod === 'Staff Benefit';
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const taxAmount = isComplimentary ? 0 : Math.round(subtotal * 0.11);
-  const total = isComplimentary ? 0 : subtotal + taxAmount;
+  const discountAmount = appliedPromo ? appliedPromo.discountAmount : 0;
+  const subtotalAfterDiscount = Math.max(0, subtotal - discountAmount);
+  const taxAmount = isComplimentary ? 0 : Math.round(subtotalAfterDiscount * 0.11);
+  const total = isComplimentary ? 0 : subtotalAfterDiscount + taxAmount;
   const changeAmount = Number(cashReceived) - total;
+
+  const handleValidatePromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoError('');
+    try {
+      const res = await api.request(`${api.url}/promo-codes/validate`, 'POST', {
+        code: promoCode.trim().toUpperCase(),
+        subtotal
+      });
+      if (res && res.valid) {
+        setAppliedPromo(res);
+      } else {
+        setPromoError(res?.error || 'Kode promo tidak valid');
+        setAppliedPromo(null);
+      }
+    } catch (err) {
+      setPromoError(err.message || 'Gagal memvalidasi kode promo');
+      setAppliedPromo(null);
+    }
+  };
 
   useEffect(() => {
     api.getPaymentMethods({ active: true })
@@ -248,10 +276,13 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
         items: cart,
         total,
         tax: taxAmount,
+        discountAmount,
+        promo_code: appliedPromo?.code || null,
+        customer_phone: customerPhone.trim() || null,
         payment_method: payMethod,
         cash_received: isComplimentary ? 0 : (Number(cashReceived) || total),
         table_type: orderType === 'Dine-in' ? `Meja ${tableNum}` : orderType,
-        customer_name: isComplimentary ? `${payMethod}: ${complimentaryReason}` : (tableNum ? `Meja ${tableNum}` : 'Tamu'),
+        customer_name: customerName.trim() || (isComplimentary ? `${payMethod}: ${complimentaryReason}` : (tableNum ? `Meja ${tableNum}` : 'Tamu')),
         tenant_id: user?.tenant_id,
         cashier_name: user?.name || user?.username || 'Kasir'
       });
@@ -292,12 +323,64 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
           </div>
           <div className="pt-4 mt-4 border-t-2 border-dashed border-zinc-200 dark:border-zinc-700 space-y-2">
             <div className="flex justify-between text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-mono tabular-nums"><span>Subtotal</span><span>{formatRupiah(subtotal)}</span></div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-mono tabular-nums"><span>Diskon Promo</span><span>-{formatRupiah(discountAmount)}</span></div>
+            )}
             <div className="flex justify-between text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-mono tabular-nums"><span>Pajak (11%)</span><span>{formatRupiah(taxAmount)}</span></div>
             <div className="flex justify-between items-end pt-1"><span className="text-sm font-black uppercase text-zinc-900 dark:text-zinc-50">Total</span><span className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(total)}</span></div>
           </div>
         </div>
 
         <div className="flex-1 p-6 space-y-5 overflow-y-auto custom-scrollbar flex flex-col justify-between bg-card dark:bg-zinc-800">
+          <div className="space-y-3">
+            <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Nama Pelanggan</h4>
+            <Input
+              placeholder="Nama Pelanggan (Opsional)"
+              value={customerName}
+              onChange={e => setCustomerName(e.target.value)}
+              className="h-12 font-black rounded-lg bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 focus-visible:ring-amber-500/20"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Nomor Telepon (Loyalty)</h4>
+              <Input
+                placeholder="Contoh: 0812345678"
+                value={customerPhone}
+                onChange={e => setCustomerPhone(e.target.value)}
+                className="h-12 font-black rounded-lg bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 focus-visible:ring-amber-500/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Kode Promo / Diskon</h4>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="KODE PROMO"
+                  value={promoCode}
+                  onChange={e => setPromoCode(e.target.value)}
+                  className="h-12 font-black rounded-lg bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 focus-visible:ring-amber-500/20 uppercase"
+                />
+                <Button 
+                  onClick={handleValidatePromo}
+                  className="h-12 px-4 rounded-lg bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 font-bold active:scale-95"
+                >
+                  Cek
+                </Button>
+              </div>
+              {appliedPromo && (
+                <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 p-2 rounded-md mt-1">
+                  Diskon {appliedPromo.code} berhasil digunakan! (-Rp {Number(appliedPromo.discountAmount).toLocaleString('id-ID')})
+                </div>
+              )}
+              {promoError && (
+                <div className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-2 rounded-md mt-1">
+                  {promoError}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-3">
             <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Tipe Pelayanan</h4>
             <div className="grid grid-cols-2 gap-4">
@@ -450,6 +533,7 @@ export default function KasirPage({ user }) {
   const [showHistory, setShowHistory] = useState(false);
   const [historyTxs, setHistoryTxs] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [customizingItem, setCustomizingItem] = useState(null);
 
   const openHistory = async () => {
       setShowHistory(true);
@@ -534,7 +618,7 @@ export default function KasirPage({ user }) {
 
         <div className="flex-1 overflow-y-auto pr-4 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 content-start pb-20 custom-scrollbar">
           {filteredMenus.map(item => (
-            <div key={item.id} className="group cursor-pointer bg-card dark:bg-zinc-900 rounded-lg border border-border shadow-sm hover:border-amber-500/50 hover:shadow-md active:scale-[0.98] transition-all duration-300 flex flex-col h-[220px] overflow-hidden relative" onClick={() => addToCart(item)}>
+            <div key={item.id} className="group cursor-pointer bg-card dark:bg-zinc-900 rounded-lg border border-border shadow-sm hover:border-amber-500/50 hover:shadow-md active:scale-[0.98] transition-all duration-300 flex flex-col h-[220px] overflow-hidden relative" onClick={() => setCustomizingItem(item)}>
               <div className="w-full h-[140px] bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center overflow-hidden relative shrink-0 border-b border-zinc-100 dark:border-zinc-800">
                 <img
                   src={getImgUrl(item.image) || 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=1000&auto=format&fit=crop'}
@@ -608,8 +692,8 @@ export default function KasirPage({ user }) {
               </div>
             ) : (
               <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                {cart.map(item => (
-                  <div key={item.id} className="p-4 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                 {cart.map(item => (
+                  <div key={item.customKey || item.id} className="p-4 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
                     <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center overflow-hidden shrink-0 border border-zinc-200 dark:border-zinc-700">
                       {item.image ? (
                         <img src={getImgUrl(item.image)} alt={item.name} className="w-full h-full object-cover" />
@@ -620,16 +704,22 @@ export default function KasirPage({ user }) {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-50">{item.name}</p>
                       <p className="text-[11px] font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(item.price)}</p>
+                      {item.customizationSummary && (
+                        <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 italic leading-tight">{item.customizationSummary}</p>
+                      )}
+                      {item.customization?.note && (
+                        <p className="text-[10px] text-amber-600 dark:text-amber-500/70 mt-0.5 leading-tight font-medium">📋: "{item.customization.note}"</p>
+                      )}
                     </div>
                     <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1 border border-zinc-200 dark:border-zinc-700">
-                      <button onClick={() => changeQty(item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-card dark:bg-zinc-700 text-foreground dark:text-zinc-300 shadow-sm hover:text-rose-500"><Minus size={12} strokeWidth={3} /></button>
+                      <button onClick={() => changeQty(item.customKey || item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-card dark:bg-zinc-700 text-foreground dark:text-zinc-300 shadow-sm hover:text-rose-500"><Minus size={12} strokeWidth={3} /></button>
                       <span className="w-8 text-center text-xs font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-50">{item.qty}</span>
-                      <button onClick={() => changeQty(item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-card dark:bg-zinc-700 text-foreground dark:text-zinc-300 shadow-sm hover:text-emerald-500"><Plus size={12} strokeWidth={3} /></button>
+                      <button onClick={() => changeQty(item.customKey || item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-card dark:bg-zinc-700 text-foreground dark:text-zinc-300 shadow-sm hover:text-emerald-500"><Plus size={12} strokeWidth={3} /></button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
           </CardContent>
 
           {cart.length > 0 && (
@@ -688,6 +778,22 @@ export default function KasirPage({ user }) {
       )}
 
       {selectedPendingTx && <ConfirmPaymentModal tx={selectedPendingTx} onClose={() => setSelectedPendingTx(null)} onSuccess={() => { setSelectedPendingTx(null); fetchMenuAndOrders(); }} />}
+
+      {customizingItem && (
+        <ItemCustomizationModal
+          item={customizingItem}
+          onClose={() => setCustomizingItem(null)}
+          onConfirm={(customizedItem) => {
+            addToCart(
+              customizingItem,
+              customizedItem.customization,
+              customizedItem.finalPrice,
+              customizedItem.customizationSummary
+            );
+            setCustomizingItem(null);
+          }}
+        />
+      )}
 
       {/* MODAL RIWAYAT TRANSAKSI KASIR */}
       {showHistory && (

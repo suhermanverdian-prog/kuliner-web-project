@@ -46,15 +46,15 @@ export function ChartWrapper({
 }) {
   if (!data || data.length === 0) {
     return (
-      <div className={cn("w-full flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50 rounded-lg", className)} style={{ height }}>
+      <div className={cn("w-full flex items-center justify-center bg-zinc-50/50 dark:bg-zinc-900/50 rounded-lg", className)} style={{ height: `${height}px` }}>
         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">No Data Available</p>
       </div>
     );
   }
 
   return (
-    <div className={cn("w-full font-mono tabular-nums", className)} style={{ height }}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div className={cn("w-full font-mono tabular-nums", className)} style={{ height: `${height}px`, minHeight: `${height}px` }}>
+      <ResponsiveContainer width="99%" height="100%">
         {type === 'bar' ? (
           <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-zinc-200 dark:text-zinc-800" />

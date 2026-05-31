@@ -15,6 +15,8 @@ const transactionItemSchema = z.object({
 
 const posTransactionSchema = z.object({
     customer_name: z.string().optional().default("Tamu"),
+    customer_phone: z.string().optional(),
+    promo_code: z.string().optional(),
     payment_method: z.string().optional().default("Tunai"),
     cashier_name: z.string().optional().default("System"),
     table_type: z.string().optional().default("Take Away"),

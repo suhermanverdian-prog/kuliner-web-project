@@ -11,20 +11,20 @@ const OpnameScheduler = require('../services/opnameScheduler');
 // Zod Validation Schemas (SCBD Grade Enterprise Standards)
 // ====================================================================
 const startOpnameSchema = z.object({
-  outletId: z.string().uuid('Outlet ID harus berupa UUID valid'),
+  outlet_id: z.string().uuid('Outlet ID harus berupa UUID valid'),
   type: z.enum(['blind', 'standard']).optional().default('blind'),
   notes: z.string().optional()
 });
 
 const recordCountSchema = z.object({
-  itemId: z.union([z.string(), z.number()]),
-  stockFisik: z.number().nonnegative('Jumlah fisik tidak boleh negatif'),
+  item_id: z.union([z.string(), z.number()]),
+  stock_fisik: z.number().nonnegative('Jumlah fisik tidak boleh negatif'),
   notes: z.string().optional()
 });
 
 const createScheduleSchema = z.object({
-  outletId: z.string().uuid('Outlet ID harus berupa UUID'),
-  opnameType: z.enum(['blind', 'standard']).optional().default('blind'),
+  outlet_id: z.string().uuid('Outlet ID harus berupa UUID'),
+  opname_type: z.enum(['blind', 'standard']).optional().default('blind'),
   frequency: z.enum(['daily', 'weekly', 'monthly', 'custom']),
   scheduled_time: z.string().regex(/^\d{2}:\d{2}$/, 'Format waktu harus HH:MM'),
   timezone: z.string().optional().default('Asia/Jakarta'),

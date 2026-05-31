@@ -236,9 +236,12 @@ export default function KDSPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                            <p className="text-sm font-black leading-tight text-zinc-900 dark:text-zinc-100">{item.name}</p>
-                           {item.note && (
+                           {item.customizationSummary && (
+                             <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 leading-tight font-medium italic">{item.customizationSummary}</p>
+                           )}
+                           {(item.note || item.customization?.note) && (
                              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-1 flex items-center gap-1 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 rounded border border-amber-500/10">
-                                <ClipboardList size={10} /> {item.note}
+                                <ClipboardList size={10} /> {item.note || item.customization?.note}
                              </p>
                            )}
                         </div>

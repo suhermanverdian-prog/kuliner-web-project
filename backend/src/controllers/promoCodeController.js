@@ -60,6 +60,64 @@ class PromoCodeController {
       new AppError(err.message, err.status || 500).send(res);
     }
   }
+  async validate(req, res) {
+    const tenantId = req.userContext?.tenantId;
+    const { code, subtotal } = req.body;
+    
+    if (!tenantId) {
+      return res.status(403).json({ error: 'Tenant ID required' });
+    }
+    if (!code) {
+      return res.status(400).json({ error: 'Kode promo harus diisi' });
+    }
+
+    try {
+      const promo = await PromoCodeRepository.findByCode(tenantId, code);
+      if (!promo) {
+        return res.status(404).json({ error: 'Kode promo tidak ditemukan' });
+      }
+      if (!promo.is_active) {
+        return res.status(400).json({ error: 'Kode promo sudah tidak aktif' });
+      }
+      if (promo.expires_at && new Date(promo.expires_at) < new Date()) {
+        return res.status(400).json({ error: 'Kode promo sudah kedaluwarsa' });
+      }
+      if (promo.usage_limit !== null && promo.usage_limit !== undefined && promo.used_count >= promo.usage_limit) {
+        return res.status(400).json({ error: 'Batas penggunaan kode promo telah habis' });
+      }
+      
+      const minAmount = Number(promo.min_order_amount || 0);
+      const subtotalNum = Number(subtotal || 0);
+      if (subtotalNum < minAmount) {
+        return res.status(400).json({ 
+          error: `Minimum pembelian untuk promo ini adalah Rp ${minAmount.toLocaleString('id-ID')}` 
+        });
+      }
+
+      let discountAmount = 0;
+      if (promo.type === 'percent') {
+        discountAmount = Math.round((subtotalNum * Number(promo.value)) / 100);
+      } else {
+        discountAmount = Number(promo.value);
+      }
+
+      // Discount cannot exceed the subtotal
+      if (discountAmount > subtotalNum) {
+        discountAmount = subtotalNum;
+      }
+
+      res.json({
+        valid: true,
+        code: promo.code,
+        type: promo.type,
+        value: promo.value,
+        discountAmount,
+        id: promo.id
+      });
+    } catch (err) {
+      new AppError(err.message, err.status || 500).send(res);
+    }
+  }
 }
 
 module.exports = new PromoCodeController();
