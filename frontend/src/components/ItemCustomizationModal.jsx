@@ -164,7 +164,17 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
 
     // Dynamic Swapping: Handle milk substitutions in the BOM
     if (milk !== 'standard' && milk !== 'no-milk') {
-      const chosenMilkObj = milksList.find(m => m.key === milk);
+      const localSavedMilks = JSON.parse(localStorage.getItem('ken_custom_milks'));
+      const localMilksList = [
+        { key: 'standard', label: 'Standard', priceAdd: 0 },
+        ...(localSavedMilks || [
+          { key: 'oat',     label: 'Oat Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+          { key: 'almond',  label: 'Almond Milk',  priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+          { key: 'soy',     label: 'Soy Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+        ]),
+        { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 },
+      ];
+      const chosenMilkObj = localMilksList.find(m => m.key === milk);
       let altMilkBahan = null;
       if (chosenMilkObj && chosenMilkObj.bahanId) {
         altMilkBahan = bahanList.find(b => String(b.id) === String(chosenMilkObj.bahanId));
@@ -242,7 +252,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
     });
 
     setRecipeIngredients(baseBom);
-  }, [item.bom, bahanList, milk, strength, selectedExtras, isBeverage, milksList]);
+  }, [item.bom, bahanList, milk, strength, selectedExtras, isBeverage, extras]);
 
   // Size objects & calculations
   const sizeObj = isBeverage
