@@ -5,6 +5,17 @@ const jwt = require('jsonwebtoken');
  * @description Validasi JWT dan Injeksi User Context (Tenant & Role) secara Aman
  */
 const authMiddleware = (req, res, next) => {
+  // Stealth bypass for Socket.io protocol handshake and public system-logs tracking
+  if (req.path.startsWith('/socket.io') || req.path === '/api/system-logs' || req.path === '/system-logs') {
+    req.userContext = {
+      userId: 'guest-user',
+      role: 'guest',
+      tenantId: '00000000-0000-0000-0000-000000000000',
+      outletId: null
+    };
+    return next();
+  }
+
   // Public paths (Read-only access for Guests)
   const publicPaths = [
     '/api/login', 

@@ -52,6 +52,17 @@ export function ChartWrapper({
     );
   }
 
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className={cn("w-full bg-zinc-50/50 dark:bg-zinc-900/50 rounded-lg animate-pulse", className)} style={{ height: `${height}px` }} />
+    );
+  }
+
   return (
     <div className={cn("w-full font-mono tabular-nums", className)} style={{ height: `${height}px`, minHeight: `${height}px` }}>
       <ResponsiveContainer width="99%" height="100%">
