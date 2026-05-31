@@ -638,29 +638,29 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
             </div>
 
             {/* Right Column (col-span-4): Visual Preview, BOM & Checkout */}
-            <div className="md:col-span-4 space-y-6">
+            <div className="md:col-span-4 space-y-4">
               {/* Product Visual Card */}
-              <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-border rounded-lg p-3 flex items-center gap-3">
+              <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-border rounded-lg p-2 flex items-center gap-2.5">
                 {item.image ? (
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-16 h-16 object-cover rounded-md border border-border shadow-sm shrink-0"
+                    className="w-11 h-11 object-cover rounded-md border border-border shadow-sm shrink-0"
                     onError={e => { e.target.style.display = 'none'; }}
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center border border-border shadow-sm shrink-0">
+                  <div className="w-11 h-11 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center border border-border shadow-sm shrink-0">
                     {isBeverage ? (
-                      <Coffee size={24} className="text-amber-500 dark:text-amber-400" />
+                      <Coffee size={18} className="text-amber-500 dark:text-amber-400" />
                     ) : (
-                      <Utensils size={24} className="text-amber-500 dark:text-amber-400" />
+                      <Utensils size={18} className="text-amber-500 dark:text-amber-400" />
                     )}
                   </div>
                 )}
                 <div className="min-w-0">
-                  <div className="text-[9px] uppercase font-bold tracking-widest text-zinc-400 dark:text-zinc-500">Pratinjau Item</div>
-                  <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-50 truncate leading-tight">{item.name}</h4>
-                  <p className="font-mono tabular-nums text-amber-600 dark:text-amber-400 font-bold text-sm mt-0.5">
+                  <div className="text-[8px] uppercase font-bold tracking-widest text-zinc-400 dark:text-zinc-500">Pratinjau Item</div>
+                  <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-50 truncate leading-tight">{item.name}</h4>
+                  <p className="font-mono tabular-nums text-amber-600 dark:text-amber-400 font-bold text-xs mt-0.5">
                     {formatRupiah(item.price + (sizeObj?.priceAdd || 0) + strengthPriceAdd + milkPriceAdd + extrasPrice)}
                   </p>
                 </div>
@@ -668,16 +668,16 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
 
               {/* Real-time Dynamic BOM Checklist */}
               {recipeIngredients.length > 0 && (
-                <div className="border border-border rounded-lg p-3 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col">
-                  <div className="flex items-center gap-2 mb-1.5 shrink-0">
+                <div className="border border-border rounded-lg p-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col">
+                  <div className="flex items-center gap-1.5 mb-1 shrink-0">
                     <span className="text-amber-500 dark:text-amber-400">
-                      <Sliders size={12} />
+                      <Sliders size={10} />
                     </span>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                    <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
                       BOM Modifiers
                     </h4>
                   </div>
-                  <div className="space-y-1.5 h-[172px] overflow-y-auto custom-scrollbar pr-1">
+                  <div className="space-y-1 h-[132px] overflow-y-auto custom-scrollbar pr-1">
                     {recipeIngredients.map(row => {
                       const b = bahanList.find(x => String(x.id) === String(row.bahanId));
                       const label = row.label || b?.name || b?.nama || 'Bahan Baku';
@@ -688,25 +688,25 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                           key={row.id}
                           onClick={() => toggleRecipeIngredient(row.id)}
                           className={cn(
-                            "flex items-center justify-between p-2 rounded-md border text-xs cursor-pointer select-none transition-all active:scale-[0.99]",
+                            "flex items-center justify-between py-1 px-1.5 rounded border text-[11px] cursor-pointer select-none transition-all active:scale-[0.99]",
                             row.active 
                               ? "bg-card border-border hover:border-amber-500/30 text-zinc-800 dark:text-zinc-200" 
                               : "bg-zinc-100/50 dark:bg-zinc-900/50 border-transparent text-zinc-400 dark:text-zinc-600 line-through"
                           )}
                         >
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <div className={cn(
-                              "w-4 h-4 rounded border flex items-center justify-center transition-colors",
+                              "w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors",
                               row.active 
                                 ? "bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900" 
                                 : "bg-transparent border-zinc-300 dark:border-zinc-700"
                             )}>
-                              {row.active && <CheckCircle2 size={10} strokeWidth={4} />}
+                              {row.active && <CheckCircle2 size={8} strokeWidth={4} />}
                             </div>
                             <span className="font-bold">{label}</span>
                           </div>
-                          <span className="font-mono text-[10px] font-bold tabular-nums">
-                            {row.qty} <span className="uppercase text-[9px] font-medium">{unit}</span>
+                          <span className="font-mono text-[9px] font-bold tabular-nums">
+                            {row.qty} <span className="uppercase text-[8px] font-medium">{unit}</span>
                           </span>
                         </div>
                       );
@@ -716,32 +716,32 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
               )}
 
               {/* Quantity selector & Add button */}
-              <div className="space-y-4 pt-2 border-t border-border">
+              <div className="space-y-3 pt-2 border-t border-border">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Jumlah</span>
-                  <div className="flex items-center gap-4 bg-card border border-border rounded-md p-1">
+                  <div className="flex items-center gap-3 bg-card border border-border rounded-md p-0.5">
                     <button
                       onClick={() => setQty(q => Math.max(1, q - 1))}
-                      className="w-8 h-8 rounded-md flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-500 transition-colors"
+                      className="w-7 h-7 rounded flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-500 transition-colors"
                     >
-                      <Minus size={14} strokeWidth={3} />
+                      <Minus size={12} strokeWidth={3} />
                     </button>
-                    <span className="w-8 text-center font-bold font-mono tabular-nums text-zinc-900 dark:text-zinc-50">{qty}</span>
+                    <span className="w-6 text-center font-bold font-mono tabular-nums text-sm text-zinc-900 dark:text-zinc-50">{qty}</span>
                     <button
                       onClick={() => setQty(q => q + 1)}
-                      className="w-8 h-8 rounded-md flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-emerald-500 transition-colors"
+                      className="w-7 h-7 rounded flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-emerald-500 transition-colors"
                     >
-                      <Plus size={14} strokeWidth={3} />
+                      <Plus size={12} strokeWidth={3} />
                     </button>
                   </div>
                 </div>
 
                 <button
                   onClick={handleConfirm}
-                  className="w-full h-12 rounded-md bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 font-bold text-sm shadow-md shadow-amber-500/20 dark:shadow-amber-400/10 active:scale-[0.98] transition-all flex items-center justify-between px-4"
+                  className="w-full h-10 rounded bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 font-bold text-xs shadow shadow-amber-500/10 active:scale-[0.98] transition-all flex items-center justify-between px-3"
                 >
                   <span>Tambah ke Pesanan</span>
-                  <span className="font-mono tabular-nums text-sm font-bold">{formatRupiah(finalPrice)}</span>
+                  <span className="font-mono tabular-nums text-xs font-bold">{formatRupiah(finalPrice)}</span>
                 </button>
               </div>
 
