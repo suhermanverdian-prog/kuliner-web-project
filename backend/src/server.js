@@ -43,7 +43,16 @@ try {
   // Ensure the static files are accessible without authentication
   // This also covers /manifest.json, /favicon.ico, /sw.js
 
-  app.use(cors());
+  // Configure CORS to allow any origin (including Vercel preview domains) and credentials
+  const corsOptions = {
+    origin: true,
+    credentials: true,
+  };
+  app.use(cors(corsOptions));
+  // Respond to preflight OPTIONS requests globally
+  app.options('*', cors(corsOptions));
+  // Auth middleware will be applied after static assets and CORS
+
   app.use(express.json());
   app.use('/api/uploads', express.static(path.join(__dirname, '../public/uploads')));
   

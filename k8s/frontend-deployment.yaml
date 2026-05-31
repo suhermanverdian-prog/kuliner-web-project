@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brewmaster-frontend
+  namespace: staging
+  labels:
+    app: brewmaster-frontend
+    tier: web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: brewmaster-frontend
+  template:
+    metadata:
+      labels:
+        app: brewmaster-frontend
+    spec:
+      containers:
+      - name: web
+        image: brewmaster-registry/frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: brewmaster-frontend
+  namespace: staging
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: brewmaster-frontend

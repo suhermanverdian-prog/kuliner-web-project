@@ -1,0 +1,67 @@
+# ==========================================
+# 👑 KEN ENTERPRISE - DOCKER COMPOSE ORCHESTRATION v1.0
+# Menjalankan seluruh stack aplikasi BrewMaster secara lokal / staging
+# ==========================================
+
+version: '3.8'
+
+services:
+  # 🚀 Core API Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: brewmaster-backend-staging
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - brewmaster-network
+    restart: always
+
+  # 🎨 SPA Web Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: brewmaster-frontend-staging
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    networks:
+      - brewmaster-network
+    restart: always
+
+  # 💾 Caching & Pub-Sub Broker (Redis)
+  redis:
+    image: redis:7-alpine
+    container_name: brewmaster-redis-staging
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - brewmaster-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+
+networks:
+  brewmaster-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
