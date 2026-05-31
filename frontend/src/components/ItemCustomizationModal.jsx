@@ -78,11 +78,15 @@ const FOOD_EXTRAS = [
 
 export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
   // Category resolution
+  const name = (item.name || '').toLowerCase();
   const cat = (item.category || '').toLowerCase();
-  const isCoffee = cat.includes('coffee') && !cat.includes('non');
-  const isNonCoffee = cat.includes('non-coffee') || cat.includes('cokelat') || cat.includes('chocolate');
-  const isTea = cat.includes('tea') || cat.includes('teh');
-  const isBeverage = isCoffee || isNonCoffee || isTea;
+  
+  // High-performance heuristics to detect beverage vs food
+  const isCoffee = (cat.includes('coffee') && !cat.includes('non')) || cat.includes('signature') || name.includes('latte') || name.includes('espresso') || name.includes('kopi') || name.includes('cappuccino') || name.includes('americano') || name.includes('mocha') || name.includes('cold brew');
+  const isNonCoffee = cat.includes('non-coffee') || cat.includes('cokelat') || cat.includes('chocolate') || cat.includes('mocktail') || cat.includes('juice') || name.includes('chocolate') || name.includes('cokelat') || name.includes('matcha') || name.includes('taro') || name.includes('milkshake');
+  const isTea = cat.includes('tea') || cat.includes('teh') || name.includes('tea') || name.includes('teh') || name.includes('tisane');
+  
+  const isBeverage = isCoffee || isNonCoffee || isTea || cat.includes('beverage') || cat.includes('drink');
 
   // Saved configs
   const savedSizes = JSON.parse(localStorage.getItem('ken_custom_sizes'));
