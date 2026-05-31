@@ -13,6 +13,8 @@ class TransactionService {
   static async createTransaction(trxData, tenantId, outletId, isOfflineAllowed = true) {
     const {
       customer_name: customerName,
+      customer_phone: customerPhone,
+      promo_code: promoCode,
       payment_method: paymentMethod,
       cashier_name: cashierName,
       table_type: tableType,
@@ -84,6 +86,8 @@ class TransactionService {
             kds_status: 'new',
             table_type: tableType,
             cashier_name: cashierName,
+            customer_phone: customerPhone || null,
+            promo_code: promoCode || null,
             items: enrichedItems
         }
     };
@@ -165,6 +169,31 @@ class TransactionService {
         }
     }
 
+    // --- SPRINT 2 INTEGRATION: Loyalty & Promo Code Post-Processing ---
+    if (!isOffline) {
+        if (paymentStatus === 'paid' && customerPhone) {
+            try {
+                const LoyaltyService = require('./loyaltyService');
+                await LoyaltyService.earnPoints(tenantId, customerPhone, customerName, finalTotal);
+            } catch (lErr) {
+                console.warn('⚠️ [Loyalty] Non-blocking exception earning points on checkout:', lErr.message);
+            }
+        }
+        if (promoCode) {
+            try {
+                const PromoCodeRepository = require('../repositories/promoCodeRepository');
+                const promo = await PromoCodeRepository.findByCode(tenantId, promoCode);
+                if (promo) {
+                    await PromoCodeRepository.update(tenantId, promo.id, {
+                        used_count: (promo.used_count || 0) + 1
+                    });
+                }
+            } catch (pErr) {
+                console.warn('⚠️ [Promo] Non-blocking exception incrementing used count:', pErr.message);
+            }
+        }
+    }
+
     return {
         ...trxPayload,
         id: supabaseId,
@@ -200,6 +229,28 @@ class TransactionService {
     const totalHpp = await this.processStockReduction(itemsForStock, tenantId, trx.order_number, trx.outlet_id);
     await this.saveTransactionJournal(trx, totalHpp, tenantId, trx.outlet_id);
 
+    // --- SPRINT 2 INTEGRATION: Loyalty Points on Confirmation ---
+    let customerPhone = null;
+    let customerName = trx.customer_name || 'Tamu';
+    if (trx.items) {
+        let itemsField = trx.items;
+        if (typeof itemsField === 'string') {
+            try { itemsField = JSON.parse(itemsField); } catch (e) {}
+        }
+        if (itemsField && typeof itemsField === 'object') {
+            customerPhone = itemsField.customer_phone;
+        }
+    }
+    
+    if (customerPhone) {
+        try {
+            const LoyaltyService = require('./loyaltyService');
+            await LoyaltyService.earnPoints(tenantId, customerPhone, customerName, trx.total);
+        } catch (lErr) {
+            console.warn('⚠️ [Loyalty] Non-blocking exception earning points on confirmation:', lErr.message);
+        }
+    }
+
     return true;
   }
 
@@ -210,24 +261,175 @@ class TransactionService {
     let totalHpp = 0;
 
     for (const item of items) {
-        const boms = await TransactionRepository.getMenuBOM(item.id, tenantId);
-        if (!boms || boms.length === 0) continue;
+        const cust = item.customization || {};
+        
+        // 1. Ambil resep dasar (BOM) atau resep kustom dinamis dari kasir
+        let resolvedBoms = [];
 
-        for (const b of boms) {
-            const usedQty = Number(b.qty_needed || 0) * item.qty;
-            let bahanId = b.bahan_id;
-            
-            let bInfo = await TransactionRepository.getBahanByIdOrName(bahanId, null, tenantId);
+        if (Array.isArray(cust.customRecipe) && cust.customRecipe.length > 0) {
+            // Gunakan resep kustom dinamis (Eksklusi & Substitusi Bahan Baku dari POS)
+            for (const r of cust.customRecipe) {
+                if (r.active && Number(r.qty) > 0) {
+                    const bInfo = await TransactionRepository.getBahanByIdOrName(r.bahanId, null, tenantId);
+                    if (bInfo) {
+                        resolvedBoms.push({
+                            bahan_id: bInfo.id,
+                            bahan_name: bInfo.name,
+                            qty_needed: Number(r.qty || 0),
+                            isCup: bInfo.name.toLowerCase().includes('cup'),
+                            isMilk: bInfo.name.toLowerCase().includes('susu') || bInfo.name.toLowerCase().includes('milk'),
+                            isCoffee: bInfo.name.toLowerCase().includes('kopi') || bInfo.name.toLowerCase().includes('coffee')
+                        });
+                    }
+                }
+            }
+        } else {
+            const baseBoms = await TransactionRepository.getMenuBOM(item.id, tenantId) || [];
+            // Ambil info lengkap bahan untuk resep dasar
+            for (const b of baseBoms) {
+                let bInfo = await TransactionRepository.getBahanByIdOrName(b.bahan_id, null, tenantId);
+                if (!bInfo && typeof b.bahan_id === 'number') {
+                    const legacyMap = { 101: 'Biji Kopi Arabica', 102: 'Susu Segar', 103: 'Gula Aren' };
+                    const legacyName = legacyMap[b.bahan_id];
+                    if (legacyName) {
+                        bInfo = await TransactionRepository.getBahanByIdOrName(null, legacyName, tenantId);
+                    }
+                }
+                if (bInfo) {
+                    resolvedBoms.push({
+                        bahan_id: bInfo.id,
+                        bahan_name: bInfo.name,
+                        qty_needed: Number(b.qty_needed || 0),
+                        isCup: bInfo.name.toLowerCase().includes('cup'),
+                        isMilk: bInfo.name.toLowerCase().includes('susu') || bInfo.name.toLowerCase().includes('milk'),
+                        isCoffee: bInfo.name.toLowerCase().includes('kopi') || bInfo.name.toLowerCase().includes('coffee')
+                    });
+                }
+            }
+        }
 
-            // Legacy mapping fallback
-            if (!bInfo && typeof bahanId === 'number') {
-                const legacyMap = { 101: 'Biji Kopi Arabica', 102: 'Susu Segar', 103: 'Gula Aren' };
-                const legacyName = legacyMap[bahanId];
-                if (legacyName) {
-                    bInfo = await TransactionRepository.getBahanByIdOrName(null, legacyName, tenantId);
+        // 2. PROSES DYNAMIC CUSTOMIZATION MAPPING
+        
+        // A. Substitusi Cup berdasarkan Ukuran (S, M, L, XL)
+        if (cust.size) {
+            const sizeMap = {
+                'S': 'Cup Small',
+                'R': 'Cup Regular',
+                'M': 'Cup Medium',
+                'L': 'Cup Large',
+                'XL': 'Cup Extra Large'
+            };
+            const targetCupName = sizeMap[cust.size];
+            if (targetCupName) {
+                const targetCupBahan = await TransactionRepository.getBahanByIdOrName(null, targetCupName, tenantId);
+                if (targetCupBahan) {
+                    // Cari cup di resep dasar dan ganti, atau tambahkan jika tidak ada
+                    const cupIdx = resolvedBoms.findIndex(b => b.isCup);
+                    if (cupIdx > -1) {
+                        resolvedBoms[cupIdx].bahan_id = targetCupBahan.id;
+                        resolvedBoms[cupIdx].bahan_name = targetCupBahan.name;
+                    } else {
+                        resolvedBoms.push({
+                            bahan_id: targetCupBahan.id,
+                            bahan_name: targetCupBahan.name,
+                            qty_needed: 1
+                        });
+                    }
+                }
+            }
+        }
+
+        if (!Array.isArray(cust.customRecipe) || cust.customRecipe.length === 0) {
+            // B. Substitusi Susu (Oat Milk, Almond Milk, dll.)
+            if (cust.milk) {
+                const defaultMilkQty = Number(cust.milkDose || 150);
+                if (cust.milk === 'no-milk') {
+                    // Hapus susu dari resep jika "tanpa susu"
+                    resolvedBoms = resolvedBoms.filter(b => !b.isMilk);
+                } else if (cust.milk !== 'regular') {
+                    const milkMap = {
+                        'oat': 'Oat Milk',
+                        'almond': 'Almond Milk',
+                        'soy': 'Soy Milk'
+                    };
+                    const targetMilkName = milkMap[cust.milk];
+                    if (targetMilkName) {
+                        const targetMilkBahan = await TransactionRepository.getBahanByIdOrName(null, targetMilkName, tenantId);
+                        if (targetMilkBahan) {
+                            const milkIdx = resolvedBoms.findIndex(b => b.isMilk);
+                            if (milkIdx > -1) {
+                                resolvedBoms[milkIdx].bahan_id = targetMilkBahan.id;
+                                resolvedBoms[milkIdx].bahan_name = targetMilkBahan.name;
+                            } else {
+                                // Tambah porsi default
+                                resolvedBoms.push({
+                                    bahan_id: targetMilkBahan.id,
+                                    bahan_name: targetMilkBahan.name,
+                                    qty_needed: defaultMilkQty
+                                });
+                            }
+                        }
+                    }
                 }
             }
 
+            // C. Tambahan Shot Espresso (Double, Triple Shot)
+            if (cust.strength && cust.strength !== 'standard') {
+                const extraShots = cust.strength === 'single' ? 1 : cust.strength === 'double' ? 2 : cust.strength === 'triple' ? 3 : 0;
+                const shotDose = Number(cust.espressoDose || 7); // Brand-specific shot dose
+                const extraCoffeeGrams = extraShots * shotDose;
+                
+                const coffeeIdx = resolvedBoms.findIndex(b => b.isCoffee);
+                if (coffeeIdx > -1) {
+                    resolvedBoms[coffeeIdx].qty_needed += extraCoffeeGrams;
+                } else {
+                    // Cari bahan biji kopi arabika atau kopi default
+                    const coffeeBahan = await TransactionRepository.getBahanByIdOrName(null, 'Biji Kopi Arabica', tenantId) || 
+                                         await TransactionRepository.getBahanByIdOrName(null, 'Biji Kopi', tenantId);
+                    if (coffeeBahan) {
+                        resolvedBoms.push({
+                            bahan_id: coffeeBahan.id,
+                            bahan_name: coffeeBahan.name,
+                            qty_needed: extraCoffeeGrams
+                        });
+                    }
+                }
+            }
+
+            // D. Tambahan Topping / Extras
+            if (Array.isArray(cust.extras) && cust.extras.length > 0) {
+                const extrasMap = {
+                    'whipped_cream': { name: 'Whipped Cream', qty: 15 },
+                    'cocoa_powder': { name: 'Cocoa Powder', qty: 5 },
+                    'caramel_drizzle': { name: 'Sirup Karamel', qty: 10 },
+                    'vanilla_syrup': { name: 'Sirup Vanila', qty: 15 },
+                    'hazelnut_syrup': { name: 'Sirup Hazelnut', qty: 15 },
+                    'cinnamon': { name: 'Kayu Manis Bubuk', qty: 3 }
+                };
+
+                for (const extraKey of cust.extras) {
+                    const conf = extrasMap[extraKey];
+                    if (conf) {
+                        const extraBahan = await TransactionRepository.getBahanByIdOrName(null, conf.name, tenantId);
+                        if (extraBahan) {
+                            const customQty = cust.extrasDoses && cust.extrasDoses[extraKey] !== undefined ? Number(cust.extrasDoses[extraKey]) : conf.qty;
+                            // Tambah ke resep
+                            resolvedBoms.push({
+                                journal_id: extraBahan.id, // compatibility
+                                bahan_id: extraBahan.id,
+                                bahan_name: extraBahan.name,
+                                qty_needed: customQty
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. EKSEKUSI PENGURANGAN STOK FIFO & RECORD LOGS
+        for (const b of resolvedBoms) {
+            const usedQty = b.qty_needed * item.qty;
+            const bInfo = await TransactionRepository.getBahanByIdOrName(b.bahan_id, null, tenantId);
             if (!bInfo) continue;
 
             const conv = getConversion(bInfo);

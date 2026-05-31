@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { usePengaturan } from '../hooks/usePengaturan';
 import { api } from '../api';
 import { 
@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
-import { BrainCircuit, KeyRound, Server, Sparkles, Zap, PackageOpen, MapPin, Globe } from 'lucide-react';
+import { BrainCircuit, KeyRound, Server, Sparkles, Zap, PackageOpen, MapPin, Globe, Coffee, SlidersHorizontal, Ticket } from 'lucide-react';
 import { FEATURE_CATALOG, TIER_DEFAULTS, resolveFeatures } from '../lib/featureFlags';
 import { useAppStore } from '../store/useAppStore';
 
@@ -148,6 +148,749 @@ function AddUserModal({ onClose, onSave, loading }) {
           </Button>
         </CardFooter>
       </Card>
+    </div>
+  );
+}
+
+
+// ================================================================
+// ⚙️ POSCustomizationPanel — Kustomisasi Ukuran, Extras, Loyalty & Promo
+// ================================================================
+function POSCustomizationPanel({ showToast }) {
+  const [sizes, setSizes] = useState(() => {
+    const saved = localStorage.getItem('ken_custom_sizes');
+    return saved ? JSON.parse(saved) : [
+      { key: 'S', label: 'Small', priceAdd: 0 },
+      { key: 'R', label: 'Regular', priceAdd: 5000 },
+      { key: 'L', label: 'Large', priceAdd: 10000 },
+    ];
+  });
+
+  const [bahanList, setBahanList] = useState([]);
+
+  useEffect(() => {
+    api.getBahan().then(data => {
+      if (data) setBahanList(data);
+    }).catch(err => console.error("Gagal load bahan baku", err));
+  }, []);
+
+  const [extras, setExtras] = useState(() => {
+    const saved = localStorage.getItem('ken_custom_extras');
+    const parsed = saved ? JSON.parse(saved) : null;
+    if (parsed) {
+      return parsed.map(item => ({
+        ...item,
+        priceAdd: Number(item.priceAdd || 0),
+        dose: item.dose !== undefined ? Number(item.dose) : 0,
+        unit: item.unit !== undefined ? item.unit : 'gram',
+        bahanId: item.bahanId !== undefined ? item.bahanId : ''
+      }));
+    }
+    return [
+      { key: 'whipped_cream',  label: 'Whipped Cream', priceAdd: 5000, dose: 15, unit: 'gram', bahanId: '' },
+      { key: 'cocoa_powder',   label: 'Cocoa Powder',  priceAdd: 0, dose: 5, unit: 'gram', bahanId: '' },
+      { key: 'caramel_drizzle',label: 'Caramel',       priceAdd: 3000, dose: 10, unit: 'ml', bahanId: '' },
+      { key: 'cinnamon',       label: 'Cinnamon',      priceAdd: 0, dose: 2, unit: 'gram', bahanId: '' },
+      { key: 'vanilla_syrup',  label: 'Vanilla Syrup', priceAdd: 5000, dose: 15, unit: 'ml', bahanId: '' },
+      { key: 'hazelnut_syrup', label: 'Hazelnut Syrup',priceAdd: 5000, dose: 15, unit: 'ml', bahanId: '' },
+    ];
+  });
+
+  const [newExtra, setNewExtra] = useState({ label: '', priceAdd: 0, dose: 0, unit: 'gram', bahanId: '' });
+  const [showAddExtra, setShowAddExtra] = useState(false);
+
+  const handleAddExtra = () => {
+    if (!newExtra.label) return alert('Nama topping wajib diisi!');
+    const key = newExtra.label.toLowerCase().replace(/\s+/g, '_');
+    if (extras.some(e => e.key === key)) return alert('Topping dengan nama ini sudah ada!');
+    
+    const updated = [...extras, { ...newExtra, key, priceAdd: Number(newExtra.priceAdd), dose: Number(newExtra.dose) }];
+    setExtras(updated);
+    localStorage.setItem('ken_custom_extras', JSON.stringify(updated));
+    setShowAddExtra(false);
+    setNewExtra({ label: '', priceAdd: 0, dose: 0, unit: 'gram', bahanId: '' });
+    showToast('Topping baru berhasil ditambahkan!');
+  };
+
+  const handleDeleteExtra = (key) => {
+    if (!window.confirm('Yakin ingin menghapus topping ini?')) return;
+    const updated = extras.filter(e => e.key !== key);
+    setExtras(updated);
+    localStorage.setItem('ken_custom_extras', JSON.stringify(updated));
+    showToast('Topping berhasil dihapus!');
+  };
+
+  const [milks, setMilks] = useState(() => {
+    const saved = localStorage.getItem('ken_custom_milks');
+    const parsed = saved ? JSON.parse(saved) : null;
+    if (parsed) {
+      return parsed.map(item => ({
+        ...item,
+        priceAdd: Number(item.priceAdd || 0),
+        dose: item.dose !== undefined ? Number(item.dose) : 0,
+        unit: item.unit !== undefined ? item.unit : 'ml',
+        bahanId: item.bahanId !== undefined ? item.bahanId : ''
+      }));
+    }
+    return [
+      { key: 'oat',     label: 'Oat Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+      { key: 'almond',  label: 'Almond Milk',  priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+      { key: 'soy',     label: 'Soy Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+    ];
+  });
+
+  const [newMilk, setNewMilk] = useState({ label: '', priceAdd: 0, dose: 150, unit: 'ml', bahanId: '' });
+  const [showAddMilk, setShowAddMilk] = useState(false);
+
+  const handleAddMilk = () => {
+    if (!newMilk.label) return alert('Nama jenis susu wajib diisi!');
+    const key = newMilk.label.toLowerCase().replace(/\s+/g, '_');
+    if (milks.some(m => m.key === key)) return alert('Jenis susu dengan nama ini sudah ada!');
+    
+    const updated = [...milks, { ...newMilk, key, priceAdd: Number(newMilk.priceAdd), dose: Number(newMilk.dose) }];
+    setMilks(updated);
+    localStorage.setItem('ken_custom_milks', JSON.stringify(updated));
+    setShowAddMilk(false);
+    setNewMilk({ label: '', priceAdd: 0, dose: 150, unit: 'ml', bahanId: '' });
+    showToast('Jenis susu alternatif baru berhasil ditambahkan!');
+  };
+
+  const handleDeleteMilk = (key) => {
+    if (!window.confirm('Yakin ingin menghapus jenis susu ini?')) return;
+    const updated = milks.filter(m => m.key !== key);
+    setMilks(updated);
+    localStorage.setItem('ken_custom_milks', JSON.stringify(updated));
+    showToast('Jenis susu berhasil dihapus!');
+  };
+
+  const handleSaveMilks = () => {
+    localStorage.setItem('ken_custom_milks', JSON.stringify(milks));
+    showToast('Kustomisasi susu alternatif berhasil disimpan!');
+  };
+
+  const [loyaltyRate, setLoyaltyRate] = useState(() => {
+    const saved = localStorage.getItem('ken_custom_loyalty_rate');
+    return saved ? parseInt(saved, 10) : 10; // 10 points per Rp 10.000
+  });
+
+  const [promos, setPromos] = useState(() => {
+    const saved = localStorage.getItem('ken_custom_promos');
+    return saved ? JSON.parse(saved) : [
+      { code: 'KOPIHEMAT', type: 'percentage', value: 15, desc: 'Diskon 15% untuk semua menu' },
+      { code: 'KENWEEKEND', type: 'fixed', value: 10000, desc: 'Potongan Rp 10.000' }
+    ];
+  });
+
+  const [doseEspresso, setDoseEspresso] = useState(() => Number(localStorage.getItem('ken_dose_espresso') || 7));
+  const [doseMilk, setDoseMilk] = useState(() => Number(localStorage.getItem('ken_dose_milk') || 150));
+  // Removed hardcoded Whipped Cream & Cocoa Powder doses, moved them completely to dynamic Extras toppings!
+
+  const [newPromo, setNewPromo] = useState({ code: '', type: 'percentage', value: '', desc: '' });
+  const [showAddPromo, setShowAddPromo] = useState(false);
+
+  const handleSaveSizes = () => {
+    localStorage.setItem('ken_custom_sizes', JSON.stringify(sizes));
+    showToast('Pengaturan harga ukuran berhasil disimpan!');
+  };
+
+  const handleSaveExtras = () => {
+    localStorage.setItem('ken_custom_extras', JSON.stringify(extras));
+    showToast('Pengaturan harga tambahan (extras) berhasil disimpan!');
+  };
+
+  const handleSaveLoyalty = async () => {
+    localStorage.setItem('ken_custom_loyalty_rate', loyaltyRate.toString());
+    try {
+      await api.saveSettingsLoyalty({ enabled: true, multiplier: loyaltyRate * 1000 });
+      showToast('Konfigurasi perolehan poin loyalty berhasil disimpan!');
+    } catch {
+      showToast('Konfigurasi disimpan lokal (gagal sinkronisasi server).');
+    }
+  };
+
+  const handleSaveDoses = () => {
+    localStorage.setItem('ken_dose_espresso', doseEspresso.toString());
+    localStorage.setItem('ken_dose_milk', doseMilk.toString());
+    showToast('Gramasi & dosis bahan baku brand berhasil disimpan!');
+  };
+
+  const handleSavePromos = () => {
+    localStorage.setItem('ken_custom_promos', JSON.stringify(promos));
+    showToast('Pengaturan kode promo berhasil diperbarui!');
+  };
+
+  const handleAddPromo = () => {
+    if (!newPromo.code || !newPromo.value) return alert('Kode dan Nilai Promo wajib diisi!');
+    const updated = [...promos, { ...newPromo, code: newPromo.code.toUpperCase().trim(), value: Number(newPromo.value) }];
+    setPromos(updated);
+    localStorage.setItem('ken_custom_promos', JSON.stringify(updated));
+    setShowAddPromo(false);
+    setNewPromo({ code: '', type: 'percentage', value: '', desc: '' });
+    showToast('Kode promo baru ditambahkan!');
+  };
+
+  const handleDeletePromo = (code) => {
+    const updated = promos.filter(p => p.code !== code);
+    setPromos(updated);
+    localStorage.setItem('ken_custom_promos', JSON.stringify(updated));
+    showToast('Kode promo telah dihapus!');
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-none shadow-xl bg-card">
+        <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+          <CardTitle className="text-xl font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+            <SlidersHorizontal className="text-amber-500" /> Kustomisasi Tambahan POS & Loyalty
+          </CardTitle>
+          <CardDescription>Kelola harga ukuran cup, topping tambahan (extras), bonus poin loyalitas member, dan manajemen kode promo.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-6 space-y-8">
+          
+          {/* SECTION: SIZES */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2"><Coffee size={16} /> Tambahan Harga Ukuran (Sizes)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {sizes.map((s, idx) => (
+                <div key={s.key} className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-border space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-black uppercase text-zinc-400">Cup {s.label} ({s.key})</span>
+                  </div>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400">+ Rp</span>
+                    <input
+                      type="number"
+                      value={s.priceAdd}
+                      onChange={e => {
+                        const val = Number(e.target.value);
+                        setSizes(prev => prev.map((item, i) => i === idx ? { ...item, priceAdd: val } : item));
+                      }}
+                      className="w-full h-10 pl-14 pr-3 text-xs font-black font-mono bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-right"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button onClick={handleSaveSizes} className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">Simpan Harga Ukuran</Button>
+          </div>
+
+                   {/* SECTION: EXTRAS */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2"><SlidersHorizontal size={16} /> Kustomisasi Topping & Dosis (Extras)</h3>
+              <Button onClick={() => setShowAddExtra(true)} className="h-9 px-4 text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">
+                <Plus size={14} className="mr-1 stroke-[3]" /> Tambah Topping
+              </Button>
+            </div>
+            
+            <div className="overflow-hidden rounded-lg border border-border bg-card font-sans">
+              <table className="w-full text-left border-collapse font-mono tabular-nums">
+                <thead>
+                  <tr className="bg-zinc-50 dark:bg-zinc-900 border-b border-border text-[10px] font-black uppercase tracking-wider text-zinc-500">
+                    <th className="p-4">Nama Topping</th>
+                    <th className="p-4 w-32 text-right">Harga Extra</th>
+                    <th className="p-4 w-28 text-right">Takaran Dosis</th>
+                    <th className="p-4 w-20 text-center">Satuan</th>
+                    <th className="p-4 w-48 text-left">Bahan Baku Terkait</th>
+                    <th className="p-4 w-16 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border text-xs">
+                  {extras.map((e, idx) => (
+                    <tr key={e.key} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                      <td className="p-3">
+                        <input
+                          type="text"
+                          value={e.label}
+                          onChange={ev => {
+                            const val = ev.target.value;
+                            setExtras(prev => prev.map((item, i) => i === idx ? { ...item, label: val } : item));
+                          }}
+                          className="w-full h-9 px-2 font-bold bg-card border border-transparent hover:border-border focus:border-amber-500 rounded-md focus:outline-none transition-colors"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-black text-zinc-400 pointer-events-none">Rp</span>
+                          <input
+                            type="number"
+                            value={e.priceAdd}
+                            onChange={ev => {
+                              const val = Number(ev.target.value);
+                              setExtras(prev => prev.map((item, i) => i === idx ? { ...item, priceAdd: val } : item));
+                            }}
+                            className="w-full h-9 pl-7 pr-2 font-bold text-right bg-card border border-transparent hover:border-border focus:border-amber-500 rounded-md focus:outline-none transition-colors"
+                          />
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <input
+                          type="number"
+                          value={e.dose}
+                          onChange={ev => {
+                            const val = Number(ev.target.value);
+                            setExtras(prev => prev.map((item, i) => i === idx ? { ...item, dose: val } : item));
+                          }}
+                          className="w-full h-9 px-2 font-bold text-right bg-card border border-transparent hover:border-border focus:border-amber-500 rounded-md focus:outline-none transition-colors"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <select
+                          value={e.unit || 'gram'}
+                          disabled={!!e.bahanId}
+                          onChange={ev => {
+                            const val = ev.target.value;
+                            setExtras(prev => prev.map((item, i) => i === idx ? { ...item, unit: val } : item));
+                          }}
+                          className="w-full h-9 px-2 font-bold bg-card border border-transparent hover:border-border focus:border-amber-500 rounded-md focus:outline-none transition-colors text-center disabled:opacity-75 disabled:cursor-not-allowed"
+                        >
+                          <option value="gram">g</option>
+                          <option value="ml">ml</option>
+                          <option value="pcs">pcs</option>
+                          {!['gram', 'ml', 'pcs'].includes(e.unit) && e.unit && (
+                            <option value={e.unit}>{e.unit}</option>
+                          )}
+                        </select>
+                      </td>
+                      <td className="p-3">
+                        <select
+                          value={e.bahanId || ''}
+                          onChange={ev => {
+                            const val = ev.target.value;
+                            const matchedBahan = bahanList.find(b => String(b.id) === String(val));
+                            let updatedUnit = e.unit;
+                            if (matchedBahan) {
+                              const rawUnit = matchedBahan.unit || matchedBahan.satuan || 'gram';
+                              const rawLower = rawUnit.toLowerCase();
+                              if (['g', 'gr', 'gram'].includes(rawLower)) updatedUnit = 'gram';
+                              else if (['ml', 'mililiter'].includes(rawLower)) updatedUnit = 'ml';
+                              else if (['pcs', 'pc', 'piece', 'pieces'].includes(rawLower)) updatedUnit = 'pcs';
+                              else updatedUnit = rawLower;
+                            }
+                            setExtras(prev => prev.map((item, i) => i === idx ? { ...item, bahanId: val, unit: updatedUnit } : item));
+                          }}
+                          className="w-full h-9 px-2 font-sans font-bold bg-card border border-transparent hover:border-border focus:border-amber-500 rounded-md focus:outline-none transition-colors text-left"
+                        >
+                          <option value="">-- Tanpa Potong Stok --</option>
+                          {bahanList.map(b => (
+                            <option key={b.id} value={b.id}>{b.name || b.nama || ''} ({b.unit || b.satuan || ''})</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => handleDeleteExtra(e.key)}
+                          className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-md transition-colors"
+                          title="Hapus Topping"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <Button onClick={handleSaveExtras} className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">Simpan Kustomisasi Toppings</Button>
+          </div>
+
+          <hr className="border-border" />
+
+          {/* SECTION: ALTERNATIVE MILKS */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2"><Droplets size={16} /> Kustomisasi Susu Alternatif (Milk Options)</h3>
+              <Button onClick={() => setShowAddMilk(true)} className="h-9 px-4 text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">
+                <Plus size={14} className="mr-1 stroke-[3]" /> Tambah Susu Alternatif
+              </Button>
+            </div>
+            
+            <div className="overflow-hidden rounded-lg border border-border bg-card font-sans">
+              <table className="w-full text-left border-collapse font-mono tabular-nums">
+                <thead>
+                  <tr className="bg-zinc-50 dark:bg-zinc-900 border-b border-border text-[10px] font-black uppercase tracking-wider text-zinc-500">
+                    <th className="p-4">Nama Susu</th>
+                    <th className="p-4 w-32 text-right">Harga Tambahan</th>
+                    <th className="p-4 w-28 text-right">Takaran Dosis</th>
+                    <th className="p-4 w-20 text-center">Satuan</th>
+                    <th className="p-4 w-48 text-left">Bahan Baku Terkait</th>
+                    <th className="p-4 w-16 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border text-xs">
+                  {milks.map((m, idx) => (
+                    <tr key={m.key} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-900/10 transition-colors">
+                      <td className="p-3">
+                        <input
+                          type="text"
+                          value={m.label}
+                          onChange={ev => {
+                            const val = ev.target.value;
+                            setMilks(prev => prev.map((item, i) => i === idx ? { ...item, label: val } : item));
+                          }}
+                          className="w-full h-9 px-2 font-bold bg-card border border-transparent hover:border-border focus:border-amber-500 rounded-md focus:outline-none transition-colors"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <div className="relative">
+                          <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[9px] font-black text-zinc-400 pointer-events-none">Rp</span>
+                          <input
+                            type="number"
+                            value={m.priceAdd}
+                            onChange={ev => {
+                              const val = Number(ev.target.value);
+                              setMilks(prev => prev.map((item, i) => i === idx ? { ...item, priceAdd: val } : item));
+                            }}
+                            className="w-full h-9 pl-7 pr-2 font-bold text-right bg-card border border-transparent hover:border-border focus:border-amber-500 rounded-md focus:outline-none transition-colors"
+                          />
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <input
+                          type="number"
+                          value={m.dose}
+                          onChange={ev => {
+                            const val = Number(ev.target.value);
+                            setMilks(prev => prev.map((item, i) => i === idx ? { ...item, dose: val } : item));
+                          }}
+                          className="w-full h-9 px-2 font-bold text-right bg-card border border-transparent hover:border-border focus:border-amber-500 rounded-md focus:outline-none transition-colors"
+                        />
+                      </td>
+                      <td className="p-3">
+                        <select
+                          value={m.unit || 'ml'}
+                          disabled={!!m.bahanId}
+                          onChange={ev => {
+                            const val = ev.target.value;
+                            setMilks(prev => prev.map((item, i) => i === idx ? { ...item, unit: val } : item));
+                          }}
+                          className="w-full h-9 px-2 font-bold bg-card border border-transparent hover:border-border focus:border-amber-500 rounded-md focus:outline-none transition-colors text-center disabled:opacity-75 disabled:cursor-not-allowed"
+                        >
+                          <option value="gram">g</option>
+                          <option value="ml">ml</option>
+                          <option value="pcs">pcs</option>
+                          {!['gram', 'ml', 'pcs'].includes(m.unit) && m.unit && (
+                            <option value={m.unit}>{m.unit}</option>
+                          )}
+                        </select>
+                      </td>
+                      <td className="p-3">
+                        <select
+                          value={m.bahanId || ''}
+                          onChange={ev => {
+                            const val = ev.target.value;
+                            const matchedBahan = bahanList.find(b => String(b.id) === String(val));
+                            let updatedUnit = m.unit;
+                            if (matchedBahan) {
+                              const rawUnit = matchedBahan.unit || matchedBahan.satuan || 'ml';
+                              const rawLower = rawUnit.toLowerCase();
+                              if (['g', 'gr', 'gram'].includes(rawLower)) updatedUnit = 'gram';
+                              else if (['ml', 'mililiter'].includes(rawLower)) updatedUnit = 'ml';
+                              else if (['pcs', 'pc', 'piece', 'pieces'].includes(rawLower)) updatedUnit = 'pcs';
+                              else updatedUnit = rawLower;
+                            }
+                            setMilks(prev => prev.map((item, i) => i === idx ? { ...item, bahanId: val, unit: updatedUnit } : item));
+                          }}
+                          className="w-full h-9 px-2 font-sans font-bold bg-card border border-transparent hover:border-border focus:border-amber-500 rounded-md focus:outline-none transition-colors text-left"
+                        >
+                          <option value="">-- Tanpa Potong Stok --</option>
+                          {bahanList.map(b => (
+                            <option key={b.id} value={b.id}>{b.name || b.nama || ''} ({b.unit || b.satuan || ''})</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={() => handleDeleteMilk(m.key)}
+                          className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-md transition-colors"
+                          title="Hapus Susu"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <Button onClick={handleSaveMilks} className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">Simpan Kustomisasi Susu</Button>
+          </div>
+
+          <hr className="border-border" />
+
+          {/* SECTION: LOYALTY RATE */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">⭐ Aturan Loyalty Point Member</h3>
+            <div className="p-6 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-border max-w-xl space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs font-black text-zinc-700 dark:text-zinc-300">Poin Per Rp 10.000 Transaksi</p>
+                  <p className="text-[10px] text-zinc-400 leading-normal">Tentukan berapa poin loyalitas yang didapatkan member untuk setiap Rp 10.000 pembayaran tunai/non-tunai.</p>
+                </div>
+                <div className="relative w-32 shrink-0">
+                  <input
+                    type="number"
+                    value={loyaltyRate}
+                    onChange={e => setLoyaltyRate(Math.max(1, Number(e.target.value)))}
+                    className="w-full h-11 px-3 text-sm font-black font-mono bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-right"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">Pts</span>
+                </div>
+              </div>
+              <Button onClick={handleSaveLoyalty} className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">Simpan Aturan Poin</Button>
+            </div>
+          </div>
+          {/* SECTION: BRAND-SPECIFIC DOSES */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">⚖️ Gramasi & Dosis Bahan Baku Brand Utama</h3>
+            <p className="text-[10px] text-zinc-400 leading-normal -mt-2">Atur takaran gramasi standar per porsi untuk brand/outlet Anda agar perhitungan HPP dan pemotongan stok bahan baku di backend menjadi 100% presisi (misal: Brand DEDE = 8g, Brand KAKA = 9g).</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-border space-y-2">
+                <span className="text-xs font-black uppercase text-zinc-400">1 Shot Espresso</span>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={doseEspresso}
+                    onChange={e => setDoseEspresso(Math.max(1, Number(e.target.value)))}
+                    className="w-full h-10 pr-12 text-xs font-black font-mono bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-right"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">gram</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-border space-y-2">
+                <span className="text-xs font-black uppercase text-zinc-400">Porsi Susu Segar</span>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={doseMilk}
+                    onChange={e => setDoseMilk(Math.max(1, Number(e.target.value)))}
+                    className="w-full h-10 pr-10 text-xs font-black font-mono bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-right"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">ml</span>
+                </div>
+              </div>
+
+            </div>
+            <Button onClick={handleSaveDoses} className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">Simpan Takaran Dosis</Button>
+          </div>
+
+          <hr className="border-border" />
+
+          {/* SECTION: PROMOS */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2"><Ticket size={16} /> Manajemen Kode Promo</h3>
+              <Button onClick={() => setShowAddPromo(true)} className="h-9 px-4 text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md">Tambah Promo</Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {promos.map(p => (
+                <div key={p.code} className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-border flex items-start justify-between gap-4">
+                  <div className="space-y-1 min-w-0">
+                    <span className="font-mono font-black text-base text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/10 inline-block">{p.code}</span>
+                    <p className="text-xs font-black text-zinc-800 dark:text-zinc-200 mt-1.5">{p.desc}</p>
+                    <p className="text-[10px] text-zinc-400 font-bold">Potongan: {p.type === 'percentage' ? `${p.value}%` : `Rp ${p.value.toLocaleString('id-ID')}`}</p>
+                  </div>
+                  <button onClick={() => handleDeletePromo(p.code)} className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-colors"><Trash2 size={16}/></button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </CardContent>
+      </Card>
+
+      {/* ADD PROMO MODAL */}
+      {showAddPromo && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+          <Card className="w-full max-w-md shadow-2xl border border-border rounded-lg bg-card overflow-hidden">
+            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+              <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                <Ticket className="text-amber-500" /> Tambah Kode Promo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Kode Promo</label>
+                <Input value={newPromo.code} onChange={e => setNewPromo({ ...newPromo, code: e.target.value.toUpperCase() })} placeholder="CONTOH: KOPIHEMAT" className="h-11 font-mono uppercase" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Jenis Diskon</label>
+                <select className="w-full h-11 px-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm rounded-md font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground" value={newPromo.type} onChange={e => setNewPromo({ ...newPromo, type: e.target.value })}>
+                  <option value="percentage">Persentase (%)</option>
+                  <option value="fixed">Nominal Flat (Rp)</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Nilai Potongan</label>
+                <Input type="number" value={newPromo.value} onChange={e => setNewPromo({ ...newPromo, value: e.target.value })} placeholder={newPromo.type === 'percentage' ? '15' : '10000'} className="h-11" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Deskripsi / Syarat</label>
+                <Input value={newPromo.desc} onChange={e => setNewPromo({ ...newPromo, desc: e.target.value })} placeholder="Diskon 15% khusus pembelian kopi" className="h-11" />
+              </div>
+            </CardContent>
+            <CardFooter className="p-6 border-t bg-zinc-50 dark:bg-zinc-900/50 flex gap-4">
+              <Button variant="outline" className="flex-1 h-12 rounded-lg font-bold border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300" onClick={() => setShowAddPromo(false)}>Batal</Button>
+              <Button className="flex-1 h-12 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 font-bold rounded-lg" onClick={handleAddPromo}>Simpan Promo</Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+
+      {/* ADD TOPPING / EXTRA MODAL */}
+      {showAddExtra && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+          <Card className="w-full max-w-md shadow-2xl border border-border rounded-lg bg-card overflow-hidden">
+            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+              <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                <Plus className="text-amber-500" /> Tambah Topping Baru
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Nama Topping</label>
+                <Input value={newExtra.label} onChange={e => setNewExtra({ ...newExtra, label: e.target.value })} placeholder="CONTOH: Oreo Crumbs" className="h-11" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tambahan Harga (Rp)</label>
+                <Input type="number" value={newExtra.priceAdd} onChange={e => setNewExtra({ ...newExtra, priceAdd: e.target.value })} placeholder="CONTOH: 4000" className="h-11 font-mono text-right" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Hubungkan Ke Bahan Baku Gudang</label>
+                <select 
+                  className="w-full h-11 px-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm rounded-md font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground" 
+                  value={newExtra.bahanId || ''} 
+                  onChange={e => {
+                    const val = e.target.value;
+                    const matchedBahan = bahanList.find(b => String(b.id) === String(val));
+                    let updatedUnit = newExtra.unit;
+                    if (matchedBahan) {
+                      const rawUnit = matchedBahan.unit || matchedBahan.satuan || 'gram';
+                      const rawLower = rawUnit.toLowerCase();
+                      if (['g', 'gr', 'gram'].includes(rawLower)) updatedUnit = 'gram';
+                      else if (['ml', 'mililiter'].includes(rawLower)) updatedUnit = 'ml';
+                      else if (['pcs', 'pc', 'piece', 'pieces'].includes(rawLower)) updatedUnit = 'pcs';
+                      else updatedUnit = rawLower;
+                    }
+                    setNewExtra({ ...newExtra, bahanId: val, unit: updatedUnit });
+                  }}
+                >
+                  <option value="">-- Tanpa Potong Stok --</option>
+                  {bahanList.map(b => (
+                    <option key={b.id} value={b.id}>{b.name || b.nama || ''} ({b.unit || b.satuan || ''})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Takaran / Dosis</label>
+                  <Input type="number" value={newExtra.dose} onChange={e => setNewExtra({ ...newExtra, dose: e.target.value })} placeholder="CONTOH: 10" className="h-11 font-mono text-right" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Satuan</label>
+                  <select 
+                    disabled={!!newExtra.bahanId}
+                    className="w-full h-11 px-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm rounded-md font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground disabled:opacity-75 disabled:cursor-not-allowed" 
+                    value={newExtra.unit} 
+                    onChange={e => setNewExtra({ ...newExtra, unit: e.target.value })}
+                  >
+                    <option value="gram">Gram (g)</option>
+                    <option value="ml">Mililiter (ml)</option>
+                    <option value="pcs">Pieces (pcs)</option>
+                    {!['gram', 'ml', 'pcs'].includes(newExtra.unit) && newExtra.unit && (
+                      <option value={newExtra.unit}>{newExtra.unit}</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="bg-zinc-50 dark:bg-zinc-900/50 p-6 flex justify-end gap-3 border-t">
+              <Button variant="ghost" onClick={() => setShowAddExtra(false)} className="flex-1 h-12 rounded-lg font-bold">Batal</Button>
+              <Button onClick={handleAddExtra} className="flex-1 h-12 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-lg font-black text-xs uppercase tracking-widest px-6 active:scale-95 transition-all">Tambah Topping</Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+
+      {/* ADD ALTERNATIVE MILK MODAL */}
+      {showAddMilk && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+          <Card className="w-full max-w-md shadow-2xl border border-border rounded-lg bg-card overflow-hidden">
+            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+              <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                <Plus className="text-amber-500" /> Tambah Susu Alternatif Baru
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Nama Susu</label>
+                <Input value={newMilk.label} onChange={e => setNewMilk({ ...newMilk, label: e.target.value })} placeholder="CONTOH: Coconut Milk" className="h-11" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tambahan Harga (Rp)</label>
+                <Input type="number" value={newMilk.priceAdd} onChange={e => setNewMilk({ ...newMilk, priceAdd: e.target.value })} placeholder="CONTOH: 6000" className="h-11 font-mono text-right" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Hubungkan Ke Bahan Baku Gudang</label>
+                <select 
+                  className="w-full h-11 px-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm rounded-md font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground" 
+                  value={newMilk.bahanId || ''} 
+                  onChange={e => {
+                    const val = e.target.value;
+                    const matchedBahan = bahanList.find(b => String(b.id) === String(val));
+                    let updatedUnit = newMilk.unit;
+                    if (matchedBahan) {
+                      const rawUnit = matchedBahan.unit || matchedBahan.satuan || 'ml';
+                      const rawLower = rawUnit.toLowerCase();
+                      if (['g', 'gr', 'gram'].includes(rawLower)) updatedUnit = 'gram';
+                      else if (['ml', 'mililiter'].includes(rawLower)) updatedUnit = 'ml';
+                      else if (['pcs', 'pc', 'piece', 'pieces'].includes(rawLower)) updatedUnit = 'pcs';
+                      else updatedUnit = rawLower;
+                    }
+                    setNewMilk({ ...newMilk, bahanId: val, unit: updatedUnit });
+                  }}
+                >
+                  <option value="">-- Tanpa Potong Stok --</option>
+                  {bahanList.map(b => (
+                    <option key={b.id} value={b.id}>{b.name || b.nama || ''} ({b.unit || b.satuan || ''})</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Takaran / Dosis</label>
+                  <Input type="number" value={newMilk.dose} onChange={e => setNewMilk({ ...newMilk, dose: e.target.value })} placeholder="CONTOH: 150" className="h-11 font-mono text-right" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Satuan</label>
+                  <select 
+                    disabled={!!newMilk.bahanId}
+                    className="w-full h-11 px-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm rounded-md font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground disabled:opacity-75 disabled:cursor-not-allowed" 
+                    value={newMilk.unit} 
+                    onChange={e => setNewMilk({ ...newMilk, unit: e.target.value })}
+                  >
+                    <option value="ml">Mililiter (ml)</option>
+                    <option value="gram">Gram (g)</option>
+                    <option value="pcs">Pieces (pcs)</option>
+                    {!['gram', 'ml', 'pcs'].includes(newMilk.unit) && newMilk.unit && (
+                      <option value={newMilk.unit}>{newMilk.unit}</option>
+                    )}
+                  </select>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="bg-zinc-50 dark:bg-zinc-900/50 p-6 flex justify-end gap-3 border-t">
+              <Button variant="ghost" onClick={() => setShowAddMilk(false)} className="flex-1 h-12 rounded-lg font-bold">Batal</Button>
+              <Button onClick={handleAddMilk} className="flex-1 h-12 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-lg font-black text-xs uppercase tracking-widest px-6 active:scale-95 transition-all">Tambah Susu</Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
@@ -399,44 +1142,116 @@ export default function PengaturanPage() {
     handleBackup
   } = usePengaturan();
 
+  const tabInfo = {
+    users: {
+      title: "Pengguna & Hak Akses",
+      desc: "Manajemen anggota tim, hak akses (roles), dan izin akses fitur sistem.",
+      icon: Users
+    },
+    system: {
+      title: "Profil Outlet & Gerai",
+      desc: "Informasi dasar gerai, titik koordinat GPS geofencing absensi, dan pengaturan pajak/layanan operasional.",
+      icon: Settings
+    },
+    customization: {
+      title: "Kustomisasi POS & Dosis",
+      desc: "Pengaturan ukuran cup, opsi tambahan (extras), dosis gramasi bahan baku, serta manajemen kode promo kasir.",
+      icon: SlidersHorizontal
+    },
+    payment: {
+      title: "Aturan Keuangan & Pajak",
+      desc: "Metode pembayaran kasir, nomor rekening transfer manual, dan integrasi gerbang pembayaran.",
+      icon: CreditCard
+    },
+    branding: {
+      title: "Branding & Personalisasi",
+      desc: "Kustomisasi tampilan struk belanja, logo struk, dan identitas visual brand.",
+      icon: Palette
+    },
+    marketplace: {
+      title: "Omnichannel & Marketplace",
+      desc: "Integrasi marketplace pihak ketiga dan pengelolaan channel penjualan digital.",
+      icon: Store
+    },
+    subscription: {
+      title: "Modul & Paket Layanan",
+      desc: "Manajemen paket berlangganan sistem, riwayat tagihan, dan modul tambahan aktif.",
+      icon: PackageOpen
+    },
+    ai: {
+      title: "Modul AI & API",
+      desc: "Integrasi sistem kecerdasan buatan, API Key OpenAI/Gemini, dan asisten kustomisasi menu otomatis.",
+      icon: BrainCircuit
+    },
+    security: {
+      title: "Kebijakan Approval & Keamanan",
+      desc: "Konfigurasi otorisasi tindakan sensitif, kebijakan persetujuan owner, dan audit log keamanan.",
+      icon: ShieldAlert
+    }
+  };
+
+  const currentTab = tabInfo[activeTab] || tabInfo.users;
+  
+  const hash = window.location.hash;
+  const searchPart = hash.includes('?') ? hash.split('?')[1] : '';
+  const params = new URLSearchParams(searchPart);
+  const isStandalone = params.get('standalone') === 'true';
+
   return (
     <div className="space-y-8 pb-10 animate-in fade-in duration-500">
-      {/* Header */}
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Pengaturan Sistem</h2>
-        <p className="text-zinc-500 dark:text-zinc-100 mt-1">Konfigurasi operasional, hak akses pengguna, dan personalisasi brand.</p>
-      </div>
+      {isStandalone ? (
+        /* Dedicated Sub-page Header */
+        <div className="flex items-center justify-between border-b pb-6 border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-lg bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-500">
+              <currentTab.icon size={24} className="stroke-[2.5]" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-black text-zinc-900 dark:text-white tracking-tight uppercase">{currentTab.title}</h2>
+              <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 mt-1 uppercase tracking-wider">{currentTab.desc}</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Original Premium Settings Header & Tabs Bar */
+        <>
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">Pengaturan Sistem</h2>
+            <p className="text-zinc-500 dark:text-zinc-100 mt-1">Konfigurasi operasional, hak akses pengguna, dan personalisasi brand.</p>
+          </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-2 bg-background p-1 rounded-lg border w-fit flex-wrap">
-        {[
-          { key: 'users', label: 'Pengguna & Akses', icon: Users },
-          { key: 'system', label: 'Pajak & Sistem', icon: Settings },
-          { key: 'payment', label: 'Pembayaran', icon: CreditCard },
-          { key: 'branding', label: 'Branding', icon: Palette },
-          { key: 'marketplace', label: 'Marketplace', icon: Store },
-          { key: 'subscription', label: 'Modul & Paket', icon: PackageOpen },
-          { key: 'ai', label: 'Integrasi AI', icon: BrainCircuit },
-          { key: 'security', label: 'Keamanan & Audit', icon: ShieldAlert },
-        ].map(t => (
-          <button 
-            key={t.key} 
-            className={cn(
-              "h-8 px-4 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2", 
-              activeTab === t.key ? "active-state shadow-sm" : "text-text-tertiary hover:text-text-secondary"
-            )}
-            onClick={() => setActiveTab(t.key)}
-          >
-            <t.icon size={14} /> {t.label}
-            {t.key === 'marketplace' && (!user?.tier || user?.tier === 'lite') && (
-               <span className="text-white ">PRO</span>
-            )}
-            {t.key === 'security' && (
-              <span className="bg-amber-500 dark:bg-amber-400 text-white dark:text-zinc-900 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">BARU</span>
-            )}
-          </button>
-        ))}
-      </div>
+          <div className="flex items-center gap-2 bg-background p-1 rounded-lg border w-fit flex-wrap">
+            {[
+              { key: 'users', label: 'Pengguna & Akses', icon: Users },
+              { key: 'system', label: 'Pajak & Sistem', icon: Settings },
+              { key: 'customization', label: 'Kustomisasi POS', icon: SlidersHorizontal },
+              { key: 'payment', label: 'Pembayaran', icon: CreditCard },
+              { key: 'branding', label: 'Branding', icon: Palette },
+              { key: 'marketplace', label: 'Marketplace', icon: Store },
+              { key: 'subscription', label: 'Modul & Paket', icon: PackageOpen },
+              { key: 'ai', label: 'Integrasi AI', icon: BrainCircuit },
+              { key: 'security', label: 'Keamanan & Audit', icon: ShieldAlert },
+            ].map(t => (
+              <button 
+                key={t.key} 
+                className={cn(
+                  "h-8 px-4 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2", 
+                  activeTab === t.key ? "active-state shadow-sm" : "text-text-tertiary hover:text-text-secondary"
+                )}
+                onClick={() => setActiveTab(t.key)}
+              >
+                <t.icon size={14} /> {t.label}
+                {t.key === 'marketplace' && (!user?.tier || user?.tier === 'lite') && (
+                   <span className="text-white">PRO</span>
+                )}
+                {t.key === 'security' && (
+                  <span className="bg-amber-500 dark:bg-amber-400 text-white dark:text-zinc-900 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">BARU</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {activeTab === 'users' && (
         <div className="space-y-6">
@@ -1646,6 +2461,10 @@ export default function PengaturanPage() {
             </Button>
           </CardFooter>
         </Card>
+      )}
+
+      {activeTab === 'customization' && (
+        <POSCustomizationPanel showToast={showToast} />
       )}
 
       {showAddModal && <AddUserModal onClose={() => setShowAddModal(false)} onSave={handleAddUser} loading={loading} />}
