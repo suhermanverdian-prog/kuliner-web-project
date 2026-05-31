@@ -70,7 +70,7 @@ try {
     allowedHeaders: [
       'Content-Type', 'Authorization', 'x-tenant-id',
       'x-outlet-id', 'x-user-id', 'x-user-role',
-      'X-Requested-With', 'Accept'
+      'X-Requested-With', 'Accept', 'sentry-trace', 'baggage'
     ]
   };
   app.use(cors(corsOptions));
@@ -79,7 +79,7 @@ try {
     res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant-id, x-outlet-id, x-user-id, x-user-role, X-Requested-With, Accept');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant-id, x-outlet-id, x-user-id, x-user-role, X-Requested-With, Accept, sentry-trace, baggage');
     res.sendStatus(200);
   });
 
