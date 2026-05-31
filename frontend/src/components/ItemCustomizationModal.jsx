@@ -236,8 +236,20 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
     // Add selected extras/toppings to the BOM checklist
     selectedExtras.forEach(eKey => {
       const extConfig = extras.find(e => e.key === eKey);
-      if (extConfig && extConfig.bahanId) {
-        const linkedBahan = bahanList.find(b => String(b.id) === String(extConfig.bahanId));
+      if (extConfig) {
+        let linkedBahan = null;
+        if (extConfig.bahanId) {
+          linkedBahan = bahanList.find(b => String(b.id) === String(extConfig.bahanId));
+        }
+        if (!linkedBahan) {
+          // Self-healing: match by name (e.g. "Caramel" or "Whipped Cream")
+          const searchName = (extConfig.label || '').toLowerCase();
+          linkedBahan = bahanList.find(b => {
+            const bName = (b.name || b.nama || '').toLowerCase();
+            return bName.includes(searchName) || searchName.includes(bName);
+          });
+        }
+
         if (linkedBahan) {
           baseBom.push({
             id: `extra-${eKey}`,
