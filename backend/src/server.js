@@ -38,20 +38,46 @@ try {
   // Expose a getter for utils/realtimeNotifier to retrieve the Socket.IO instance
   app.getIo = () => io;
 
-  // Serve static frontend assets (PWA manifest, Service Worker, favicon) before auth middleware
-  app.use(express.static(path.join(__dirname, '../../frontend/dist')));
-  // Ensure the static files are accessible without authentication
-  // This also covers /manifest.json, /favicon.ico, /sw.js
+  // ⚠️ On Vercel, static files (manifest.json, sw.js, favicon) are served
+  // directly by Vercel's CDN edge via vercel.json routing rules.
+  // Do NOT use express.static(frontend/dist) here — it has no effect on Vercel
+  // and can cause conflicts.
 
-  // Configure CORS to allow any origin (including Vercel preview domains) and credentials
+  // Configure CORS to allow any origin (including all Vercel preview domains)
+  const getAllowedOrigin = (origin) => {
+    if (!origin) return true; // server-to-server
+    if (
+      origin.includes('vercel.app') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) return true;
+    return false;
+  };
   const corsOptions = {
-    origin: true,
+    origin: (origin, callback) => {
+      if (getAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type', 'Authorization', 'x-tenant-id',
+      'x-outlet-id', 'x-user-id', 'x-user-role',
+      'X-Requested-With', 'Accept'
+    ]
   };
   app.use(cors(corsOptions));
-  // Respond to preflight OPTIONS requests globally
-  app.options('*', cors(corsOptions));
-  // Auth middleware will be applied after static assets and CORS
+  // Explicitly handle OPTIONS preflight — must respond 200 before auth middleware
+  app.options('*', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant-id, x-outlet-id, x-user-id, x-user-role, X-Requested-With, Accept');
+    res.sendStatus(200);
+  });
 
   app.use(express.json());
   app.use('/api/uploads', express.static(path.join(__dirname, '../public/uploads')));
