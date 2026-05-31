@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
-import { BrainCircuit, KeyRound, Server, Sparkles, Zap, PackageOpen, MapPin, Globe, Coffee, SlidersHorizontal, Ticket } from 'lucide-react';
+import { BrainCircuit, KeyRound, Server, Sparkles, Zap, PackageOpen, MapPin, Globe, Coffee, SlidersHorizontal, Ticket, Droplets } from 'lucide-react';
 import { FEATURE_CATALOG, TIER_DEFAULTS, resolveFeatures } from '../lib/featureFlags';
 import { useAppStore } from '../store/useAppStore';
 
