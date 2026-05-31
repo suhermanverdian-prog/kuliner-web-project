@@ -401,36 +401,135 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
       {/* Main Panel */}
       <div className="relative w-full md:max-w-6xl sm:max-w-2xl bg-card rounded-lg border border-border shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-300">
         
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border bg-zinc-50 dark:bg-zinc-900/50 shrink-0">
-          <div className="flex items-center gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="font-bold text-lg text-zinc-900 dark:text-white leading-tight truncate">
-                  {item.name}
-                </h3>
-                <span className="px-2 py-0.5 rounded-sm bg-zinc-100 dark:bg-zinc-800 text-[8px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-widest">
-                  {item.category || 'Menu'}
-                </span>
-              </div>
-              <p className="text-xs font-mono tabular-nums text-amber-600 dark:text-amber-400 font-bold mt-1">
-                Base Price: {formatRupiah(item.price)}
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-md flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
-          >
-            <X size={18} />
-          </button>
-        </div>
+        {/* Absolute Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 w-8 h-8 rounded-md flex items-center justify-center text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+        >
+          <X size={18} />
+        </button>
 
         {/* Three Columns Container */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             
-            {/* Left Column (col-span-4): Size, Sweetness, Shots, Milk */}
+            {/* Left Column (col-span-4): Visual Preview, BOM & Checkout */}
+            <div className="md:col-span-4 space-y-4">
+              {/* Product Visual Card */}
+              <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-border rounded-lg p-2 flex items-center gap-2.5">
+                {item.image ? (
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-11 h-11 object-cover rounded-md border border-border shadow-sm shrink-0"
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                ) : (
+                  <div className="w-11 h-11 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center border border-border shadow-sm shrink-0">
+                    {isBeverage ? (
+                      <Coffee size={18} className="text-amber-500 dark:text-amber-400" />
+                    ) : (
+                      <Utensils size={18} className="text-amber-500 dark:text-amber-400" />
+                    )}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] uppercase font-bold tracking-widest text-zinc-400 dark:text-zinc-500">Pratinjau Item</span>
+                    <span className="px-1.5 py-0.5 rounded-sm bg-zinc-100 dark:bg-zinc-800 text-[8px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-widest">
+                      {item.category || 'Menu'}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-50 truncate leading-tight mt-0.5">{item.name}</h4>
+                  <div className="flex items-center justify-between mt-1 text-[10px]">
+                    <span className="text-zinc-400 dark:text-zinc-500">Base: <span className="font-mono tabular-nums font-semibold text-zinc-600 dark:text-zinc-300">{formatRupiah(item.price)}</span></span>
+                    <span className="text-zinc-400 dark:text-zinc-500">Total: <span className="font-mono tabular-nums font-bold text-amber-600 dark:text-amber-400">{formatRupiah(item.price + (sizeObj?.priceAdd || 0) + strengthPriceAdd + milkPriceAdd + extrasPrice)}</span></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Real-time Dynamic BOM Checklist */}
+              {recipeIngredients.length > 0 && (
+                <div className="border border-border rounded-lg p-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col">
+                  <div className="flex items-center gap-1.5 mb-1 shrink-0">
+                    <span className="text-amber-500 dark:text-amber-400">
+                      <Sliders size={10} />
+                    </span>
+                    <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                      BOM Modifiers
+                    </h4>
+                  </div>
+                  <div className="space-y-1 h-[132px] overflow-y-auto custom-scrollbar pr-1">
+                    {recipeIngredients.map(row => {
+                      const b = bahanList.find(x => String(x.id) === String(row.bahanId));
+                      const label = row.label || b?.name || b?.nama || 'Bahan Baku';
+                      const unit = b?.unit || b?.satuan || '';
+                      
+                      return (
+                        <div 
+                          key={row.id}
+                          onClick={() => toggleRecipeIngredient(row.id)}
+                          className={cn(
+                            "flex items-center justify-between py-1 px-1.5 rounded border text-[11px] cursor-pointer select-none transition-all active:scale-[0.99]",
+                            row.active 
+                              ? "bg-card border-border hover:border-amber-500/30 text-zinc-800 dark:text-zinc-200" 
+                              : "bg-zinc-100/50 dark:bg-zinc-900/50 border-transparent text-zinc-400 dark:text-zinc-600 line-through"
+                          )}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <div className={cn(
+                              "w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors",
+                              row.active 
+                                ? "bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900" 
+                                : "bg-transparent border-zinc-300 dark:border-zinc-700"
+                            )}>
+                              {row.active && <CheckCircle2 size={8} strokeWidth={4} />}
+                            </div>
+                            <span className="font-bold">{label}</span>
+                          </div>
+                          <span className="font-mono text-[9px] font-bold tabular-nums">
+                            {row.active ? row.qty : 0} <span className="uppercase text-[8px] font-medium">{unit}</span>
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Quantity selector & Add button */}
+              <div className="space-y-3 pt-2 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Jumlah</span>
+                  <div className="flex items-center gap-3 bg-card border border-border rounded-md p-0.5">
+                    <button
+                      onClick={() => setQty(q => Math.max(1, q - 1))}
+                      className="w-7 h-7 rounded flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-500 transition-colors"
+                    >
+                      <Minus size={12} strokeWidth={3} />
+                    </button>
+                    <span className="w-6 text-center font-bold font-mono tabular-nums text-sm text-zinc-900 dark:text-zinc-50">{qty}</span>
+                    <button
+                      onClick={() => setQty(q => q + 1)}
+                      className="w-7 h-7 rounded flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-emerald-500 transition-colors"
+                    >
+                      <Plus size={12} strokeWidth={3} />
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleConfirm}
+                  className="w-full h-10 rounded bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 font-bold text-xs shadow shadow-amber-500/10 active:scale-[0.98] transition-all flex items-center justify-between px-3"
+                >
+                  <span>Tambah ke Pesanan</span>
+                  <span className="font-mono tabular-nums text-xs font-bold">{formatRupiah(finalPrice)}</span>
+                </button>
+              </div>
+
+            </div>
+
+            {/* Center Column (col-span-4): Size, Sweetness, Shots, Milk */}
             <div className="md:col-span-4 space-y-6">
               {isBeverage ? (
                 <>
@@ -535,7 +634,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                           className={cn(
                             'flex flex-col items-center justify-center h-12 rounded-md border-2 text-xs font-bold transition-all active:scale-95',
                             size === s.key
-                              ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/20'
+                              ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/20'
                               : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
                           )}
                         >
@@ -553,7 +652,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
               )}
             </div>
 
-            {/* Center Column (col-span-4): Temp, Extras, Note */}
+            {/* Right Column (col-span-4): Temp, Extras, Note */}
             <div className="md:col-span-4 space-y-6">
               {isBeverage ? (
                 <>
@@ -671,116 +770,6 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                   className="w-full px-3 py-1.5 rounded-md bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs font-medium text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 dark:focus:border-amber-400 resize-none transition-all"
                 />
               </Section>
-            </div>
-
-            {/* Right Column (col-span-4): Visual Preview, BOM & Checkout */}
-            <div className="md:col-span-4 space-y-4">
-              {/* Product Visual Card */}
-              <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-border rounded-lg p-2 flex items-center gap-2.5">
-                {item.image ? (
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-11 h-11 object-cover rounded-md border border-border shadow-sm shrink-0"
-                    onError={e => { e.target.style.display = 'none'; }}
-                  />
-                ) : (
-                  <div className="w-11 h-11 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center border border-border shadow-sm shrink-0">
-                    {isBeverage ? (
-                      <Coffee size={18} className="text-amber-500 dark:text-amber-400" />
-                    ) : (
-                      <Utensils size={18} className="text-amber-500 dark:text-amber-400" />
-                    )}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <div className="text-[8px] uppercase font-bold tracking-widest text-zinc-400 dark:text-zinc-500">Pratinjau Item</div>
-                  <h4 className="font-bold text-xs text-zinc-900 dark:text-zinc-50 truncate leading-tight">{item.name}</h4>
-                  <p className="font-mono tabular-nums text-amber-600 dark:text-amber-400 font-bold text-xs mt-0.5">
-                    {formatRupiah(item.price + (sizeObj?.priceAdd || 0) + strengthPriceAdd + milkPriceAdd + extrasPrice)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Real-time Dynamic BOM Checklist */}
-              {recipeIngredients.length > 0 && (
-                <div className="border border-border rounded-lg p-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col">
-                  <div className="flex items-center gap-1.5 mb-1 shrink-0">
-                    <span className="text-amber-500 dark:text-amber-400">
-                      <Sliders size={10} />
-                    </span>
-                    <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
-                      BOM Modifiers
-                    </h4>
-                  </div>
-                  <div className="space-y-1 h-[132px] overflow-y-auto custom-scrollbar pr-1">
-                    {recipeIngredients.map(row => {
-                      const b = bahanList.find(x => String(x.id) === String(row.bahanId));
-                      const label = row.label || b?.name || b?.nama || 'Bahan Baku';
-                      const unit = b?.unit || b?.satuan || '';
-                      
-                      return (
-                        <div 
-                          key={row.id}
-                          onClick={() => toggleRecipeIngredient(row.id)}
-                          className={cn(
-                            "flex items-center justify-between py-1 px-1.5 rounded border text-[11px] cursor-pointer select-none transition-all active:scale-[0.99]",
-                            row.active 
-                              ? "bg-card border-border hover:border-amber-500/30 text-zinc-800 dark:text-zinc-200" 
-                              : "bg-zinc-100/50 dark:bg-zinc-900/50 border-transparent text-zinc-400 dark:text-zinc-600 line-through"
-                          )}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <div className={cn(
-                              "w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors",
-                              row.active 
-                                ? "bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900" 
-                                : "bg-transparent border-zinc-300 dark:border-zinc-700"
-                            )}>
-                              {row.active && <CheckCircle2 size={8} strokeWidth={4} />}
-                            </div>
-                            <span className="font-bold">{label}</span>
-                          </div>
-                          <span className="font-mono text-[9px] font-bold tabular-nums">
-                            {row.active ? row.qty : 0} <span className="uppercase text-[8px] font-medium">{unit}</span>
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Quantity selector & Add button */}
-              <div className="space-y-3 pt-2 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Jumlah</span>
-                  <div className="flex items-center gap-3 bg-card border border-border rounded-md p-0.5">
-                    <button
-                      onClick={() => setQty(q => Math.max(1, q - 1))}
-                      className="w-7 h-7 rounded flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-500 transition-colors"
-                    >
-                      <Minus size={12} strokeWidth={3} />
-                    </button>
-                    <span className="w-6 text-center font-bold font-mono tabular-nums text-sm text-zinc-900 dark:text-zinc-50">{qty}</span>
-                    <button
-                      onClick={() => setQty(q => q + 1)}
-                      className="w-7 h-7 rounded flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-emerald-500 transition-colors"
-                    >
-                      <Plus size={12} strokeWidth={3} />
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleConfirm}
-                  className="w-full h-10 rounded bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 font-bold text-xs shadow shadow-amber-500/10 active:scale-[0.98] transition-all flex items-center justify-between px-3"
-                >
-                  <span>Tambah ke Pesanan</span>
-                  <span className="font-mono tabular-nums text-xs font-bold">{formatRupiah(finalPrice)}</span>
-                </button>
-              </div>
-
             </div>
 
           </div>
