@@ -85,7 +85,6 @@ const authMiddleware = (req, res, next) => {
       outletId: null
     };
     return next();
-  }
 
   // 4. DEVELOPMENT FALLBACK: Penyelamat saat pengembangan lokal tanpa token
   if (process.env.NODE_ENV !== 'production') {
