@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/controllers/closingController.js</title>
+    <title>Code coverage report for src/controllers/loyaltyController.js</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,20 +19,20 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/controllers</a> closingController.js</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/controllers</a> loyaltyController.js</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">13.33% </span>
+                <span class="strong">12% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/15</span>
+                <span class='fraction'>3/25</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/8</span>
+                <span class='fraction'>0/18</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">13.33% </span>
+                <span class="strong">12% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/15</span>
+                <span class='fraction'>3/25</span>
             </div>
         
             
@@ -94,12 +94,42 @@
 <a name='L29'></a><a href='#L29'>29</a>
 <a name='L30'></a><a href='#L30'>30</a>
 <a name='L31'></a><a href='#L31'>31</a>
-<a name='L32'></a><a href='#L32'>32</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -109,13 +139,17 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -125,37 +159,54 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const ClosingService = require('../services/closingService');
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">const LoyaltyService = require('../services/loyaltyService');
+const AppError = require('../utils/AppError');
 &nbsp;
-class ClosingController {
-<span class="fstat-no" title="function not covered" >  as</span>ync getClosings(req, res) {
+class LoyaltyController {
+<span class="fstat-no" title="function not covered" >  as</span>ync earn(req, res) {
+    const tenantId = <span class="cstat-no" title="statement not covered" >req.userContext?.tenantId;</span>
+    const { customer_phone, customer_name, amount } = <span class="cstat-no" title="statement not covered" >req.body;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (!tenantId) {</span>
+<span class="cstat-no" title="statement not covered" >      return res.status(403).json({ error: 'Tenant ID required' });</span>
+    }
+<span class="cstat-no" title="statement not covered" >    if (!customer_phone) {</span>
+<span class="cstat-no" title="statement not covered" >      return res.status(400).json({ error: 'Nomor telepon wajib disertakan' });</span>
+    }
+<span class="cstat-no" title="statement not covered" >    if (amount === undefined || amount === null) {</span>
+<span class="cstat-no" title="statement not covered" >      return res.status(400).json({ error: 'Jumlah nominal transaksi wajib disertakan' });</span>
+    }
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const { tenantId } = <span class="cstat-no" title="statement not covered" >req.userContext || {};</span>
-      const data = <span class="cstat-no" title="statement not covered" >await ClosingService.getClosings(tenantId);</span>
-<span class="cstat-no" title="statement not covered" >      res.json(data);</span>
+      const result = <span class="cstat-no" title="statement not covered" >await LoyaltyService.earnPoints(tenantId, customer_phone, customer_name, Number(amount));</span>
+<span class="cstat-no" title="statement not covered" >      res.json(result);</span>
     } catch (err) {
-<span class="cstat-no" title="statement not covered" >      res.status(500).json({ error: err.message });</span>
+<span class="cstat-no" title="statement not covered" >      new AppError(err.message, err.status || 500).send(res);</span>
     }
   }
 &nbsp;
-<span class="fstat-no" title="function not covered" >  as</span>ync closePeriod(req, res) {
+<span class="fstat-no" title="function not covered" >  as</span>ync getMe(req, res) {
+    const tenantId = <span class="cstat-no" title="statement not covered" >req.userContext?.tenantId;</span>
+    // Can fetch using logged-in user phone or passed phone param
+    const phone = <span class="cstat-no" title="statement not covered" >req.query.phone || req.userContext?.userId;</span> // Fallback or direct check
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (!tenantId) {</span>
+<span class="cstat-no" title="statement not covered" >      return res.status(403).json({ error: 'Tenant ID required' });</span>
+    }
+<span class="cstat-no" title="statement not covered" >    if (!phone) {</span>
+<span class="cstat-no" title="statement not covered" >      return res.status(400).json({ error: 'Nomor telepon atau user ID wajib disertakan' });</span>
+    }
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
-      const { tenantId, email } = <span class="cstat-no" title="statement not covered" >req.userContext || {};</span>
-      const { period } = <span class="cstat-no" title="statement not covered" >req.body;</span> // e.g. '2026-05'
-&nbsp;
-<span class="cstat-no" title="statement not covered" >      if (!period) {</span>
-<span class="cstat-no" title="statement not covered" >        return res.status(400).json({ error: 'Periode (YYYY-MM) wajib ditentukan.' });</span>
-      }
-&nbsp;
-      const result = <span class="cstat-no" title="statement not covered" >await ClosingService.closePeriod(tenantId, period, email || 'Owner/Manager');</span>
-<span class="cstat-no" title="statement not covered" >      res.json(result);</span>
+      const data = <span class="cstat-no" title="statement not covered" >await LoyaltyService.getCustomerData(tenantId, phone);</span>
+<span class="cstat-no" title="statement not covered" >      res.json(data);</span>
     } catch (err) {
-<span class="cstat-no" title="statement not covered" >      res.status(400).json({ error: err.message });</span>
+<span class="cstat-no" title="statement not covered" >      new AppError(err.message, err.status || 500).send(res);</span>
     }
   }
 }
 &nbsp;
-module.exports = new ClosingController();
+module.exports = new LoyaltyController();
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->

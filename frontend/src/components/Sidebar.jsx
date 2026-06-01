@@ -80,6 +80,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     { id: '/settings?tab=system&standalone=true',          label: 'Profil Outlet & Gerai', icon: Building2,  roles: ['owner','manager'], perm: 'atur_user' },
     { id: '/settings?tab=payment&standalone=true',         label: 'Aturan Keuangan & Pajak', icon: Scale,      roles: ['owner','manager','accounting'], perm: 'lihat_laba' },
     { id: '/settings?tab=ai&standalone=true',              label: 'Modul AI & API',       icon: BrainCircuit,roles: ['owner'],           perm: 'atur_user' },
+    { id: '/settings?tab=promo&standalone=true',           label: 'Promo & Diskon',       icon: Sparkles,  roles: ['owner','manager'], perm: 'atur_user' },
   ];
 
   const hasAccess = (item) => {

@@ -125,6 +125,7 @@ app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
   app.use('/api/loyalty', require('./routes/loyaltyRoutes'));
   app.use('/api/assets', requireFeature('accounting'), require('./routes/assetRoutes'));
   app.use('/api/closings', requireFeature('accounting'), require('./routes/closingRoutes'));
+app.use('/api/customisations', require('./routes/customisationRoutes'));
 
   const { supabase } = require('./supabase');
   app.post('/api/upload', upload.single('image'), async (req, res) => {

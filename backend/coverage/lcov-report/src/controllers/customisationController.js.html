@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/repositories/discountRepository.js</title>
+    <title>Code coverage report for src/controllers/customisationController.js</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/repositories</a> discountRepository.js</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/controllers</a> customisationController.js</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">12.5% </span>
+                <span class="strong">8.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>3/24</span>
+                <span class='fraction'>2/24</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/10</span>
+                <span class='fraction'>0/14</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>0/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">15.78% </span>
+                <span class="strong">9.52% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>3/19</span>
+                <span class='fraction'>2/21</span>
             </div>
         
             
@@ -101,82 +101,103 @@
 <a name='L36'></a><a href='#L36'>36</a>
 <a name='L37'></a><a href='#L37'>37</a>
 <a name='L38'></a><a href='#L38'>38</a>
-<a name='L39'></a><a href='#L39'>39</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// src/repositories/discountRepository.js
-const { supabase } = require('../supabase');
-const AppError = require('../utils/AppError');
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// backend/src/controllers/customisationController.js
+/**
+ * Controller for POS customisation settings (key/value per tenant/outlet).
+ * Uses CustomisationService which talks to Supabase.
+ */
+const CustomisationService = require('../services/customisationService');
 &nbsp;
-class DiscountRepository {
-<span class="fstat-no" title="function not covered" >  as</span>ync create(tenantId, discountData) {
-    const payload = <span class="cstat-no" title="statement not covered" >{ ...discountData, tenant_id: tenantId };</span>
-    const { data, error } = <span class="cstat-no" title="statement not covered" >await supabase.from('discounts').insert([payload]).select().single();</span>
-<span class="cstat-no" title="statement not covered" >    if (error) <span class="cstat-no" title="statement not covered" >throw new AppError('Gagal membuat discount', 500);</span></span>
-<span class="cstat-no" title="statement not covered" >    return data;</span>
-  }
-&nbsp;
-<span class="fstat-no" title="function not covered" >  as</span>ync findAll(tenantId) {
-    const { data, error } = <span class="cstat-no" title="statement not covered" >await supabase.from('discounts').select('*').eq('tenant_id', tenantId);</span>
-<span class="cstat-no" title="statement not covered" >    if (error) <span class="cstat-no" title="statement not covered" >throw new AppError('Gagal mengambil discounts', 500);</span></span>
-<span class="cstat-no" title="statement not covered" >    return data;</span>
-  }
-&nbsp;
-<span class="fstat-no" title="function not covered" >  as</span>ync findById(tenantId, id) {
-    const { data, error } = <span class="cstat-no" title="statement not covered" >await supabase.from('discounts').select('*').eq('tenant_id', tenantId).eq('id', id).maybeSingle();</span>
-<span class="cstat-no" title="statement not covered" >    if (error) <span class="cstat-no" title="statement not covered" >throw new AppError('Gagal menemukan discount', 500);</span></span>
-<span class="cstat-no" title="statement not covered" >    return data;</span>
-  }
-&nbsp;
-<span class="fstat-no" title="function not covered" >  as</span>ync update(tenantId, id, updateData) {
-    const { data, error } = <span class="cstat-no" title="statement not covered" >await supabase.from('discounts').update(updateData).eq('tenant_id', tenantId).eq('id', id).select().single();</span>
-<span class="cstat-no" title="statement not covered" >    if (error) <span class="cstat-no" title="statement not covered" >throw new AppError('Gagal memperbarui discount', 500);</span></span>
-<span class="cstat-no" title="statement not covered" >    return data;</span>
-  }
-&nbsp;
-<span class="fstat-no" title="function not covered" >  as</span>ync delete(tenantId, id) {
-    const { error } = <span class="cstat-no" title="statement not covered" >await supabase.from('discounts').delete().eq('tenant_id', tenantId).eq('id', id);</span>
-<span class="cstat-no" title="statement not covered" >    if (error) <span class="cstat-no" title="statement not covered" >throw new AppError('Gagal menghapus discount', 500);</span></span>
-<span class="cstat-no" title="statement not covered" >    return true;</span>
+/** GET /api/customisations
+ * Returns all merged settings for the current tenant (and outlet if provided).
+ */
+async function <span class="fstat-no" title="function not covered" >getCustomisations(</span>req, res) {
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const tenantId = <span class="cstat-no" title="statement not covered" >req.user?.tenantId;</span>
+    const outletId = <span class="cstat-no" title="statement not covered" >req.user?.outletId || null;</span> // may be undefined
+<span class="cstat-no" title="statement not covered" >    if (!tenantId) <span class="cstat-no" title="statement not covered" >return res.status(400).json({ error: 'tenantId missing' });</span></span>
+    const data = <span class="cstat-no" title="statement not covered" >await CustomisationService.getAll(tenantId, outletId);</span>
+<span class="cstat-no" title="statement not covered" >    return res.json({ success: true, data });</span>
+  } catch (err) {
+<span class="cstat-no" title="statement not covered" >    console.error('Customisation GET error:', err);</span>
+<span class="cstat-no" title="statement not covered" >    return res.status(500).json({ error: err.message || 'Internal error' });</span>
   }
 }
 &nbsp;
-module.exports = new DiscountRepository();
+/** POST /api/customisations
+ * Body: { key: string, value: any }
+ * Upserts a single setting for the current tenant/outlet.
+ */
+async function <span class="fstat-no" title="function not covered" >upsertCustomisation(</span>req, res) {
+<span class="cstat-no" title="statement not covered" >  try {</span>
+    const { key, value } = <span class="cstat-no" title="statement not covered" >req.body;</span>
+    const tenantId = <span class="cstat-no" title="statement not covered" >req.user?.tenantId;</span>
+    const outletId = <span class="cstat-no" title="statement not covered" >req.user?.outletId || null;</span>
+<span class="cstat-no" title="statement not covered" >    if (!tenantId) <span class="cstat-no" title="statement not covered" >return res.status(400).json({ error: 'tenantId missing' });</span></span>
+<span class="cstat-no" title="statement not covered" >    if (!key) <span class="cstat-no" title="statement not covered" >return res.status(400).json({ error: 'key is required' });</span></span>
+<span class="cstat-no" title="statement not covered" >    await CustomisationService.set(key, value, tenantId, outletId);</span>
+    // Return refreshed map for convenience
+    const data = <span class="cstat-no" title="statement not covered" >await CustomisationService.getAll(tenantId, outletId);</span>
+<span class="cstat-no" title="statement not covered" >    return res.json({ success: true, data });</span>
+  } catch (err) {
+<span class="cstat-no" title="statement not covered" >    console.error('Customisation POST error:', err);</span>
+<span class="cstat-no" title="statement not covered" >    return res.status(500).json({ error: err.message || 'Internal error' });</span>
+  }
+}
+&nbsp;
+module.exports = { getCustomisations, upsertCustomisation };
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->

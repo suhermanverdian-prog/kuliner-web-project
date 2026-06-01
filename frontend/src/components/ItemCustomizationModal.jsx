@@ -472,7 +472,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                       BOM Modifiers
                     </h4>
                   </div>
-                  <div className="space-y-1 h-[132px] overflow-y-auto custom-scrollbar pr-1">
+                  <div className="space-y-1 h-[148px] overflow-y-auto custom-scrollbar pr-1">
                     {recipeIngredients.map(row => {
                       const b = bahanList.find(x => String(x.id) === String(row.bahanId));
                       const label = row.label || b?.name || b?.nama || 'Bahan Baku';
@@ -483,7 +483,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                           key={row.id}
                           onClick={() => toggleRecipeIngredient(row.id)}
                           className={cn(
-                            "flex items-center justify-between py-1 px-1.5 rounded border text-[11px] cursor-pointer select-none transition-all active:scale-[0.99]",
+                            "flex items-center justify-between py-1.5 px-2 rounded border text-xs cursor-pointer select-none transition-all active:scale-[0.99]",
                             row.active 
                               ? "bg-card border-border hover:border-amber-500/30 text-zinc-800 dark:text-zinc-200" 
                               : "bg-zinc-100/50 dark:bg-zinc-900/50 border-transparent text-zinc-400 dark:text-zinc-600 line-through"
@@ -498,10 +498,10 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             )}>
                               {row.active && <CheckCircle2 size={8} strokeWidth={4} />}
                             </div>
-                            <span className="font-bold">{label}</span>
+                            <span className="font-bold text-xs">{label}</span>
                           </div>
-                          <span className="font-mono text-[9px] font-bold tabular-nums">
-                            {row.active ? row.qty : 0} <span className="uppercase text-[8px] font-medium">{unit}</span>
+                          <span className="font-mono text-xs font-bold tabular-nums">
+                            {row.active ? row.qty : 0} <span className="uppercase text-[9px] font-medium">{unit}</span>
                           </span>
                         </div>
                       );

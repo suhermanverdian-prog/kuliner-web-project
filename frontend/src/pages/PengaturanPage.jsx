@@ -268,25 +268,8 @@ function POSCustomizationPanel({ showToast }) {
     showToast('Kustomisasi susu alternatif berhasil disimpan!');
   };
 
-  const [loyaltyRate, setLoyaltyRate] = useState(() => {
-    const saved = localStorage.getItem('ken_custom_loyalty_rate');
-    return saved ? parseInt(saved, 10) : 10; // 10 points per Rp 10.000
-  });
-
-  const [promos, setPromos] = useState(() => {
-    const saved = localStorage.getItem('ken_custom_promos');
-    return saved ? JSON.parse(saved) : [
-      { code: 'KOPIHEMAT', type: 'percentage', value: 15, desc: 'Diskon 15% untuk semua menu' },
-      { code: 'KENWEEKEND', type: 'fixed', value: 10000, desc: 'Potongan Rp 10.000' }
-    ];
-  });
-
   const [doseEspresso, setDoseEspresso] = useState(() => Number(localStorage.getItem('ken_dose_espresso') || 7));
-  const [doseMilk, setDoseMilk] = useState(() => Number(localStorage.getItem('ken_dose_milk') || 150));
   // Removed hardcoded Whipped Cream & Cocoa Powder doses, moved them completely to dynamic Extras toppings!
-
-  const [newPromo, setNewPromo] = useState({ code: '', type: 'percentage', value: '', desc: '' });
-  const [showAddPromo, setShowAddPromo] = useState(false);
 
   const handleSaveSizes = () => {
     localStorage.setItem('ken_custom_sizes', JSON.stringify(sizes));
@@ -298,42 +281,10 @@ function POSCustomizationPanel({ showToast }) {
     showToast('Pengaturan harga tambahan (extras) berhasil disimpan!');
   };
 
-  const handleSaveLoyalty = async () => {
-    localStorage.setItem('ken_custom_loyalty_rate', loyaltyRate.toString());
-    try {
-      await api.saveSettingsLoyalty({ enabled: true, multiplier: loyaltyRate * 1000 });
-      showToast('Konfigurasi perolehan poin loyalty berhasil disimpan!');
-    } catch {
-      showToast('Konfigurasi disimpan lokal (gagal sinkronisasi server).');
-    }
-  };
 
   const handleSaveDoses = () => {
     localStorage.setItem('ken_dose_espresso', doseEspresso.toString());
-    localStorage.setItem('ken_dose_milk', doseMilk.toString());
     showToast('Gramasi & dosis bahan baku brand berhasil disimpan!');
-  };
-
-  const handleSavePromos = () => {
-    localStorage.setItem('ken_custom_promos', JSON.stringify(promos));
-    showToast('Pengaturan kode promo berhasil diperbarui!');
-  };
-
-  const handleAddPromo = () => {
-    if (!newPromo.code || !newPromo.value) return alert('Kode dan Nilai Promo wajib diisi!');
-    const updated = [...promos, { ...newPromo, code: newPromo.code.toUpperCase().trim(), value: Number(newPromo.value) }];
-    setPromos(updated);
-    localStorage.setItem('ken_custom_promos', JSON.stringify(updated));
-    setShowAddPromo(false);
-    setNewPromo({ code: '', type: 'percentage', value: '', desc: '' });
-    showToast('Kode promo baru ditambahkan!');
-  };
-
-  const handleDeletePromo = (code) => {
-    const updated = promos.filter(p => p.code !== code);
-    setPromos(updated);
-    localStorage.setItem('ken_custom_promos', JSON.stringify(updated));
-    showToast('Kode promo telah dihapus!');
   };
 
   return (
@@ -341,9 +292,9 @@ function POSCustomizationPanel({ showToast }) {
       <Card className="border-none shadow-xl bg-card">
         <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
           <CardTitle className="text-xl font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-            <SlidersHorizontal className="text-amber-500" /> Kustomisasi Tambahan POS & Loyalty
+            <SlidersHorizontal className="text-amber-500" /> Kustomisasi Tambahan POS & Dosis
           </CardTitle>
-          <CardDescription>Kelola harga ukuran cup, topping tambahan (extras), bonus poin loyalitas member, dan manajemen kode promo.</CardDescription>
+          <CardDescription>Kelola harga ukuran cup, topping tambahan (extras), jenis susu alternatif, dan takaran dosis bahan baku resep.</CardDescription>
         </CardHeader>
         <CardContent className="p-6 space-y-8">
           
@@ -618,30 +569,6 @@ function POSCustomizationPanel({ showToast }) {
             <Button onClick={handleSaveMilks} className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">Simpan Kustomisasi Susu</Button>
           </div>
 
-          <hr className="border-border" />
-
-          {/* SECTION: LOYALTY RATE */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">⭐ Aturan Loyalty Point Member</h3>
-            <div className="p-6 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-border max-w-xl space-y-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <p className="text-xs font-black text-zinc-700 dark:text-zinc-300">Poin Per Rp 10.000 Transaksi</p>
-                  <p className="text-[10px] text-zinc-400 leading-normal">Tentukan berapa poin loyalitas yang didapatkan member untuk setiap Rp 10.000 pembayaran tunai/non-tunai.</p>
-                </div>
-                <div className="relative w-32 shrink-0">
-                  <input
-                    type="number"
-                    value={loyaltyRate}
-                    onChange={e => setLoyaltyRate(Math.max(1, Number(e.target.value)))}
-                    className="w-full h-11 px-3 text-sm font-black font-mono bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-right"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">Pts</span>
-                </div>
-              </div>
-              <Button onClick={handleSaveLoyalty} className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">Simpan Aturan Poin</Button>
-            </div>
-          </div>
           {/* SECTION: BRAND-SPECIFIC DOSES */}
           <div className="space-y-4">
             <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">⚖️ Gramasi & Dosis Bahan Baku Brand Utama</h3>
@@ -661,86 +588,14 @@ function POSCustomizationPanel({ showToast }) {
                 </div>
               </div>
 
-              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-border space-y-2">
-                <span className="text-xs font-black uppercase text-zinc-400">Porsi Susu Segar</span>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={doseMilk}
-                    onChange={e => setDoseMilk(Math.max(1, Number(e.target.value)))}
-                    className="w-full h-10 pr-10 text-xs font-black font-mono bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-right"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">ml</span>
-                </div>
-              </div>
+
 
             </div>
             <Button onClick={handleSaveDoses} className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">Simpan Takaran Dosis</Button>
           </div>
 
-          <hr className="border-border" />
-
-          {/* SECTION: PROMOS */}
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2"><Ticket size={16} /> Manajemen Kode Promo</h3>
-              <Button onClick={() => setShowAddPromo(true)} className="h-9 px-4 text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md">Tambah Promo</Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {promos.map(p => (
-                <div key={p.code} className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-border flex items-start justify-between gap-4">
-                  <div className="space-y-1 min-w-0">
-                    <span className="font-mono font-black text-base text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/10 inline-block">{p.code}</span>
-                    <p className="text-xs font-black text-zinc-800 dark:text-zinc-200 mt-1.5">{p.desc}</p>
-                    <p className="text-[10px] text-zinc-400 font-bold">Potongan: {p.type === 'percentage' ? `${p.value}%` : `Rp ${p.value.toLocaleString('id-ID')}`}</p>
-                  </div>
-                  <button onClick={() => handleDeletePromo(p.code)} className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-colors"><Trash2 size={16}/></button>
-                </div>
-              ))}
-            </div>
-          </div>
-
         </CardContent>
       </Card>
-
-      {/* ADD PROMO MODAL */}
-      {showAddPromo && (
-        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
-          <Card className="w-full max-w-md shadow-2xl border border-border rounded-lg bg-card overflow-hidden">
-            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
-              <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-                <Ticket className="text-amber-500" /> Tambah Kode Promo
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Kode Promo</label>
-                <Input value={newPromo.code} onChange={e => setNewPromo({ ...newPromo, code: e.target.value.toUpperCase() })} placeholder="CONTOH: KOPIHEMAT" className="h-11 font-mono uppercase" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Jenis Diskon</label>
-                <select className="w-full h-11 px-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm rounded-md font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground" value={newPromo.type} onChange={e => setNewPromo({ ...newPromo, type: e.target.value })}>
-                  <option value="percentage">Persentase (%)</option>
-                  <option value="fixed">Nominal Flat (Rp)</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Nilai Potongan</label>
-                <Input type="number" value={newPromo.value} onChange={e => setNewPromo({ ...newPromo, value: e.target.value })} placeholder={newPromo.type === 'percentage' ? '15' : '10000'} className="h-11" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Deskripsi / Syarat</label>
-                <Input value={newPromo.desc} onChange={e => setNewPromo({ ...newPromo, desc: e.target.value })} placeholder="Diskon 15% khusus pembelian kopi" className="h-11" />
-              </div>
-            </CardContent>
-            <CardFooter className="p-6 border-t bg-zinc-50 dark:bg-zinc-900/50 flex gap-4">
-              <Button variant="outline" className="flex-1 h-12 rounded-lg font-bold border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300" onClick={() => setShowAddPromo(false)}>Batal</Button>
-              <Button className="flex-1 h-12 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 font-bold rounded-lg" onClick={handleAddPromo}>Simpan Promo</Button>
-            </CardFooter>
-          </Card>
-        </div>
-      )}
 
       {/* ADD TOPPING / EXTRA MODAL */}
       {showAddExtra && (
@@ -887,6 +742,224 @@ function POSCustomizationPanel({ showToast }) {
             <CardFooter className="bg-zinc-50 dark:bg-zinc-900/50 p-6 flex justify-end gap-3 border-t">
               <Button variant="ghost" onClick={() => setShowAddMilk(false)} className="flex-1 h-12 rounded-lg font-bold">Batal</Button>
               <Button onClick={handleAddMilk} className="flex-1 h-12 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-lg font-black text-xs uppercase tracking-widest px-6 active:scale-95 transition-all">Tambah Susu</Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+// ================================================================
+// 🎟️ PromoPanel — Manajemen Kupon, Diskon, dan Promo Pelanggan
+// ================================================================
+function PromoPanel({ showToast }) {
+  const [promos, setPromos] = useState(() => {
+    const saved = localStorage.getItem('ken_custom_promos');
+    return saved ? JSON.parse(saved) : [
+      { code: 'KOPIHEMAT', type: 'percentage', value: 15, desc: 'Diskon 15% untuk semua menu' },
+      { code: 'KENWEEKEND', type: 'fixed', value: 10000, desc: 'Potongan Rp 10.000' }
+    ];
+  });
+
+  const [loyaltyRate, setLoyaltyRate] = useState(() => {
+    const saved = localStorage.getItem('ken_custom_loyalty_rate');
+    return saved ? parseInt(saved, 10) : 10; // 10 points per Rp 10.000
+  });
+
+  const [newPromo, setNewPromo] = useState({ code: '', type: 'percentage', value: '', desc: '' });
+  const [showAddPromo, setShowAddPromo] = useState(false);
+
+  const handleSaveLoyalty = async () => {
+    localStorage.setItem('ken_custom_loyalty_rate', loyaltyRate.toString());
+    try {
+      await api.saveSettingsLoyalty({ enabled: true, multiplier: loyaltyRate * 1000 });
+      showToast('Konfigurasi perolehan poin loyalty berhasil disimpan!');
+    } catch {
+      showToast('Konfigurasi disimpan lokal (gagal sinkronisasi server).');
+    }
+  };
+
+  const handleAddPromo = () => {
+    if (!newPromo.code || !newPromo.value) return alert('Kode dan Nilai Promo wajib diisi!');
+    const updated = [...promos, { ...newPromo, code: newPromo.code.toUpperCase().trim(), value: Number(newPromo.value) }];
+    setPromos(updated);
+    localStorage.setItem('ken_custom_promos', JSON.stringify(updated));
+    setShowAddPromo(false);
+    setNewPromo({ code: '', type: 'percentage', value: '', desc: '' });
+    showToast('Kode promo baru ditambahkan!');
+  };
+
+  const handleDeletePromo = (code) => {
+    if (!window.confirm('Yakin ingin menghapus kode promo ini?')) return;
+    const updated = promos.filter(p => p.code !== code);
+    setPromos(updated);
+    localStorage.setItem('ken_custom_promos', JSON.stringify(updated));
+    showToast('Kode promo telah dihapus!');
+  };
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <Card className="border-none shadow-xl bg-card rounded-lg">
+        <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-500">
+                <Sparkles size={24} className="stroke-[2.5]" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-black text-zinc-900 dark:text-zinc-50">Pengaturan Promo & Diskon</CardTitle>
+                <CardDescription className="mt-1">Kelola voucher promosi, diskon kupon belanja, dan program loyalitas pelanggan.</CardDescription>
+              </div>
+            </div>
+            <Button 
+              onClick={() => setShowAddPromo(true)} 
+              className="h-10 px-4 text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+            >
+              <Plus size={16} className="mr-2 stroke-[3]" /> Tambah Promo
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+              <Ticket size={16} /> Daftar Voucher & Kuon Promo
+            </h3>
+
+            {promos.length === 0 ? (
+              <div className="p-8 text-center border border-dashed rounded-md bg-zinc-50/50 dark:bg-zinc-900/20">
+                <p className="text-sm font-medium text-zinc-400">Belum ada promo yang terdaftar.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {promos.map(p => (
+                  <div key={p.code} className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-md border border-zinc-200 dark:border-zinc-700 flex items-start justify-between gap-4">
+                    <div className="space-y-1 min-w-0">
+                      <span className="font-mono font-black text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-sm border border-amber-500/10 inline-block uppercase">
+                        {p.code}
+                      </span>
+                      <p className="text-xs font-black text-zinc-800 dark:text-zinc-200 mt-2">{p.desc}</p>
+                      <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-black uppercase font-mono tracking-wider mt-1">
+                        Potongan: <span className="font-mono tabular-nums text-amber-600 dark:text-amber-400">{p.type === 'percentage' ? `${p.value}%` : `Rp ${p.value.toLocaleString('id-ID')}`}</span>
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => handleDeletePromo(p.code)} 
+                      className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-colors active:scale-95"
+                    >
+                      <Trash2 size={16}/>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-none shadow-xl bg-card rounded-lg">
+        <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+          <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+            ⭐ Aturan Loyalty Point Member
+          </CardTitle>
+          <CardDescription>
+            Konfigurasi rasio perolehan poin loyalitas yang didapatkan pelanggan saat bertransaksi.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 max-w-xl">
+            <div className="space-y-1">
+              <p className="text-xs font-black text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">Poin Per Rp 10.000 Transaksi</p>
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-normal">
+                Tentukan jumlah poin loyalitas yang diperoleh pelanggan untuk kelipatan transaksi sebesar Rp 10.000.
+              </p>
+            </div>
+            <div className="relative w-32 shrink-0">
+              <input
+                type="number"
+                value={loyaltyRate}
+                onChange={e => setLoyaltyRate(Math.max(1, Number(e.target.value)))}
+                className="w-full h-11 px-3 text-sm font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 text-right rounded-md text-foreground"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">Pts</span>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="p-6 border-t bg-zinc-50 dark:bg-zinc-900/50">
+          <Button 
+            onClick={handleSaveLoyalty} 
+            className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+          >
+            Simpan Aturan Poin
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {/* ADD PROMO MODAL */}
+      {showAddPromo && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+          <Card className="w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-700 rounded-lg bg-card overflow-hidden">
+            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+              <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                <Ticket className="text-amber-500" /> Tambah Kode Promo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Kode Promo</label>
+                <Input 
+                  value={newPromo.code} 
+                  onChange={e => setNewPromo({ ...newPromo, code: e.target.value.toUpperCase() })} 
+                  placeholder="CONTOH: KOPIHEMAT" 
+                  className="h-11 font-mono uppercase bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 rounded-md" 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Jenis Diskon</label>
+                <select 
+                  className="w-full h-11 px-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm rounded-md font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground" 
+                  value={newPromo.type} 
+                  onChange={e => setNewPromo({ ...newPromo, type: e.target.value })}
+                >
+                  <option value="percentage">Persentase (%)</option>
+                  <option value="fixed">Nominal Flat (Rp)</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Nilai Potongan</label>
+                <Input 
+                  type="number" 
+                  value={newPromo.value} 
+                  onChange={e => setNewPromo({ ...newPromo, value: e.target.value })} 
+                  placeholder={newPromo.type === 'percentage' ? '15' : '10000'} 
+                  className="h-11 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 rounded-md" 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Deskripsi / Syarat</label>
+                <Input 
+                  value={newPromo.desc} 
+                  onChange={e => setNewPromo({ ...newPromo, desc: e.target.value })} 
+                  placeholder="Diskon 15% khusus pembelian kopi" 
+                  className="h-11 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 rounded-md" 
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="p-6 border-t bg-zinc-50 dark:bg-zinc-900/50 flex gap-4">
+              <Button 
+                variant="outline" 
+                className="flex-1 h-12 rounded-md font-bold border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300" 
+                onClick={() => setShowAddPromo(false)}
+              >
+                Batal
+              </Button>
+              <Button 
+                className="flex-1 h-12 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 text-white font-bold rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all" 
+                onClick={handleAddPromo}
+              >
+                Simpan Promo
+              </Button>
             </CardFooter>
           </Card>
         </div>
@@ -1155,8 +1228,13 @@ export default function PengaturanPage() {
     },
     customization: {
       title: "Kustomisasi POS & Dosis",
-      desc: "Pengaturan ukuran cup, opsi tambahan (extras), dosis gramasi bahan baku, serta manajemen kode promo kasir.",
+      desc: "Pengaturan ukuran cup, opsi tambahan (extras), jenis susu alternatif, dan takaran dosis bahan baku resep.",
       icon: SlidersHorizontal
+    },
+    promo: {
+      title: "Promo & Diskon",
+      desc: "Manajemen kupon diskon, voucher belanja, dan program promosi pelanggan.",
+      icon: Sparkles
     },
     payment: {
       title: "Aturan Keuangan & Pajak",
@@ -1225,6 +1303,7 @@ export default function PengaturanPage() {
               { key: 'users', label: 'Pengguna & Akses', icon: Users },
               { key: 'system', label: 'Pajak & Sistem', icon: Settings },
               { key: 'customization', label: 'Kustomisasi POS', icon: SlidersHorizontal },
+              { key: 'promo', label: 'Promo & Diskon', icon: Sparkles },
               { key: 'payment', label: 'Pembayaran', icon: CreditCard },
               { key: 'branding', label: 'Branding', icon: Palette },
               { key: 'marketplace', label: 'Marketplace', icon: Store },
@@ -2465,6 +2544,10 @@ export default function PengaturanPage() {
 
       {activeTab === 'customization' && (
         <POSCustomizationPanel showToast={showToast} />
+      )}
+
+      {activeTab === 'promo' && (
+        <PromoPanel showToast={showToast} />
       )}
 
       {showAddModal && <AddUserModal onClose={() => setShowAddModal(false)} onSave={handleAddUser} loading={loading} />}
