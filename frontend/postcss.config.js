@@ -1,6 +1,9 @@
 export default {
   plugins: {
-    '@tailwindcss/postcss': {},
+    '@tailwindcss/postcss': {
+      // Disable lightningcss on non-Windows platforms (e.g. Vercel Linux)
+      lightningcss: false,
+    },
     autoprefixer: {},
   },
 }
