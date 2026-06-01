@@ -27,15 +27,32 @@ async function getCustomisations(req, res) {
  */
 async function upsertCustomisation(req, res) {
   try {
-    const { key, value } = req.body;
-    const tenantId = req.user?.tenantId;
-    const outletId = req.user?.outletId || null;
-    if (!tenantId) return res.status(400).json({ error: 'tenantId missing' });
+      // Accept tenant/outlet from authenticated user, headers, or request body for robustness
+    const { key, value } = req.body || {};
+    const tenantId = req.user?.tenantId || req.headers['x-tenant-id'] || req.body?.tenantId;
+    const outletId = req.user?.outletId || req.headers['x-outlet-id'] || req.body?.outletId || null;
+
+    if (!tenantId) {
+      console.warn('Customisation POST missing tenantId; headers/body/user not provided');
+      return res.status(400).json({ error: 'tenantId missing' });
+    }
     if (!key) return res.status(400).json({ error: 'key is required' });
-    await CustomisationService.set(key, value, tenantId, outletId);
+
+    try {
+      await CustomisationService.set(key, value, tenantId, outletId);
+    } catch (err) {
+      console.error('CustomisationService.set error:', err.message || err);
+      return res.status(500).json({ error: err.message || 'Failed to upsert customisation' });
+    }
+
     // Return refreshed map for convenience
-    const data = await CustomisationService.getAll(tenantId, outletId);
-    return res.json({ success: true, data });
+    try {
+      const data = await CustomisationService.getAll(tenantId, outletId);
+      return res.json({ success: true, data });
+    } catch (err) {
+      console.error('CustomisationService.getAll error:', err.message || err);
+      return res.status(500).json({ error: 'Saved but failed to retrieve updated customisations' });
+    }
   } catch (err) {
     console.error('Customisation POST error:', err);
     return res.status(500).json({ error: err.message || 'Internal error' });

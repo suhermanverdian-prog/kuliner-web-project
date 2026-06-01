@@ -258,12 +258,19 @@ export function usePengaturan() {
       };
 
       const customRequests = [];
-      if (sizes !== null) customRequests.push(api.request(`${api.url}/customisations`, 'POST', { key: 'sizes', value: sizes }));
-      if (extras !== null) customRequests.push(api.request(`${api.url}/customisations`, 'POST', { key: 'extras', value: extras }));
-      if (milks !== null) customRequests.push(api.request(`${api.url}/customisations`, 'POST', { key: 'milks', value: milks }));
-      if (doses) customRequests.push(api.request(`${api.url}/customisations`, 'POST', { key: 'doses', value: doses }));
+      if (sizes !== null) customRequests.push(api.saveCustomisation ? api.saveCustomisation({ key: 'sizes', value: sizes }) : api.request(`${api.url}/customisations`, 'POST', { key: 'sizes', value: sizes }));
+      if (extras !== null) customRequests.push(api.saveCustomisation ? api.saveCustomisation({ key: 'extras', value: extras }) : api.request(`${api.url}/customisations`, 'POST', { key: 'extras', value: extras }));
+      if (milks !== null) customRequests.push(api.saveCustomisation ? api.saveCustomisation({ key: 'milks', value: milks }) : api.request(`${api.url}/customisations`, 'POST', { key: 'milks', value: milks }));
+      if (doses) customRequests.push(api.saveCustomisation ? api.saveCustomisation({ key: 'doses', value: doses }) : api.request(`${api.url}/customisations`, 'POST', { key: 'doses', value: doses }));
 
-      await Promise.all(customRequests);
+      const results = await Promise.allSettled(customRequests);
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length > 0) {
+        console.error('Failed to save some customisations:', failed);
+        showToast('Beberapa pengaturan kostumisasi gagal disimpan. Periksa konsol atau coba lagi.', 'error');
+      } else {
+        showToast('Pengaturan sistem & kostumisasi berhasil disimpan!', 'success');
+      }
 
       if (aiConfig.apiKey && aiConfig.apiKey.trim() !== '') {
         localStorage.setItem('ken_ai_config', JSON.stringify(aiConfig));
