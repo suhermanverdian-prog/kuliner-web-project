@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { api } from '../api';
 import { Shield, Zap, Database, AlertTriangle } from 'lucide-react';
+import { useRealtimeSync } from './useRealtimeSync';
 
 export function useCommandCenterPage() {
   const [stats, setStats] = useState({
@@ -44,47 +44,63 @@ export function useCommandCenterPage() {
     }
   };
 
+  // Detect local dev environment
+  const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  // Handler for NEW_TRANSACTION that can be used by both socket (local) and Supabase (prod)
+  const handleNewTransaction = useCallback((tx) => {
+    setStats(prev => ({
+      ...prev,
+      globalRevenue: prev.globalRevenue + (tx.total || 0),
+      onlineUsers: prev.onlineUsers + 1
+    }));
+
+    const newFeedItem = {
+      id: Date.now(),
+      type: 'SALE',
+      msg: `New Order: ${tx.order_number} - Rp ${tx.total?.toLocaleString('id-ID')}`,
+      time: 'Just now',
+      icon: Zap,
+      color: 'text-amber-500'
+    };
+
+    setLiveFeed(prev => [newFeedItem, ...prev.slice(0, 15)]);
+  }, []);
+
+  // Use Supabase Realtime in non-local environments (long-term solution)
+  useRealtimeSync(isLocal ? {} : { NEW_TRANSACTION: handleNewTransaction });
+
   useEffect(() => {
     fetchGlobalData();
-    
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
     if (!isLocal) {
-      console.log('ℹ️ [RealTime] WebSockets disabled in production Vercel environment.');
+      console.log('ℹ️ [RealTime] Using Supabase Realtime in production. Socket.io disabled.');
       return;
     }
 
-    // Initialize Real-time Socket
-    const socketUrl = 'http://localhost:3001';
-    socketRef.current = io(socketUrl);
+    // Initialize local Socket.io (development only)
+    (async () => {
+      try {
+        const { io } = await import('socket.io-client');
+        const socketUrl = 'http://localhost:3001';
+        socketRef.current = io(socketUrl);
 
-    socketRef.current.on('connect', () => {
+        socketRef.current.on('connect', () => {
+          // connected
+        });
 
-    });
-
-    socketRef.current.on('NEW_TRANSACTION', (tx) => {
-      // Update Global Metrics Instantly
-      setStats(prev => ({
-        ...prev,
-        globalRevenue: prev.globalRevenue + (tx.total || 0),
-        onlineUsers: prev.onlineUsers + 1 // Simulate active session increase
-      }));
-
-      // Add to Live Feed
-      const newFeedItem = {
-        id: Date.now(),
-        type: 'SALE',
-        msg: `New Order: ${tx.order_number} - Rp ${tx.total?.toLocaleString('id-ID')}`,
-        time: 'Just now',
-        icon: Zap,
-        color: 'text-amber-500'
-      };
-      setLiveFeed(prev => [newFeedItem, ...prev.slice(0, 15)]);
-    });
+        socketRef.current.on('NEW_TRANSACTION', (tx) => {
+          handleNewTransaction(tx);
+        });
+      } catch (err) {
+        console.warn('Socket initialization failed (dev only):', err);
+      }
+    })();
 
     return () => {
       if (socketRef.current) socketRef.current.disconnect();
     };
-  }, []);
+  }, [handleNewTransaction, isLocal]);
 
   return {
     stats,
