@@ -27,8 +27,58 @@ class UserService {
 
     // 2. STANDARD-PATH: Robust Multi-Tenant Authentication
     const { data: user, error: userError } = await UserRepository.getUserByLogin(loginIdentifier);
-    if (userError || !user || !bcrypt.compareSync(password, user.password)) {
+    if (userError || !user) {
+      // Delay to mitigate account enumeration/fast brute-force
+      await new Promise(r => setTimeout(r, 300 + Math.floor(Math.random() * 200)));
       throw new Error('Identitas atau password tidak valid');
+    }
+
+    // Check recent failed attempts and enforce temporary lockout
+    try {
+      const failedCount = await UserRepository.countRecentFailedLogins(user.username || user.email, user.tenant_id, 15);
+      const LOCK_THRESHOLD = Number(process.env.AUTH_LOCK_THRESHOLD || 5);
+      if (failedCount >= LOCK_THRESHOLD) {
+        throw new Error('Akun terkunci sementara karena terlalu banyak percobaan gagal. Coba lagi nanti.');
+      }
+    } catch (e) {
+      // If counting fails, do not block login flow - log warning and continue
+      console.warn('Warning: failed to evaluate recent failed logins:', e.message);
+    }
+
+    // Verify password
+    const passwordValid = bcrypt.compareSync(password, user.password);
+    if (!passwordValid) {
+      // Log failed attempt
+      try {
+        await UserRepository.logActivity({
+          tenant_id: user.tenant_id || '00000000-0000-0000-0000-000000000000',
+          user_name: user.username || user.email || loginIdentifier,
+          role: user.role || 'guest',
+          activity_type: 'AUTH',
+          description: `Failed login attempt for ${loginIdentifier}`,
+          created_at: new Date().toISOString()
+        });
+      } catch (logErr) {
+        console.warn('Failed to log failed login attempt:', logErr.message);
+      }
+
+      // Small delay to slow down brute force
+      await new Promise(r => setTimeout(r, 300 + Math.floor(Math.random() * 400)));
+      throw new Error('Identitas atau password tidak valid');
+    }
+
+    // Successful login: record success activity
+    try {
+      await UserRepository.logActivity({
+        tenant_id: user.tenant_id || '00000000-0000-0000-0000-000000000000',
+        user_name: user.username || user.email || loginIdentifier,
+        role: user.role || 'guest',
+        activity_type: 'AUTH',
+        description: `Successful login for ${loginIdentifier}`,
+        created_at: new Date().toISOString()
+      });
+    } catch (logErr) {
+      console.warn('Failed to log successful login:', logErr.message);
     }
 
     const [settings, primaryOutlet] = await Promise.all([

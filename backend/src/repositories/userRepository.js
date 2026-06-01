@@ -162,6 +162,24 @@ class UserRepository {
     if (error) throw error;
     return data[0];
   }
+
+  /** Count recent failed login attempts for a login identifier (username or email).
+   *  Uses activity_logs entries with activity_type='AUTH' and description containing 'Failed login'.
+   */
+  async countRecentFailedLogins(loginIdentifier, tenantId = null, minutes = 15) {
+    const since = new Date(Date.now() - minutes * 60000).toISOString();
+    let query = supabase.from('activity_logs').select('id,created_at').eq('activity_type', 'AUTH').gte('created_at', since);
+
+    // Filter by tenant if provided
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+
+    // Prefer matching user_name first
+    query = query.or(`user_name.eq.${loginIdentifier},description.ilike.%${loginIdentifier}%`);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return (data || []).length;
+  }
 }
 
 module.exports = new UserRepository();
