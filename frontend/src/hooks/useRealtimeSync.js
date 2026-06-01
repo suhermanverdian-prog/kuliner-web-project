@@ -1,71 +1,49 @@
+// useRealtimeSync.js – Supabase Realtime hook
 import { useEffect, useRef } from 'react';
-import { io } from 'socket.io-client';
+import { supabase } from '../lib/supabaseClient';
 
-const isLocalNetwork = () => {
-  const hostname = window.location.hostname;
-  return (
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname.startsWith('192.168.') ||
-    hostname.startsWith('10.') ||
-    hostname.startsWith('172.') ||
-    hostname.endsWith('.local')
-  );
-};
-
-const getSocketUrl = () => {
-  const customApiUrl = import.meta.env.VITE_API_URL;
-  if (customApiUrl) {
-    // Extract base server domain (e.g., https://backend.com/api -> https://backend.com)
-    return customApiUrl.replace(/\/api\/?$/, '');
-  }
-  return isLocalNetwork()
-    ? `http://${window.location.hostname}:3001`
-    : '/';
-};
-
-const SOCKET_URL = getSocketUrl();
-
+/**
+ * events: { [eventName]: handler }
+ * Handlers are stored in a ref to avoid re‑creating the channel on every render.
+ */
 export function useRealtimeSync(events) {
-  const socketRef = useRef(null);
+  const channelRef = useRef(null);
+  const eventsRef = useRef(events);
 
+  // Keep the latest event handlers in the ref
   useEffect(() => {
-    const hasCustomBackend = !!import.meta.env.VITE_API_URL;
-    if (!isLocalNetwork() && !hasCustomBackend) {
-      console.log('ℹ️ [RealTime] WebSockets disabled in production Vercel environment.');
-      return;
-    }
-
-    // Inisialisasi koneksi
-    socketRef.current = io(SOCKET_URL, {
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-
-    const socket = socketRef.current;
-
-    // Daftarkan semua event handler yang dilempar dari komponen
-    if (events) {
-      Object.entries(events).forEach(([eventName, handler]) => {
-        socket.on(eventName, handler);
-      });
-    }
-
-    socket.on('connect', () => {
-      console.log('✅ [RealTime] Terhubung ke Server Engine.');
-    });
-
-    socket.on('disconnect', () => {
-      console.warn('⚠️ [RealTime] Terputus dari Server Engine.');
-    });
-
-    // Graceful Cleanup (Anti-Memory Leak)
-    return () => {
-      if (socket) {
-        socket.disconnect();
-      }
-    };
+    eventsRef.current = events;
   }, [events]);
 
-  return socketRef.current;
+  useEffect(() => {
+    // Initialize Supabase channel (named "realtime")
+    const channel = supabase.channel('realtime');
+    channelRef.current = channel;
+
+    // Register a generic broadcast listener that forwards to the appropriate handler
+    channel.on('broadcast', {}, payload => {
+      const { event, data } = payload;
+      const handler = eventsRef.current?.[event];
+      if (handler) {
+        handler(data);
+      }
+    });
+
+    // Subscribe to the channel once
+    channel.subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        console.log('✅ [RealTime] Supabase channel subscribed.');
+      }
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        console.log('⚠️ [RealTime] Supabase channel unsubscribed.');
+      }
+    };
+  }, []); // empty deps – subscribe only once
+
+  return null;
 }
