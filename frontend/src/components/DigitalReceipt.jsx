@@ -8,7 +8,24 @@ export default function DigitalReceipt({ transaction }) {
 
   if (!transaction) return null;
 
-  const items = transaction.items || [];
+  const normalizeItems = (items) => {
+    if (!items) return [];
+    let parsed = items;
+    if (typeof parsed === 'string') {
+      try { parsed = JSON.parse(parsed); } catch (e) { return []; }
+    }
+    if (Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === 'object') {
+      if (Array.isArray(parsed.items)) return parsed.items;
+      if (Array.isArray(parsed.cart)) return parsed.cart;
+      if (Array.isArray(parsed.data)) return parsed.data;
+      const values = Object.values(parsed);
+      if (values.length > 0 && values.every(v => typeof v === 'object' && v !== null)) return values;
+    }
+    return [];
+  };
+
+  const items = normalizeItems(transaction.items);
   const tax = Number(transaction.tax) || 0;
   const discount = Number(transaction.discount) || 0;
   const subtotal = items.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0);
