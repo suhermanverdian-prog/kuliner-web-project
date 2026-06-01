@@ -70,20 +70,22 @@ export function usePengaturan() {
     fetchUsers();
     fetchRolePermissions();
     api.getSettings().then(s => {
-      if (s) {
-        setSettings(s);
-        try {
-          const c = s.customizations || {};
-          if (c.sizes) localStorage.setItem('ken_custom_sizes', JSON.stringify(c.sizes));
-          if (c.extras) localStorage.setItem('ken_custom_extras', JSON.stringify(c.extras));
-          if (c.milks) localStorage.setItem('ken_custom_milks', JSON.stringify(c.milks));
-          if (c.promos) localStorage.setItem('ken_custom_promos', JSON.stringify(c.promos));
-          if (c.doses) {
-            if (c.doses.espresso !== undefined) localStorage.setItem('ken_dose_espresso', String(c.doses.espresso));
-            if (c.doses.milk !== undefined) localStorage.setItem('ken_dose_milk', String(c.doses.milk));
-          }
-        } catch (e) { /* ignore */ }
-      }
+      if (s) setSettings(s);
+    }).catch(() => {});
+
+    // Load customisations from dedicated endpoint (tenant/outlet scoped)
+    api.getCustomisations().then(res => {
+      try {
+        const c = (res && res.data) ? res.data : {};
+        if (c.sizes) localStorage.setItem('ken_custom_sizes', JSON.stringify(c.sizes));
+        if (c.extras) localStorage.setItem('ken_custom_extras', JSON.stringify(c.extras));
+        if (c.milks) localStorage.setItem('ken_custom_milks', JSON.stringify(c.milks));
+        // promos handled elsewhere (Promo panel); don't override
+        if (c.doses) {
+          if (c.doses.espresso !== undefined) localStorage.setItem('ken_dose_espresso', String(c.doses.espresso));
+          if (c.doses.milk !== undefined) localStorage.setItem('ken_dose_milk', String(c.doses.milk));
+        }
+      } catch (e) {}
     }).catch(() => {});
     api.getSettingsLoyalty().then(l => { if (l) setLoyaltyConfig(l); }).catch(() => {});
     api.getOutletInfo().then(o => { if (o) setGeofence({ latitude: o.latitude || 0, longitude: o.longitude || 0, radius: o.geofence_radius || 100 }); }).catch(() => {});
@@ -236,37 +238,45 @@ export function usePengaturan() {
   const handleSaveSettings = async () => {
     try {
       setSavingSettings(true);
-      const fullSettings = {
+      // Save general settings (AI and system fields) separately from customisations
+      const settingsPayload = {
         ...settings,
         ai_provider: aiConfig.provider,
         ai_api_key: aiConfig.apiKey,
-        is_ai_enabled: aiConfig.isEnabled,
-        customizations: {
-          sizes: JSON.parse(localStorage.getItem('ken_custom_sizes') || 'null'),
-          extras: JSON.parse(localStorage.getItem('ken_custom_extras') || 'null'),
-          milks: JSON.parse(localStorage.getItem('ken_custom_milks') || 'null'),
-          doses: {
-            espresso: Number(localStorage.getItem('ken_dose_espresso') || '7'),
-            milk: Number(localStorage.getItem('ken_dose_milk') || '150')
-          }
-        }
+        is_ai_enabled: aiConfig.isEnabled
+      };
+      await api.saveSettings(settingsPayload);
+      await api.saveSettingsLoyalty(loyaltyConfig);
+
+      // Persist customisations to dedicated endpoint per key
+      const sizes = JSON.parse(localStorage.getItem('ken_custom_sizes') || 'null');
+      const extras = JSON.parse(localStorage.getItem('ken_custom_extras') || 'null');
+      const milks = JSON.parse(localStorage.getItem('ken_custom_milks') || 'null');
+      const doses = {
+        espresso: Number(localStorage.getItem('ken_dose_espresso') || '7'),
+        milk: Number(localStorage.getItem('ken_dose_milk') || '150')
       };
 
-      await api.saveSettings(fullSettings);
-      await api.saveSettingsLoyalty(loyaltyConfig);
-      
+      const customRequests = [];
+      if (sizes !== null) customRequests.push(api.request(`${api.url}/customisations`, 'POST', { key: 'sizes', value: sizes }));
+      if (extras !== null) customRequests.push(api.request(`${api.url}/customisations`, 'POST', { key: 'extras', value: extras }));
+      if (milks !== null) customRequests.push(api.request(`${api.url}/customisations`, 'POST', { key: 'milks', value: milks }));
+      if (doses) customRequests.push(api.request(`${api.url}/customisations`, 'POST', { key: 'doses', value: doses }));
+
+      await Promise.all(customRequests);
+
       if (aiConfig.apiKey && aiConfig.apiKey.trim() !== '') {
         localStorage.setItem('ken_ai_config', JSON.stringify(aiConfig));
       } else {
         localStorage.removeItem('ken_ai_config');
       }
-      
+
       showToast('Pengaturan sistem & AI berhasil disimpan!', 'success');
-    } catch (err) { 
+    } catch (err) {
       const errorMsg = err.message || 'Gagal menyimpan pengaturan.';
-      showToast(errorMsg, 'error'); 
-    } finally { 
-      setSavingSettings(false); 
+      showToast(errorMsg, 'error');
+    } finally {
+      setSavingSettings(false);
     }
   };
 
