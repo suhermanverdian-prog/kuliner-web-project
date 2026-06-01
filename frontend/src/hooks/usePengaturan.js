@@ -69,7 +69,22 @@ export function usePengaturan() {
   useEffect(() => {
     fetchUsers();
     fetchRolePermissions();
-    api.getSettings().then(s => { if (s) setSettings(s); }).catch(() => {});
+    api.getSettings().then(s => {
+      if (s) {
+        setSettings(s);
+        try {
+          const c = s.customizations || {};
+          if (c.sizes) localStorage.setItem('ken_custom_sizes', JSON.stringify(c.sizes));
+          if (c.extras) localStorage.setItem('ken_custom_extras', JSON.stringify(c.extras));
+          if (c.milks) localStorage.setItem('ken_custom_milks', JSON.stringify(c.milks));
+          if (c.promos) localStorage.setItem('ken_custom_promos', JSON.stringify(c.promos));
+          if (c.doses) {
+            if (c.doses.espresso !== undefined) localStorage.setItem('ken_dose_espresso', String(c.doses.espresso));
+            if (c.doses.milk !== undefined) localStorage.setItem('ken_dose_milk', String(c.doses.milk));
+          }
+        } catch (e) { /* ignore */ }
+      }
+    }).catch(() => {});
     api.getSettingsLoyalty().then(l => { if (l) setLoyaltyConfig(l); }).catch(() => {});
     api.getOutletInfo().then(o => { if (o) setGeofence({ latitude: o.latitude || 0, longitude: o.longitude || 0, radius: o.geofence_radius || 100 }); }).catch(() => {});
     api.getPaymentMethods().then(p => { if (p) setPaymentMethods(p); }).catch(() => {});
@@ -225,7 +240,17 @@ export function usePengaturan() {
         ...settings,
         ai_provider: aiConfig.provider,
         ai_api_key: aiConfig.apiKey,
-        is_ai_enabled: aiConfig.isEnabled
+        is_ai_enabled: aiConfig.isEnabled,
+        customizations: {
+          sizes: JSON.parse(localStorage.getItem('ken_custom_sizes') || 'null'),
+          extras: JSON.parse(localStorage.getItem('ken_custom_extras') || 'null'),
+          milks: JSON.parse(localStorage.getItem('ken_custom_milks') || 'null'),
+          promos: JSON.parse(localStorage.getItem('ken_custom_promos') || 'null'),
+          doses: {
+            espresso: Number(localStorage.getItem('ken_dose_espresso') || '7'),
+            milk: Number(localStorage.getItem('ken_dose_milk') || '150')
+          }
+        }
       };
 
       await api.saveSettings(fullSettings);
