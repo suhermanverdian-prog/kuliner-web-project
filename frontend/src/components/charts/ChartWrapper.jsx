@@ -64,8 +64,8 @@ export function ChartWrapper({
   }
 
   return (
-    <div className={cn("w-full font-mono tabular-nums", className)} style={{ height: `${height}px`, minHeight: `${height}px` }}>
-      <ResponsiveContainer width="99%" height="100%">
+    <div className={cn("w-full font-mono tabular-nums", className)} style={{ height: `${height}px`, minHeight: `${height}px`, overflow: 'hidden' }}>
+      <ResponsiveContainer width="100%" height={height}>
         {type === 'bar' ? (
           <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-zinc-200 dark:text-zinc-800" />

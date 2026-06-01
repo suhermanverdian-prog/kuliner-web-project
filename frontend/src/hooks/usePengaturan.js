@@ -245,7 +245,6 @@ export function usePengaturan() {
           sizes: JSON.parse(localStorage.getItem('ken_custom_sizes') || 'null'),
           extras: JSON.parse(localStorage.getItem('ken_custom_extras') || 'null'),
           milks: JSON.parse(localStorage.getItem('ken_custom_milks') || 'null'),
-          promos: JSON.parse(localStorage.getItem('ken_custom_promos') || 'null'),
           doses: {
             espresso: Number(localStorage.getItem('ken_dose_espresso') || '7'),
             milk: Number(localStorage.getItem('ken_dose_milk') || '150')
