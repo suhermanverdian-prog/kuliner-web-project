@@ -22,6 +22,16 @@ Sentry.init({
   replaysOnErrorSampleRate: 1.0, // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
 });
 
+// Suppress socket.io 404 errors on production (serverless limitation)
+const originalError = console.error;
+console.error = function(...args) {
+  const msg = String(args[0] || '');
+  if (msg.includes('socket.io') && msg.includes('404')) {
+    return; // Suppress socket.io 404 errors
+  }
+  originalError.apply(console, args);
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

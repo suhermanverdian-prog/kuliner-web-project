@@ -209,6 +209,7 @@ class SystemService {
         ai_api_key: data.ai_api_key,
         is_ai_enabled: data.is_ai_enabled,
         void_approvers: data.void_approvers,
+        customizations: data.customizations || localSet.customizations || {},
         approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : false,
         opname_owner_approval_required: localSet.opname_owner_approval_required !== undefined ? localSet.opname_owner_approval_required : false
       };
@@ -226,6 +227,7 @@ class SystemService {
       radius: 100,
       geofence_radius: 100,
       is_ai_enabled: false,
+      customizations: localSet.customizations || {},
       approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : false,
       opname_owner_approval_required: localSet.opname_owner_approval_required !== undefined ? localSet.opname_owner_approval_required : false
     };
@@ -275,8 +277,20 @@ class SystemService {
     
     const { data: existing } = await SystemRepository.getSettings(tenantId);
     const existingId = existing?.id;
-    const data = await SystemRepository.upsertSettings(cleanPayload, existingId);
-    return data[0];
+    try {
+      const data = await SystemRepository.upsertSettings(cleanPayload, existingId);
+      return data[0];
+    } catch (e) {
+      console.warn('⚠️ System settings upsert failed, falling back to local settings storage:', e.message);
+      const local = getLocalSettings();
+      if (cleanPayload.customizations) {
+        local.customizations = cleanPayload.customizations;
+      } else {
+        local.settings = { ...(local.settings || {}), ...(cleanPayload) };
+      }
+      saveLocalSettings(local);
+      return cleanPayload;
+    }
   }
 
   static async upsertLoyaltySettings(payload, tenantId) {
