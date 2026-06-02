@@ -174,6 +174,47 @@ function POSCustomizationPanel({ showToast }) {
     }).catch(err => console.error("Gagal load bahan baku", err));
   }, []);
 
+  // Load persisted customisations from backend (Supabase) and hydrate local state
+  useEffect(() => {
+    let mounted = true;
+    async function loadCustom() {
+      try {
+        const res = await api.getCustomisations();
+        if (!mounted) return;
+        if (res && res.success && res.data) {
+          const d = res.data || {};
+          // sizes may be stored as { sizes: [...] } or directly as array (legacy)
+          if (d.sizes) {
+            const sizesVal = Array.isArray(d.sizes) ? d.sizes : (d.sizes.sizes || d.sizes);
+            setSizes(sizesVal);
+            localStorage.setItem('ken_custom_sizes', JSON.stringify(sizesVal));
+          }
+          if (d.extras) {
+            const extrasVal = Array.isArray(d.extras) ? d.extras : (d.extras.extras || d.extras);
+            setExtras(extrasVal);
+            localStorage.setItem('ken_custom_extras', JSON.stringify(extrasVal));
+          }
+          if (d.milks) {
+            const milksVal = Array.isArray(d.milks) ? d.milks : (d.milks.milks || d.milks);
+            setMilks(milksVal);
+            localStorage.setItem('ken_custom_milks', JSON.stringify(milksVal));
+          }
+          if (d.doses) {
+            const espresso = d.doses.espresso ?? (Array.isArray(d.doses) ? d.doses[0] : null);
+            if (espresso !== null && espresso !== undefined) {
+              setDoseEspresso(Number(espresso));
+              localStorage.setItem('ken_dose_espresso', String(Number(espresso)));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Gagal memuat customisations dari server, fallback ke localStorage', err);
+      }
+    }
+    loadCustom();
+    return () => { mounted = false; };
+  }, []);
+
   const [extras, setExtras] = useState(() => {
     const saved = localStorage.getItem('ken_custom_extras');
     const parsed = saved ? JSON.parse(saved) : null;
