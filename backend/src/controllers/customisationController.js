@@ -1,17 +1,25 @@
 // backend/src/controllers/customisationController.js
+
 /**
  * Controller for POS customisation settings (key/value per tenant/outlet).
  * Uses CustomisationService which talks to Supabase.
  */
 const CustomisationService = require('../services/customisationService');
+const { emitCustomisationUpdate } = require('../utils/realtimeNotifier');
 
 /** GET /api/customisations
  * Returns all merged settings for the current tenant (and outlet if provided).
  */
 async function getCustomisations(req, res) {
   try {
-    const tenantId = req.user?.tenantId;
-    const outletId = req.user?.outletId || null; // may be undefined
+    const fs = require('fs');
+    const path = require('path');
+    const logPath = path.join(__dirname, '../../debug.log');
+    const logMsg = `[${new Date().toISOString()}] GET Headers: ${JSON.stringify(req.headers)}\nGET userContext: ${JSON.stringify(req.userContext || null)}\n\n`;
+    fs.appendFileSync(logPath, logMsg, 'utf8');
+
+    const tenantId = req.userContext?.tenantId || req.headers['x-tenant-id'];
+    const outletId = req.userContext?.outletId || req.headers['x-outlet-id'] || null;
     if (!tenantId) return res.status(400).json({ error: 'tenantId missing' });
     const data = await CustomisationService.getAll(tenantId, outletId);
     return res.json({ success: true, data });
@@ -28,11 +36,19 @@ async function getCustomisations(req, res) {
 async function upsertCustomisation(req, res) {
   try {
     const { key, value } = req.body;
-    const tenantId = req.user?.tenantId;
-    const outletId = req.user?.outletId || null;
+    const fs = require('fs');
+    const path = require('path');
+    const logPath = path.join(__dirname, '../../debug.log');
+    const logMsg = `[${new Date().toISOString()}] POST Body: ${JSON.stringify(req.body)}\nPOST Headers: ${JSON.stringify(req.headers)}\nPOST userContext: ${JSON.stringify(req.userContext || null)}\n\n`;
+    fs.appendFileSync(logPath, logMsg, 'utf8');
+
+    const tenantId = req.userContext?.tenantId || req.headers['x-tenant-id'];
+    const outletId = req.userContext?.outletId || req.headers['x-outlet-id'] || null;
     if (!tenantId) return res.status(400).json({ error: 'tenantId missing' });
     if (!key) return res.status(400).json({ error: 'key is required' });
     await CustomisationService.set(key, value, tenantId, outletId);
+    // Emit realtime notification for KDS and other listeners
+    emitCustomisationUpdate(tenantId, outletId, key, value);
     // Return refreshed map for convenience
     const data = await CustomisationService.getAll(tenantId, outletId);
     return res.json({ success: true, data });

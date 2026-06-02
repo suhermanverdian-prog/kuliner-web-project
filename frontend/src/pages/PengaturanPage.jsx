@@ -157,49 +157,142 @@ function AddUserModal({ onClose, onSave, loading }) {
 // ⚙️ POSCustomizationPanel — Kustomisasi Ukuran, Extras, Loyalty & Promo
 // ================================================================
 function POSCustomizationPanel({ showToast }) {
-  const [sizes, setSizes] = useState(() => {
-    const saved = localStorage.getItem('ken_custom_sizes');
-    return saved ? JSON.parse(saved) : [
-      { key: 'S', label: 'Small', priceAdd: 0 },
-      { key: 'R', label: 'Regular', priceAdd: 5000 },
-      { key: 'L', label: 'Large', priceAdd: 10000 },
-    ];
-  });
+  const [sizes, setSizes] = useState([
+    { key: 'S', label: 'Small', priceAdd: 0 },
+    { key: 'R', label: 'Regular', priceAdd: 5000 },
+    { key: 'L', label: 'Large', priceAdd: 10000 },
+  ]);
 
+  const [extras, setExtras] = useState([
+    { key: 'whipped_cream',  label: 'Whipped Cream', priceAdd: 5000, dose: 15, unit: 'gram', bahanId: '' },
+    { key: 'cocoa_powder',   label: 'Cocoa Powder',  priceAdd: 0, dose: 5, unit: 'gram', bahanId: '' },
+    { key: 'caramel_drizzle',label: 'Caramel',       priceAdd: 3000, dose: 10, unit: 'ml', bahanId: '' },
+    { key: 'cinnamon',       label: 'Cinnamon',      priceAdd: 0, dose: 2, unit: 'gram', bahanId: '' },
+    { key: 'vanilla_syrup',  label: 'Vanilla Syrup', priceAdd: 5000, dose: 15, unit: 'ml', bahanId: '' },
+    { key: 'hazelnut_syrup', label: 'Hazelnut Syrup',priceAdd: 5000, dose: 15, unit: 'ml', bahanId: '' },
+  ]);
+
+  const [milks, setMilks] = useState([
+    { key: 'oat',     label: 'Oat Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+    { key: 'almond',  label: 'Almond Milk',  priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+    { key: 'soy',     label: 'Soy Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+  ]);
+
+  const [doseEspresso, setDoseEspresso] = useState(7);
   const [bahanList, setBahanList] = useState([]);
+  const [loadingCloud, setLoadingCloud] = useState(true);
 
-  useEffect(() => {
-    api.getBahan().then(data => {
-      if (data) setBahanList(data);
-    }).catch(err => console.error("Gagal load bahan baku", err));
-  }, []);
-
-  const [extras, setExtras] = useState(() => {
-    const saved = localStorage.getItem('ken_custom_extras');
-    const parsed = saved ? JSON.parse(saved) : null;
-    if (parsed) {
-      return parsed.map(item => ({
-        ...item,
-        priceAdd: Number(item.priceAdd || 0),
-        dose: item.dose !== undefined ? Number(item.dose) : 0,
-        unit: item.unit !== undefined ? item.unit : 'gram',
-        bahanId: item.bahanId !== undefined ? item.bahanId : ''
-      }));
+  // Helper safely parsing array
+  const parseSafeArray = (raw, fallback) => {
+    try {
+      if (!raw) return fallback;
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return Array.isArray(parsed) ? parsed : fallback;
+    } catch (e) {
+      console.warn("Parse error:", e);
+      return fallback;
     }
-    return [
-      { key: 'whipped_cream',  label: 'Whipped Cream', priceAdd: 5000, dose: 15, unit: 'gram', bahanId: '' },
-      { key: 'cocoa_powder',   label: 'Cocoa Powder',  priceAdd: 0, dose: 5, unit: 'gram', bahanId: '' },
-      { key: 'caramel_drizzle',label: 'Caramel',       priceAdd: 3000, dose: 10, unit: 'ml', bahanId: '' },
-      { key: 'cinnamon',       label: 'Cinnamon',      priceAdd: 0, dose: 2, unit: 'gram', bahanId: '' },
-      { key: 'vanilla_syrup',  label: 'Vanilla Syrup', priceAdd: 5000, dose: 15, unit: 'ml', bahanId: '' },
-      { key: 'hazelnut_syrup', label: 'Hazelnut Syrup',priceAdd: 5000, dose: 15, unit: 'ml', bahanId: '' },
-    ];
-  });
+  };
+
+  // Muat data dari cloud (Supabase) dengan fallback ke localStorage
+  useEffect(() => {
+    // 1. Ambil Bahan Baku
+    api.getBahan().then(data => {
+      if (Array.isArray(data)) setBahanList(data);
+      else setBahanList([]);
+    }).catch(err => {
+      console.error("Gagal load bahan baku:", err);
+      setBahanList([]);
+    });
+
+    // 2. Ambil Kustomisasi POS dari Cloud
+    setLoadingCloud(true);
+    api.getCustomisations().then(res => {
+      const cloudData = res?.data || res || {};
+      
+      // Sizes
+      const cloudSizes = cloudData.ken_custom_sizes;
+      if (cloudSizes) {
+        const parsedSizes = parseSafeArray(cloudSizes, null);
+        if (parsedSizes) {
+          setSizes(parsedSizes);
+          localStorage.setItem('ken_custom_sizes', JSON.stringify(parsedSizes));
+        }
+      } else {
+        const saved = localStorage.getItem('ken_custom_sizes');
+        if (saved) setSizes(parseSafeArray(saved, sizes));
+      }
+
+      // Extras
+      const cloudExtras = cloudData.ken_custom_extras;
+      if (cloudExtras) {
+        const parsedExtras = parseSafeArray(cloudExtras, null);
+        if (parsedExtras) {
+          const normalized = parsedExtras.map(item => ({
+            ...item,
+            priceAdd: Number(item.priceAdd || 0),
+            dose: item.dose !== undefined ? Number(item.dose) : 0,
+            unit: item.unit !== undefined ? item.unit : 'gram',
+            bahanId: item.bahanId !== undefined ? item.bahanId : ''
+          }));
+          setExtras(normalized);
+          localStorage.setItem('ken_custom_extras', JSON.stringify(normalized));
+        }
+      } else {
+        const saved = localStorage.getItem('ken_custom_extras');
+        if (saved) setExtras(parseSafeArray(saved, extras));
+      }
+
+      // Milks
+      const cloudMilks = cloudData.ken_custom_milks;
+      if (cloudMilks) {
+        const parsedMilks = parseSafeArray(cloudMilks, null);
+        if (parsedMilks) {
+          const normalized = parsedMilks.map(item => ({
+            ...item,
+            priceAdd: Number(item.priceAdd || 0),
+            dose: item.dose !== undefined ? Number(item.dose) : 0,
+            unit: item.unit !== undefined ? item.unit : 'ml',
+            bahanId: item.bahanId !== undefined ? item.bahanId : ''
+          }));
+          setMilks(normalized);
+          localStorage.setItem('ken_custom_milks', JSON.stringify(normalized));
+        }
+      } else {
+        const saved = localStorage.getItem('ken_custom_milks');
+        if (saved) setMilks(parseSafeArray(saved, milks));
+      }
+
+      // Dose Espresso
+      const cloudDose = cloudData.ken_dose_espresso;
+      if (cloudDose !== undefined && cloudDose !== null) {
+        const parsedDose = Number(cloudDose) || 7;
+        setDoseEspresso(parsedDose);
+        localStorage.setItem('ken_dose_espresso', parsedDose.toString());
+      } else {
+        const saved = localStorage.getItem('ken_dose_espresso');
+        if (saved) setDoseEspresso(Number(saved) || 7);
+      }
+    }).catch(err => {
+      console.warn("⚠️ Gagal load kustomisasi dari Cloud Supabase, menggunakan lokal:", err);
+      // Fallback lokal instan
+      const savedSizes = localStorage.getItem('ken_custom_sizes');
+      if (savedSizes) setSizes(parseSafeArray(savedSizes, sizes));
+      const savedExtras = localStorage.getItem('ken_custom_extras');
+      if (savedExtras) setExtras(parseSafeArray(savedExtras, extras));
+      const savedMilks = localStorage.getItem('ken_custom_milks');
+      if (savedMilks) setMilks(parseSafeArray(savedMilks, milks));
+      const savedDose = localStorage.getItem('ken_dose_espresso');
+      if (savedDose) setDoseEspresso(Number(savedDose) || 7);
+    }).finally(() => {
+      setLoadingCloud(false);
+    });
+  }, []);
 
   const [newExtra, setNewExtra] = useState({ label: '', priceAdd: 0, dose: 0, unit: 'gram', bahanId: '' });
   const [showAddExtra, setShowAddExtra] = useState(false);
 
-  const handleAddExtra = () => {
+  const handleAddExtra = async () => {
     if (!newExtra.label) return alert('Nama topping wajib diisi!');
     const key = newExtra.label.toLowerCase().replace(/\s+/g, '_');
     if (extras.some(e => e.key === key)) return alert('Topping dengan nama ini sudah ada!');
@@ -209,40 +302,33 @@ function POSCustomizationPanel({ showToast }) {
     localStorage.setItem('ken_custom_extras', JSON.stringify(updated));
     setShowAddExtra(false);
     setNewExtra({ label: '', priceAdd: 0, dose: 0, unit: 'gram', bahanId: '' });
-    showToast('Topping baru berhasil ditambahkan!');
+
+    try {
+      await api.saveCustomisations({ key: 'ken_custom_extras', value: updated });
+      showToast('Topping baru berhasil ditambahkan dan disinkronkan ke Cloud!');
+    } catch (e) {
+      showToast('Topping baru disimpan secara offline.', 'warning');
+    }
   };
 
-  const handleDeleteExtra = (key) => {
+  const handleDeleteExtra = async (key) => {
     if (!window.confirm('Yakin ingin menghapus topping ini?')) return;
     const updated = extras.filter(e => e.key !== key);
     setExtras(updated);
     localStorage.setItem('ken_custom_extras', JSON.stringify(updated));
-    showToast('Topping berhasil dihapus!');
-  };
 
-  const [milks, setMilks] = useState(() => {
-    const saved = localStorage.getItem('ken_custom_milks');
-    const parsed = saved ? JSON.parse(saved) : null;
-    if (parsed) {
-      return parsed.map(item => ({
-        ...item,
-        priceAdd: Number(item.priceAdd || 0),
-        dose: item.dose !== undefined ? Number(item.dose) : 0,
-        unit: item.unit !== undefined ? item.unit : 'ml',
-        bahanId: item.bahanId !== undefined ? item.bahanId : ''
-      }));
+    try {
+      await api.saveCustomisations({ key: 'ken_custom_extras', value: updated });
+      showToast('Topping berhasil dihapus dari Cloud!');
+    } catch (e) {
+      showToast('Topping dihapus secara offline.', 'warning');
     }
-    return [
-      { key: 'oat',     label: 'Oat Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
-      { key: 'almond',  label: 'Almond Milk',  priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
-      { key: 'soy',     label: 'Soy Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
-    ];
-  });
+  };
 
   const [newMilk, setNewMilk] = useState({ label: '', priceAdd: 0, dose: 150, unit: 'ml', bahanId: '' });
   const [showAddMilk, setShowAddMilk] = useState(false);
 
-  const handleAddMilk = () => {
+  const handleAddMilk = async () => {
     if (!newMilk.label) return alert('Nama jenis susu wajib diisi!');
     const key = newMilk.label.toLowerCase().replace(/\s+/g, '_');
     if (milks.some(m => m.key === key)) return alert('Jenis susu dengan nama ini sudah ada!');
@@ -252,39 +338,67 @@ function POSCustomizationPanel({ showToast }) {
     localStorage.setItem('ken_custom_milks', JSON.stringify(updated));
     setShowAddMilk(false);
     setNewMilk({ label: '', priceAdd: 0, dose: 150, unit: 'ml', bahanId: '' });
-    showToast('Jenis susu alternatif baru berhasil ditambahkan!');
+
+    try {
+      await api.saveCustomisations({ key: 'ken_custom_milks', value: updated });
+      showToast('Jenis susu baru berhasil ditambahkan dan disinkronkan ke Cloud!');
+    } catch (e) {
+      showToast('Jenis susu baru disimpan secara offline.', 'warning');
+    }
   };
 
-  const handleDeleteMilk = (key) => {
+  const handleDeleteMilk = async (key) => {
     if (!window.confirm('Yakin ingin menghapus jenis susu ini?')) return;
     const updated = milks.filter(m => m.key !== key);
     setMilks(updated);
     localStorage.setItem('ken_custom_milks', JSON.stringify(updated));
-    showToast('Jenis susu berhasil dihapus!');
+
+    try {
+      await api.saveCustomisations({ key: 'ken_custom_milks', value: updated });
+      showToast('Jenis susu berhasil dihapus dari Cloud!');
+    } catch (e) {
+      showToast('Jenis susu dihapus secara offline.', 'warning');
+    }
   };
 
-  const handleSaveMilks = () => {
+  const handleSaveMilks = async () => {
     localStorage.setItem('ken_custom_milks', JSON.stringify(milks));
-    showToast('Kustomisasi susu alternatif berhasil disimpan!');
+    try {
+      await api.saveCustomisations({ key: 'ken_custom_milks', value: milks });
+      showToast('Kustomisasi susu alternatif berhasil disimpan ke Cloud!');
+    } catch (e) {
+      showToast('Kustomisasi susu alternatif disimpan secara offline.', 'warning');
+    }
   };
 
-  const [doseEspresso, setDoseEspresso] = useState(() => Number(localStorage.getItem('ken_dose_espresso') || 7));
-  // Removed hardcoded Whipped Cream & Cocoa Powder doses, moved them completely to dynamic Extras toppings!
-
-  const handleSaveSizes = () => {
+  const handleSaveSizes = async () => {
     localStorage.setItem('ken_custom_sizes', JSON.stringify(sizes));
-    showToast('Pengaturan harga ukuran berhasil disimpan!');
+    try {
+      await api.saveCustomisations({ key: 'ken_custom_sizes', value: sizes });
+      showToast('Pengaturan harga ukuran berhasil disimpan ke Cloud!');
+    } catch (e) {
+      showToast('Pengaturan harga ukuran disimpan secara offline.', 'warning');
+    }
   };
 
-  const handleSaveExtras = () => {
+  const handleSaveExtras = async () => {
     localStorage.setItem('ken_custom_extras', JSON.stringify(extras));
-    showToast('Pengaturan harga tambahan (extras) berhasil disimpan!');
+    try {
+      await api.saveCustomisations({ key: 'ken_custom_extras', value: extras });
+      showToast('Pengaturan topping (extras) berhasil disimpan ke Cloud!');
+    } catch (e) {
+      showToast('Pengaturan topping (extras) disimpan secara offline.', 'warning');
+    }
   };
 
-
-  const handleSaveDoses = () => {
+  const handleSaveDoses = async () => {
     localStorage.setItem('ken_dose_espresso', doseEspresso.toString());
-    showToast('Gramasi & dosis bahan baku brand berhasil disimpan!');
+    try {
+      await api.saveCustomisations({ key: 'ken_dose_espresso', value: doseEspresso });
+      showToast('Dosis & gramasi espresso berhasil disimpan ke Cloud!');
+    } catch (e) {
+      showToast('Dosis & gramasi espresso disimpan secara offline.', 'warning');
+    }
   };
 
   return (

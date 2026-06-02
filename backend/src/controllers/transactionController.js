@@ -49,15 +49,28 @@ class TransactionController {
 
       const result = await TransactionService.createTransaction(req.body, tenantId, outletId, true);
       
+      // Normalisasi format transaksi baru agar seragam
+      const itemsField = result.items;
+      let normalizedResult = result;
+      if (itemsField && typeof itemsField === 'object' && !Array.isArray(itemsField)) {
+          normalizedResult = {
+              ...result,
+              items: itemsField.items || [],
+              table_type: itemsField.table_type || result.table_type || 'Meja',
+              kds_status: itemsField.kds_status || result.kds_status,
+              cashier_name: itemsField.cashier_name || result.cashier_name,
+          };
+      }
+
       // BROADCAST REAL-TIME (KDS & Admin Panel)
       const io = req.app.get('io');
       if (io) {
-          io.emit('NEW_TRANSACTION', result);
-          console.log(`📡 [RealTime] Broadcast NEW_TRANSACTION: ${result.order_number}`);
+          io.emit('NEW_TRANSACTION', normalizedResult);
+          console.log(`📡 [RealTime] Broadcast NEW_TRANSACTION: ${normalizedResult.order_number}`);
       }
 
       res.status(201).json({
-          ...result,
+          ...normalizedResult,
           message: 'Transaksi berhasil dicatat dan stok telah diperbarui.'
       });
 

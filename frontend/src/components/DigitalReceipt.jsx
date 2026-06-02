@@ -8,7 +8,10 @@ export default function DigitalReceipt({ transaction }) {
 
   if (!transaction) return null;
 
-  const items = transaction.items || [];
+  const rawItems = transaction.items;
+  const items = Array.isArray(rawItems)
+    ? rawItems
+    : (rawItems && typeof rawItems === 'object' && Array.isArray(rawItems.items) ? rawItems.items : []);
   const tax = Number(transaction.tax) || 0;
   const discount = Number(transaction.discount) || 0;
   const subtotal = items.reduce((s, i) => s + (Number(i.price) * Number(i.qty)), 0);

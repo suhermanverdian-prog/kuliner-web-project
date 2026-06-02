@@ -9,7 +9,7 @@ const getHeaders = () => {
   let token = null;
   let tenantId = null;
 
-  // 1. Try to get from Zustand Storage (Primary)
+  // Primary: Zustand store in localStorage
   const storageStr = localStorage.getItem('ken-enterprise-storage');
   if (storageStr) {
     try {
@@ -19,14 +19,14 @@ const getHeaders = () => {
       if (user) {
         token = user.token;
         const innerUser = user.user || user;
-        tenantId = innerUser.tenant_id || user.tenant_id;
+        tenantId = innerUser.tenant_id || user.tenant_id || (state.tenant && (state.tenant.id || state.tenant));
       }
     } catch (e) {}
   }
 
-  // 2. Fallback to Direct Keys (if direct login/bypass is used)
+  // Fallbacks: direct localStorage keys
   token = token || localStorage.getItem('token');
-  tenantId = tenantId || localStorage.getItem('tenantId');
+  tenantId = tenantId || localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');
 
   const headers = { 'Content-Type': 'application/json' };
   if (token && token !== 'null' && token !== 'undefined') {
@@ -97,6 +97,8 @@ const getResource = (prop) => {
     'getUsers': 'users',
     'getRolePermissions': 'roles/permissions',
     'saveRolePermissions': 'roles/permissions',
+    'getCustomisations': 'customisations',
+    'saveCustomisations': 'customisations',
     'getTenants': 'tenants',
     'addTenant': 'tenants',
     'updateTenant': 'tenants',

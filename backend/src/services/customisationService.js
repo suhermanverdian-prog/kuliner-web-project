@@ -81,7 +81,7 @@ class CustomisationService {
     if (!tenantId) throw new Error('tenantId is required');
 
     const payload = {
-      id: randomUUID(),
+      // id is omitted to let Supabase generate / upsert by unique keys
       tenant_id: tenantId,
       outlet_id: outletId,
       key,

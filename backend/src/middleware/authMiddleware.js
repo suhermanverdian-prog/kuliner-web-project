@@ -45,7 +45,7 @@ const authMiddleware = (req, res, next) => {
       req.userContext = {
         userId: decoded.id || decoded.userId,
         role: decoded.role,
-        tenantId: decoded.tenantId,
+        tenantId: decoded.tenantId || req.headers['x-tenant-id'] || '00000000-0000-0000-0000-000000000000',
         outletId: req.headers['x-outlet-id'] || decoded.outletId || null
       };
       return next();
