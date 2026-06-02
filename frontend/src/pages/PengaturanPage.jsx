@@ -263,28 +263,55 @@ function POSCustomizationPanel({ showToast }) {
     showToast('Jenis susu berhasil dihapus!');
   };
 
-  const handleSaveMilks = () => {
+  const handleSaveMilks = async () => {
     localStorage.setItem('ken_custom_milks', JSON.stringify(milks));
-    showToast('Kustomisasi susu alternatif berhasil disimpan!');
+    try {
+      // Always send a consistent object shape for `value`
+      await api.saveCustomisation ? api.saveCustomisation({ key: 'milks', value: { milks } }) : api.request(`${api.url}/customisations`, 'POST', { key: 'milks', value: { milks } });
+      showToast('Kustomisasi susu alternatif berhasil disimpan!');
+    } catch (err) {
+      console.error('Failed to save milks customisation:', err);
+      showToast('Gagal menyimpan kustomisasi susu ke database.', 'error');
+    }
   };
 
   const [doseEspresso, setDoseEspresso] = useState(() => Number(localStorage.getItem('ken_dose_espresso') || 7));
   // Removed hardcoded Whipped Cream & Cocoa Powder doses, moved them completely to dynamic Extras toppings!
 
-  const handleSaveSizes = () => {
+  const handleSaveSizes = async () => {
     localStorage.setItem('ken_custom_sizes', JSON.stringify(sizes));
-    showToast('Pengaturan harga ukuran berhasil disimpan!');
+    try {
+      // Normalize to object shape to keep DB value consistent
+      await api.saveCustomisation ? api.saveCustomisation({ key: 'sizes', value: { sizes } }) : api.request(`${api.url}/customisations`, 'POST', { key: 'sizes', value: { sizes } });
+      showToast('Pengaturan harga ukuran berhasil disimpan!');
+    } catch (err) {
+      console.error('Failed to save sizes customisation:', err);
+      showToast('Gagal menyimpan harga ukuran ke database.', 'error');
+    }
   };
 
-  const handleSaveExtras = () => {
+  const handleSaveExtras = async () => {
     localStorage.setItem('ken_custom_extras', JSON.stringify(extras));
-    showToast('Pengaturan harga tambahan (extras) berhasil disimpan!');
+    try {
+      // Ensure extras are wrapped as object for consistency
+      await api.saveCustomisation ? api.saveCustomisation({ key: 'extras', value: { extras } }) : api.request(`${api.url}/customisations`, 'POST', { key: 'extras', value: { extras } });
+      showToast('Pengaturan harga tambahan (extras) berhasil disimpan!');
+    } catch (err) {
+      console.error('Failed to save extras customisation:', err);
+      showToast('Gagal menyimpan extras ke database.', 'error');
+    }
   };
 
 
-  const handleSaveDoses = () => {
+  const handleSaveDoses = async () => {
     localStorage.setItem('ken_dose_espresso', doseEspresso.toString());
-    showToast('Gramasi & dosis bahan baku brand berhasil disimpan!');
+    try {
+      await api.saveCustomisation ? api.saveCustomisation({ key: 'doses', value: { espresso: doseEspresso } }) : api.request(`${api.url}/customisations`, 'POST', { key: 'doses', value: { espresso: doseEspresso } });
+      showToast('Gramasi & dosis bahan baku brand berhasil disimpan!');
+    } catch (err) {
+      console.error('Failed to save doses customisation:', err);
+      showToast('Gagal menyimpan dosis ke database.', 'error');
+    }
   };
 
   return (

@@ -197,6 +197,10 @@ const apiBase = {
     }
   },
 
+  async saveCustomisation(data) {
+    return this.request(`${API_URL}/customisations`, 'POST', data);
+  },
+
   async uploadImage(file) {
     const formData = new FormData();
     formData.append('image', file);
