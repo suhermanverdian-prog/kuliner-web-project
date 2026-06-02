@@ -79,13 +79,37 @@ class CustomisationService {
     if (!key) throw new Error('key is required');
     if (value === undefined) throw new Error('value cannot be undefined');
     if (!tenantId) throw new Error('tenantId is required');
+    // Normalize value to a canonical shape before saving
+    const normalizeValue = (k, v) => {
+      if (v === null || v === undefined) return v;
+      try {
+        // sizes, extras, milks -> ensure object with array property
+        if (k === 'sizes') return { sizes: Array.isArray(v) ? v : (v.sizes || v) };
+        if (k === 'extras') return { extras: Array.isArray(v) ? v : (v.extras || v) };
+        if (k === 'milks') return { milks: Array.isArray(v) ? v : (v.milks || v) };
+        // doses: support number, array or object
+        if (k === 'doses') {
+          if (typeof v === 'number') return { doses: { espresso: v } };
+          if (Array.isArray(v)) return { doses: { espresso: v[0] } };
+          if (v.espresso !== undefined) return { doses: v };
+          return { doses: v };
+        }
+        // fallback: if array provided, wrap as items
+        if (Array.isArray(v)) return { items: v };
+        return v;
+      } catch (err) {
+        return v;
+      }
+    };
+
+    const normalized = normalizeValue(key, value);
 
     const payload = {
       id: randomUUID(),
       tenant_id: tenantId,
       outlet_id: outletId,
       key,
-      value,
+      value: normalized,
       updated_at: new Date().toISOString()
     };
     const { error } = await supabase
