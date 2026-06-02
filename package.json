@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "BrewMaster Coffee Shop POS & ERP",
   "scripts": {
-    "install": "npm install --prefix backend && npm install --prefix frontend",
+    "vercel-build": "npm run build --prefix frontend",
     "build": "npm run build --prefix frontend && npm run build --prefix backend 2>/dev/null || true",
     "verify": "node scripts/verify-build.js",
     "start": "node backend/src/server.js",
