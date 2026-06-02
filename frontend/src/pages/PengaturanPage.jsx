@@ -307,8 +307,10 @@ function POSCustomizationPanel({ showToast }) {
   const handleSaveMilks = async () => {
     localStorage.setItem('ken_custom_milks', JSON.stringify(milks));
     try {
-      // Always send a consistent object shape for `value`
-      await api.saveCustomisation ? api.saveCustomisation({ key: 'milks', value: { milks } }) : api.request(`${api.url}/customisations`, 'POST', { key: 'milks', value: { milks } });
+      const payload = { key: 'milks', value: { milks } };
+      console.log('[UI] handleSaveMilks payload:', payload);
+      const res = await (api.saveCustomisation ? api.saveCustomisation(payload) : api.request(`${api.url}/customisations`, 'POST', payload));
+      console.log('[UI] handleSaveMilks response:', res);
       showToast('Kustomisasi susu alternatif berhasil disimpan!');
     } catch (err) {
       console.error('Failed to save milks customisation:', err);
@@ -322,8 +324,10 @@ function POSCustomizationPanel({ showToast }) {
   const handleSaveSizes = async () => {
     localStorage.setItem('ken_custom_sizes', JSON.stringify(sizes));
     try {
-      // Normalize to object shape to keep DB value consistent
-      await api.saveCustomisation ? api.saveCustomisation({ key: 'sizes', value: { sizes } }) : api.request(`${api.url}/customisations`, 'POST', { key: 'sizes', value: { sizes } });
+      const payload = { key: 'sizes', value: { sizes } };
+      console.log('[UI] handleSaveSizes payload:', payload);
+      const res = await (api.saveCustomisation ? api.saveCustomisation(payload) : api.request(`${api.url}/customisations`, 'POST', payload));
+      console.log('[UI] handleSaveSizes response:', res);
       showToast('Pengaturan harga ukuran berhasil disimpan!');
     } catch (err) {
       console.error('Failed to save sizes customisation:', err);
@@ -334,8 +338,10 @@ function POSCustomizationPanel({ showToast }) {
   const handleSaveExtras = async () => {
     localStorage.setItem('ken_custom_extras', JSON.stringify(extras));
     try {
-      // Ensure extras are wrapped as object for consistency
-      await api.saveCustomisation ? api.saveCustomisation({ key: 'extras', value: { extras } }) : api.request(`${api.url}/customisations`, 'POST', { key: 'extras', value: { extras } });
+      const payload = { key: 'extras', value: { extras } };
+      console.log('[UI] handleSaveExtras payload:', payload);
+      const res = await (api.saveCustomisation ? api.saveCustomisation(payload) : api.request(`${api.url}/customisations`, 'POST', payload));
+      console.log('[UI] handleSaveExtras response:', res);
       showToast('Pengaturan harga tambahan (extras) berhasil disimpan!');
     } catch (err) {
       console.error('Failed to save extras customisation:', err);
@@ -347,7 +353,10 @@ function POSCustomizationPanel({ showToast }) {
   const handleSaveDoses = async () => {
     localStorage.setItem('ken_dose_espresso', doseEspresso.toString());
     try {
-      await api.saveCustomisation ? api.saveCustomisation({ key: 'doses', value: { espresso: doseEspresso } }) : api.request(`${api.url}/customisations`, 'POST', { key: 'doses', value: { espresso: doseEspresso } });
+      const payload = { key: 'doses', value: { espresso: doseEspresso } };
+      console.log('[UI] handleSaveDoses payload:', payload);
+      const res = await (api.saveCustomisation ? api.saveCustomisation(payload) : api.request(`${api.url}/customisations`, 'POST', payload));
+      console.log('[UI] handleSaveDoses response:', res);
       showToast('Gramasi & dosis bahan baku brand berhasil disimpan!');
     } catch (err) {
       console.error('Failed to save doses customisation:', err);
