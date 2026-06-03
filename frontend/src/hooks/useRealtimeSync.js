@@ -1,6 +1,6 @@
 // useRealtimeSync.js – Supabase Realtime hook
 import { useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../supabaseClient';
 
 /**
  * events: { [eventName]: handler }
