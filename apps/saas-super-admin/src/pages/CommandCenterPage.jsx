@@ -1,11 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   Shield, Activity, Globe, Zap, 
   TrendingUp, Users, AlertTriangle, 
   CheckCircle2, RefreshCw, Server, 
   Database, HardDrive, Cpu, 
   Map as MapIcon, Terminal, 
-  Eye, Lock, BarChart3, Clock
+  Eye, Lock, BarChart3, Clock, ChevronRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -13,6 +14,7 @@ import { cn } from "../lib/utils";
 import { useCommandCenterPage } from '../hooks/useCommandCenterPage';
 
 export default function CommandCenterPage() {
+  const navigate = useNavigate();
   const {
     stats,
     liveFeed,
@@ -119,7 +121,14 @@ export default function CommandCenterPage() {
                 </div>
               </CardContent>
               <div className="p-4 border-t border-border bg-background">
-                  <Button variant="outline" className="w-full text-[10px] font-black uppercase tracking-widest border-border hover:bg-background h-8">View All Audit Logs</Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full text-[10px] font-black uppercase tracking-widest border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/20 h-8 group transition-all"
+                    onClick={() => navigate('/activity-log')}
+                  >
+                    <ChevronRight size={12} className="mr-1 group-hover:translate-x-0.5 transition-transform" />
+                    View All Audit Logs
+                  </Button>
               </div>
            </Card>
         </div>

@@ -134,14 +134,29 @@ class SystemRepository {
 
   // --- Activity Logs ---
   async getActivityLogs(tenantId, role) {
-    let query = supabase.from('activity_logs').select('*');
-    if (role !== 'superadmin') {
-      query = query.neq('role', 'superadmin');
+    // For superadmin: fetch all logs with tenant name via join
+    // For regular users: fetch only own tenant logs
+    let query;
+    if (role === 'superadmin') {
+      query = supabase
+        .from('activity_logs')
+        .select('*, tenants(name)');
+    } else {
+      query = supabase
+        .from('activity_logs')
+        .select('*, tenants(name)')
+        .neq('role', 'superadmin');
       if (tenantId) query = query.eq('tenant_id', tenantId);
     }
-    const { data, error } = await query.order('created_at', { ascending: false }).limit(100);
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(200);
     if (error) throw error;
-    return data || [];
+
+    // Flatten tenant name into each log row for easy consumption
+    return (data || []).map(log => ({
+      ...log,
+      tenant_name: log.tenants?.name || null,
+      tenants: undefined // strip nested object
+    }));
   }
 
   async getSystemStats() {
