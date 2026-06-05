@@ -9,6 +9,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 // Components (Direct imports only for core layout)
 import MainLayout from '@/components/MainLayout';
 import PageTransition from '@/components/PageTransition';
+import { hasFeature } from '@/lib/featureFlags';
 
 // Lazy Loaded Pages (Performance Optimization)
 const LoginPage = lazy(() => import('@/pages/LoginPage'));
@@ -103,6 +104,16 @@ const ProtectedRoute = () => {
   return <MainLayout />;
 };
 
+// Feature Route Guard
+const FeatureGuard = ({ feature, children }) => {
+  const rawUser = useAppStore(state => state.user);
+  const user = (rawUser && rawUser.user && rawUser.token) ? rawUser.user : rawUser;
+  if (feature && !hasFeature(user, feature)) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+};
+
 function AppRoutes() {
   const user = useAppStore(state => state.user);
   const setUser = useAppStore(state => state.setUser);
@@ -159,36 +170,36 @@ function AppRoutes() {
         {/* Enterprise Layout (Protected) */}
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Dashboard user={user} />} />
-          <Route path="/kasir" element={<KasirPage user={user} />} />
-          <Route path="/menu" element={<MenuPage user={user} />} />
-          <Route path="/inventory" element={<InventoriPage user={user} />} />
-          <Route path="/reports" element={<LaporanPage />} />
-          <Route path="/budget" element={<BudgetPage />} />
+          <Route path="/kasir" element={<FeatureGuard feature="pos"><KasirPage user={user} /></FeatureGuard>} />
+          <Route path="/menu" element={<FeatureGuard feature="recipe_bom"><MenuPage user={user} /></FeatureGuard>} />
+          <Route path="/inventory" element={<FeatureGuard feature="inventory"><InventoriPage user={user} /></FeatureGuard>} />
+          <Route path="/reports" element={<FeatureGuard feature="reporting_pdf"><LaporanPage /></FeatureGuard>} />
+          <Route path="/budget" element={<FeatureGuard feature="accounting"><BudgetPage /></FeatureGuard>} />
           <Route path="/settings" element={<PengaturanPage />} />
-          <Route path="/kds" element={<KdsPage />} />
-          <Route path="/customers" element={<PelangganPage />} />
-          <Route path="/tables" element={<TablePage />} />
-          <Route path="/shifts" element={<ShiftPage user={user} />} />
-          <Route path="/superadmin" element={<SuperAdminPage />} />
-          <Route path="/activity-log" element={<ActivityLogPage />} />
-          <Route path="/procurement" element={<ProcurementPage />} />
+          <Route path="/kds" element={<FeatureGuard feature="kds"><KdsPage /></FeatureGuard>} />
+          <Route path="/customers" element={<FeatureGuard feature="crm"><PelangganPage /></FeatureGuard>} />
+          <Route path="/tables" element={<FeatureGuard feature="table_management"><TablePage /></FeatureGuard>} />
+          <Route path="/shifts" element={<FeatureGuard feature="shift"><ShiftPage user={user} /></FeatureGuard>} />
+          <Route path="/superadmin" element={<FeatureGuard feature="superadmin"><SuperAdminPage /></FeatureGuard>} />
+          <Route path="/activity-log" element={<FeatureGuard feature="superadmin"><ActivityLogPage /></FeatureGuard>} />
+          <Route path="/procurement" element={<FeatureGuard feature="procurement"><ProcurementPage /></FeatureGuard>} />
           <Route path="/pembelian" element={<Navigate to="/procurement" replace />} />
-          <Route path="/ai-assistant" element={<AIAssistantPage />} />
-          <Route path="/accounting" element={<AkunPage />} />
-          <Route path="/buku-besar" element={<BukuBesarPage />} />
-          <Route path="/command-center" element={<CommandCenterPage />} />
-          <Route path="/revenue-intel" element={<RevenueIntelligencePage />} />
-          <Route path="/report-builder" element={<ReportBuilderPage />} />
-          <Route path="/consolidated-finance" element={<ConsolidatedFinancePage />} />
-          <Route path="/waste-monitoring" element={<WasteMonitoringPage />} />
-          <Route path="/logistics-hub" element={<LogisticsHubPage />} />
-          <Route path="/outlets" element={<OutletPage />} />
-          <Route path="/tax-report" element={<TaxReportPage />} />
-          <Route path="/inventory-intel" element={<InventoryIntelligencePage />} />
-          <Route path="/laporan-absensi" element={<LaporanAbsensiPage />} />
-          <Route path="/hrd" element={<LaporanHRDPage />} />
-          <Route path="/marketplace" element={<MarketplacePage />} />
-          <Route path="/opname" element={<StokOpnamePage />} />
+          <Route path="/ai-assistant" element={<FeatureGuard feature="ai_insights"><AIAssistantPage /></FeatureGuard>} />
+          <Route path="/accounting" element={<FeatureGuard feature="accounting"><AkunPage /></FeatureGuard>} />
+          <Route path="/buku-besar" element={<FeatureGuard feature="accounting"><BukuBesarPage /></FeatureGuard>} />
+          <Route path="/command-center" element={<FeatureGuard feature="superadmin"><CommandCenterPage /></FeatureGuard>} />
+          <Route path="/revenue-intel" element={<FeatureGuard feature="ai_insights"><RevenueIntelligencePage /></FeatureGuard>} />
+          <Route path="/report-builder" element={<FeatureGuard feature="reporting_excel"><ReportBuilderPage /></FeatureGuard>} />
+          <Route path="/consolidated-finance" element={<FeatureGuard feature="multi_outlet"><ConsolidatedFinancePage /></FeatureGuard>} />
+          <Route path="/waste-monitoring" element={<FeatureGuard feature="waste_management"><WasteMonitoringPage /></FeatureGuard>} />
+          <Route path="/logistics-hub" element={<FeatureGuard feature="stock_transfer"><LogisticsHubPage /></FeatureGuard>} />
+          <Route path="/outlets" element={<FeatureGuard feature="multi_outlet"><OutletPage /></FeatureGuard>} />
+          <Route path="/tax-report" element={<FeatureGuard feature="accounting"><TaxReportPage /></FeatureGuard>} />
+          <Route path="/inventory-intel" element={<FeatureGuard feature="ai_insights"><InventoryIntelligencePage /></FeatureGuard>} />
+          <Route path="/laporan-absensi" element={<FeatureGuard feature="hrd"><LaporanAbsensiPage /></FeatureGuard>} />
+          <Route path="/hrd" element={<FeatureGuard feature="hrd"><LaporanHRDPage /></FeatureGuard>} />
+          <Route path="/marketplace" element={<FeatureGuard feature="omnichannel"><MarketplacePage /></FeatureGuard>} />
+          <Route path="/opname" element={<FeatureGuard feature="inventory"><StokOpnamePage /></FeatureGuard>} />
           <Route path="/customer" element={user?.role === 'customer' ? <CustomerPortalPage user={user} onLogout={() => setUser(null)} /> : <Navigate to="/login" replace />} />
         </Route>
 
