@@ -143,6 +143,22 @@ class SystemRepository {
     if (error) throw error;
     return data || [];
   }
+
+  async getSystemStats() {
+    const { count: totalTenants } = await supabase.from('tenants').select('*', { count: 'exact', head: true });
+    const { count: activeTenants } = await supabase.from('tenants').select('*', { count: 'exact', head: true }).eq('is_active', true);
+    const { count: onlineUsers } = await supabase.from('users').select('*', { count: 'exact', head: true });
+    
+    const { data: revData } = await supabase.from('transactions').select('total');
+    const globalRevenue = (revData || []).reduce((sum, row) => sum + Number(row.total || 0), 0);
+    
+    return {
+      totalTenants: totalTenants || 0,
+      activeTenants: activeTenants || 0,
+      onlineUsers: onlineUsers || 0,
+      globalRevenue: globalRevenue || 0
+    };
+  }
 }
 
 module.exports = new SystemRepository();

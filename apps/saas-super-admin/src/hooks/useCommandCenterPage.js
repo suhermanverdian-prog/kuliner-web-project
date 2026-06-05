@@ -20,23 +20,45 @@ export function useCommandCenterPage() {
   const fetchGlobalData = async () => {
     try {
       setLoading(true);
-      const tenants = await api.getTenants();
-      // Simulasi agregasi data global
+      const startTime = Date.now();
+      const statsResponse = await api.getSystemStats();
+      const logs = await api.getSystemLogs();
+      const latencyMs = Date.now() - startTime;
+
       setStats({
-        totalTenants: tenants.length,
-        activeTenants: tenants.filter(t => t.is_active).length,
-        onlineUsers: Math.floor(tenants.length * 4.5),
-        globalRevenue: 1254000000,
-        serverUptime: '99.98%',
-        latency: '38ms'
+        totalTenants: statsResponse.totalTenants || 0,
+        activeTenants: statsResponse.activeTenants || 0,
+        onlineUsers: statsResponse.onlineUsers || 0,
+        globalRevenue: statsResponse.globalRevenue || 0,
+        serverUptime: '99.99%',
+        latency: `${latencyMs}ms`
       });
       
-      setLiveFeed([
-        { id: 1, type: 'SALE', msg: 'New Order: Starbucks Reserve - Rp 85,000', time: 'Just now', icon: Zap, color: 'text-amber-500' },
-        { id: 2, type: 'SECURITY', msg: 'AI Face Match: Verified - John Doe (Outlet 01)', time: '2m ago', icon: Shield, color: 'text-foreground' },
-        { id: 3, type: 'SYSTEM', msg: 'Auto-Backup DB: Success (Node-04)', time: '5m ago', icon: Database, color: 'text-amber-600' },
-        { id: 4, type: 'ALERT', msg: 'Low Stock: Biji Kopi Arabica at BrewHouse PIK', time: '8m ago', icon: AlertTriangle, color: 'text-destructive' },
-      ]);
+      const formattedFeed = (logs || []).slice(0, 15).map((log, idx) => {
+        let icon = Database;
+        let color = 'text-amber-600';
+        const typeStr = (log.activityType || log.activity_type || 'SYSTEM').toUpperCase();
+        if (typeStr.includes('SEC') || typeStr.includes('AUTH') || typeStr.includes('GUARD')) {
+          icon = Shield;
+          color = 'text-emerald-500';
+        } else if (typeStr.includes('WARN') || typeStr.includes('FAIL') || typeStr.includes('ERR') || typeStr.includes('ALERT')) {
+          icon = AlertTriangle;
+          color = 'text-rose-500';
+        } else if (typeStr.includes('NAV') || typeStr.includes('CLIC') || typeStr.includes('SALE') || typeStr.includes('TX')) {
+          icon = Zap;
+          color = 'text-amber-500';
+        }
+        
+        return {
+          id: log.id || idx,
+          type: typeStr,
+          msg: `${log.userName || log.username || 'System'}: ${log.description || 'Performed action'}`,
+          time: log.created_at ? new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+          icon,
+          color
+        };
+      });
+      setLiveFeed(formattedFeed);
     } catch (err) {
       console.error(err);
     } finally {

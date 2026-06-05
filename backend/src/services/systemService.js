@@ -290,6 +290,13 @@ class SystemService {
   static async getActivityLogs(tenantId, role) {
     return await SystemRepository.getActivityLogs(tenantId, role);
   }
+
+  static async getSystemStats(role) {
+    if (role !== 'superadmin') {
+      throw new Error('Akses Ditolak: Hanya Superadmin yang dapat mengakses data statistik global.');
+    }
+    return await SystemRepository.getSystemStats();
+  }
 }
 
 module.exports = SystemService;

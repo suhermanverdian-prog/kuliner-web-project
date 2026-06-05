@@ -77,6 +77,7 @@ const getResource = (prop) => {
     'getSettingsLoyalty': 'system/settings/loyalty',
     'saveSettingsLoyalty': 'system/settings/loyalty',
     'getSystemLogs': 'system/system-logs',
+    'getSystemStats': 'system/stats',
     
     // Menu
     'getMenu': 'menu',

@@ -219,6 +219,19 @@ class SystemController {
       res.status(500).json({ error: err.message });
     }
   }
+
+  async getSystemStats(req, res) {
+    try {
+      const { role } = req.userContext || {};
+      if (role !== 'superadmin') {
+        return res.status(403).json({ error: 'Akses Ditolak: Hanya Superadmin yang diizinkan.' });
+      }
+      const stats = await SystemService.getSystemStats(role);
+      res.json(stats);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 }
 
 module.exports = new SystemController();

@@ -111,4 +111,10 @@ router.delete('/outlets/:id', systemController.deleteOutlet);
  */
 router.get('/integrity', systemController.verifySystemIntegrity);
 
+/**
+ * @route GET /api/system/stats
+ * @desc Get global SaaS metrics for command center
+ */
+router.get('/stats', systemController.getSystemStats);
+
 module.exports = router;
