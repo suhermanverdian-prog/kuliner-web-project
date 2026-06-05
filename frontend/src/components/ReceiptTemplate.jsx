@@ -75,7 +75,17 @@ export const ReceiptTemplate = React.forwardRef(({ tx, user }, ref) => {
             <div className="flex justify-between">
               <span className="font-bold">{item.name}</span>
             </div>
-            <div className="flex justify-between opacity-80">
+            {item.customizationSummary && (
+              <div className="text-[9px] text-zinc-600 dark:text-zinc-400 italic leading-none pl-2">
+                * {item.customizationSummary}
+              </div>
+            )}
+            {(item.note || item.customization?.note) && (
+              <div className="text-[9px] text-zinc-500 pl-2">
+                Catatan: {item.note || item.customization?.note}
+              </div>
+            )}
+            <div className="flex justify-between opacity-80 pt-0.5">
               <span>{item.qty} x {formatRupiah(item.price)}</span>
               <span>{formatRupiah(item.qty * item.price)}</span>
             </div>
