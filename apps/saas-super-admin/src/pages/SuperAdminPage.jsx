@@ -571,33 +571,32 @@ export default function SuperAdminPage() {
 
       {/* PREMIUM CLIENT REGISTRATION INTEGRATED MODAL */}
       {isRegisterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/85 backdrop-blur-md animate-in fade-in duration-200">
-          <Card className="w-full max-w-lg shadow-2xl bg-card border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col">
-            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-md shadow-2xl bg-card border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col">
+            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between py-3.5 px-6">
               <div>
-                <CardTitle className="text-xl font-black uppercase tracking-tighter text-foreground flex items-center gap-2">
-                  <Globe className="text-amber-500" /> Registrasi Client Baru
+                <CardTitle className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
+                  <Globe className="text-amber-500" size={16} /> Registrasi Client Baru
                 </CardTitle>
-                <CardDescription className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Integrasi Langsung ke Supabase Database</CardDescription>
               </div>
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background text-zinc-500" onClick={() => setIsRegisterModalOpen(false)}><X size={16} /></Button>
             </CardHeader>
-            <CardContent className="p-8 space-y-5">
+            <CardContent className="p-6 space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nama Bisnis / Client</label>
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Nama Bisnis / Client</label>
                 <Input 
                   placeholder="Contoh: PT Kopi Enak Indonesia" 
                   value={registerForm.name}
                   onChange={e => setRegisterForm({ ...registerForm, name: e.target.value })}
-                  className="h-11 bg-white dark:bg-zinc-800 text-xs font-bold"
+                  className="h-10 bg-white dark:bg-zinc-800 text-xs font-bold"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Subscription Tier</label>
+                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Subscription Tier</label>
                   <select 
-                    className="w-full h-11 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
+                    className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
                     value={registerForm.tier}
                     onChange={e => setRegisterForm({ ...registerForm, tier: e.target.value })}
                   >
@@ -607,9 +606,9 @@ export default function SuperAdminPage() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Masa Aktif Awal</label>
+                  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Masa Aktif Awal</label>
                   <select 
-                    className="w-full h-11 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black"
+                    className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black"
                     value={registerForm.durationDays}
                     onChange={e => setRegisterForm({ ...registerForm, durationDays: e.target.value })}
                   >
@@ -621,9 +620,9 @@ export default function SuperAdminPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status Pembayaran</label>
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Status Pembayaran</label>
                 <select 
-                  className="w-full h-11 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
+                  className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
                   value={registerForm.paymentStatus}
                   onChange={e => setRegisterForm({ ...registerForm, paymentStatus: e.target.value })}
                 >
@@ -633,21 +632,21 @@ export default function SuperAdminPage() {
               </div>
 
               {registerForm.paymentStatus === 'paid' && (
-                <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
+                <div className="grid grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-200">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nominal Pembayaran (Rp)</label>
+                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Nominal (Rp)</label>
                     <Input 
                       type="number"
                       placeholder="Contoh: 350000"
                       value={registerForm.amount}
                       onChange={e => setRegisterForm({ ...registerForm, amount: e.target.value })}
-                      className="h-11 bg-white dark:bg-zinc-800 text-xs font-mono font-black tabular-nums"
+                      className="h-10 bg-white dark:bg-zinc-800 text-xs font-mono font-black tabular-nums"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Metode Bayar</label>
+                    <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Metode Bayar</label>
                     <select 
-                      className="w-full h-11 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
+                      className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
                       value={registerForm.paymentMethod}
                       onChange={e => setRegisterForm({ ...registerForm, paymentMethod: e.target.value })}
                     >
@@ -659,11 +658,11 @@ export default function SuperAdminPage() {
                 </div>
               )}
             </CardContent>
-            <CardFooter className="bg-background p-6 border-t border-border flex justify-end gap-3">
-              <Button variant="outline" className="h-11 px-6 font-bold" onClick={() => setIsRegisterModalOpen(false)}>Batal</Button>
+            <CardFooter className="bg-background p-4 px-6 border-t border-border flex justify-end gap-3 shrink-0">
+              <Button variant="outline" className="h-10 px-6 font-bold text-xs" onClick={() => setIsRegisterModalOpen(false)}>Batal</Button>
               <Button 
                 onClick={submitRegisterTenant}
-                className="h-11 px-10 font-black uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900"
+                className="h-10 px-8 font-black uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900"
               >
                 Registrasikan Node
               </Button>
