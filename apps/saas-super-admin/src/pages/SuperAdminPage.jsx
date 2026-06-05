@@ -571,9 +571,9 @@ export default function SuperAdminPage() {
 
       {/* PREMIUM CLIENT REGISTRATION INTEGRATED MODAL */}
       {isRegisterModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <Card className="w-full max-w-md shadow-2xl bg-card border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col">
-            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between py-3.5 px-6">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-md shadow-2xl bg-card border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between py-3 px-6 shrink-0">
               <div>
                 <CardTitle className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
                   <Globe className="text-amber-500" size={16} /> Registrasi Client Baru
@@ -581,7 +581,7 @@ export default function SuperAdminPage() {
               </div>
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background text-zinc-500" onClick={() => setIsRegisterModalOpen(false)}><X size={16} /></Button>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-5 space-y-3.5 overflow-y-auto no-scrollbar">
               <div className="space-y-1.5">
                 <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Nama Bisnis / Client</label>
                 <Input 
@@ -673,16 +673,16 @@ export default function SuperAdminPage() {
 
       {/* Feature Flag Modal */}
       {editingFeatures && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/85 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[9999] overflow-y-auto flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
           <Card className="w-full max-w-3xl shadow-2xl bg-card border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col max-h-[90vh]">
-            <CardHeader className="bg-background border-b border-border flex flex-row items-start justify-between p-8">
-              <div className="space-y-1">
-                <CardTitle className="text-2xl font-black uppercase tracking-tighter text-foreground">{editingFeatures.name}</CardTitle>
-                <CardDescription className="uppercase font-black tracking-[0.2em] text-[10px] text-amber-500">Feature Flags & Overrides</CardDescription>
+            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between py-4 px-6 shrink-0">
+              <div className="space-y-0.5">
+                <CardTitle className="text-lg font-black uppercase tracking-tighter text-foreground">{editingFeatures.name}</CardTitle>
+                <CardDescription className="uppercase font-black tracking-[0.2em] text-[9px] text-amber-500">Feature Flags & Overrides</CardDescription>
               </div>
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg hover:bg-background" onClick={() => setEditingFeatures(null)}><X size={20} /></Button>
+              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-lg hover:bg-background text-zinc-500" onClick={() => setEditingFeatures(null)}><X size={20} /></Button>
             </CardHeader>
-            <CardContent className="p-8 overflow-y-auto no-scrollbar space-y-8">
+            <CardContent className="p-6 overflow-y-auto no-scrollbar space-y-6">
               {['Core', 'Produksi', 'Pengadaan', 'Laporan', 'Keuangan', 'Bisnis', 'Enterprise'].map(group => (
                 <div key={group} className="space-y-4">
                   <h4 className="text-[11px] font-black uppercase tracking-[0.3em] text-zinc-500 dark:text-zinc-400 border-b border-border pb-3">{group} Management</h4>
