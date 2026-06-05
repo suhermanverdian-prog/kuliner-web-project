@@ -83,30 +83,36 @@ export const TIER_DEFAULTS = {
   },
 };
 
+import { 
+  ShoppingCart, ChefHat, Armchair, Smartphone, Layers, Clock,
+  Box, Trash2, ShoppingBag, FileText, BarChart3, Users, Award,
+  Scale, Building2, Globe, Truck, Tag, Code, BrainCircuit, ClipboardCheck
+} from 'lucide-react';
+
 // All feature definitions with metadata (for SuperAdmin UI)
 export const FEATURE_CATALOG = [
-  { key: 'pos',              label: 'POS Kasir',                group: 'Core',        icon: '💰', description: 'Point of Sale & transaksi' },
-  { key: 'kds',              label: 'KDS (Dapur)',              group: 'Core',        icon: '👨‍🍳', description: 'Kitchen Display System' },
-  { key: 'table_management', label: 'Manajemen Meja',           group: 'Core',        icon: '🪑', description: 'Reservasi & okupansi meja' },
-  { key: 'guest_ordering',   label: 'Menu Digital / Self-Order',group: 'Core',        icon: '📱', description: 'QR code menu untuk pelanggan' },
-  { key: 'inventory',        label: 'Inventori Bahan Baku',     group: 'Core',        icon: '📦', description: 'Stok dan gudang' },
-  { key: 'shift',            label: 'Shift Kasir',              group: 'Core',        icon: '⏰', description: 'Manajemen shift kerja' },
-  { key: 'recipe_bom',       label: 'Resep / BOM',              group: 'Produksi',    icon: '📋', description: 'Bill of Materials per menu' },
-  { key: 'waste_management', label: 'Waste Management',         group: 'Produksi',    icon: '🗑️', description: 'Pencatatan kerusakan & loss' },
-  { key: 'procurement',      label: 'Pengadaan (PO)',           group: 'Pengadaan',   icon: '🛒', description: 'PO → GRN → Invoice → Payment' },
-  { key: 'reporting_pdf',    label: 'Laporan PDF',              group: 'Laporan',     icon: '📄', description: 'Export laporan ke PDF' },
-  { key: 'reporting_excel',  label: 'Laporan Excel',            group: 'Laporan',     icon: '📊', description: 'Export laporan ke Excel' },
-  { key: 'crm',              label: 'CRM Pelanggan',            group: 'Bisnis',      icon: '👥', description: 'Data & analitik pelanggan' },
-  { key: 'loyalty',          label: 'Program Loyalty',          group: 'Bisnis',      icon: '⭐', description: 'Poin & reward member' },
-  { key: 'accounting',       label: 'Akuntansi',                group: 'Keuangan',    icon: '📒', description: 'Double-entry bookkeeping' },
-  { key: 'multi_outlet',     label: 'Multi-Outlet',             group: 'Enterprise',  icon: '🏢', description: 'Kelola banyak cabang' },
-  { key: 'hq_dashboard',     label: 'HQ Dashboard',             group: 'Enterprise',  icon: '🌐', description: 'Dashboard pusat semua outlet' },
-  { key: 'stock_transfer',   label: 'Transfer Stok',            group: 'Enterprise',  icon: '🔄', description: 'Pindah stok antar outlet' },
-  { key: 'white_label',      label: 'White Label',              group: 'Enterprise',  icon: '🏷️', description: 'Custom branding tenant' },
-  { key: 'api_access',       label: 'API Access',               group: 'Enterprise',  icon: '🔌', description: 'REST API untuk integrasi' },
-  { key: 'ai_insights',      label: 'AI Insights',              group: 'Enterprise',  icon: '🤖', description: 'Prediksi & rekomendasi AI' },
-  { key: 'omnichannel',      label: 'Omnichannel Marketplace',  group: 'Bisnis',      icon: '🛒', description: 'GoFood, GrabFood, ShopeeFood' },
-  { key: 'hrd',              label: 'Manajemen HRD & Payroll',  group: 'Enterprise',  icon: '👨‍💼', description: 'Absensi GPS, Selfie AI & Gaji' },
+  { key: 'pos',              label: 'POS Kasir',                group: 'Core',        icon: ShoppingCart, description: 'Point of Sale & transaksi' },
+  { key: 'kds',              label: 'KDS (Dapur)',              group: 'Core',        icon: ChefHat, description: 'Kitchen Display System' },
+  { key: 'table_management', label: 'Manajemen Meja',           group: 'Core',        icon: Armchair, description: 'Reservasi & okupansi meja' },
+  { key: 'guest_ordering',   label: 'Menu Digital / Self-Order',group: 'Core',        icon: Smartphone, description: 'QR code menu untuk pelanggan' },
+  { key: 'inventory',        label: 'Inventori Bahan Baku',     group: 'Core',        icon: Layers, description: 'Stok dan gudang' },
+  { key: 'shift',            label: 'Shift Kasir',              group: 'Core',        icon: Clock, description: 'Manajemen shift kerja' },
+  { key: 'recipe_bom',       label: 'Resep / BOM',              group: 'Produksi',    icon: Box, description: 'Bill of Materials per menu' },
+  { key: 'waste_management', label: 'Waste Management',         group: 'Produksi',    icon: Trash2, description: 'Pencatatan kerusakan & loss' },
+  { key: 'procurement',      label: 'Pengadaan (PO)',           group: 'Pengadaan',   icon: ShoppingBag, description: 'PO → GRN → Invoice → Payment' },
+  { key: 'reporting_pdf',    label: 'Laporan PDF',              group: 'Laporan',     icon: FileText, description: 'Export laporan ke PDF' },
+  { key: 'reporting_excel',  label: 'Laporan Excel',            group: 'Laporan',     icon: BarChart3, description: 'Export laporan ke Excel' },
+  { key: 'crm',              label: 'CRM Pelanggan',            group: 'Bisnis',      icon: Users, description: 'Data & analitik pelanggan' },
+  { key: 'loyalty',          label: 'Program Loyalty',          group: 'Bisnis',      icon: Award, description: 'Poin & reward member' },
+  { key: 'accounting',       label: 'Akuntansi',                group: 'Keuangan',    icon: Scale, description: 'Double-entry bookkeeping' },
+  { key: 'multi_outlet',     label: 'Multi-Outlet',             group: 'Enterprise',  icon: Building2, description: 'Kelola banyak cabang' },
+  { key: 'hq_dashboard',     label: 'HQ Dashboard',             group: 'Enterprise',  icon: Globe, description: 'Dashboard pusat semua outlet' },
+  { key: 'stock_transfer',   label: 'Transfer Stok',            group: 'Enterprise',  icon: Truck, description: 'Pindah stok antar outlet' },
+  { key: 'white_label',      label: 'White Label',              group: 'Enterprise',  icon: Tag, description: 'Custom branding tenant' },
+  { key: 'api_access',       label: 'API Access',               group: 'Enterprise',  icon: Code, description: 'REST API untuk integrasi' },
+  { key: 'ai_insights',      label: 'AI Insights',              group: 'Enterprise',  icon: BrainCircuit, description: 'Prediksi & rekomendasi AI' },
+  { key: 'omnichannel',      label: 'Omnichannel Marketplace',  group: 'Bisnis',      icon: ShoppingBag, description: 'GoFood, GrabFood, ShopeeFood' },
+  { key: 'hrd',              label: 'Manajemen HRD & Payroll',  group: 'Enterprise',  icon: ClipboardCheck, description: 'Absensi GPS, Selfie AI & Gaji' },
 ];
 
 /**
