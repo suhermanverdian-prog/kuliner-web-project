@@ -8,6 +8,18 @@ export function useSuperAdminPage() {
   const [search, setSearch] = useState('');
   const [editingFeatures, setEditingFeatures] = useState(null);
   const [selectedTenantForBilling, setSelectedTenantForBilling] = useState(null);
+  
+  // Register Tenant Modal state
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
+  const [registerForm, setRegisterForm] = useState({
+    name: '',
+    tier: 'pro',
+    durationDays: '30',
+    paymentStatus: 'paid',
+    paymentMethod: 'QRIS',
+    amount: ''
+  });
+
   const [globalConfig, setGlobalConfig] = useState({
     apiRateLimit: 120,
     sessionDuration: 24,
@@ -89,16 +101,76 @@ export function useSuperAdminPage() {
     }
   };
 
-  const handleRegisterClient = async () => {
-    const name = prompt("Masukkan Nama Bisnis/Client Baru:");
-    if (name) {
-      try {
-        await api.addTenant({ name, tier: 'enterprise' });
-        alert(`Node ${name} Berhasil Diregistrasi!`);
-        fetchTenants();
-      } catch (err) {
-        alert("Gagal registrasi: " + err.message);
+  // REGISTER TENANT VIA INTEGRATED MODAL (Direct to Supabase)
+  const submitRegisterTenant = async () => {
+    if (!registerForm.name.trim()) {
+      alert("Nama Bisnis wajib diisi.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // 1. Create the tenant first on Supabase
+      const newTenant = await api.addTenant({
+        name: registerForm.name,
+        tier: registerForm.tier
+      });
+
+      if (!newTenant || !newTenant.id) {
+        throw new Error("Gagal meregistrasikan tenant baru di Supabase.");
       }
+
+      // 2. Build initial subscription overrides
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + Number(registerForm.durationDays));
+
+      const subscription = {
+        expires_at: expiryDate.toISOString(),
+        payment_status: registerForm.paymentStatus,
+        billing_cycle: Number(registerForm.durationDays) === 365 ? 'yearly' : 'monthly'
+      };
+
+      let billing_history = [];
+      const paymentAmount = Number(registerForm.amount);
+      
+      if (registerForm.paymentStatus === 'paid' && paymentAmount > 0) {
+        const invoiceNumber = `INV-${registerForm.name.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+        billing_history.push({
+          id: Date.now(),
+          invoice_number: invoiceNumber,
+          amount: paymentAmount,
+          payment_method: registerForm.paymentMethod,
+          payment_date: new Date().toISOString(),
+          expiry_date: expiryDate.toISOString(),
+          status: 'success'
+        });
+      }
+
+      // 3. Update the tenant with initial subscription & billing log
+      await api.updateTenant({
+        id: newTenant.id,
+        feature_overrides: {
+          subscription,
+          billing_history
+        }
+      });
+
+      alert(`Node Client "${registerForm.name}" Berhasil Terdaftar di Supabase!`);
+      setIsRegisterModalOpen(false);
+      setRegisterForm({
+        name: '',
+        tier: 'pro',
+        durationDays: '30',
+        paymentStatus: 'paid',
+        paymentMethod: 'QRIS',
+        amount: ''
+      });
+      fetchTenants();
+    } catch (err) {
+      console.error(err);
+      alert("Gagal registrasi tenant: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -158,7 +230,7 @@ export function useSuperAdminPage() {
       fetchTenants();
     } catch (err) {
       console.error(err);
-      alert('Gagal menyimpan konfigurasi global: ' + err.message);
+      alert('Gapa; menyimpan konfigurasi global: ' + err.message);
     }
   };
 
@@ -170,13 +242,15 @@ export function useSuperAdminPage() {
     search, setSearch,
     editingFeatures, setEditingFeatures,
     selectedTenantForBilling, setSelectedTenantForBilling,
+    isRegisterModalOpen, setIsRegisterModalOpen,
+    registerForm, setRegisterForm,
     globalConfig, setGlobalConfig,
     fetchTenants,
     toggleStatus,
     changeTier,
     toggleFeatureOverride,
     resetFeatureOverrides,
-    handleRegisterClient,
+    submitRegisterTenant,
     updateSubscriptionSettings,
     saveGlobalConfig,
     filtered

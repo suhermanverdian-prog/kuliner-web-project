@@ -24,13 +24,15 @@ export default function SuperAdminPage() {
     search, setSearch,
     editingFeatures, setEditingFeatures,
     selectedTenantForBilling, setSelectedTenantForBilling,
+    isRegisterModalOpen, setIsRegisterModalOpen,
+    registerForm, setRegisterForm,
     globalConfig, setGlobalConfig,
     fetchTenants,
     toggleStatus,
     changeTier,
     toggleFeatureOverride,
     resetFeatureOverrides,
-    handleRegisterClient,
+    submitRegisterTenant,
     updateSubscriptionSettings,
     saveGlobalConfig,
     filtered
@@ -38,7 +40,7 @@ export default function SuperAdminPage() {
 
   const [activeTab, setActiveTab] = useState('tenants'); // 'tenants' | 'billing' | 'system'
   
-  // Local states for new invoice creation
+  // Local states for new invoice creation inside Billing Tab
   const [newInvoiceAmount, setNewInvoiceAmount] = useState('');
   const [newInvoiceMethod, setNewInvoiceMethod] = useState('QRIS');
   const [newInvoiceDuration, setNewInvoiceDuration] = useState('30'); // days
@@ -121,7 +123,7 @@ export default function SuperAdminPage() {
              <RefreshCw className="mr-2 h-3 w-3" /> Sinkronisasi
            </Button>
            <Button 
-             onClick={handleRegisterClient}
+             onClick={() => setIsRegisterModalOpen(true)}
              size="sm" 
              className="h-10 px-8 font-black uppercase tracking-widest text-white rounded-lg bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500"
            >
@@ -564,6 +566,109 @@ export default function SuperAdminPage() {
               </div>
             </Card>
           </div>
+        </div>
+      )}
+
+      {/* PREMIUM CLIENT REGISTRATION INTEGRATED MODAL */}
+      {isRegisterModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/85 backdrop-blur-md animate-in fade-in duration-200">
+          <Card className="w-full max-w-lg shadow-2xl bg-card border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col">
+            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between p-8">
+              <div>
+                <CardTitle className="text-xl font-black uppercase tracking-tighter text-foreground flex items-center gap-2">
+                  <Globe className="text-amber-500" /> Registrasi Client Baru
+                </CardTitle>
+                <CardDescription className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Integrasi Langsung ke Supabase Database</CardDescription>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background text-zinc-500" onClick={() => setIsRegisterModalOpen(false)}><X size={16} /></Button>
+            </CardHeader>
+            <CardContent className="p-8 space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nama Bisnis / Client</label>
+                <Input 
+                  placeholder="Contoh: PT Kopi Enak Indonesia" 
+                  value={registerForm.name}
+                  onChange={e => setRegisterForm({ ...registerForm, name: e.target.value })}
+                  className="h-11 bg-white dark:bg-zinc-800 text-xs font-bold"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Subscription Tier</label>
+                  <select 
+                    className="w-full h-11 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
+                    value={registerForm.tier}
+                    onChange={e => setRegisterForm({ ...registerForm, tier: e.target.value })}
+                  >
+                    <option value="lite">Lite Plan</option>
+                    <option value="pro">Pro Plan</option>
+                    <option value="enterprise">Enterprise Plan</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Masa Aktif Awal</label>
+                  <select 
+                    className="w-full h-11 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black"
+                    value={registerForm.durationDays}
+                    onChange={e => setRegisterForm({ ...registerForm, durationDays: e.target.value })}
+                  >
+                    <option value="30">30 Hari (Bulanan)</option>
+                    <option value="90">90 Hari (Triwulan)</option>
+                    <option value="365">365 Hari (Tahunan)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Status Pembayaran</label>
+                <select 
+                  className="w-full h-11 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
+                  value={registerForm.paymentStatus}
+                  onChange={e => setRegisterForm({ ...registerForm, paymentStatus: e.target.value })}
+                >
+                  <option value="paid">Lunas / Berbayar (Paid)</option>
+                  <option value="unpaid">Belum Bayar (Grace Period / unpaid)</option>
+                </select>
+              </div>
+
+              {registerForm.paymentStatus === 'paid' && (
+                <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2 duration-200">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Nominal Pembayaran (Rp)</label>
+                    <Input 
+                      type="number"
+                      placeholder="Contoh: 350000"
+                      value={registerForm.amount}
+                      onChange={e => setRegisterForm({ ...registerForm, amount: e.target.value })}
+                      className="h-11 bg-white dark:bg-zinc-800 text-xs font-mono font-black tabular-nums"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Metode Bayar</label>
+                    <select 
+                      className="w-full h-11 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
+                      value={registerForm.paymentMethod}
+                      onChange={e => setRegisterForm({ ...registerForm, paymentMethod: e.target.value })}
+                    >
+                      <option value="QRIS">QRIS</option>
+                      <option value="Transfer">Transfer</option>
+                      <option value="Cash">Cash</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="bg-background p-6 border-t border-border flex justify-end gap-3">
+              <Button variant="outline" className="h-11 px-6 font-bold" onClick={() => setIsRegisterModalOpen(false)}>Batal</Button>
+              <Button 
+                onClick={submitRegisterTenant}
+                className="h-11 px-10 font-black uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900"
+              >
+                Registrasikan Node
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       )}
 
