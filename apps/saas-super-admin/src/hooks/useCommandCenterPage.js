@@ -58,7 +58,7 @@ export function useCommandCenterPage() {
         return {
           id: log.id || idx,
           type: typeStr,
-          msg: `${log.userName || log.username || 'System'}: ${log.description || 'Performed action'}`,
+          msg: `${log.user_name || log.userName || log.username || 'System'}: ${log.description || 'Performed action'}`,
           time: log.created_at ? new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Just now',
           icon,
           color
