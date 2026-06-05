@@ -151,12 +151,25 @@ class SystemRepository {
     
     const { data: revData } = await supabase.from('transactions').select('total');
     const globalRevenue = (revData || []).reduce((sum, row) => sum + Number(row.total || 0), 0);
+
+    const { count: totalLogs } = await supabase.from('activity_logs').select('*', { count: 'exact', head: true });
+    
+    const { count: failedSecurity } = await supabase.from('activity_logs')
+      .select('*', { count: 'exact', head: true })
+      .or('activity_type.eq.SECURITY,activity_type.eq.ALERT,description.ilike.%gagal%,description.ilike.%fail%,description.ilike.%block%');
+
+    const { count: aiVerifications } = await supabase.from('activity_logs')
+      .select('*', { count: 'exact', head: true })
+      .or('activity_type.eq.AI,description.ilike.%AI%,description.ilike.%face%,description.ilike.%wajah%');
     
     return {
       totalTenants: totalTenants || 0,
       activeTenants: activeTenants || 0,
       onlineUsers: onlineUsers || 0,
-      globalRevenue: globalRevenue || 0
+      globalRevenue: globalRevenue || 0,
+      totalLogs: totalLogs || 0,
+      failedSecurity: failedSecurity || 0,
+      aiVerifications: aiVerifications || 0
     };
   }
 }

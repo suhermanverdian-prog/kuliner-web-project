@@ -9,6 +9,9 @@ export function useCommandCenterPage() {
     activeTenants: 0,
     onlineUsers: 0,
     globalRevenue: 0,
+    totalLogs: 0,
+    failedSecurity: 0,
+    aiVerifications: 0,
     serverUptime: '99.99%',
     latency: '45ms'
   });
@@ -30,6 +33,9 @@ export function useCommandCenterPage() {
         activeTenants: statsResponse.activeTenants || 0,
         onlineUsers: statsResponse.onlineUsers || 0,
         globalRevenue: statsResponse.globalRevenue || 0,
+        totalLogs: statsResponse.totalLogs || 0,
+        failedSecurity: statsResponse.failedSecurity || 0,
+        aiVerifications: statsResponse.aiVerifications || 0,
         serverUptime: '99.99%',
         latency: `${latencyMs}ms`
       });

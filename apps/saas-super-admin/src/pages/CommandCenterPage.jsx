@@ -181,9 +181,9 @@ export default function CommandCenterPage() {
               <CardContent className="p-0">
                  <div className="grid grid-cols-1 md:grid-cols-3 divide-x divide-border divide-y md:divide-y-0">
                     {[
-                      { label: 'AI Verifications', val: '14,205', status: 'Optimal', icon: Shield, color: 'text-emerald-600 dark:text-emerald-400' },
-                      { label: 'Failed Attempts', val: '12', status: 'Blocked', icon: Lock, color: 'text-rose-600 dark:text-rose-400' },
-                      { label: 'Audit Logs', val: '2.5M+', status: 'Archived', icon: Terminal, color: 'text-zinc-500' },
+                      { label: 'AI Verifications', val: stats.aiVerifications.toLocaleString('id-ID'), status: 'Optimal', icon: Shield, color: 'text-emerald-600 dark:text-emerald-400' },
+                      { label: 'Failed Attempts', val: stats.failedSecurity.toLocaleString('id-ID'), status: stats.failedSecurity > 0 ? 'Blocked' : 'None', icon: Lock, color: 'text-rose-600 dark:text-rose-400' },
+                      { label: 'Audit Logs', val: stats.totalLogs.toLocaleString('id-ID'), status: 'Active', icon: Terminal, color: 'text-zinc-500' },
                     ].map((m, i) => (
                       <div key={i} className="p-6 space-y-4">
                          <div className="flex items-center justify-between">
