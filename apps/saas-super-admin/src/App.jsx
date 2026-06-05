@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
+import MainLayout from '@/components/MainLayout';
 
 const LoginPage        = lazy(() => import('@/pages/LoginPage'));
 const SuperAdminPage   = lazy(() => import('@/pages/SuperAdminPage'));
@@ -47,15 +48,12 @@ function App() {
             }
           />
 
-          <Route path="/superadmin" element={
-            <SuperAdminGuard><SuperAdminPage /></SuperAdminGuard>
-          } />
-          <Route path="/activity-log" element={
-            <SuperAdminGuard><ActivityLogPage /></SuperAdminGuard>
-          } />
-          <Route path="/command-center" element={
-            <SuperAdminGuard><CommandCenterPage /></SuperAdminGuard>
-          } />
+          {/* Wrap SuperAdmin routes inside MainLayout */}
+          <Route element={<SuperAdminGuard><MainLayout /></SuperAdminGuard>}>
+            <Route path="/superadmin" element={<SuperAdminPage />} />
+            <Route path="/activity-log" element={<ActivityLogPage />} />
+            <Route path="/command-center" element={<CommandCenterPage />} />
+          </Route>
 
           {/* Default redirect */}
           <Route path="*" element={<Navigate to={user ? '/superadmin' : '/login'} replace />} />
