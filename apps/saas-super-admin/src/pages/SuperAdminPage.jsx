@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   ShieldCheck, Users, Zap, 
   CreditCard, ToggleLeft, ToggleRight,
@@ -570,9 +571,9 @@ export default function SuperAdminPage() {
       )}
 
       {/* PREMIUM CLIENT REGISTRATION INTEGRATED MODAL */}
-      {isRegisterModalOpen && (
+      {isRegisterModalOpen && createPortal(
         <div className="fixed inset-0 z-[9999] overflow-y-auto flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <Card className="w-full max-w-md shadow-2xl bg-card border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col max-h-[90vh]">
+          <Card className="w-full max-w-md shadow-2xl bg-card border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh]">
             <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between py-3 px-6 shrink-0">
               <div>
                 <CardTitle className="text-sm font-black uppercase tracking-widest text-foreground flex items-center gap-2">
@@ -596,7 +597,7 @@ export default function SuperAdminPage() {
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Subscription Tier</label>
                   <select 
-                    className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
+                     className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
                     value={registerForm.tier}
                     onChange={e => setRegisterForm({ ...registerForm, tier: e.target.value })}
                   >
@@ -608,7 +609,7 @@ export default function SuperAdminPage() {
                 <div className="space-y-1.5">
                   <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Masa Aktif Awal</label>
                   <select 
-                    className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black"
+                     className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black"
                     value={registerForm.durationDays}
                     onChange={e => setRegisterForm({ ...registerForm, durationDays: e.target.value })}
                   >
@@ -622,7 +623,7 @@ export default function SuperAdminPage() {
               <div className="space-y-1.5">
                 <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Status Pembayaran</label>
                 <select 
-                  className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
+                   className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
                   value={registerForm.paymentStatus}
                   onChange={e => setRegisterForm({ ...registerForm, paymentStatus: e.target.value })}
                 >
@@ -646,7 +647,7 @@ export default function SuperAdminPage() {
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Metode Bayar</label>
                     <select 
-                      className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
+                       className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
                       value={registerForm.paymentMethod}
                       onChange={e => setRegisterForm({ ...registerForm, paymentMethod: e.target.value })}
                     >
@@ -668,13 +669,14 @@ export default function SuperAdminPage() {
               </Button>
             </CardFooter>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Feature Flag Modal */}
-      {editingFeatures && (
+      {editingFeatures && createPortal(
         <div className="fixed inset-0 z-[9999] overflow-y-auto flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <Card className="w-full max-w-3xl shadow-2xl bg-card border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col max-h-[90vh]">
+          <Card className="w-full max-w-3xl shadow-2xl bg-card border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col max-h-[85vh] sm:max-h-[90vh]">
             <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between py-4 px-6 shrink-0">
               <div className="space-y-0.5">
                 <CardTitle className="text-lg font-black uppercase tracking-tighter text-foreground">{editingFeatures.name}</CardTitle>
@@ -725,7 +727,8 @@ export default function SuperAdminPage() {
               <Button size="sm" className="h-12 px-10 font-black uppercase tracking-[0.2em] text-white bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900" onClick={() => setEditingFeatures(null)}>Save Matrix</Button>
             </CardFooter>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
