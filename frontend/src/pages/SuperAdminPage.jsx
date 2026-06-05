@@ -237,7 +237,9 @@ export default function SuperAdminPage() {
                           isActive ? "bg-amber- border-amber-500/20" : "bg-background border-border "
                         )}>
                           <div className="flex items-center gap-4">
-                            <span className="text-2xl group-hover/feature:scale-110 transition-transform">{f.icon}</span>
+                            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-zinc-50 dark:bg-zinc-900/50 border border-border group-hover/feature:border-amber-500/30 transition-colors shrink-0">
+                              <f.icon className="w-5 h-5 text-zinc-600 dark:text-zinc-400 group-hover/feature:text-amber-500 transition-colors" />
+                            </div>
                             <div>
                               <p className="text-sm font-black text-foreground leading-none">{f.label}</p>
                               <p className="text-[9px] text-zinc-500 dark:text-zinc-100 mt-1.5 font-bold uppercase tracking-wider">{f.description}</p>
