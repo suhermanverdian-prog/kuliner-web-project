@@ -756,23 +756,23 @@ export default function KasirPage({ user }) {
 
       {showSuccess && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <Card className="w-full max-w-md text-center p-12 space-y-8 rounded-lg border border-border bg-card dark:bg-zinc-900">
-            <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-500 rounded-lg flex items-center justify-center mx-auto mb-6">
-              <Check size={48} strokeWidth={4} />
+          <Card className="w-full max-w-sm text-center p-6 space-y-4 rounded-lg border border-border bg-card dark:bg-zinc-900 shadow-2xl">
+            <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-950/30 text-emerald-500 dark:text-emerald-400 rounded-md flex items-center justify-center mx-auto">
+              <Check size={24} strokeWidth={4} />
             </div>
             <div>
-              <h2 className="text-3xl font-black text-zinc-900 dark:text-zinc-50 mb-2">Transaksi Sukses!</h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">Pesanan telah dicatat dan masuk ke sistem KDS.</p>
+              <h2 className="text-xl font-black text-zinc-900 dark:text-zinc-50 leading-tight">Transaksi Sukses!</h2>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Pesanan masuk ke antrean KDS.</p>
             </div>
-            <div className="flex justify-center max-h-[300px] overflow-y-auto border border-zinc-200 rounded-md p-2">
+            <div className="flex justify-center max-h-[220px] overflow-y-auto border border-zinc-200 dark:border-zinc-800 rounded-md p-1 bg-zinc-50 dark:bg-zinc-950/20">
               <DigitalReceipt transaction={lastTx} />
             </div>
             <div className="hidden"><div ref={receiptRef}><ReceiptTemplate tx={lastTx} user={user} /></div></div>
-            <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" className="h-12 rounded-lg font-bold border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300" onClick={() => { const WinPrint = window.open('', '', 'width=900,height=650'); WinPrint.document.write(receiptRef.current.innerHTML); WinPrint.document.close(); WinPrint.focus(); WinPrint.print(); WinPrint.close(); }}>Cetak Struk</Button>
-              <Button variant="outline" className="h-12 rounded-lg font-bold border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300" onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Terima kasih atas pesanan Anda!')}`, '_blank')}>Struk WA</Button>
+            <div className="grid grid-cols-2 gap-3">
+              <Button variant="outline" className="h-10 rounded-md text-xs font-bold border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 active:scale-95" onClick={() => { const WinPrint = window.open('', '', 'width=900,height=650'); WinPrint.document.write(receiptRef.current.innerHTML); WinPrint.document.close(); WinPrint.focus(); WinPrint.print(); WinPrint.close(); }}>Cetak Struk</Button>
+              <Button variant="outline" className="h-10 rounded-md text-xs font-bold border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 active:scale-95" onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Terima kasih atas pesanan Anda!')}`, '_blank')}>Struk WA</Button>
             </div>
-            <Button className="w-full h-14 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-lg shadow-amber-500/20 font-bold rounded-lg" onClick={() => setShowSuccess(false)}>Pesanan Baru</Button>
+            <Button className="w-full h-11 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 shadow-md shadow-amber-500/20 text-xs font-bold rounded-md active:scale-95" onClick={() => setShowSuccess(false)}>Pesanan Baru</Button>
           </Card>
         </div>
       )}
