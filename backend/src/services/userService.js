@@ -37,7 +37,14 @@ class UserService {
     ]);
 
     const token = jwt.sign(
-      { id: user.id, role: user.role, tenantId: user.tenant_id, name: user.name }, 
+      { 
+        id: user.id, 
+        role: user.role, 
+        tenantId: user.tenant_id, 
+        name: user.name,
+        scope: user.scope || 'outlet',
+        allowed_outlets: user.allowed_outlets || []
+      }, 
       process.env.JWT_SECRET || 'ken_enterprise_secret_2024',
       { expiresIn: '24h' }
     );
@@ -225,9 +232,22 @@ class UserService {
   }
 
   async logSystemActivity(payload, context) {
+    const { supabase } = require('../supabase');
+    let displayName = payload.userName || payload.user_name || context.name || 'System User';
+    const outletId = payload.outletId || payload.outlet_id || context.outletId;
+
+    if (outletId) {
+      try {
+        const { data: outlet } = await supabase.from('outlets').select('name').eq('id', outletId).maybeSingle();
+        if (outlet && outlet.name) {
+          displayName = `${displayName} (Outlet: ${outlet.name})`;
+        }
+      } catch (err) {}
+    }
+
     const logPayload = {
       tenant_id: context.tenantId || payload.tenantId || payload.tenant_id || '00000000-0000-0000-0000-000000000000',
-      user_name: payload.userName || payload.user_name || context.name || 'System User',
+      user_name: displayName,
       role: payload.role || context.role || 'guest',
       activity_type: payload.activityType || payload.activity_type || 'SYSTEM',
       description: payload.description || 'No description provided',

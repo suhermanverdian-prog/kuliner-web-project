@@ -13,7 +13,7 @@ const activityLog = async (req, res, next) => {
   if (req.path === '/system-logs') return next();
 
   const start = Date.now();
-  const { userId, role, tenantId, name } = req.userContext || {};
+  const { userId, role, tenantId, name, outletId } = req.userContext || {};
   const resource = req.path;
   const resourceId = req.params.id || null;
   
@@ -46,10 +46,20 @@ const activityLog = async (req, res, next) => {
   res.json = async (payload) => {
     try {
       const after = payload;
+      let displayName = name || 'System User';
+      if (outletId) {
+        try {
+          const { data: outlet } = await supabase.from('outlets').select('name').eq('id', outletId).maybeSingle();
+          if (outlet && outlet.name) {
+            displayName = `${displayName} (Outlet: ${outlet.name})`;
+          }
+        } catch (err) {}
+      }
+
       await supabase.from('activity_logs').insert([
         {
           tenant_id: tenantId || '00000000-0000-0000-0000-000000000000',
-          user_name: name || 'System User',
+          user_name: displayName,
           role: role || 'guest',
           activity_type: req.method,
           description: `${req.method} request to ${resource}${resourceId ? ' (ID: ' + resourceId + ')' : ''}`,

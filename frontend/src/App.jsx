@@ -123,7 +123,8 @@ function AppRoutes() {
             userName: user.name,
             role: user.role,
             activityType: 'NAVIGATE',
-            description: `Access: ${location.pathname}`
+            description: `Access: ${location.pathname}`,
+            outletId: useAppStore.getState().currentOutletId
           })
         }).catch(() => {}); // Silently ignore errors
       };
