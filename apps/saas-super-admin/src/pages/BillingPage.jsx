@@ -1,63 +1,280 @@
-import { useState } from 'react';
-import { CreditCard, Receipt, Gauge, X, RefreshCw } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../components/ui/Card';
+import { useState, useEffect } from 'react';
+import { CreditCard, Receipt, Gauge, X, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { cn } from '../lib/utils';
 import { useSuperAdminPage } from '../hooks/useSuperAdminPage';
 
+/* ─────────────────────────────────────────────────────────────────
+   BILLING MODAL
+   Muncul ketika tombol "KELOLA BILLING" diklik.
+   Backdrop-click atau tombol X menutup modal.
+───────────────────────────────────────────────────────────────── */
+function BillingModal({ tenant, onClose, onConfirmPayment, getDaysRemaining }) {
+  const [amount, setAmount]       = useState('');
+  const [method, setMethod]       = useState('QRIS');
+  const [duration, setDuration]   = useState('30');
+  const [success, setSuccess]     = useState(false);
+
+  // Tutup dengan Escape
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  // Cegah scroll background
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
+  const handleConfirm = () => {
+    const num = Number(amount);
+    if (!num || num <= 0) { alert('Masukkan nominal pembayaran yang valid.'); return; }
+    onConfirmPayment(tenant.id, num, method, duration);
+    setAmount('');
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 2500);
+  };
+
+  const sub      = tenant.feature_overrides?.subscription || {};
+  const daysLeft = getDaysRemaining(sub.expires_at);
+  const history  = tenant.feature_overrides?.billing_history || [];
+
+  return (
+    /* Backdrop */
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-950/70 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      {/* Modal panel — stopPropagation agar klik di dalam tidak tutup */}
+      <div
+        className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card border border-border rounded-lg shadow-2xl animate-in slide-in-from-bottom-4 duration-300"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* ── Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between px-8 py-5 bg-zinc-50 dark:bg-zinc-900/80 backdrop-blur border-b border-border">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Kelola Billing</p>
+            <h3 className="text-xl font-black uppercase tracking-tighter text-foreground mt-0.5">
+              {tenant.name}
+            </h3>
+            <div className="flex items-center gap-3 mt-1">
+              <span className="text-[9px] font-black uppercase text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
+                {tenant.tier?.toUpperCase() || 'N/A'}
+              </span>
+              <span className={cn(
+                'text-[9px] font-black uppercase px-2 py-0.5 rounded border',
+                sub.payment_status === 'paid'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-200 dark:border-emerald-800'
+                  : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800'
+              )}>
+                {sub.payment_status || 'unpaid'}
+              </span>
+              <span className={cn(
+                'text-[9px] font-mono tabular-nums font-bold',
+                daysLeft === 'Expired' ? 'text-rose-500' : 'text-zinc-500'
+              )}>
+                {sub.expires_at ? new Date(sub.expires_at).toLocaleDateString('id-ID') : 'N/A'}
+                {' '}({daysLeft})
+              </span>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-9 w-9 text-zinc-400 hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-lg"
+          >
+            <X size={18} />
+          </Button>
+        </div>
+
+        {/* ── Body */}
+        <div className="p-8 space-y-8">
+
+          {/* Form: Catat Pembayaran Baru */}
+          <div className="space-y-5 bg-background/60 border border-border rounded-lg p-6">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-500 flex items-center gap-2">
+              <CreditCard size={14} />
+              Catat Pembayaran Baru
+            </h4>
+
+            <div className="space-y-1.5">
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+                Nominal Pembayaran (Rp)
+              </label>
+              <Input
+                type="number"
+                placeholder="Contoh: 250000"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="h-11 text-sm font-mono tabular-nums"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+                  Metode Bayar
+                </label>
+                <select
+                  className="w-full h-11 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value)}
+                >
+                  <option value="QRIS">QRIS</option>
+                  <option value="Transfer">Transfer Bank</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Kartu">Kartu Kredit/Debit</option>
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+                  Perpanjang Masa Aktif
+                </label>
+                <select
+                  className="w-full h-11 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                >
+                  <option value="30">30 Hari (Bulanan)</option>
+                  <option value="90">90 Hari (Triwulan)</option>
+                  <option value="180">180 Hari (Semesteran)</option>
+                  <option value="365">365 Hari (Tahunan)</option>
+                </select>
+              </div>
+            </div>
+
+            <Button
+              className={cn(
+                'w-full h-12 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all active:scale-[0.98]',
+                success
+                  ? 'bg-emerald-500 text-white hover:bg-emerald-500'
+                  : 'bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 shadow-lg shadow-amber-500/20'
+              )}
+              onClick={handleConfirm}
+            >
+              {success
+                ? <><CheckCircle2 size={16} className="mr-2" /> Pembayaran Dikonfirmasi!</>
+                : 'Konfirmasi Pembayaran'}
+            </Button>
+          </div>
+
+          {/* Riwayat Invoice */}
+          <div className="space-y-4">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b border-border pb-3">
+              <Receipt size={12} className="inline mr-2" />
+              Riwayat Invoice ({history.length})
+            </h4>
+
+            {history.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-2 text-zinc-400">
+                <Receipt size={32} className="text-zinc-300 dark:text-zinc-700" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Belum ada riwayat transaksi.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                {history.map((inv, idx) => (
+                  <div
+                    key={inv.id || idx}
+                    className="p-4 bg-background rounded-lg border border-border flex justify-between items-center gap-4"
+                  >
+                    <div className="space-y-0.5 min-w-0">
+                      <p className="font-mono font-black text-sm text-foreground tabular-nums truncate">
+                        {inv.invoice_number}
+                      </p>
+                      <p className="text-[9px] text-zinc-500 font-mono tabular-nums">
+                        {new Date(inv.payment_date).toLocaleDateString('id-ID')} &bull; {inv.payment_method}
+                      </p>
+                      {inv.expiry_date && (
+                        <p className="text-[9px] text-zinc-400">
+                          Aktif hingga: <span className="font-black text-amber-500">{new Date(inv.expiry_date).toLocaleDateString('id-ID')}</span>
+                        </p>
+                      )}
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-mono font-black text-base text-amber-600 dark:text-amber-400 tabular-nums whitespace-nowrap">
+                        Rp {inv.amount?.toLocaleString('id-ID')}
+                      </p>
+                      <span className="text-[8px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 uppercase font-black px-2 py-0.5 rounded border border-emerald-200/50 dark:border-emerald-800">
+                        LUNAS
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   BILLING PAGE
+───────────────────────────────────────────────────────────────── */
 export default function BillingPage() {
   const {
     tenants,
     loading,
     filtered,
     fetchTenants,
-    selectedTenantForBilling, setSelectedTenantForBilling,
+    selectedTenantForBilling,
+    setSelectedTenantForBilling,
     updateSubscriptionSettings,
     getDaysRemaining,
   } = useSuperAdminPage();
 
   const [activeTab, setActiveTab] = useState('subscription');
-  const [newInvoiceAmount, setNewInvoiceAmount] = useState('');
-  const [newInvoiceMethod, setNewInvoiceMethod] = useState('QRIS');
-  const [newInvoiceDuration, setNewInvoiceDuration] = useState('30');
 
-  const recordPayment = (tenantId) => {
-    const amount = Number(newInvoiceAmount);
-    if (!amount || amount <= 0) {
-      alert('Masukkan nominal pembayaran yang valid.');
-      return;
-    }
-    const tenant = tenants.find(t => t.id === tenantId);
+  // Dipanggil dari dalam modal
+  const handleConfirmPayment = (tenantId, amount, method, duration) => {
+    const tenant = tenants.find((t) => t.id === tenantId);
     if (!tenant) return;
 
     const currentExpiry = tenant.feature_overrides?.subscription?.expires_at;
-    const baseDate = currentExpiry && new Date(currentExpiry) > new Date()
-      ? new Date(currentExpiry) : new Date();
-    const expiryDate = new Date(baseDate.getTime() + Number(newInvoiceDuration) * 24 * 60 * 60 * 1000);
-    const invoiceNumber = `INV-${tenant.name.substring(0, 3).toUpperCase()}-${Date.now().toString().slice(-6)}`;
+    const baseDate =
+      currentExpiry && new Date(currentExpiry) > new Date()
+        ? new Date(currentExpiry)
+        : new Date();
+    const expiryDate = new Date(
+      baseDate.getTime() + Number(duration) * 24 * 60 * 60 * 1000
+    );
+    const invoiceNumber = `INV-${tenant.name.substring(0, 3).toUpperCase()}-${Date.now()
+      .toString()
+      .slice(-6)}`;
 
     const newInvoice = {
       id: Date.now(),
       invoice_number: invoiceNumber,
       amount,
-      payment_method: newInvoiceMethod,
+      payment_method: method,
       payment_date: new Date().toISOString(),
       expiry_date: expiryDate.toISOString(),
       status: 'success',
     };
 
-    updateSubscriptionSettings(tenantId, {
-      expires_at: expiryDate.toISOString(),
-      payment_status: 'paid',
-      billing_cycle: Number(newInvoiceDuration) === 365 ? 'yearly' : 'monthly',
-    }, newInvoice);
-    setNewInvoiceAmount('');
+    updateSubscriptionSettings(
+      tenantId,
+      {
+        expires_at: expiryDate.toISOString(),
+        payment_status: 'paid',
+        billing_cycle: Number(duration) === 365 ? 'yearly' : 'monthly',
+      },
+      newInvoice
+    );
   };
 
-  // Collect all invoices across all tenants for the Invoices tab
-  const allInvoices = filtered.flatMap(t =>
-    (t.feature_overrides?.billing_history || []).map(inv => ({ ...inv, clientName: t.name }))
+  // Semua invoice untuk tab Invoices
+  const allInvoices = filtered.flatMap((t) =>
+    (t.feature_overrides?.billing_history || []).map((inv) => ({
+      ...inv,
+      clientName: t.name,
+    }))
   );
 
   const tabs = [
@@ -68,13 +285,26 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in duration-500">
-      {/* Header */}
+
+      {/* ── BILLING MODAL (portal-style, muncul di atas semua konten) */}
+      {selectedTenantForBilling && (
+        <BillingModal
+          tenant={selectedTenantForBilling}
+          onClose={() => setSelectedTenantForBilling(null)}
+          onConfirmPayment={handleConfirmPayment}
+          getDaysRemaining={getDaysRemaining}
+        />
+      )}
+
+      {/* ── Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
           <span className="px-2.5 py-0.5 bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-wider rounded border border-amber-500/20">
             Finance &amp; Billing Hub
           </span>
-          <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">Finance &amp; Billing</h2>
+          <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">
+            Finance &amp; Billing
+          </h2>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
             Kelola subskripsi, catat pembayaran, pantau invoice &amp; kuota semua tenant dalam satu tempat.
           </p>
@@ -89,9 +319,9 @@ export default function BillingPage() {
         </Button>
       </div>
 
-      {/* Tab Selector */}
+      {/* ── Tab Selector */}
       <div className="flex border-b border-zinc-200 dark:border-zinc-800 gap-2">
-        {tabs.map(tab => (
+        {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -108,18 +338,23 @@ export default function BillingPage() {
         ))}
       </div>
 
-      {/* ── TAB 1: SUBSKRIPSI ────────────────────────────────────────── */}
+      {/* ── TAB 1: SUBSKRIPSI ─────────────────────────────────── */}
       {activeTab === 'subscription' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left: Subscription Table */}
-          <Card className="lg:col-span-2 border-none bg-card shadow-xl rounded-lg overflow-hidden">
-            <CardHeader className="p-8 border-b border-border bg-background">
-              <CardTitle className="text-xl font-black uppercase tracking-tighter">Status Subskripsi Client</CardTitle>
-              <CardDescription className="text-[10px] font-bold uppercase text-zinc-500">
-                Pantau masa aktif &amp; siklus billing — klik "Kelola Billing" untuk catat pembayaran
-              </CardDescription>
-            </CardHeader>
-            <div className="overflow-x-auto">
+        <Card className="border-none bg-card shadow-xl rounded-lg overflow-hidden">
+          <CardHeader className="p-8 border-b border-border bg-background">
+            <CardTitle className="text-xl font-black uppercase tracking-tighter">
+              Status Subskripsi Client
+            </CardTitle>
+            <CardDescription className="text-[10px] font-bold uppercase text-zinc-500">
+              Pantau masa aktif &amp; siklus billing — klik <strong>"Kelola Billing"</strong> untuk catat pembayaran
+            </CardDescription>
+          </CardHeader>
+          <div className="overflow-x-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-background text-[9px] font-black uppercase tracking-wider text-zinc-500 dark:text-zinc-400 border-b border-border">
@@ -132,7 +367,7 @@ export default function BillingPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {filtered.map(t => {
+                  {filtered.map((t) => {
                     const sub = t.feature_overrides?.subscription || {};
                     const daysLeft = getDaysRemaining(sub.expires_at);
                     return (
@@ -145,32 +380,38 @@ export default function BillingPage() {
                           {sub.billing_cycle || 'monthly'}
                         </td>
                         <td className="px-6 py-5 text-xs font-mono tabular-nums font-bold text-foreground">
-                          {sub.expires_at ? new Date(sub.expires_at).toLocaleDateString('id-ID') : 'N/A'}
-                          <span className={cn(
-                            'text-[10px] ml-2 font-black',
-                            daysLeft === 'Expired' ? 'text-rose-500' : 'text-amber-500'
-                          )}>({daysLeft})</span>
+                          {sub.expires_at
+                            ? new Date(sub.expires_at).toLocaleDateString('id-ID')
+                            : 'N/A'}
+                          <span
+                            className={cn(
+                              'text-[10px] ml-2 font-black',
+                              daysLeft === 'Expired' ? 'text-rose-500' : 'text-amber-500'
+                            )}
+                          >
+                            ({daysLeft})
+                          </span>
                         </td>
                         <td className="px-6 py-5">
-                          <span className={cn(
-                            'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border',
-                            sub.payment_status === 'paid'
-                              ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 border-emerald-200 dark:border-emerald-800'
-                              : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 border-rose-200 dark:border-rose-800'
-                          )}>
+                          <span
+                            className={cn(
+                              'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border',
+                              sub.payment_status === 'paid'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 border-emerald-200 dark:border-emerald-800'
+                                : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 border-rose-200 dark:border-rose-800'
+                            )}
+                          >
                             {sub.payment_status || 'unpaid'}
                           </span>
                         </td>
                         <td className="px-6 py-5 text-right">
+                          {/* ── TOMBOL AKSI → membuka MODAL */}
                           <Button
-                            variant="outline"
                             size="sm"
-                            className="h-8 text-[9px] font-black uppercase tracking-widest hover:bg-background"
-                            onClick={() => setSelectedTenantForBilling(
-                              selectedTenantForBilling?.id === t.id ? null : t
-                            )}
+                            className="h-8 px-4 text-[9px] font-black uppercase tracking-widest bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 active:scale-95 transition-all"
+                            onClick={() => setSelectedTenantForBilling(t)}
                           >
-                            {selectedTenantForBilling?.id === t.id ? 'Tutup' : 'Kelola Billing'}
+                            Kelola Billing
                           </Button>
                         </td>
                       </tr>
@@ -178,118 +419,18 @@ export default function BillingPage() {
                   })}
                 </tbody>
               </table>
-            </div>
-          </Card>
-
-          {/* Right: Billing Management Panel */}
-          <div>
-            {selectedTenantForBilling ? (
-              <Card className="bg-card border-border shadow-xl rounded-lg overflow-hidden flex flex-col">
-                <CardHeader className="bg-zinc-50 dark:bg-zinc-900/30 p-6 border-b border-border flex flex-row justify-between items-center">
-                  <div>
-                    <CardTitle className="text-base font-black text-foreground uppercase">
-                      {selectedTenantForBilling.name}
-                    </CardTitle>
-                    <CardDescription className="text-[9px] font-bold text-zinc-500 uppercase">
-                      Input Pembayaran &amp; Log Billing
-                    </CardDescription>
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={() => setSelectedTenantForBilling(null)} className="h-8 w-8 text-zinc-500">
-                    <X size={16} />
-                  </Button>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6 overflow-y-auto">
-                  {/* Record Payment Form */}
-                  <div className="space-y-4 bg-background/50 p-4 rounded-lg border border-border">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-500">Catat Pembayaran Baru</h4>
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Nominal Pembayaran (Rp)</label>
-                      <Input
-                        type="number"
-                        placeholder="Contoh: 250000"
-                        value={newInvoiceAmount}
-                        onChange={e => setNewInvoiceAmount(e.target.value)}
-                        className="h-10 text-xs font-mono tabular-nums"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Metode Bayar</label>
-                        <select
-                          className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black uppercase"
-                          value={newInvoiceMethod}
-                          onChange={e => setNewInvoiceMethod(e.target.value)}
-                        >
-                          <option value="QRIS">QRIS</option>
-                          <option value="Transfer">Transfer</option>
-                          <option value="Cash">Cash</option>
-                        </select>
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Masa Aktif</label>
-                        <select
-                          className="w-full h-10 px-3 text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground font-black"
-                          value={newInvoiceDuration}
-                          onChange={e => setNewInvoiceDuration(e.target.value)}
-                        >
-                          <option value="30">30 Hari (Bulanan)</option>
-                          <option value="90">90 Hari (Triwulan)</option>
-                          <option value="365">365 Hari (Tahunan)</option>
-                        </select>
-                      </div>
-                    </div>
-                    <Button
-                      className="w-full h-10 text-[10px] font-black uppercase tracking-widest text-white bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900"
-                      onClick={() => recordPayment(selectedTenantForBilling.id)}
-                    >
-                      Konfirmasi Pembayaran
-                    </Button>
-                  </div>
-
-                  {/* Payment History */}
-                  <div className="space-y-3">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b pb-2">Riwayat Invoice</h4>
-                    <div className="space-y-3 max-h-[240px] overflow-y-auto pr-1">
-                      {(selectedTenantForBilling.feature_overrides?.billing_history || []).length === 0 ? (
-                        <p className="text-[10px] text-zinc-500 text-center italic py-4">Belum ada riwayat transaksi.</p>
-                      ) : (
-                        selectedTenantForBilling.feature_overrides.billing_history.map((inv, idx) => (
-                          <div key={inv.id || idx} className="p-3 bg-zinc-50 dark:bg-zinc-900/30 rounded border border-border flex justify-between items-center text-[10px]">
-                            <div className="space-y-0.5">
-                              <p className="font-black text-foreground">{inv.invoice_number}</p>
-                              <p className="text-zinc-500 text-[9px] font-mono tabular-nums">
-                                {new Date(inv.payment_date).toLocaleDateString('id-ID')} &bull; {inv.payment_method}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="font-mono font-black text-amber-600 dark:text-amber-400">Rp {inv.amount?.toLocaleString('id-ID')}</p>
-                              <span className="text-[8px] bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 uppercase font-black px-1.5 py-0.5 rounded border border-emerald-200/50">LUNAS</span>
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="bg-card border-border shadow-xl rounded-lg border-dashed p-8 text-center flex flex-col items-center justify-center min-h-[300px]">
-                <CreditCard size={48} className="text-zinc-300 dark:text-zinc-600 mb-4 animate-pulse" />
-                <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Pilih Client untuk Mengelola Billing</p>
-                <p className="text-[10px] text-zinc-500 mt-1 max-w-[200px] mx-auto">
-                  Catat pembayaran &amp; perpanjang masa aktif subskripsi.
-                </p>
-              </Card>
             )}
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* ── TAB 2: INVOICES ──────────────────────────────────────────── */}
+      {/* ── TAB 2: INVOICES ─────────────────────────────────────── */}
       {activeTab === 'invoices' && (
         <Card className="border-none bg-card shadow-xl rounded-lg overflow-hidden">
           <CardHeader className="p-8 border-b border-border bg-background">
-            <CardTitle className="text-xl font-black uppercase tracking-tighter">Riwayat Invoice Semua Tenant</CardTitle>
+            <CardTitle className="text-xl font-black uppercase tracking-tighter">
+              Riwayat Invoice Semua Tenant
+            </CardTitle>
             <CardDescription className="text-[10px] font-bold uppercase text-zinc-500">
               Daftar semua invoice yang tercatat lintas tenant, termasuk status pembayaran.
             </CardDescription>
@@ -297,7 +438,9 @@ export default function BillingPage() {
           {allInvoices.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Receipt size={48} className="text-zinc-300 dark:text-zinc-600" />
-              <p className="text-xs font-black uppercase tracking-widest text-zinc-400">Belum ada data invoice.</p>
+              <p className="text-xs font-black uppercase tracking-widest text-zinc-400">
+                Belum ada data invoice.
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -309,28 +452,42 @@ export default function BillingPage() {
                     <th className="px-6 py-4">Nominal (Rp)</th>
                     <th className="px-6 py-4">Metode</th>
                     <th className="px-6 py-4">Tanggal Bayar</th>
+                    <th className="px-6 py-4">Aktif Hingga</th>
                     <th className="px-6 py-4">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
                   {allInvoices.map((inv, idx) => (
                     <tr key={inv.id || idx} className="hover:bg-background transition-colors">
-                      <td className="px-6 py-4 font-black text-sm text-foreground font-mono tabular-nums">{inv.invoice_number}</td>
-                      <td className="px-6 py-4 text-xs font-black uppercase text-zinc-500 dark:text-zinc-400">{inv.clientName}</td>
+                      <td className="px-6 py-4 font-black text-sm text-foreground font-mono tabular-nums">
+                        {inv.invoice_number}
+                      </td>
+                      <td className="px-6 py-4 text-xs font-black uppercase text-zinc-500 dark:text-zinc-400">
+                        {inv.clientName}
+                      </td>
                       <td className="px-6 py-4 font-mono tabular-nums font-black text-amber-600 dark:text-amber-400">
                         Rp {inv.amount?.toLocaleString('id-ID')}
                       </td>
-                      <td className="px-6 py-4 text-xs font-black uppercase text-zinc-500 dark:text-zinc-400">{inv.payment_method}</td>
+                      <td className="px-6 py-4 text-xs font-black uppercase text-zinc-500 dark:text-zinc-400">
+                        {inv.payment_method}
+                      </td>
                       <td className="px-6 py-4 text-xs font-mono tabular-nums text-zinc-500 dark:text-zinc-400">
                         {new Date(inv.payment_date).toLocaleDateString('id-ID')}
                       </td>
+                      <td className="px-6 py-4 text-xs font-mono tabular-nums text-zinc-500 dark:text-zinc-400">
+                        {inv.expiry_date
+                          ? new Date(inv.expiry_date).toLocaleDateString('id-ID')
+                          : '–'}
+                      </td>
                       <td className="px-6 py-4">
-                        <span className={cn(
-                          'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border',
-                          inv.status === 'success'
-                            ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-200 dark:border-emerald-800'
-                            : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800'
-                        )}>
+                        <span
+                          className={cn(
+                            'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border',
+                            inv.status === 'success'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-200 dark:border-emerald-800'
+                              : 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800'
+                          )}
+                        >
                           {inv.status === 'success' ? 'LUNAS' : 'BELUM'}
                         </span>
                       </td>
@@ -343,11 +500,13 @@ export default function BillingPage() {
         </Card>
       )}
 
-      {/* ── TAB 3: QUOTA ─────────────────────────────────────────────── */}
+      {/* ── TAB 3: QUOTA ────────────────────────────────────────── */}
       {activeTab === 'quota' && (
         <Card className="border-none bg-card shadow-xl rounded-lg overflow-hidden">
           <CardHeader className="p-8 border-b border-border bg-background">
-            <CardTitle className="text-xl font-black uppercase tracking-tighter">Monitoring Kuota Tenant</CardTitle>
+            <CardTitle className="text-xl font-black uppercase tracking-tighter">
+              Monitoring Kuota Tenant
+            </CardTitle>
             <CardDescription className="text-[10px] font-bold uppercase text-zinc-500">
               Pantau penggunaan sumber daya per client — hijau aman, merah mendekati batas.
             </CardDescription>
@@ -365,15 +524,22 @@ export default function BillingPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filtered.map(t => {
+                {filtered.map((t) => {
                   const quota = t.quota || {};
                   const usedOutlets = quota.used_outlets ?? '–';
-                  const maxOutlets = t.max_outlets ?? (t.tier === 'enterprise' ? 50 : t.tier === 'pro' ? 10 : 1);
+                  const maxOutlets =
+                    t.max_outlets ??
+                    (t.tier === 'enterprise' ? 50 : t.tier === 'pro' ? 10 : 1);
                   const usedUsers = quota.used_users ?? '–';
-                  const maxUsers = t.max_users ?? (t.tier === 'enterprise' ? 200 : t.tier === 'pro' ? 30 : 10);
+                  const maxUsers =
+                    t.max_users ??
+                    (t.tier === 'enterprise' ? 200 : t.tier === 'pro' ? 30 : 10);
                   const storageMb = quota.storage_used_mb ?? 0;
-                  const storageLimit = t.storage_limit_mb ?? (t.tier === 'enterprise' ? 5120 : t.tier === 'pro' ? 1024 : 256);
-                  const pct = storageLimit > 0 ? Math.round((storageMb / storageLimit) * 100) : 0;
+                  const storageLimit =
+                    t.storage_limit_mb ??
+                    (t.tier === 'enterprise' ? 5120 : t.tier === 'pro' ? 1024 : 256);
+                  const pct =
+                    storageLimit > 0 ? Math.round((storageMb / storageLimit) * 100) : 0;
                   const isWarning = pct >= 80;
 
                   return (
@@ -398,19 +564,24 @@ export default function BillingPage() {
                           </div>
                           <div className="w-full bg-zinc-100 dark:bg-zinc-800 rounded-sm h-1.5">
                             <div
-                              className={cn('h-1.5 rounded-sm transition-all', isWarning ? 'bg-rose-500' : 'bg-emerald-500')}
+                              className={cn(
+                                'h-1.5 rounded-sm transition-all',
+                                isWarning ? 'bg-rose-500' : 'bg-emerald-500'
+                              )}
                               style={{ width: `${Math.min(pct, 100)}%` }}
                             />
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                        <span className={cn(
-                          'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border',
-                          isWarning
-                            ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800'
-                            : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-200 dark:border-emerald-800'
-                        )}>
+                        <span
+                          className={cn(
+                            'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border',
+                            isWarning
+                              ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800'
+                              : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-200 dark:border-emerald-800'
+                          )}
+                        >
                           {isWarning ? `${pct}% — HAMPIR PENUH` : `${pct}% — AMAN`}
                         </span>
                       </td>
