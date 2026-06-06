@@ -171,15 +171,44 @@ class UserService {
     return await UserRepository.getAllTenants();
   }
 
+  // Tier quota mapping constant
+  getTierQuotas(tier) {
+    const quotas = {
+      lite: { max_outlets: 1, max_users: 10, storage_limit_mb: 256 },
+      pro: { max_outlets: 10, max_users: 30, storage_limit_mb: 1024 },
+      enterprise: { max_outlets: 50, max_users: 200, storage_limit_mb: 5120 }
+    };
+    return quotas[tier?.toLowerCase()] || quotas.lite;
+  }
+
   async updateTenant(id, updateData, role) {
     if (role !== 'superadmin') throw new Error('Akses Ditolak');
-    return await UserRepository.updateTenant(id, updateData);
+    
+    let finalUpdate = { ...updateData };
+    if (updateData.tier) {
+      const quotas = this.getTierQuotas(updateData.tier);
+      finalUpdate = {
+        ...finalUpdate,
+        ...quotas
+      };
+    }
+    
+    return await UserRepository.updateTenant(id, finalUpdate);
   }
 
   async createTenant(name, tier, role) {
     if (role !== 'superadmin') throw new Error('Akses Ditolak');
     if (!name) throw new Error('Nama Bisnis wajib diisi');
-    return await UserRepository.createTenant({ name, tier: tier || 'lite', is_active: true });
+    
+    const selectedTier = tier || 'lite';
+    const quotas = this.getTierQuotas(selectedTier);
+    
+    return await UserRepository.createTenant({ 
+      name, 
+      tier: selectedTier, 
+      is_active: true,
+      ...quotas
+    });
   }
 
   async updateTenantFeatures(tenantId, feature_overrides, role) {
