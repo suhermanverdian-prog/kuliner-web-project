@@ -1,0 +1,29 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ButtonPrimary Component — KEN Enterprise Compliance > matches snapshot (default props) 1`] = `
+<button
+  class="inline-flex items-center justify-center rounded-md font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20 dark:focus-visible:ring-amber-400/20 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 h-10 px-6 text-base"
+  type="button"
+>
+  Snapshot
+</button>
+`;
+
+exports[`ButtonPrimary Component — KEN Enterprise Compliance > matches snapshot (disabled) 1`] = `
+<button
+  class="inline-flex items-center justify-center rounded-md font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20 dark:focus-visible:ring-amber-400/20 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 opacity-50 cursor-not-allowed h-10 px-6 text-base"
+  disabled=""
+  type="button"
+>
+  Snapshot Disabled
+</button>
+`;
+
+exports[`ButtonPrimary Component — KEN Enterprise Compliance > matches snapshot (size lg) 1`] = `
+<button
+  class="inline-flex items-center justify-center rounded-md font-black uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20 dark:focus-visible:ring-amber-400/20 bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 h-12 px-8 text-lg"
+  type="button"
+>
+  Snapshot Large
+</button>
+`;
