@@ -103,9 +103,33 @@ class UserRepository {
 
   // --- Tenants ---
   async getAllTenants() {
-    const { data, error } = await supabase.from('tenants').select('*');
+    const { data: tenants, error } = await supabase.from('tenants').select('*');
     if (error) throw error;
-    return data || [];
+    if (!tenants || tenants.length === 0) return [];
+
+    // Fetch counts for users and outlets per tenant id to compute real quota usage
+    const updatedTenants = await Promise.all(
+      tenants.map(async (t) => {
+        const [
+          { count: userCount },
+          { count: outletCount }
+        ] = await Promise.all([
+          supabase.from('users').select('*', { count: 'exact', head: true }).eq('tenant_id', t.id),
+          supabase.from('outlets').select('*', { count: 'exact', head: true }).eq('tenant_id', t.id)
+        ]);
+
+        return {
+          ...t,
+          quota: {
+            used_users: userCount || 0,
+            used_outlets: outletCount || 0,
+            storage_used_mb: 0 // Default fallback for storage usage representation
+          }
+        };
+      })
+    );
+
+    return updatedTenants;
   }
 
   async updateTenant(id, updateData) {
