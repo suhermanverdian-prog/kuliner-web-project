@@ -27,7 +27,8 @@
   --radius: 0.5rem;
 }
 
-[data-theme="dark"] {
+[data-theme="dark"],
+.dark {
   --bg-app: #09090B;
   --bg-subtle: #18181B;
   --bg-card: #18181B;

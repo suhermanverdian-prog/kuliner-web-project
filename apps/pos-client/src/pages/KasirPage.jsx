@@ -23,18 +23,19 @@ const getImgUrl = (url) => {
   if (!url) return '';
   if (url.startsWith('http')) return url;
   
-  // Clean relative path prefix
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  const envUrl = import.meta.env.VITE_API_URL || '';
   
-  // Extract backend base URL from API_URL
-  const apiEndpoint = api.url || '';
-  try {
-    const parsed = new URL(apiEndpoint);
-    return `${parsed.protocol}//${parsed.host}${cleanPath}`;
-  } catch (e) {
-    // Fallback if URL is invalid or relative (like '/api')
-    return cleanPath;
+  if (envUrl.startsWith('http')) {
+    try {
+      const parsed = new URL(envUrl);
+      return `${parsed.protocol}//${parsed.host}${cleanPath}`;
+    } catch (e) {}
   }
+  
+  // Local fallback
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  return isLocal ? `http://${window.location.hostname}:3001${cleanPath}` : cleanPath;
 };
 
 const parseItems = (items) => {
@@ -128,7 +129,7 @@ function ConfirmPaymentModal({ tx, onClose, onSuccess }) {
           <div>
             {parseItems(tx.items).map((item, i) => (
               <div key={i} className="flex justify-between items-center text-sm">
-                <span className="text-zinc-500 dark:text-zinc-100 font-medium">{item.qty}x <span className="text-zinc-900 dark:text-zinc-50 font-bold">{item.name}</span></span>
+                <span className="text-zinc-500 dark:text-zinc-100 font-medium">{item.qty}x <span className="text-foreground font-bold">{item.name}</span></span>
                 <span className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(item.price * item.qty)}</span>
               </div>
             ))}
@@ -396,15 +397,15 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50">
       <Card className="w-full max-w-5xl shadow-2xl border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col md:flex-row h-auto max-h-[95vh] bg-card">
         <div className="w-full md:w-[320px] p-4 bg-zinc-50 dark:bg-zinc-900 border-r border-border flex flex-col">
-          <h3 className="text-base font-black mb-3 text-zinc-900 dark:text-zinc-50">Detail Tagihan</h3>
+          <h3 className="text-base font-black mb-3 text-foreground">Detail Tagihan</h3>
           <div className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar max-h-[150px] md:max-h-none">
             {cart.map((item, i) => (
               <div key={i} className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-black truncate text-zinc-900 dark:text-zinc-50">{item.name}</p>
+                  <p className="text-xs font-black truncate text-foreground">{item.name}</p>
                   <p className="text-[9px] text-zinc-500 dark:text-zinc-400 font-bold font-mono tabular-nums">{item.qty}x {formatRupiah(item.price)}</p>
                 </div>
-                <p className="text-xs font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-50">{formatRupiah(item.price * item.qty)}</p>
+                <p className="text-xs font-black font-mono tabular-nums text-foreground">{formatRupiah(item.price * item.qty)}</p>
               </div>
             ))}
           </div>
@@ -414,7 +415,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
               <div className="flex justify-between text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-mono tabular-nums"><span>Diskon Promo</span><span>-{formatRupiah(discountAmount)}</span></div>
             )}
             <div className="flex justify-between text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-mono tabular-nums"><span>Pajak (11%)</span><span>{formatRupiah(taxAmount)}</span></div>
-            <div className="flex justify-between items-end pt-1"><span className="text-xs font-black uppercase text-zinc-900 dark:text-zinc-50">Total</span><span className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(total)}</span></div>
+            <div className="flex justify-between items-end pt-1"><span className="text-xs font-black uppercase text-foreground">Total</span><span className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(total)}</span></div>
           </div>
         </div>
 
@@ -425,7 +426,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
               placeholder="Nama Pelanggan (Opsional)"
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
-              className="h-10 text-xs font-black rounded-lg bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 focus-visible:ring-amber-500/20"
+              className="h-10 text-xs font-black rounded-lg bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-foreground focus-visible:ring-amber-500/20"
             />
           </div>
 
@@ -558,7 +559,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                     type="number"
                     value={splitB2bAmount}
                     onChange={e => setSplitB2bAmount(e.target.value)}
-                    className="w-full h-10 px-3 text-sm font-black font-mono tabular-nums bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-zinc-900 dark:text-white text-right"
+                    className="w-full h-10 px-3 text-sm font-black font-mono tabular-nums bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground text-right"
                     placeholder={total.toString()}
                   />
                 </div>
@@ -572,7 +573,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                       type="number"
                       value={cashReceived}
                       onChange={e => setCashReceived(e.target.value)}
-                      className="w-full h-10 px-3 text-md font-black font-mono tabular-nums bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-zinc-900 dark:text-white text-right"
+                      className="w-full h-10 px-3 text-md font-black font-mono tabular-nums bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground text-right"
                       placeholder={cashNeeded.toString()}
                     />
                   </div>
@@ -595,7 +596,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                   type="number"
                   value={cashReceived}
                   onChange={e => setCashReceived(e.target.value)}
-                  className="w-full h-10 px-3 text-lg font-black font-mono tabular-nums bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-zinc-900 dark:text-white placeholder-zinc-400 dark:placeholder-zinc-500 text-right"
+                  className="w-full h-10 px-3 text-lg font-black font-mono tabular-nums bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground placeholder-zinc-400 dark:placeholder-zinc-500 text-right"
                   placeholder="0"
                 />
               </div>
@@ -775,7 +776,7 @@ export default function KasirPage({ user }) {
                 <div className="absolute top-3 right-3 w-7 h-7 rounded-md bg-card/90 dark:bg-zinc-900/90 backdrop-blur shadow-md text-amber-500 border border-card/20 transform translate-x-12 group-hover:translate-x-0 transition-all duration-300 flex items-center justify-center"><Plus size={14} className="stroke-2" /></div>
               </div>
               <div className="h-[80px] px-4 py-3 flex flex-col justify-between shrink-0">
-                <h3 className="font-bold text-[13px] leading-tight text-zinc-900 dark:text-zinc-50 line-clamp-2">{item.name}</h3>
+                <h3 className="font-bold text-[13px] leading-tight text-foreground line-clamp-2">{item.name}</h3>
                 <p className="text-[15px] font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(item.price)}</p>
               </div>
             </div>

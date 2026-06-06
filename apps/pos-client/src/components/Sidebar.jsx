@@ -26,7 +26,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   return (
     <div className={cn(
       "h-full flex flex-col transition-all duration-300",
-      "bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-100",
+      "bg-zinc-50 dark:bg-zinc-950 border-r border-zinc-200 dark:border-zinc-800/80 text-zinc-900 dark:text-zinc-100",
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Brand */}
@@ -76,9 +76,9 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       </div>
 
       {/* User Section */}
-      <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40">
+      <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-100/30 dark:bg-zinc-950/20">
         {!isCollapsed ? (
-          <div className="flex items-center gap-4 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+          <div className="flex items-center gap-4 p-2 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850">
              <div className="w-8 h-8 rounded bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-white font-black text-xs">
                 {user?.name?.[0] || 'C'}
              </div>
