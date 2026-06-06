@@ -39,13 +39,8 @@ export default function SuperAdminPage() {
     filtered
   } = useSuperAdminPage();
 
-  const [activeTab, setActiveTab] = useState('tenants'); // 'tenants' | 'billing' | 'system'
-  
-  // Local states for new invoice creation inside Billing Tab
-  const [newInvoiceAmount, setNewInvoiceAmount] = useState('');
-  const [newInvoiceMethod, setNewInvoiceMethod] = useState('QRIS');
-  const [newInvoiceDuration, setNewInvoiceDuration] = useState('30'); // days
-  
+  const [activeTab, setActiveTab] = useState('tenants'); // 'tenants' | 'system'
+
   // Local states for global system config form
   const [configForm, setConfigForm] = useState(null);
 
@@ -137,7 +132,6 @@ export default function SuperAdminPage() {
       <div className="flex border-b border-zinc-200 dark:border-zinc-800 gap-2">
         {[
           { id: 'tenants', label: 'Daftar Tenant', icon: Users },
-          { id: 'billing', label: 'Subskripsi & Billing', icon: CreditCard },
           { id: 'system', label: 'Sistem & Keamanan', icon: Settings }
         ].map(tab => (
           <button
@@ -263,8 +257,8 @@ export default function SuperAdminPage() {
         </Card>
       )}
 
-      {/* TAB CONTENT: BILLING & SUBSCRIPTIONS */}
-      {activeTab === 'billing' && (
+      {/* TAB CONTENT: BILLING moved to /billing page */}
+      {false && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Tenant Subscriptions List */}
           <Card className="lg:col-span-2 border-none bg-card shadow-xl rounded-lg overflow-hidden">
