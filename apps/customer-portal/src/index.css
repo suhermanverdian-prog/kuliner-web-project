@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg-app: #FAFAFA;
+  --bg-subtle: #F4F4F5;
+  --bg-card: #FFFFFF;
+  --bg-inverted: #09090B;
+  
+  --border-subtle: #E4E4E7;
+  --border-strong: #D4D4D8;
+  
+  --text-primary: #09090B;
+  --text-secondary: #52525B;
+  --text-tertiary: #71717A;
+  
+  --amber: #F59E0B;
+  --amber-hover: #D97706;
+  --text-on-amber: #18181B;
+  --amber-bg: rgba(245, 158, 11, 0.1);
+  
+  --success: #16A34A;
+  --warning: #F59E0B;
+  --error: #DC2626;
+  --info: #0EA5E9;
+
+  --radius: 0.5rem;
+}
+
+[data-theme="dark"],
+.dark {
+  --bg-app: #09090B;
+  --bg-subtle: #18181B;
+  --bg-card: #18181B;
+  --bg-inverted: #FAFAFA;
+  
+  --border-subtle: #27272A;
+  --border-strong: #3F3F46;
+  
+  --text-primary: #FAFAFA;
+  --text-secondary: #A1A1AA;
+  --text-tertiary: #71717A;
+  
+  --amber: #FBBF24;
+  --text-on-amber: #09090B;
+  --amber-hover: #F59E0B;
+  --amber-text: #FCD34D;
+  --amber-bg: rgba(251, 191, 36, 0.2);
+}
+
+@theme {
+  --color-background: var(--bg-app);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--bg-card);
+  --color-card-foreground: var(--text-primary);
+  --color-muted: var(--bg-subtle);
+  --color-muted-foreground: var(--text-tertiary);
+  --color-border: var(--border-subtle);
+  --color-primary: var(--amber);
+  --color-primary-foreground: #FFFFFF;
+  --color-accent: var(--amber);
+  --color-accent-foreground: var(--text-primary);
+  
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+@layer base {
+  *, ::after, ::before {
+    border-color: var(--border-subtle);
+  }
+  body {
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { 
+  background-color: var(--border-strong); 
+  border-radius: 9999px; 
+}
+::-webkit-scrollbar-thumb:hover { 
+  background-color: var(--text-tertiary); 
+}
