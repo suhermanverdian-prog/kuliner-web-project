@@ -234,17 +234,26 @@ export default function KDSPage() {
                         <div className="font-mono tabular-nums w-6 h-6 rounded-md bg-primary text-zinc-900 dark:text-zinc-100 dark:text-zinc-950 flex items-center justify-center text-xs font-black shrink-0">
                            {item.qty}
                         </div>
-                        <div className="flex-1 min-w-0">
-                           <p className="text-sm font-black leading-tight text-zinc-900 dark:text-zinc-100">{item.name}</p>
-                           {item.customizationSummary && (
-                             <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 leading-tight font-medium italic">{item.customizationSummary}</p>
-                           )}
-                           {(item.note || item.customization?.note) && (
-                             <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-1 flex items-center gap-1 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 rounded border border-amber-500/10">
-                                <ClipboardList size={10} /> {item.note || item.customization?.note}
-                             </p>
-                           )}
-                        </div>
+                         <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                               <p className="text-sm font-black leading-tight text-zinc-900 dark:text-zinc-100">{item.name}</p>
+                               {item.skip_kds && (
+                                  <span className="px-1.5 py-0.5 rounded-sm bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[8px] font-black uppercase tracking-widest leading-none">
+                                     Etalase
+                                  </span>
+                                )}
+                            </div>
+                            {(item.customizationSummary || item.customization_summary) && (
+                              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 leading-tight font-medium italic">
+                                {item.customizationSummary || item.customization_summary}
+                              </p>
+                            )}
+                            {(item.note || item.customization?.note || item.customization_summary?.note) && (
+                              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-1 flex items-center gap-1 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 rounded border border-amber-500/10">
+                                 <ClipboardList size={10} /> {item.note || item.customization?.note || item.customization_summary?.note}
+                              </p>
+                            )}
+                         </div>
                      </div>
                    ))}
 

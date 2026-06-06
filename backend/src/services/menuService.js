@@ -27,6 +27,7 @@ class MenuService {
       price: Number(menuData.price || 0),
       image: menuData.image || null,
       category: menuData.category || null,
+      skip_kds: menuData.skip_kds === true,
       is_active: menuData.is_active !== undefined ? menuData.is_active : true,
       tenant_id: tenantId
     };
@@ -52,6 +53,7 @@ class MenuService {
       price: Number(menuData.price || 0),
       image: menuData.image || null,
       category: menuData.category || null,
+      skip_kds: menuData.skip_kds === true,
       is_active: menuData.is_active !== undefined ? menuData.is_active : true
     };
     await MenuRepository.updateMenu(menuId, tenantId, finalMenuData);

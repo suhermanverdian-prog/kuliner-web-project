@@ -51,10 +51,12 @@ class TransactionService {
     // Auto-enrich items with menu names if missing or for absolute KDS visibility
     const menuIds = items.map(item => item.id).filter(Boolean);
     let menuNamesMap = {};
+    let skipKdsMap = {};
     try {
         const menus = await TransactionRepository.getMenuNames(menuIds, tenantId);
         menus.forEach(m => {
             menuNamesMap[m.id] = m.name;
+            skipKdsMap[m.id] = m.skip_kds === true;
         });
     } catch (err) {
         console.warn('⚠️ [POS-Enrichment] Failed to fetch menu names for KDS enrichment:', err.message);
@@ -62,7 +64,8 @@ class TransactionService {
 
     const enrichedItems = items.map(item => ({
         ...item,
-        name: item.name || menuNamesMap[item.id] || 'Menu Item'
+        name: item.name || menuNamesMap[item.id] || 'Menu Item',
+        skip_kds: item.skip_kds !== undefined ? item.skip_kds : (skipKdsMap[item.id] || false)
     }));
 
     const isComplimentary = paymentMethod === 'Complimentary' || paymentMethod === 'Staff Benefit';
@@ -81,6 +84,8 @@ class TransactionService {
         payment_method: paymentMethod,
         payment_status: paymentStatus,
         customer_name: customerName,
+        payment_breakdown: trxData.payment_breakdown || null,
+        partner_id: trxData.partner_id || null,
         created_at: created_at || new Date().toISOString(),
         items: {
             kds_status: 'new',
@@ -481,12 +486,16 @@ class TransactionService {
         const settings = await TransactionRepository.getSettings(tenantId);
         const amap = settings?.accounting_map || {};
 
+        // B2B Receivable account mapping (fallback code: '1-1030' or custom map)
+        const b2bAccountCode = amap.b2b_receivable || '1-1030';
+
         const codes = [
             amap.cash || '1-1000', 
             amap.sales || '4-1000', 
             amap.hpp || '5-1000', 
             amap.inventory || '1-2000',
             amap.tax || '2-2000',
+            b2bAccountCode,
             '5-2000'
         ];
         const accounts = await TransactionRepository.getAccountsByCodes(codes);
@@ -499,6 +508,7 @@ class TransactionService {
         const netRevenue = totalAmount - taxAmount;
 
         const isComplimentary = trxData.payment_method === 'Complimentary' || trxData.payment_method === 'Staff Benefit';
+        const isB2B = trxData.payment_method === 'B2B Billing' || trxData.partner_id;
 
         const journalHeader = {
             id: journalId,
@@ -507,7 +517,9 @@ class TransactionService {
             reference: trxData.order_number,
             description: isComplimentary 
                 ? `Complimentary Order: ${trxData.order_number} (${trxData.customer_name}) - Method: ${trxData.payment_method}`
-                : `Sales: ${trxData.order_number} (${trxData.customer_name})`,
+                : isB2B 
+                  ? `B2B Sales: ${trxData.order_number} (${trxData.customer_name})`
+                  : `Sales: ${trxData.order_number} (${trxData.customer_name})`,
             total_amount: isComplimentary ? Math.round(totalHpp || 0) : totalAmount
         };
 
@@ -527,15 +539,59 @@ class TransactionService {
                 return true; 
             }
         } else {
-            lines.push(
-                { journal_id: journalId, account_id: getAccountId(amap.cash || '1-1000'), account_code: amap.cash || '1-1000', account_name: 'Kas/Bank', debit: totalAmount, credit: 0, tenant_id: tenantId },
-                { journal_id: journalId, account_id: getAccountId(amap.sales || '4-1000'), account_code: amap.sales || '4-1000', account_name: 'Pendapatan', debit: 0, credit: netRevenue, tenant_id: tenantId }
-            );
+            // Split payment logic (Cash/Cashless + B2B Receivable)
+            let cashPart = totalAmount;
+            let b2bPart = 0;
+
+            // Extract split values from breakdown if available
+            if (trxData.payment_breakdown) {
+                const breakdown = typeof trxData.payment_breakdown === 'string' 
+                    ? JSON.parse(trxData.payment_breakdown) 
+                    : trxData.payment_breakdown;
+                
+                if (breakdown.cash !== undefined || breakdown.b2b !== undefined) {
+                    cashPart = Math.round(breakdown.cash || 0);
+                    b2bPart = Math.round(breakdown.b2b || 0);
+                }
+            } else if (trxData.payment_method === 'B2B Billing') {
+                cashPart = 0;
+                b2bPart = totalAmount;
+            }
+
+            // Debit Cash if any
+            if (cashPart > 0) {
+                lines.push({ journal_id: journalId, account_id: getAccountId(amap.cash || '1-1000'), account_code: amap.cash || '1-1000', account_name: 'Kas/Bank', debit: cashPart, credit: 0, tenant_id: tenantId });
+            }
+
+            // Debit B2B Accounts Receivable if any
+            if (b2bPart > 0) {
+                // Autocreate Accounts Receivable Account if missing
+                let b2bAccountId = getAccountId(b2bAccountCode);
+                if (!b2bAccountId) {
+                    try {
+                        const newAcc = await AccountingRepository.createAccount({
+                            tenant_id: tenantId,
+                            code: b2bAccountCode,
+                            name: 'Piutang Kemitraan (B2B)',
+                            category: 'Asset',
+                            normal_balance: 'Debit'
+                        });
+                        b2bAccountId = newAcc.id;
+                    } catch (accErr) {
+                        console.error('Failed to auto-create B2B account:', accErr);
+                    }
+                }
+                lines.push({ journal_id: journalId, account_id: b2bAccountId, account_code: b2bAccountCode, account_name: 'Piutang Kemitraan (B2B)', debit: b2bPart, credit: 0, tenant_id: tenantId });
+            }
+
+            // Credit Revenue & Taxes
+            lines.push({ journal_id: journalId, account_id: getAccountId(amap.sales || '4-1000'), account_code: amap.sales || '4-1000', account_name: 'Pendapatan', debit: 0, credit: netRevenue, tenant_id: tenantId });
 
             if (taxAmount > 0) {
                 lines.push({ journal_id: journalId, account_id: getAccountId(amap.tax || '2-2000'), account_code: amap.tax || '2-2000', account_name: 'Hutang Pajak (PPN)', debit: 0, credit: taxAmount, tenant_id: tenantId });
             }
 
+            // Inventory and HPP
             if (totalHpp > 0) {
                 lines.push(
                     { journal_id: journalId, account_id: getAccountId(amap.hpp || '5-1000'), account_code: amap.hpp || '5-1000', account_name: 'HPP', debit: Math.round(totalHpp), credit: 0, tenant_id: tenantId },

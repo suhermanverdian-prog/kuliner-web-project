@@ -72,6 +72,7 @@ export function useMenuPage() {
         sku: data.sku || null,
         category: data.category || null,
         is_active: data.is_active !== undefined ? data.is_active : true,
+        skip_kds: data.skip_kds === true,
         bom: (data.bom || [])
           .filter(b => b.bahanId || b.bahan_id)
           .map(b => ({

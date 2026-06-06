@@ -22,6 +22,7 @@ const menuSchema = z.object({
   image: z.string().optional().nullable(),
   sku: z.string().optional().nullable(),
   category: z.string().optional().nullable(),
+  skip_kds: z.boolean().optional().default(false),
   is_active: z.boolean().optional().default(true),
   bom: z.array(menuBomItemSchema).optional().nullable()
 });

@@ -129,6 +129,18 @@ const getResource = (prop) => {
     'getPricingSuggestions': 'ai/pricing-suggestions',
     'getInventoryForecast': 'ai/inventory-forecast',
     
+    // Corporate Partners (B2B)
+    'getCorporate': 'corporate',
+    'addCorporate': 'corporate',
+    'updateCorporate': 'corporate',
+    'deleteCorporate': 'corporate',
+    
+    // Promo Codes
+    'getPromoCodes': 'promo-codes',
+    'addPromoCode': 'promo-codes',
+    'updatePromoCode': 'promo-codes',
+    'deletePromoCode': 'promo-codes',
+    
     // Inventory Intelligence
     'getInventoryPredictions': 'inventory/predictions',
     'getInventoryLogs': 'inventory/logs',

@@ -37,7 +37,7 @@ const getImgUrl = (url) => {
 };
 
 const emptyForm = {
-  name: '', category: 'Coffee', price: 0, cost: 0, icon: 'Coffee', image: '', unit: 'Cup', bom: []
+  name: '', category: 'Coffee', price: 0, cost: 0, icon: 'Coffee', image: '', unit: 'Cup', bom: [], skip_kds: false
 };
 
 
@@ -116,6 +116,18 @@ function MenuFormModal({ item, onClose, onSave, bahanList }) {
                     {formatRupiah(hppOtomatis)}
                   </div>
                 </div>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-md border border-dashed bg-background/50">
+                <div className="space-y-0.5">
+                  <label className="text-xs font-bold text-foreground">Lewati Antrean Dapur</label>
+                  <p className="text-[10px] text-zinc-400">Pastry/produk jadi langsung disajikan</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={form.skip_kds === true}
+                  onChange={e => setForm({ ...form, skip_kds: e.target.checked })}
+                  className="w-8 h-4 accent-amber-500 cursor-pointer"
+                />
               </div>
             </div>
 

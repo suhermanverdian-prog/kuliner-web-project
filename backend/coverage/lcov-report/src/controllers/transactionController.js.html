@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">5.06% </span>
+                <span class="strong">4.81% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>4/79</span>
+                <span class='fraction'>4/83</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/50</span>
+                <span class='fraction'>0/64</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">5.06% </span>
+                <span class="strong">4.81% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>4/79</span>
+                <span class='fraction'>4/83</span>
             </div>
         
             
@@ -220,7 +220,20 @@
 <a name='L155'></a><a href='#L155'>155</a>
 <a name='L156'></a><a href='#L156'>156</a>
 <a name='L157'></a><a href='#L157'>157</a>
-<a name='L158'></a><a href='#L158'>158</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -270,6 +283,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -428,15 +454,28 @@ class TransactionController {
 &nbsp;
       const result = <span class="cstat-no" title="statement not covered" >await TransactionService.createTransaction(req.body, tenantId, outletId, true);</span>
       
+      // Normalisasi format transaksi baru agar seragam
+      const itemsField = <span class="cstat-no" title="statement not covered" >result.items;</span>
+      let normalizedResult = <span class="cstat-no" title="statement not covered" >result;</span>
+<span class="cstat-no" title="statement not covered" >      if (itemsField &amp;&amp; typeof itemsField === 'object' &amp;&amp; !Array.isArray(itemsField)) {</span>
+<span class="cstat-no" title="statement not covered" >          normalizedResult = {</span>
+              ...result,
+              items: itemsField.items || [],
+              table_type: itemsField.table_type || result.table_type || 'Meja',
+              kds_status: itemsField.kds_status || result.kds_status,
+              cashier_name: itemsField.cashier_name || result.cashier_name,
+          };
+      }
+&nbsp;
       // BROADCAST REAL-TIME (KDS &amp; Admin Panel)
       const io = <span class="cstat-no" title="statement not covered" >req.app.get('io');</span>
 <span class="cstat-no" title="statement not covered" >      if (io) {</span>
-<span class="cstat-no" title="statement not covered" >          io.emit('NEW_TRANSACTION', result);</span>
-<span class="cstat-no" title="statement not covered" >          console.log(`📡 [RealTime] Broadcast NEW_TRANSACTION: ${result.order_number}`);</span>
+<span class="cstat-no" title="statement not covered" >          io.emit('NEW_TRANSACTION', normalizedResult);</span>
+<span class="cstat-no" title="statement not covered" >          console.log(`📡 [RealTime] Broadcast NEW_TRANSACTION: ${normalizedResult.order_number}`);</span>
       }
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      res.status(201).json({</span>
-          ...result,
+          ...normalizedResult,
           message: 'Transaksi berhasil dicatat dan stok telah diperbarui.'
       });
 &nbsp;
@@ -541,7 +580,7 @@ module.exports = new TransactionController();
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-01T02:28:27.912Z
+                at 2026-06-05T03:13:26.534Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

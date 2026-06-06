@@ -177,7 +177,7 @@ class TransactionRepository {
 
   async getMenuNames(menuIds, tenantId) {
     if (!menuIds || menuIds.length === 0) return [];
-    let query = supabase.from('menu').select('id, name').in('id', menuIds);
+    let query = supabase.from('menu').select('id, name, skip_kds').in('id', menuIds);
     if (tenantId) query = query.eq('tenant_id', tenantId);
     const { data, error } = await query;
     if (error) throw error;

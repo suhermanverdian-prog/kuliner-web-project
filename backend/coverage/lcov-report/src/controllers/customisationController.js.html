@@ -25,14 +25,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">8.33% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>2/24</span>
+                <span class='fraction'>3/36</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/14</span>
+                <span class='fraction'>0/24</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">9.52% </span>
+                <span class="strong">9.09% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>2/21</span>
+                <span class='fraction'>3/33</span>
             </div>
         
             
@@ -108,11 +108,29 @@
 <a name='L43'></a><a href='#L43'>43</a>
 <a name='L44'></a><a href='#L44'>44</a>
 <a name='L45'></a><a href='#L45'>45</a>
-<a name='L46'></a><a href='#L46'>46</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -128,6 +146,12 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -142,6 +166,14 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -154,19 +186,27 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// backend/src/controllers/customisationController.js
+&nbsp;
 /**
  * Controller for POS customisation settings (key/value per tenant/outlet).
  * Uses CustomisationService which talks to Supabase.
  */
 const CustomisationService = require('../services/customisationService');
+const { emitCustomisationUpdate } = require('../utils/realtimeNotifier');
 &nbsp;
 /** GET /api/customisations
  * Returns all merged settings for the current tenant (and outlet if provided).
  */
 async function <span class="fstat-no" title="function not covered" >getCustomisations(</span>req, res) {
 <span class="cstat-no" title="statement not covered" >  try {</span>
-    const tenantId = <span class="cstat-no" title="statement not covered" >req.user?.tenantId;</span>
-    const outletId = <span class="cstat-no" title="statement not covered" >req.user?.outletId || null;</span> // may be undefined
+    const fs = <span class="cstat-no" title="statement not covered" >require('fs');</span>
+    const path = <span class="cstat-no" title="statement not covered" >require('path');</span>
+    const logPath = <span class="cstat-no" title="statement not covered" >path.join(__dirname, '../../debug.log');</span>
+    const logMsg = <span class="cstat-no" title="statement not covered" >`[${new Date().toISOString()}] GET Headers: ${JSON.stringify(req.headers)}\nGET userContext: ${JSON.stringify(req.userContext || null)}\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >    fs.appendFileSync(logPath, logMsg, 'utf8');</span>
+&nbsp;
+    const tenantId = <span class="cstat-no" title="statement not covered" >req.userContext?.tenantId || req.headers['x-tenant-id'];</span>
+    const outletId = <span class="cstat-no" title="statement not covered" >req.userContext?.outletId || req.headers['x-outlet-id'] || null;</span>
 <span class="cstat-no" title="statement not covered" >    if (!tenantId) <span class="cstat-no" title="statement not covered" >return res.status(400).json({ error: 'tenantId missing' });</span></span>
     const data = <span class="cstat-no" title="statement not covered" >await CustomisationService.getAll(tenantId, outletId);</span>
 <span class="cstat-no" title="statement not covered" >    return res.json({ success: true, data });</span>
@@ -183,11 +223,19 @@ async function <span class="fstat-no" title="function not covered" >getCustomisa
 async function <span class="fstat-no" title="function not covered" >upsertCustomisation(</span>req, res) {
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const { key, value } = <span class="cstat-no" title="statement not covered" >req.body;</span>
-    const tenantId = <span class="cstat-no" title="statement not covered" >req.user?.tenantId;</span>
-    const outletId = <span class="cstat-no" title="statement not covered" >req.user?.outletId || null;</span>
+    const fs = <span class="cstat-no" title="statement not covered" >require('fs');</span>
+    const path = <span class="cstat-no" title="statement not covered" >require('path');</span>
+    const logPath = <span class="cstat-no" title="statement not covered" >path.join(__dirname, '../../debug.log');</span>
+    const logMsg = <span class="cstat-no" title="statement not covered" >`[${new Date().toISOString()}] POST Body: ${JSON.stringify(req.body)}\nPOST Headers: ${JSON.stringify(req.headers)}\nPOST userContext: ${JSON.stringify(req.userContext || null)}\n\n`;</span>
+<span class="cstat-no" title="statement not covered" >    fs.appendFileSync(logPath, logMsg, 'utf8');</span>
+&nbsp;
+    const tenantId = <span class="cstat-no" title="statement not covered" >req.userContext?.tenantId || req.headers['x-tenant-id'];</span>
+    const outletId = <span class="cstat-no" title="statement not covered" >req.userContext?.outletId || req.headers['x-outlet-id'] || null;</span>
 <span class="cstat-no" title="statement not covered" >    if (!tenantId) <span class="cstat-no" title="statement not covered" >return res.status(400).json({ error: 'tenantId missing' });</span></span>
 <span class="cstat-no" title="statement not covered" >    if (!key) <span class="cstat-no" title="statement not covered" >return res.status(400).json({ error: 'key is required' });</span></span>
 <span class="cstat-no" title="statement not covered" >    await CustomisationService.set(key, value, tenantId, outletId);</span>
+    // Emit realtime notification for KDS and other listeners
+<span class="cstat-no" title="statement not covered" >    emitCustomisationUpdate(tenantId, outletId, key, value);</span>
     // Return refreshed map for convenience
     const data = <span class="cstat-no" title="statement not covered" >await CustomisationService.getAll(tenantId, outletId);</span>
 <span class="cstat-no" title="statement not covered" >    return res.json({ success: true, data });</span>
@@ -205,7 +253,7 @@ module.exports = { getCustomisations, upsertCustomisation };
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-06-01T02:28:27.912Z
+                at 2026-06-05T03:13:26.534Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

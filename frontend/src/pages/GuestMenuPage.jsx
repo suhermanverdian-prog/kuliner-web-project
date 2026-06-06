@@ -369,7 +369,12 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
               return { key: m.name, label: m.name, icon, desc, is_active: m.is_active };
             }
           });
-          const filtered = mapped.filter(m => m.is_active !== false);
+          const filtered = mapped.filter(m => 
+            m.is_active !== false && 
+            m.key !== 'B2B Billing' && 
+            m.key !== 'Complimentary' && 
+            m.key !== 'Staff Benefit'
+          );
           if (filtered.length > 0) {
             setDynamicMethods(filtered);
             setForm(f => ({ ...f, paymentMethod: filtered[0].key }));

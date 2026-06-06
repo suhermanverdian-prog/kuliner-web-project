@@ -236,6 +236,18 @@ export function useSuperAdminPage() {
 
   const filtered = tenants.filter(t => t.name.toLowerCase().includes(search.toLowerCase()));
 
+  // Helper: hitung sisa hari dari expires_at
+  const getDaysRemaining = (expiresAt) => {
+    if (!expiresAt) return 'N/A';
+    const now = new Date();
+    const exp = new Date(expiresAt);
+    const diff = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+    if (diff < 0) return 'Expired';
+    if (diff === 0) return 'Hari Ini';
+    return `${diff} hari`;
+  };
+
+
   return {
     tenants,
     loading,
@@ -253,6 +265,7 @@ export function useSuperAdminPage() {
     submitRegisterTenant,
     updateSubscriptionSettings,
     saveGlobalConfig,
-    filtered
+    filtered,
+    getDaysRemaining
   };
 }

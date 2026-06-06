@@ -61,14 +61,14 @@ export default function DigitalReceipt({ transaction }) {
               <span className="uppercase">{item.name}</span>
               <span>{formatCurrency(Number(item.price) * Number(item.qty))}</span>
             </div>
-            {item.customizationSummary && (
+            {(item.customizationSummary || item.customization_summary) && (
               <div className="text-[9px] text-zinc-500 italic leading-none pl-2">
-                * {item.customizationSummary}
+                * {item.customizationSummary || item.customization_summary}
               </div>
             )}
-            {(item.note || item.customization?.note) && (
+            {(item.note || item.customization?.note || item.customization_summary?.note || item.customization_summary_note) && (
               <div className="text-[9px] text-zinc-400 pl-2">
-                Catatan: {item.note || item.customization?.note}
+                Catatan: {item.note || item.customization?.note || item.customization_summary?.note}
               </div>
             )}
             <div className="flex justify-between text-zinc-500 text-[10px] pt-0.5">

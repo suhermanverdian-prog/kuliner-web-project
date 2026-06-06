@@ -4,7 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 const tablesToCheck = [
-  'transactions', 'transaction_items', 'bahan', 'menu', 'menu_bom', 'audit_logs'
+  'corporate_partners', 'b2b_coupons'
 ];
 
 async function checkCols() {

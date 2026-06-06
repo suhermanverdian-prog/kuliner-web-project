@@ -4,7 +4,7 @@ const AppError = require('../utils/AppError');
 
 class PromoCodeController {
   async create(req, res) {
-    const tenantId = req.tenantId; // middleware sets tenantId
+    const tenantId = req.userContext?.tenantId || req.tenantId; // middleware sets tenantId
     const data = req.body;
     try {
       const promo = await PromoCodeRepository.create(tenantId, data);
@@ -15,7 +15,7 @@ class PromoCodeController {
   }
 
   async list(req, res) {
-    const tenantId = req.tenantId;
+    const tenantId = req.userContext?.tenantId || req.tenantId;
     try {
       const promos = await PromoCodeRepository.findAll(tenantId);
       res.json(promos);
@@ -25,7 +25,7 @@ class PromoCodeController {
   }
 
   async get(req, res) {
-    const tenantId = req.tenantId;
+    const tenantId = req.userContext?.tenantId || req.tenantId;
     const { id } = req.params;
     try {
       const promo = await PromoCodeRepository.findByCode(tenantId, id);
@@ -37,13 +37,11 @@ class PromoCodeController {
   }
 
   async update(req, res) {
-    const tenantId = req.tenantId;
+    const tenantId = req.userContext?.tenantId || req.tenantId;
     const { id } = req.params;
     const data = req.body;
     try {
-      // Re‑use repository update via deactivate/activate pattern (simplified)
-      const updated = await PromoCodeRepository.deactivate(tenantId, id); // placeholder for real update
-      // In production, implement proper update method.
+      const updated = await PromoCodeRepository.update(tenantId, id, data);
       res.json(updated);
     } catch (err) {
       new AppError(err.message, err.status || 500).send(res);
@@ -51,10 +49,10 @@ class PromoCodeController {
   }
 
   async delete(req, res) {
-    const tenantId = req.tenantId;
+    const tenantId = req.userContext?.tenantId || req.tenantId;
     const { id } = req.params;
     try {
-      await PromoCodeRepository.deactivate(tenantId, id);
+      await PromoCodeRepository.delete(tenantId, id);
       res.status(204).send();
     } catch (err) {
       new AppError(err.message, err.status || 500).send(res);
@@ -112,7 +110,8 @@ class PromoCodeController {
         type: promo.type,
         value: promo.value,
         discountAmount,
-        id: promo.id
+        id: promo.id,
+        partner_id: promo.partner_id
       });
     } catch (err) {
       new AppError(err.message, err.status || 500).send(res);

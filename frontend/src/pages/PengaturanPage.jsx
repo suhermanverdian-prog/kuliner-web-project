@@ -179,6 +179,7 @@ function POSCustomizationPanel({ showToast }) {
   ]);
 
   const [doseEspresso, setDoseEspresso] = useState(7);
+  const [defaultSkipKds, setDefaultSkipKds] = useState(false);
   const [bahanList, setBahanList] = useState([]);
   const [loadingCloud, setLoadingCloud] = useState(true);
 
@@ -273,6 +274,17 @@ function POSCustomizationPanel({ showToast }) {
         const saved = localStorage.getItem('ken_dose_espresso');
         if (saved) setDoseEspresso(Number(saved) || 7);
       }
+
+      // Default Skip KDS
+      const cloudSkipKds = cloudData.ken_default_skip_kds;
+      if (cloudSkipKds !== undefined && cloudSkipKds !== null) {
+        const parsedSkip = cloudSkipKds === true || cloudSkipKds === 'true';
+        setDefaultSkipKds(parsedSkip);
+        localStorage.setItem('ken_default_skip_kds', parsedSkip.toString());
+      } else {
+        const saved = localStorage.getItem('ken_default_skip_kds');
+        if (saved) setDefaultSkipKds(saved === 'true');
+      }
     }).catch(err => {
       console.warn("⚠️ Gagal load kustomisasi dari Cloud Supabase, menggunakan lokal:", err);
       // Fallback lokal instan
@@ -284,6 +296,8 @@ function POSCustomizationPanel({ showToast }) {
       if (savedMilks) setMilks(parseSafeArray(savedMilks, milks));
       const savedDose = localStorage.getItem('ken_dose_espresso');
       if (savedDose) setDoseEspresso(Number(savedDose) || 7);
+      const savedSkip = localStorage.getItem('ken_default_skip_kds');
+      if (savedSkip) setDefaultSkipKds(savedSkip === 'true');
     }).finally(() => {
       setLoadingCloud(false);
     });
@@ -398,6 +412,16 @@ function POSCustomizationPanel({ showToast }) {
       showToast('Dosis & gramasi espresso berhasil disimpan ke Cloud!');
     } catch (e) {
       showToast('Dosis & gramasi espresso disimpan secara offline.', 'warning');
+    }
+  };
+
+  const handleSaveDefaultSkipKds = async () => {
+    localStorage.setItem('ken_default_skip_kds', defaultSkipKds.toString());
+    try {
+      await api.saveCustomisations({ key: 'ken_default_skip_kds', value: defaultSkipKds });
+      showToast('Pengaturan default lewati antrean dapur (KDS) disimpan ke Cloud!');
+    } catch (e) {
+      showToast('Pengaturan lewati KDS disimpan secara offline.', 'warning');
     }
   };
 
@@ -708,6 +732,27 @@ function POSCustomizationPanel({ showToast }) {
             <Button onClick={handleSaveDoses} className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">Simpan Takaran Dosis</Button>
           </div>
 
+          <hr className="border-border" />
+
+          {/* SECTION: DEFAULT SKIP KDS */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">🔄 Default Lewati Antrean Dapur (Skip KDS)</h3>
+            <p className="text-[10px] text-zinc-400 leading-normal -mt-2">Pengaturan global default untuk mengklasifikasikan semua pesanan baru. Jika diaktifkan, maka semua transaksi baru secara default akan melewati KDS (kecuali dinonaktifkan per menu).</p>
+            <div className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-border flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="text-xs font-black uppercase text-zinc-400">Lewati Antrean Dapur Global</span>
+                <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">Aktifkan untuk langsung memposting pesanan ke status 'Siap' di kasir</p>
+              </div>
+              <input 
+                type="checkbox" 
+                className="w-10 h-6 accent-amber-500 cursor-pointer" 
+                checked={defaultSkipKds} 
+                onChange={e => setDefaultSkipKds(e.target.checked)} 
+              />
+            </div>
+            <Button onClick={handleSaveDefaultSkipKds} className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 rounded-md active:scale-95 transition-all">Simpan Pengaturan KDS</Button>
+          </div>
+
         </CardContent>
       </Card>
 
@@ -869,157 +914,334 @@ function POSCustomizationPanel({ showToast }) {
 // 🎟️ PromoPanel — Manajemen Kupon, Diskon, dan Promo Pelanggan
 // ================================================================
 function PromoPanel({ showToast }) {
-  const [promos, setPromos] = useState(() => {
-    const saved = localStorage.getItem('ken_custom_promos');
-    return saved ? JSON.parse(saved) : [
-      { code: 'KOPIHEMAT', type: 'percentage', value: 15, desc: 'Diskon 15% untuk semua menu' },
-      { code: 'KENWEEKEND', type: 'fixed', value: 10000, desc: 'Potongan Rp 10.000' }
-    ];
-  });
+  const [promos, setPromos] = useState([]);
+  const [partners, setPartners] = useState([]);
+  const [subTab, setSubTab] = useState('promo'); // 'promo' or 'b2b'
+  const [loading, setLoading] = useState(false);
 
   const [loyaltyRate, setLoyaltyRate] = useState(() => {
     const saved = localStorage.getItem('ken_custom_loyalty_rate');
     return saved ? parseInt(saved, 10) : 10; // 10 points per Rp 10.000
   });
 
-  const [newPromo, setNewPromo] = useState({ code: '', type: 'percentage', value: '', desc: '' });
+  const [newPromo, setNewPromo] = useState({ code: '', type: 'percent', value: '', min_order_amount: 0, expires_at: '', desc: '', partner_id: '' });
   const [showAddPromo, setShowAddPromo] = useState(false);
+
+  const [newPartner, setNewPartner] = useState({ company_name: '', billing_email: '', credit_limit: 5000000 });
+  const [showAddPartner, setShowAddPartner] = useState(false);
+
+  const loadPromos = async () => {
+    try {
+      const data = await api.getPromoCodes();
+      if (Array.isArray(data)) setPromos(data);
+    } catch (err) {
+      console.error('Gagal memuat promo codes:', err);
+    }
+  };
+
+  const loadPartners = async () => {
+    try {
+      const data = await api.getCorporate();
+      if (Array.isArray(data)) setPartners(data);
+    } catch (err) {
+      console.error('Gagal memuat partner B2B:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadPromos();
+    loadPartners();
+  }, []);
 
   const handleSaveLoyalty = async () => {
     localStorage.setItem('ken_custom_loyalty_rate', loyaltyRate.toString());
     try {
-      await api.saveSettingsLoyalty({ enabled: true, multiplier: loyaltyRate * 1000 });
+      await api.saveSettingsLoyalty({ enabled: true, multiplier: loyaltyRate * 1000, points_value: 100 });
       showToast('Konfigurasi perolehan poin loyalty berhasil disimpan!');
     } catch {
       showToast('Konfigurasi disimpan lokal (gagal sinkronisasi server).');
     }
   };
 
-  const handleAddPromo = () => {
+  const handleAddPromo = async () => {
     if (!newPromo.code || !newPromo.value) return alert('Kode dan Nilai Promo wajib diisi!');
-    const updated = [...promos, { ...newPromo, code: newPromo.code.toUpperCase().trim(), value: Number(newPromo.value) }];
-    setPromos(updated);
-    localStorage.setItem('ken_custom_promos', JSON.stringify(updated));
-    setShowAddPromo(false);
-    setNewPromo({ code: '', type: 'percentage', value: '', desc: '' });
-    showToast('Kode promo baru ditambahkan!');
+    setLoading(true);
+    try {
+      const payload = {
+        code: newPromo.code.toUpperCase().trim(),
+        type: newPromo.type,
+        value: Number(newPromo.value),
+        min_order_amount: Number(newPromo.min_order_amount || 0),
+        expires_at: newPromo.expires_at ? new Date(newPromo.expires_at).toISOString() : null,
+        desc: newPromo.desc,
+        partner_id: newPromo.partner_id || null,
+        is_active: true
+      };
+      await api.addPromoCode(payload);
+      await loadPromos();
+      setShowAddPromo(false);
+      setNewPromo({ code: '', type: 'percent', value: '', min_order_amount: 0, expires_at: '', desc: '', partner_id: '' });
+      showToast('Kode promo baru ditambahkan!');
+    } catch (err) {
+      showToast('Gagal menambahkan promo code: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeletePromo = (code) => {
+  const handleDeletePromo = async (id) => {
     if (!window.confirm('Yakin ingin menghapus kode promo ini?')) return;
-    const updated = promos.filter(p => p.code !== code);
-    setPromos(updated);
-    localStorage.setItem('ken_custom_promos', JSON.stringify(updated));
-    showToast('Kode promo telah dihapus!');
+    try {
+      await api.deletePromoCode(id);
+      await loadPromos();
+      showToast('Kode promo telah dihapus!');
+    } catch (err) {
+      showToast('Gagal menghapus promo code: ' + err.message, 'error');
+    }
+  };
+
+  const handleAddPartner = async () => {
+    if (!newPartner.company_name || !newPartner.billing_email) return alert('Nama perusahaan dan Email wajib diisi!');
+    setLoading(true);
+    try {
+      const payload = {
+        company_name: newPartner.company_name.trim(),
+        billing_email: newPartner.billing_email.trim(),
+        credit_limit: Number(newPartner.credit_limit || 0),
+        current_debt: 0.00,
+        partner_type: 'b2b',
+        is_active: true
+      };
+      await api.addCorporate(payload);
+      await loadPartners();
+      setShowAddPartner(false);
+      setNewPartner({ company_name: '', billing_email: '', credit_limit: 5000000 });
+      showToast('Partner B2B baru berhasil ditambahkan!');
+    } catch (err) {
+      showToast('Gagal menambahkan partner B2B: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeletePartner = async (id) => {
+    if (!window.confirm('Yakin ingin menonaktifkan partner B2B ini?')) return;
+    try {
+      await api.deleteCorporate(id);
+      await loadPartners();
+      showToast('Partner B2B berhasil dinonaktifkan!');
+    } catch (err) {
+      showToast('Gagal menonaktifkan partner B2B: ' + err.message, 'error');
+    }
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <Card className="border-none shadow-xl bg-card rounded-lg">
-        <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-500">
-                <Sparkles size={24} className="stroke-[2.5]" />
-              </div>
-              <div>
-                <CardTitle className="text-xl font-black text-zinc-900 dark:text-zinc-50">Pengaturan Promo & Diskon</CardTitle>
-                <CardDescription className="mt-1">Kelola voucher promosi, diskon kupon belanja, dan program loyalitas pelanggan.</CardDescription>
-              </div>
-            </div>
-            <Button 
-              onClick={() => setShowAddPromo(true)} 
-              className="h-10 px-4 text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
-            >
-              <Plus size={16} className="mr-2 stroke-[3]" /> Tambah Promo
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6 space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-              <Ticket size={16} /> Daftar Voucher & Kuon Promo
-            </h3>
+      {/* Sub tabs inside Promo & Diskon page */}
+      <div className="flex gap-2 p-1 bg-background rounded-lg border w-fit">
+        <button 
+          onClick={() => setSubTab('promo')}
+          className={cn(
+            "h-8 px-5 text-[10px] font-black uppercase tracking-wider rounded-md transition-all",
+            subTab === 'promo' ? "bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          )}
+        >
+          Kupon & Diskon
+        </button>
+        <button 
+          onClick={() => setSubTab('b2b')}
+          className={cn(
+            "h-8 px-5 text-[10px] font-black uppercase tracking-wider rounded-md transition-all",
+            subTab === 'b2b' ? "bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-sm" : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          )}
+        >
+          Mitra B2B (Corporate)
+        </button>
+      </div>
 
-            {promos.length === 0 ? (
-              <div className="p-8 text-center border border-dashed rounded-md bg-zinc-50/50 dark:bg-zinc-900/20">
-                <p className="text-sm font-medium text-zinc-400">Belum ada promo yang terdaftar.</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {promos.map(p => (
-                  <div key={p.code} className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-md border border-zinc-200 dark:border-zinc-700 flex items-start justify-between gap-4">
-                    <div className="space-y-1 min-w-0">
-                      <span className="font-mono font-black text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-sm border border-amber-500/10 inline-block uppercase">
-                        {p.code}
-                      </span>
-                      <p className="text-xs font-black text-zinc-800 dark:text-zinc-200 mt-2">{p.desc}</p>
-                      <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-black uppercase font-mono tracking-wider mt-1">
-                        Potongan: <span className="font-mono tabular-nums text-amber-600 dark:text-amber-400">{p.type === 'percentage' ? `${p.value}%` : `Rp ${p.value.toLocaleString('id-ID')}`}</span>
-                      </p>
-                    </div>
-                    <button 
-                      onClick={() => handleDeletePromo(p.code)} 
-                      className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-colors active:scale-95"
-                    >
-                      <Trash2 size={16}/>
-                    </button>
+      {subTab === 'promo' && (
+        <>
+          <Card className="border-none shadow-xl bg-card rounded-lg">
+            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-500">
+                    <Sparkles size={24} className="stroke-[2.5]" />
                   </div>
-                ))}
+                  <div>
+                    <CardTitle className="text-xl font-black text-zinc-900 dark:text-zinc-50">Pengaturan Promo & Diskon</CardTitle>
+                    <CardDescription className="mt-1">Kelola voucher promosi, diskon kupon belanja, dan program loyalitas pelanggan.</CardDescription>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => setShowAddPromo(true)} 
+                  className="h-10 px-4 text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+                >
+                  <Plus size={16} className="mr-2 stroke-[3]" /> Tambah Promo
+                </Button>
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                  <Ticket size={16} /> Daftar Voucher & Kupon Promo
+                </h3>
 
-      <Card className="border-none shadow-xl bg-card rounded-lg">
-        <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
-          <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-            ⭐ Aturan Loyalty Point Member
-          </CardTitle>
-          <CardDescription>
-            Konfigurasi rasio perolehan poin loyalitas yang didapatkan pelanggan saat bertransaksi.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 max-w-xl">
-            <div className="space-y-1">
-              <p className="text-xs font-black text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">Poin Per Rp 10.000 Transaksi</p>
-              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-normal">
-                Tentukan jumlah poin loyalitas yang diperoleh pelanggan untuk kelipatan transaksi sebesar Rp 10.000.
-              </p>
+                {promos.length === 0 ? (
+                  <div className="p-8 text-center border border-dashed rounded-md bg-zinc-50/50 dark:bg-zinc-900/20">
+                    <p className="text-sm font-medium text-zinc-400">Belum ada promo yang terdaftar di database.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {promos.map(p => (
+                      <div key={p.id} className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-md border border-zinc-200 dark:border-zinc-700 flex items-start justify-between gap-4 font-mono tabular-nums">
+                        <div className="space-y-1 min-w-0">
+                          <span className="font-black text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-sm border border-amber-500/10 inline-block uppercase">
+                            {p.code}
+                          </span>
+                          <p className="text-xs font-sans font-black text-zinc-800 dark:text-zinc-200 mt-2">{p.desc || 'Tanpa deskripsi'}</p>
+                          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-black uppercase tracking-wider mt-1">
+                            Potongan: <span className="text-amber-600 dark:text-amber-400">{p.type === 'percent' || p.type === 'percentage' ? `${p.value}%` : `Rp ${Number(p.value).toLocaleString('id-ID')}`}</span>
+                          </p>
+                          {p.min_order_amount > 0 && (
+                            <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider">
+                              Min. Beli: <span>Rp {Number(p.min_order_amount).toLocaleString('id-ID')}</span>
+                            </p>
+                          )}
+                          {p.partner_id && (
+                            <p className="text-[9px] text-zinc-400 dark:text-zinc-500 font-black uppercase tracking-wider">
+                              Mitra B2B: <span className="text-amber-600 dark:text-amber-400">{partners.find(part => part.id === p.partner_id)?.company_name || 'Mitra Korporat'}</span>
+                            </p>
+                          )}
+                        </div>
+                        <button 
+                          onClick={() => handleDeletePromo(p.id)} 
+                          className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-colors active:scale-95"
+                        >
+                          <Trash2 size={16}/>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-none shadow-xl bg-card rounded-lg">
+            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+              <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                ⭐ Aturan Loyalty Point Member
+              </CardTitle>
+              <CardDescription>
+                Konfigurasi rasio perolehan poin loyalitas yang didapatkan pelanggan saat bertransaksi.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 max-w-xl">
+                <div className="space-y-1">
+                  <p className="text-xs font-black text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">Poin Per Rp 10.000 Transaksi</p>
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-normal">
+                    Tentukan jumlah poin loyalitas yang diperoleh pelanggan untuk kelipatan transaksi sebesar Rp 10.000.
+                  </p>
+                </div>
+                <div className="relative w-32 shrink-0">
+                  <input
+                    type="number"
+                    value={loyaltyRate}
+                    onChange={e => setLoyaltyRate(Math.max(1, Number(e.target.value)))}
+                    className="w-full h-11 px-3 text-sm font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 text-right rounded-md text-foreground"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">Pts</span>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="p-6 border-t bg-zinc-50 dark:bg-zinc-900/50">
+              <Button 
+                onClick={handleSaveLoyalty} 
+                className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+              >
+                Simpan Aturan Poin
+              </Button>
+            </CardFooter>
+          </Card>
+        </>
+      )}
+
+      {subTab === 'b2b' && (
+        <Card className="border-none shadow-xl bg-card rounded-lg">
+          <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center text-amber-500">
+                  <Users size={24} className="stroke-[2.5]" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-black text-zinc-900 dark:text-zinc-50">Kemitraan B2B & Limit Kredit</CardTitle>
+                  <CardDescription className="mt-1">Atur data perusahaan mitra B2B, batas pagu kredit pinjaman, dan outstanding tagihan berjalan.</CardDescription>
+                </div>
+              </div>
+              <Button 
+                onClick={() => setShowAddPartner(true)} 
+                className="h-10 px-4 text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+              >
+                <Plus size={16} className="mr-2 stroke-[3]" /> Tambah Mitra
+              </Button>
             </div>
-            <div className="relative w-32 shrink-0">
-              <input
-                type="number"
-                value={loyaltyRate}
-                onChange={e => setLoyaltyRate(Math.max(1, Number(e.target.value)))}
-                className="w-full h-11 px-3 text-sm font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 text-right rounded-md text-foreground"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">Pts</span>
+          </CardHeader>
+          <CardContent className="p-6 space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-sm font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                👥 Daftar Perusahaan Mitra Aktif
+              </h3>
+
+              {partners.length === 0 ? (
+                <div className="p-8 text-center border border-dashed rounded-md bg-zinc-50/50 dark:bg-zinc-900/20">
+                  <p className="text-sm font-medium text-zinc-400">Belum ada partner B2B yang didaftarkan.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {partners.map(p => (
+                    <div key={p.id} className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-md border border-zinc-200 dark:border-zinc-700 flex items-start justify-between gap-4 font-mono tabular-nums">
+                      <div className="space-y-1 min-w-0">
+                        <span className="font-sans font-bold text-sm text-foreground">
+                          {p.company_name}
+                        </span>
+                        <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold uppercase tracking-wider mt-2">
+                          Email Tagihan: <span className="font-mono text-primary font-bold lowercase">{p.billing_email}</span>
+                        </p>
+                        <p className="text-xs text-zinc-400 dark:text-zinc-500 font-black uppercase tracking-wider">
+                          Limit Kredit: <span className="text-amber-600 dark:text-amber-400">Rp {Number(p.credit_limit).toLocaleString('id-ID')}</span>
+                        </p>
+                        <p className="text-xs text-zinc-400 dark:text-zinc-500 font-black uppercase tracking-wider">
+                          Tagihan Berjalan: <span className="text-rose-600 dark:text-rose-450">Rp {Number(p.current_debt || 0).toLocaleString('id-ID')}</span>
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => handleDeletePartner(p.id)} 
+                        className="p-2 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-colors active:scale-95"
+                      >
+                        <Trash2 size={16}/>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        </CardContent>
-        <CardFooter className="p-6 border-t bg-zinc-50 dark:bg-zinc-900/50">
-          <Button 
-            onClick={handleSaveLoyalty} 
-            className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
-          >
-            Simpan Aturan Poin
-          </Button>
-        </CardFooter>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ADD PROMO MODAL */}
       {showAddPromo && (
         <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
-          <Card className="w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-700 rounded-lg bg-card overflow-hidden">
-            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+          <Card className="w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl border border-zinc-200 dark:border-zinc-700 rounded-lg bg-card overflow-hidden">
+            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6 shrink-0">
               <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
                 <Ticket className="text-amber-500" /> Tambah Kode Promo
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4">
+            <CardContent className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Kode Promo</label>
                 <Input 
@@ -1036,7 +1258,7 @@ function PromoPanel({ showToast }) {
                   value={newPromo.type} 
                   onChange={e => setNewPromo({ ...newPromo, type: e.target.value })}
                 >
-                  <option value="percentage">Persentase (%)</option>
+                  <option value="percent">Persentase (%)</option>
                   <option value="fixed">Nominal Flat (Rp)</option>
                 </select>
               </div>
@@ -1046,7 +1268,26 @@ function PromoPanel({ showToast }) {
                   type="number" 
                   value={newPromo.value} 
                   onChange={e => setNewPromo({ ...newPromo, value: e.target.value })} 
-                  placeholder={newPromo.type === 'percentage' ? '15' : '10000'} 
+                  placeholder={newPromo.type === 'percent' ? '15' : '10000'} 
+                  className="h-11 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 rounded-md" 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Minimum Order (Rp)</label>
+                <Input 
+                  type="number" 
+                  value={newPromo.min_order_amount} 
+                  onChange={e => setNewPromo({ ...newPromo, min_order_amount: e.target.value })} 
+                  placeholder="0" 
+                  className="h-11 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 rounded-md" 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Tanggal Kedaluwarsa (Optional)</label>
+                <Input 
+                  type="datetime-local" 
+                  value={newPromo.expires_at} 
+                  onChange={e => setNewPromo({ ...newPromo, expires_at: e.target.value })} 
                   className="h-11 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 rounded-md" 
                 />
               </div>
@@ -1059,20 +1300,96 @@ function PromoPanel({ showToast }) {
                   className="h-11 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 rounded-md" 
                 />
               </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Hubungkan ke Mitra B2B (Optional)</label>
+                <select 
+                  className="w-full h-11 px-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-sm rounded-md font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground" 
+                  value={newPromo.partner_id || ''} 
+                  onChange={e => setNewPromo({ ...newPromo, partner_id: e.target.value })}
+                >
+                  <option value="">-- Umum / Tanpa Mitra --</option>
+                  {partners.map(p => (
+                    <option key={p.id} value={p.id}>{p.company_name}</option>
+                  ))}
+                </select>
+              </div>
             </CardContent>
-            <CardFooter className="p-6 border-t bg-zinc-50 dark:bg-zinc-900/50 flex gap-4">
+            <CardFooter className="p-6 border-t bg-zinc-50 dark:bg-zinc-900/50 flex gap-4 shrink-0">
               <Button 
                 variant="outline" 
                 className="flex-1 h-12 rounded-md font-bold border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300" 
                 onClick={() => setShowAddPromo(false)}
+                disabled={loading}
               >
                 Batal
               </Button>
               <Button 
                 className="flex-1 h-12 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 text-white font-bold rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all" 
                 onClick={handleAddPromo}
+                disabled={loading}
               >
-                Simpan Promo
+                {loading ? 'Menyimpan...' : 'Simpan Promo'}
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
+
+      {/* ADD PARTNER MODAL */}
+      {showAddPartner && (
+        <div className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+          <Card className="w-full max-w-md shadow-2xl border border-zinc-200 dark:border-zinc-700 rounded-lg bg-card overflow-hidden">
+            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+              <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                <Users className="text-amber-500" /> Tambah Mitra Korporat B2B
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Nama Perusahaan / Instansi</label>
+                <Input 
+                  value={newPartner.company_name} 
+                  onChange={e => setNewPartner({ ...newPartner, company_name: e.target.value })} 
+                  placeholder="CONTOH: PT Sumber Makmur" 
+                  className="h-11 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 rounded-md" 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Email Tagihan (Billing)</label>
+                <Input 
+                  type="email"
+                  value={newPartner.billing_email} 
+                  onChange={e => setNewPartner({ ...newPartner, billing_email: e.target.value })} 
+                  placeholder="finance@sumbermakmur.com" 
+                  className="h-11 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 rounded-md lowercase" 
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Limit Pagu Kredit (Rp)</label>
+                <Input 
+                  type="number" 
+                  value={newPartner.credit_limit} 
+                  onChange={e => setNewPartner({ ...newPartner, credit_limit: e.target.value })} 
+                  placeholder="5000000" 
+                  className="h-11 bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 rounded-md text-right font-mono" 
+                />
+              </div>
+            </CardContent>
+            <CardFooter className="p-6 border-t bg-zinc-50 dark:bg-zinc-900/50 flex gap-4">
+              <Button 
+                variant="outline" 
+                className="flex-1 h-12 rounded-md font-bold border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300" 
+                onClick={() => setShowAddPartner(false)}
+                disabled={loading}
+              >
+                Batal
+              </Button>
+              <Button 
+                className="flex-1 h-12 bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 text-white font-bold rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all" 
+                onClick={handleAddPartner}
+                disabled={loading}
+              >
+                {loading ? 'Menyimpan...' : 'Simpan Mitra'}
               </Button>
             </CardFooter>
           </Card>

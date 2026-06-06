@@ -90,6 +90,9 @@ import {
 } from 'lucide-react';
 
 // All feature definitions with metadata (for SuperAdmin UI)
+
+// Feature flag for Finance & Billing menu (enabled by default)
+export const finance_billing_enabled = true;
 export const FEATURE_CATALOG = [
   { key: 'pos',              label: 'POS Kasir',                group: 'Core',        icon: ShoppingCart, description: 'Point of Sale & transaksi' },
   { key: 'kds',              label: 'KDS (Dapur)',              group: 'Core',        icon: ChefHat, description: 'Kitchen Display System' },

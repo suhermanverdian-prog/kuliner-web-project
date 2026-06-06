@@ -7,6 +7,10 @@ const LoginPage        = lazy(() => import('@/pages/LoginPage'));
 const SuperAdminPage   = lazy(() => import('@/pages/SuperAdminPage'));
 const ActivityLogPage  = lazy(() => import('@/pages/ActivityLogPage'));
 const CommandCenterPage = lazy(() => import('@/pages/CommandCenterPage'));
+// New Finance & Billing pages
+const SubscriptionPage = lazy(() => import('@/pages/SubscriptionPage'));
+const InvoicesPage     = lazy(() => import('@/pages/InvoicesPage'));
+const QuotaPage        = lazy(() => import('@/pages/QuotaPage'));
 
 const PageLoader = () => (
   <div className="fixed inset-0 bg-background flex items-center justify-center">
@@ -51,8 +55,9 @@ function App() {
           {/* Wrap SuperAdmin routes inside MainLayout */}
           <Route element={<SuperAdminGuard><MainLayout /></SuperAdminGuard>}>
             <Route path="/superadmin" element={<SuperAdminPage />} />
-            <Route path="/activity-log" element={<ActivityLogPage />} />
-            <Route path="/command-center" element={<CommandCenterPage />} />
+            <Route path="/subscription" element={<SubscriptionPage />} />
+            <Route path="/invoices" element={<InvoicesPage />} />
+            <Route path="/quota" element={<QuotaPage />} />
           </Route>
 
           {/* Default redirect */}

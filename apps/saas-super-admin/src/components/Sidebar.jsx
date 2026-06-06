@@ -1,8 +1,8 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
-import { 
-  Lock, Command, ClipboardList, LogOut, Coffee, ChevronLeft, ChevronRight
+import {
+  Lock, Command, ClipboardList, LogOut, Coffee, ChevronLeft, ChevronRight, Calendar, Receipt, Gauge
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +16,10 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     { id: '/superadmin', icon: Lock, label: 'SuperAdmin / Tenants' },
     { id: '/command-center', icon: Command, label: 'Command Center' },
     { id: '/activity-log', icon: ClipboardList, label: 'Activity Logs' },
+    // Finance & Billing
+    { id: '/subscription', icon: Calendar, label: 'Subskripsi' },
+    { id: '/invoices', icon: Receipt, label: 'Invoices' },
+    { id: '/quota', icon: Gauge, label: 'Quota' },
   ];
 
   const handleLogout = () => {
