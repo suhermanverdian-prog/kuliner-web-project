@@ -84,6 +84,26 @@ try {
   });
 
   app.use(express.json());
+  const fs = require('fs');
+  app.get('/api/uploads/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const extname = path.extname(filename);
+    const baseName = path.basename(filename, extname);
+    const uploadsDir = path.join(__dirname, '../public/uploads');
+    
+    // List order of extensions to try (original first, then fallbacks)
+    const extensionsToTry = [extname, '.png', '.webp', '.jpg', '.jpeg'];
+    
+    for (const ext of extensionsToTry) {
+      if (!ext) continue;
+      const filePath = path.join(uploadsDir, baseName + ext);
+      if (fs.existsSync(filePath)) {
+        return res.sendFile(filePath);
+      }
+    }
+    
+    res.status(404).send('Not Found');
+  });
   app.use('/api/uploads', express.static(path.join(__dirname, '../public/uploads')));
   
   // Public route test

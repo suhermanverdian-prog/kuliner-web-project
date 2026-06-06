@@ -395,38 +395,38 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50">
-      <Card className="w-full max-w-5xl shadow-2xl border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden flex flex-col md:flex-row h-auto max-h-[95vh] bg-card">
-        <div className="w-full md:w-[320px] p-4 bg-zinc-50 dark:bg-zinc-900 border-r border-border flex flex-col">
+      <Card className="w-full max-w-5xl shadow-2xl border border-border rounded-lg overflow-hidden flex flex-col md:flex-row h-auto max-h-[95vh] bg-card">
+        <div className="w-full md:w-[320px] p-4 bg-muted border-r border-border flex flex-col">
           <h3 className="text-base font-black mb-3 text-foreground">Detail Tagihan</h3>
           <div className="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar max-h-[150px] md:max-h-none">
             {cart.map((item, i) => (
               <div key={i} className="flex justify-between items-start gap-4">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-black truncate text-foreground">{item.name}</p>
-                  <p className="text-[9px] text-zinc-500 dark:text-zinc-400 font-bold font-mono tabular-nums">{item.qty}x {formatRupiah(item.price)}</p>
+                  <p className="text-[9px] text-zinc-550 dark:text-zinc-400 font-bold font-mono tabular-nums">{item.qty}x {formatRupiah(item.price)}</p>
                 </div>
                 <p className="text-xs font-black font-mono tabular-nums text-foreground">{formatRupiah(item.price * item.qty)}</p>
               </div>
             ))}
           </div>
-          <div className="pt-3 mt-3 border-t-2 border-dashed border-zinc-200 dark:border-zinc-700 space-y-1.5">
-            <div className="flex justify-between text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-mono tabular-nums"><span>Subtotal</span><span>{formatRupiah(subtotal)}</span></div>
+          <div className="pt-3 mt-3 border-t-2 border-dashed border-border space-y-1.5">
+            <div className="flex justify-between text-[9px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-widest font-mono tabular-nums"><span>Subtotal</span><span>{formatRupiah(subtotal)}</span></div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest font-mono tabular-nums"><span>Diskon Promo</span><span>-{formatRupiah(discountAmount)}</span></div>
             )}
-            <div className="flex justify-between text-[9px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-widest font-mono tabular-nums"><span>Pajak (11%)</span><span>{formatRupiah(taxAmount)}</span></div>
+            <div className="flex justify-between text-[9px] font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-widest font-mono tabular-nums"><span>Pajak (11%)</span><span>{formatRupiah(taxAmount)}</span></div>
             <div className="flex justify-between items-end pt-1"><span className="text-xs font-black uppercase text-foreground">Total</span><span className="text-lg font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(total)}</span></div>
           </div>
         </div>
 
-        <div className="flex-1 p-4 space-y-3.5 overflow-y-auto custom-scrollbar flex flex-col justify-between bg-card dark:bg-zinc-800">
+        <div className="flex-1 p-4 space-y-3.5 overflow-y-auto custom-scrollbar flex flex-col justify-between bg-card">
           <div className="space-y-1.5">
             <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Nama Pelanggan</h4>
             <Input
               placeholder="Nama Pelanggan (Opsional)"
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
-              className="h-10 text-xs font-black rounded-lg bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-foreground focus-visible:ring-amber-500/20"
+              className="h-10 text-xs font-black rounded-lg bg-background border-border text-foreground focus-visible:ring-amber-500/20"
             />
           </div>
 
@@ -437,7 +437,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                 placeholder="Contoh: 0812345678"
                 value={customerPhone}
                 onChange={e => setCustomerPhone(e.target.value)}
-                className="h-10 text-xs font-black rounded-lg bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 focus-visible:ring-amber-500/20"
+                className="h-10 text-xs font-black rounded-lg bg-background border-border text-foreground focus-visible:ring-amber-500/20"
               />
             </div>
             <div className="space-y-1">
@@ -447,7 +447,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                   placeholder="KODE PROMO"
                   value={promoCode}
                   onChange={e => setPromoCode(e.target.value)}
-                  className="h-10 text-xs font-black rounded-lg bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50 focus-visible:ring-amber-500/20 uppercase"
+                  className="h-10 text-xs font-black rounded-lg bg-background border-border text-foreground focus-visible:ring-amber-500/20 uppercase"
                 />
                 <Button 
                   onClick={handleValidatePromo}
@@ -481,7 +481,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                     "h-10 flex-row gap-2 rounded-lg border-2 transition-all",
                     orderType === t
                       ? "bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 border-amber-500 text-white dark:text-zinc-900 shadow-md shadow-amber-500/20"
-                      : "bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      : "bg-background border-border text-foreground hover:bg-muted"
                   )}
                 >
                   {t === 'Dine-in' ? <Coffee size={14} /> : <ShoppingBag size={14} />}
@@ -494,7 +494,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                 placeholder="Nomor Meja"
                 value={tableNum}
                 onChange={e => setTableNum(e.target.value)}
-                className="h-10 text-xs font-black rounded-lg bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-zinc-50"
+                className="h-10 text-xs font-black rounded-lg bg-background border-border text-foreground"
               />
             )}
           </div>
@@ -510,7 +510,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                     "h-11 flex flex-col items-center justify-center gap-0.5 rounded-lg border-2 transition-all",
                     payMethod === m.id
                       ? "bg-amber-500 dark:bg-amber-400 border-amber-500 text-white dark:text-zinc-900 shadow-md shadow-amber-500/20"
-                      : "bg-zinc-50 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      : "bg-background border-border text-foreground hover:bg-muted"
                   )}
                 >
                   <m.icon size={14} />
@@ -521,13 +521,13 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
           </div>
 
           {isComplimentary && (
-            <div className="space-y-1 p-2.5 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
+            <div className="space-y-1 p-2.5 bg-muted rounded-lg border border-border">
               <label className="text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400">Nama Penerima & Alasan</label>
               <input
                 type="text"
                 value={complimentaryReason}
                 onChange={e => setComplimentaryReason(e.target.value)}
-                className="w-full h-10 px-3 text-xs font-black bg-card dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground placeholder-zinc-400 dark:placeholder-zinc-500"
+                className="w-full h-10 px-3 text-xs font-black bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground placeholder-zinc-400 dark:placeholder-zinc-500"
                 placeholder={payMethod === 'Staff Benefit' ? "Contoh: Budi (Barista) - Break Sore" : "Contoh: Jatah Manajer, Owner Visit, Tamu VIP Mitra"}
                 required
               />
@@ -535,7 +535,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
           )}
 
           {isB2bBilling && (
-            <div className="space-y-3 p-3 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
+            <div className="space-y-3 p-3 bg-muted rounded-lg border border-border">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400">Pilih Mitra B2B</label>
@@ -559,27 +559,27 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
                     type="number"
                     value={splitB2bAmount}
                     onChange={e => setSplitB2bAmount(e.target.value)}
-                    className="w-full h-10 px-3 text-sm font-black font-mono tabular-nums bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground text-right"
+                    className="w-full h-10 px-3 text-sm font-black font-mono tabular-nums bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground text-right"
                     placeholder={total.toString()}
                   />
                 </div>
               </div>
 
               {numericSplitB2b < total && (
-                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-dashed border-zinc-200 dark:border-zinc-750">
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t border-dashed border-border">
                   <div className="space-y-1">
                     <label className="text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400">Sisa Tunai (Bayar)</label>
                     <input
                       type="number"
                       value={cashReceived}
                       onChange={e => setCashReceived(e.target.value)}
-                      className="w-full h-10 px-3 text-md font-black font-mono tabular-nums bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground text-right"
+                      className="w-full h-10 px-3 text-md font-black font-mono tabular-nums bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground text-right"
                       placeholder={cashNeeded.toString()}
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400">Kembalian Sisa Tunai</label>
-                    <div className="w-full h-10 px-3 flex items-center justify-end bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md font-black text-md font-mono tabular-nums text-amber-600 dark:text-amber-400">
+                    <div className="w-full h-10 px-3 flex items-center justify-end bg-background border border-border rounded-md font-black text-md font-mono tabular-nums text-amber-600 dark:text-amber-400">
                       {changeAmount >= 0 ? formatRupiah(changeAmount) : 'Rp 0'}
                     </div>
                   </div>
@@ -589,20 +589,20 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
           )}
 
           {payMethod === 'Tunai' && (
-            <div className="grid grid-cols-2 gap-3 p-2.5 bg-zinc-50 dark:bg-zinc-900/50 rounded-lg border border-zinc-200 dark:border-zinc-700">
+            <div className="grid grid-cols-2 gap-3 p-2.5 bg-muted rounded-lg border border-border">
               <div className="space-y-1">
                 <label className="text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400">Uang Tunai</label>
                 <input
                   type="number"
                   value={cashReceived}
                   onChange={e => setCashReceived(e.target.value)}
-                  className="w-full h-10 px-3 text-lg font-black font-mono tabular-nums bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground placeholder-zinc-400 dark:placeholder-zinc-500 text-right"
+                  className="w-full h-10 px-3 text-lg font-black font-mono tabular-nums bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-foreground placeholder-zinc-400 dark:placeholder-zinc-500 text-right"
                   placeholder="0"
                 />
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400">Kembalian</label>
-                <div className="w-full h-10 px-3 flex items-center justify-end bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-md font-black text-lg font-mono tabular-nums text-amber-600 dark:text-amber-400">
+                <div className="w-full h-10 px-3 flex items-center justify-end bg-background border border-border rounded-md font-black text-lg font-mono tabular-nums text-amber-600 dark:text-amber-400">
                   {changeAmount >= 0 ? formatRupiah(changeAmount) : 'Rp 0'}
                 </div>
               </div>
@@ -612,7 +612,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
           <div className="flex gap-3 pt-1">
             <Button
               variant="outline"
-              className="flex-1 h-10 font-bold rounded-lg border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+              className="flex-1 h-10 font-bold rounded-lg border-border text-foreground hover:bg-muted"
               onClick={onClose}
             >
               Kembali
@@ -750,10 +750,10 @@ export default function KasirPage({ user }) {
                 key={c} 
                 onClick={() => setCategory(c)} 
                 className={cn(
-                  "px-4 h-8 rounded-lg text-[10px] font-bold uppercase border transition-all whitespace-nowrap", 
+                  "px-4 h-8 rounded-lg text-[10px] font-bold uppercase border transition-all whitespace-nowrap active:scale-95", 
                   category === c 
-                    ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 border-transparent shadow-sm font-black" 
-                    : "bg-card dark:bg-zinc-900 border-border text-foreground hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                    ? "bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 border-transparent shadow-sm font-black" 
+                    : "bg-card border-border text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 )}
               >
                 {c}
@@ -817,11 +817,11 @@ export default function KasirPage({ user }) {
           "flex-1 flex flex-col overflow-hidden bg-card border-border relative",
           "mt-auto h-[90vh] rounded-t-lg lg:h-full lg:rounded-lg lg:mt-0 animate-in slide-in-from-bottom lg:animate-none"
         )}>
-          <CardHeader className="p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900 flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50">Daftar Pesanan</CardTitle>
+          <CardHeader className="p-6 border-b border-border bg-card flex flex-row items-center justify-between">
+            <CardTitle className="text-lg font-black text-foreground">Daftar Pesanan</CardTitle>
             <div className="flex items-center gap-4">
               <div className="text-right text-xs font-black">
-                <span className="font-mono tabular-nums text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-md">{cart.length} ITEM</span>
+                <span className="font-mono tabular-nums text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20 px-2 py-1 rounded-md">{cart.length} ITEM</span>
               </div>
               <Button variant="ghost" size="icon" className="lg:hidden text-zinc-500" onClick={() => setIsCartOpenMobile(false)}><X size={20} /></Button>
             </div>
@@ -830,17 +830,17 @@ export default function KasirPage({ user }) {
           <CardContent className="flex-1 overflow-y-auto p-0 custom-scrollbar">
             {cart.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-20 h-20 bg-zinc-50 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
-                  <ShoppingBag size={32} className="text-zinc-300 dark:text-zinc-600" />
+                <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
+                  <ShoppingBag size={32} className="text-zinc-300 dark:text-zinc-650" />
                 </div>
                 <p className="text-xs font-black uppercase text-zinc-400 dark:text-zinc-500 tracking-widest">Keranjang Kosong</p>
                 <p className="text-[10px] text-zinc-400 mt-2">Pilih menu untuk memulai pesanan</p>
               </div>
             ) : (
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              <div className="divide-y divide-border">
                  {cart.map(item => (
-                  <div key={item.customKey || item.id} className="p-4 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
-                    <div className="w-12 h-12 bg-zinc-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center overflow-hidden shrink-0 border border-zinc-200 dark:border-zinc-700">
+                  <div key={item.customKey || item.id} className="p-4 flex items-center gap-4 hover:bg-muted/50 transition-colors">
+                    <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center overflow-hidden shrink-0 border border-border">
                       {item.image ? (
                         <img src={getImgUrl(item.image)} alt={item.name} className="w-full h-full object-cover" />
                       ) : (
@@ -848,7 +848,7 @@ export default function KasirPage({ user }) {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate text-zinc-900 dark:text-zinc-50">{item.name}</p>
+                      <p className="text-sm font-bold truncate text-foreground">{item.name}</p>
                       <p className="text-[11px] font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(item.price)}</p>
                       {item.customizationSummary && (
                         <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 italic leading-tight">{item.customizationSummary}</p>
@@ -857,10 +857,10 @@ export default function KasirPage({ user }) {
                         <p className="text-[10px] text-amber-600 dark:text-amber-500/70 mt-0.5 leading-tight font-medium">📋: "{item.customization.note}"</p>
                       )}
                     </div>
-                    <div className="flex items-center bg-zinc-100 dark:bg-zinc-800 rounded-lg p-1 border border-zinc-200 dark:border-zinc-700">
-                      <button onClick={() => changeQty(item.customKey || item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-card dark:bg-zinc-700 text-foreground dark:text-zinc-300 shadow-sm hover:text-rose-500"><Minus size={12} strokeWidth={3} /></button>
-                      <span className="w-8 text-center text-xs font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-50">{item.qty}</span>
-                      <button onClick={() => changeQty(item.customKey || item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-card dark:bg-zinc-700 text-foreground dark:text-zinc-300 shadow-sm hover:text-emerald-500"><Plus size={12} strokeWidth={3} /></button>
+                    <div className="flex items-center bg-muted rounded-lg p-1 border border-border">
+                      <button onClick={() => changeQty(item.customKey || item.id, -1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-card text-foreground shadow-sm hover:text-rose-500"><Minus size={12} strokeWidth={3} /></button>
+                      <span className="w-8 text-center text-xs font-black font-mono tabular-nums text-foreground">{item.qty}</span>
+                      <button onClick={() => changeQty(item.customKey || item.id, 1)} className="w-7 h-7 flex items-center justify-center rounded-md bg-card text-foreground shadow-sm hover:text-emerald-500"><Plus size={12} strokeWidth={3} /></button>
                     </div>
                   </div>
                   ))}
@@ -869,18 +869,18 @@ export default function KasirPage({ user }) {
           </CardContent>
 
           {cart.length > 0 && (
-            <CardFooter className="p-6 bg-zinc-50 dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 flex-col gap-4">
+            <CardFooter className="p-6 bg-card border-t border-border flex-col gap-4">
               <div className="w-full space-y-2">
-                <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400 font-mono tabular-nums">
+                <div className="flex justify-between text-xs text-zinc-550 dark:text-zinc-400 font-mono tabular-nums">
                   <span>Subtotal</span>
                   <span>{formatRupiah(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400 font-mono tabular-nums">
+                <div className="flex justify-between text-xs text-zinc-550 dark:text-zinc-400 font-mono tabular-nums">
                   <span>Pajak (11%)</span>
                   <span>{formatRupiah(taxAmount)}</span>
                 </div>
-                <div className="pt-2 mt-2 border-t border-zinc-200 dark:border-zinc-700 flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-zinc-900 dark:text-zinc-50">Total Bayar</span>
+                <div className="pt-2 mt-2 border-t border-border flex justify-between items-center">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-foreground">Total Bayar</span>
                   <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(total)}</span>
                 </div>
               </div>

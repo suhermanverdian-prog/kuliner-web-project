@@ -121,6 +121,29 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
     return { sizes: sSizes, extras: resolvedExtras, milksList: resolvedMilksList };
   }, [isTea]);
 
+  const isGuest = useMemo(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        if (path.includes('/guest') || path.includes('/store') || path.includes('/order')) {
+          return true;
+        }
+      }
+      const storageStr = localStorage.getItem('ken-enterprise-storage');
+      if (storageStr) {
+        const storage = JSON.parse(storageStr);
+        const state = storage.state || storage;
+        const user = state.user || state;
+        const innerUser = user?.user || user;
+        const role = innerUser?.role;
+        return role === 'guest';
+      }
+      return !localStorage.getItem('token');
+    } catch (e) {
+      return true;
+    }
+  }, []);
+
   const [qty, setQty] = useState(1);
   const [size, setSize] = useState(() => {
     return isBeverage ? 'R' : 'Regular';
@@ -138,14 +161,15 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
 
   // Fetch materials for real-time BOM display
   useEffect(() => {
+    if (isGuest) return;
     api.getBahan().then(data => {
       if (data) setBahanList(data);
     }).catch(err => console.error("Gagal memuat bahan baku untuk BOM", err));
-  }, []);
+  }, [isGuest]);
 
   // Sync / Initialize recipe ingredients based on item BOM and customization choices
   useEffect(() => {
-    if (!isBeverage) return;
+    if (!isBeverage || isGuest) return;
 
     let baseBom = [];
     if (Array.isArray(item.bom) && item.bom.length > 0) {
@@ -421,7 +445,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
             {/* Left Column (col-span-4): Visual Preview, BOM & Checkout */}
             <div className="md:col-span-4 space-y-4">
               {/* Product Visual Card */}
-              <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-border rounded-lg p-3 flex gap-3">
+              <div className="bg-muted border border-border rounded-lg p-3 flex gap-3">
                 {item.image ? (
                   <img
                     src={item.image}
@@ -430,7 +454,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                     onError={e => { e.target.style.display = 'none'; }}
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center border border-border shadow-sm shrink-0">
+                  <div className="w-20 h-20 rounded-md bg-muted flex items-center justify-center border border-border shadow-sm shrink-0">
                     {isBeverage ? (
                       <Coffee size={32} className="text-amber-500 dark:text-amber-400" />
                     ) : (
@@ -442,19 +466,19 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                   <div>
                     <div className="flex items-center justify-between gap-1 mb-1">
                       <span className="text-[9px] uppercase font-bold tracking-widest text-zinc-400 dark:text-zinc-500">Pratinjau Item</span>
-                      <span className="px-1.5 py-0.5 rounded-sm bg-zinc-100 dark:bg-zinc-800 text-[9px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-widest">
+                      <span className="px-1.5 py-0.5 rounded-sm bg-background border border-border text-[9px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-widest">
                         {item.category || 'Menu'}
                       </span>
                     </div>
-                    <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-50 truncate leading-tight">{item.name}</h4>
+                    <h4 className="font-bold text-sm text-foreground truncate leading-tight">{item.name}</h4>
                   </div>
                   <div className="space-y-0.5 mt-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-zinc-400 dark:text-zinc-500">Harga Dasar</span>
-                      <span className="font-mono tabular-nums font-semibold text-zinc-600 dark:text-zinc-300">{formatRupiah(item.price)}</span>
+                      <span className="font-mono tabular-nums font-semibold text-foreground">{formatRupiah(item.price)}</span>
                     </div>
                     <div className="flex items-center justify-between text-sm font-bold border-t border-border pt-0.5 mt-0.5">
-                      <span className="text-zinc-700 dark:text-zinc-200">Total</span>
+                      <span className="text-foreground">Total</span>
                       <span className="font-mono tabular-nums text-amber-600 dark:text-amber-400">{formatRupiah(item.price + (sizeObj?.priceAdd || 0) + strengthPriceAdd + milkPriceAdd + extrasPrice)}</span>
                     </div>
                   </div>
@@ -463,7 +487,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
 
               {/* Real-time Dynamic BOM Checklist */}
               {recipeIngredients.length > 0 && (
-                <div className="border border-border rounded-lg p-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col">
+                <div className="border border-border rounded-lg p-2.5 bg-muted flex flex-col">
                   <div className="flex items-center gap-1.5 mb-1 shrink-0">
                     <span className="text-amber-500 dark:text-amber-400">
                       <Sliders size={10} />
@@ -485,8 +509,8 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                           className={cn(
                             "flex items-center justify-between py-1.5 px-2 rounded border text-xs cursor-pointer select-none transition-all active:scale-[0.99]",
                             row.active 
-                              ? "bg-card border-border hover:border-amber-500/30 text-zinc-800 dark:text-zinc-200" 
-                              : "bg-zinc-100/50 dark:bg-zinc-900/50 border-transparent text-zinc-400 dark:text-zinc-600 line-through"
+                              ? "bg-card border-border hover:border-amber-500/30 text-foreground" 
+                              : "bg-background border-transparent text-zinc-400 dark:text-zinc-500 line-through"
                           )}
                         >
                           <div className="flex items-center gap-1.5">

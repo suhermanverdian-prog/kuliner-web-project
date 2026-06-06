@@ -5,6 +5,7 @@ import MainLayout from './components/MainLayout';
 import KasirPage from './pages/KasirPage';
 import KDSPage from './pages/KDSPage';
 import MejaPage from './pages/MejaPage';
+import ShiftPage from './pages/ShiftPage';
 
 // Simple guard checking if a user is logged in
 const AuthGuard = ({ children }) => {
@@ -28,6 +29,7 @@ function App() {
           <Route path="/kasir" element={<KasirPage user={user} />} />
           <Route path="/kds" element={<KDSPage />} />
           <Route path="/meja" element={<MejaPage />} />
+          <Route path="/shifts" element={<ShiftPage user={user} />} />
           <Route path="/" element={<Navigate to="/kasir" replace />} />
           <Route path="*" element={<Navigate to="/kasir" replace />} />
         </Route>

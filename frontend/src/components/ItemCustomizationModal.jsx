@@ -121,6 +121,29 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
     return { sizes: sSizes, extras: resolvedExtras, milksList: resolvedMilksList };
   }, [isTea]);
 
+  const isGuest = useMemo(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        if (path.includes('/guest') || path.includes('/store') || path.includes('/order')) {
+          return true;
+        }
+      }
+      const storageStr = localStorage.getItem('ken-enterprise-storage');
+      if (storageStr) {
+        const storage = JSON.parse(storageStr);
+        const state = storage.state || storage;
+        const user = state.user || state;
+        const innerUser = user?.user || user;
+        const role = innerUser?.role;
+        return role === 'guest';
+      }
+      return !localStorage.getItem('token');
+    } catch (e) {
+      return true;
+    }
+  }, []);
+
   const [qty, setQty] = useState(1);
   const [size, setSize] = useState(() => {
     return isBeverage ? 'R' : 'Regular';
@@ -138,14 +161,15 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
 
   // Fetch materials for real-time BOM display
   useEffect(() => {
+    if (isGuest) return;
     api.getBahan().then(data => {
       if (data) setBahanList(data);
     }).catch(err => console.error("Gagal memuat bahan baku untuk BOM", err));
-  }, []);
+  }, [isGuest]);
 
   // Sync / Initialize recipe ingredients based on item BOM and customization choices
   useEffect(() => {
-    if (!isBeverage) return;
+    if (!isBeverage || isGuest) return;
 
     let baseBom = [];
     if (Array.isArray(item.bom) && item.bom.length > 0) {
