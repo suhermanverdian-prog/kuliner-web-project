@@ -21,12 +21,22 @@ const getHeaders = () => {
         const innerUser = user.user || user;
         tenantId = innerUser.tenant_id || user.tenant_id || (state.tenant && (state.tenant.id || state.tenant));
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error("[KEN API] Error parsing store for headers:", e);
+    }
   }
 
   // Fallbacks: direct localStorage keys
   token = token || localStorage.getItem('token');
   tenantId = tenantId || localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');
+
+  console.log("[KEN API] Headers Debug:", {
+    hasStoreStr: !!storageStr,
+    tokenFound: !!token,
+    tenantIdFound: !!tenantId,
+    tokenPrefix: token ? token.substring(0, 10) + '...' : null,
+    tenantId
+  });
 
   const headers = { 'Content-Type': 'application/json' };
   if (token && token !== 'null' && token !== 'undefined') {

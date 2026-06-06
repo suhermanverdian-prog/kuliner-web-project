@@ -126,6 +126,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
       if (typeof window !== 'undefined') {
         const path = window.location.pathname;
         if (path.includes('/guest') || path.includes('/store') || path.includes('/order') || path.includes('/customer')) {
+          console.log("[KEN CustomizationModal] isGuest=true (URL Path Match):", path);
           return true;
         }
       }
@@ -136,11 +137,15 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
         const user = state.user || state;
         const innerUser = user?.user || user;
         const role = innerUser?.role;
+        console.log("[KEN CustomizationModal] isGuest role check:", { role, user });
         if (!role) return true;
         return ['guest', 'customer'].includes(String(role).toLowerCase());
       }
-      return !localStorage.getItem('token');
+      const hasToken = !!localStorage.getItem('token');
+      console.log("[KEN CustomizationModal] isGuest token fallback check:", { hasToken });
+      return !hasToken;
     } catch (e) {
+      console.error("[KEN CustomizationModal] isGuest evaluation error:", e);
       return true;
     }
   }, []);
@@ -162,10 +167,12 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
 
   // Fetch materials for real-time BOM display
   useEffect(() => {
+    console.log("[KEN CustomizationModal] Fetching bahan list. isGuest=", isGuest);
     if (isGuest) return;
     api.getBahan().then(data => {
+      console.log("[KEN CustomizationModal] Bahan list loaded successfully:", data?.length || 0, "items");
       if (data) setBahanList(data);
-    }).catch(err => console.error("Gagal memuat bahan baku untuk BOM", err));
+    }).catch(err => console.error("[KEN CustomizationModal] Gagal memuat bahan baku untuk BOM", err));
   }, [isGuest]);
 
   const activeExtras = isBeverage ? extras : FOOD_EXTRAS;
