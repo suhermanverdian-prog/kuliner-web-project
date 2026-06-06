@@ -1,9 +1,10 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { useAppStore } from '@/store/useAppStore';
 import { api } from '@/api';
-import { AlertTriangle, Zap, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { AlertTriangle } from 'lucide-react';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
 // Components (Direct imports only for core layout)
@@ -48,6 +49,17 @@ const BudgetPage = lazy(() => import('@/pages/BudgetPage'));
 const BukuBesarPage = lazy(() => import('@/pages/BukuBesarPage'));
 const StokOpnamePage = lazy(() => import('@/pages/StokOpnamePage'));
 
+// ✅ Singleton QueryClient — satu instance untuk SELURUH aplikasi termasuk lazy chunks
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes cache
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
 // Elite Loading Component
 const PageLoader = () => (
   <div className="fixed inset-0 bg-background flex flex-col items-center justify-center z-[9999] animate-in fade-in duration-500">
@@ -83,11 +95,9 @@ class ErrorBoundary extends React.Component {
               </p>
             </div>
             <div className="flex flex-col gap-4 pt-4">
-              <PrimaryButton
-  onClick={() => window.location.reload()}
->
-  MULAI ULANG SISTEM
-</PrimaryButton>
+              <PrimaryButton onClick={() => window.location.reload()}>
+                MULAI ULANG SISTEM
+              </PrimaryButton>
             </div>
           </div>
         </div>
@@ -148,11 +158,11 @@ function AppRoutes() {
       <Routes>
         {/* Public Routes - Accessible without Login */}
         <Route path="/login" element={
-          !user ? <LoginPage onLogin={setUser} /> : 
+          !user ? <LoginPage onLogin={setUser} /> :
           <Navigate to={
-            user.role === 'staff' ? "/kasir" : 
-            user.role === 'chef' ? "/kds" : 
-            user.role === 'hrd' ? "/hrd" : 
+            user.role === 'staff' ? "/kasir" :
+            user.role === 'chef' ? "/kds" :
+            user.role === 'hrd' ? "/hrd" :
             user.role === 'accounting' ? "/accounting" :
             user.role === 'customer' ? "/customer" :
             user.role === 'superadmin' ? "/superadmin" :
@@ -211,11 +221,17 @@ function AppRoutes() {
 
 function App() {
   return (
-    <ErrorBoundary>
-      <HashRouter>
-        <AppRoutes />
-      </HashRouter>
-    </ErrorBoundary>
+    // ✅ QueryClientProvider WAJIB berada di sini — paling luar dari seluruh React tree
+    // Ini memastikan semua lazy-loaded chunks (termasuk ShiftPage yang memakai useShifts/useQuery)
+    // selalu menemukan QueryClient yang sama via React context, tidak peduli chunk mana yang dimuat.
+    <QueryClientProvider client={queryClient}>
+      <ErrorBoundary>
+        <HashRouter>
+          <AppRoutes />
+        </HashRouter>
+      </ErrorBoundary>
+      <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+    </QueryClientProvider>
   );
 }
 
