@@ -8,7 +8,9 @@ const SuperAdminPage   = lazy(() => import('@/pages/SuperAdminPage'));
 const ActivityLogPage  = lazy(() => import('@/pages/ActivityLogPage'));
 const CommandCenterPage = lazy(() => import('@/pages/CommandCenterPage'));
 // Finance & Billing consolidated hub
-const BillingPage      = lazy(() => import('@/pages/BillingPage'));
+const BillingPage        = lazy(() => import('@/pages/BillingPage'));
+const PolicySettingsPage = lazy(() => import('@/pages/PolicySettingsPage'));
+const APIWebhookPage     = lazy(() => import('@/pages/APIWebhookPage'));
 
 const PageLoader = () => (
   <div className="fixed inset-0 bg-background flex items-center justify-center">
@@ -54,6 +56,10 @@ function App() {
           <Route element={<SuperAdminGuard><MainLayout /></SuperAdminGuard>}>
             <Route path="/superadmin" element={<SuperAdminPage />} />
             <Route path="/billing" element={<BillingPage />} />
+            <Route path="/command-center" element={<CommandCenterPage />} />
+            <Route path="/activity-log" element={<ActivityLogPage />} />
+            <Route path="/policy-settings" element={<PolicySettingsPage />} />
+            <Route path="/api-webhook" element={<APIWebhookPage />} />
           </Route>
 
           {/* Default redirect */}

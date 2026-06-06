@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
 import {
-  Lock, Command, ClipboardList, LogOut, Coffee, ChevronLeft, ChevronRight, CreditCard
+  Lock, Command, ClipboardList, LogOut, Coffee, ChevronLeft, ChevronRight, CreditCard, Shield, Globe
 } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -12,12 +12,28 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const logout = useAppStore(state => state.logout);
   const navigate = useNavigate();
 
-  const navItems = [
-    { id: '/superadmin', icon: Lock, label: 'SuperAdmin / Tenants' },
-    { id: '/command-center', icon: Command, label: 'Command Center' },
-    { id: '/activity-log', icon: ClipboardList, label: 'Activity Logs' },
-    // Finance & Billing (consolidated)
-    { id: '/billing', icon: CreditCard, label: 'Finance & Billing' },
+  const navGroups = [
+    {
+      label: 'Sistem Portal',
+      items: [
+        { id: '/superadmin',    icon: Lock,         label: 'SuperAdmin / Tenants' },
+        { id: '/command-center', icon: Command,      label: 'Command Center' },
+        { id: '/activity-log',  icon: ClipboardList, label: 'Activity Logs' },
+      ]
+    },
+    {
+      label: 'Finance & Billing',
+      items: [
+        { id: '/billing', icon: CreditCard, label: 'Finance & Billing' },
+      ]
+    },
+    {
+      label: 'Keamanan & Integrasi',
+      items: [
+        { id: '/policy-settings', icon: Shield, label: 'Kebijakan & Keamanan' },
+        { id: '/api-webhook',     icon: Globe,  label: 'API Key & Webhook' },
+      ]
+    },
   ];
 
   const handleLogout = () => {
@@ -52,11 +68,13 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-2">
-        {!isCollapsed && (
-          <p className="px-4 text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-4">Sistem Portal</p>
-        )}
-        {navItems.map(item => {
+      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
+        {navGroups.map((group) => (
+          <div key={group.label} className="mb-4">
+            {!isCollapsed && (
+              <p className="px-4 text-[9px] font-black text-zinc-600 uppercase tracking-widest mb-1 mt-2">{group.label}</p>
+            )}
+            {group.items.map(item => {
           const Icon = item.icon;
           return (
             <NavLink 
@@ -77,7 +95,9 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
               {!isCollapsed && <span className="text-sm tracking-tight">{item.label}</span>}
             </NavLink>
           );
-        })}
+            })}
+          </div>
+        ))}
       </div>
 
       {/* User Section */}
