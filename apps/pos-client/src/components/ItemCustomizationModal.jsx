@@ -121,14 +121,24 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
     return { sizes: sSizes, extras: resolvedExtras, milksList: resolvedMilksList };
   }, [isTea]);
 
+  // ─────────────────────────────────────────────
+  // Robust auth detection: cek token DAN role dari storage
+  // Jika tidak ada token valid → skip semua call ke /api/inventory
+  // ─────────────────────────────────────────────
   const isGuest = useMemo(() => {
     try {
+      // 1. Deteksi berdasarkan URL path (guest/store/order app)
       if (typeof window !== 'undefined') {
         const path = window.location.pathname;
         if (path.includes('/guest') || path.includes('/store') || path.includes('/order')) {
           return true;
         }
       }
+
+      // 2. Cek token langsung di localStorage (auth header yang dikirim ke API)
+      const directToken = localStorage.getItem('token');
+
+      // 3. Cek Zustand store (ken-enterprise-storage)
       const storageStr = localStorage.getItem('ken-enterprise-storage');
       if (storageStr) {
         const storage = JSON.parse(storageStr);
@@ -136,11 +146,20 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
         const user = state.user || state;
         const innerUser = user?.user || user;
         const role = innerUser?.role;
-        return role === 'guest';
+        const storeToken = innerUser?.token || user?.token;
+
+        // Jika role adalah guest → tidak boleh akses inventory
+        if (role === 'guest') return true;
+
+        // Jika ada role valid (owner/manager/staff/kasir) DAN ada token → bukan guest
+        const validRoles = ['superadmin', 'owner', 'manager', 'staff', 'kasir', 'chef', 'accounting', 'hrd'];
+        if (validRoles.includes(role) && (storeToken || directToken)) return false;
       }
-      return !localStorage.getItem('token');
+
+      // 4. Fallback: jika tidak ada token sama sekali → anggap guest (tidak boleh hit /api/inventory)
+      return !directToken;
     } catch (e) {
-      return true;
+      return true; // Safe default: jika error parsing, anggap guest
     }
   }, []);
 
@@ -159,11 +178,15 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
   const [bahanList, setBahanList] = useState([]);
   const [recipeIngredients, setRecipeIngredients] = useState([]);
 
-  // Fetch materials for real-time BOM display
+  // Fetch materials for real-time BOM display — hanya jika user ter-autentikasi
   useEffect(() => {
-    if (isGuest) return;
+    if (isGuest) {
+      // Jika guest/tidak login → BOM section tidak akan tampil (bahanList kosong)
+      setBahanList([]);
+      return;
+    }
     api.getBahan().then(data => {
-      if (data) setBahanList(data);
+      if (Array.isArray(data)) setBahanList(data);
     }).catch(err => console.error("Gagal memuat bahan baku untuk BOM", err));
   }, [isGuest]);
 
