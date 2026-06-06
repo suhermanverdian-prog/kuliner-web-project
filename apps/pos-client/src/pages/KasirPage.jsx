@@ -22,7 +22,19 @@ import DigitalReceipt from '../components/DigitalReceipt';
 const getImgUrl = (url) => {
   if (!url) return '';
   if (url.startsWith('http')) return url;
-  return url;
+  
+  // Clean relative path prefix
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  
+  // Extract backend base URL from API_URL
+  const apiEndpoint = api.url || '';
+  try {
+    const parsed = new URL(apiEndpoint);
+    return `${parsed.protocol}//${parsed.host}${cleanPath}`;
+  } catch (e) {
+    // Fallback if URL is invalid or relative (like '/api')
+    return cleanPath;
+  }
 };
 
 const parseItems = (items) => {
