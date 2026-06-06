@@ -18,8 +18,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(dirname, './src'),
       'react': path.dirname(require.resolve('react/package.json')),
-      'react-dom': path.dirname(require.resolve('react-dom/package.json')),
-      '@tanstack/react-query': path.dirname(require.resolve('@tanstack/react-query/package.json'))
+      'react-dom': path.dirname(require.resolve('react-dom/package.json'))
     }
   },
   build: {
@@ -27,16 +26,14 @@ export default defineConfig({
       output: {
         manualChunks: {
           'lucide-vendor': ['lucide-react'],
-          'ui-vendor': ['framer-motion', 'clsx', 'tailwind-merge'],
-          'query-vendor': ['@tanstack/react-query', '@tanstack/react-query-devtools'],
-          'react-vendor': ['react', 'react-dom', 'react-router-dom']
+          'ui-vendor': ['framer-motion', 'clsx', 'tailwind-merge']
         }
       }
     },
     chunkSizeWarningLimit: 1000
   },
   optimizeDeps: {
-    include: ['lucide-react', '@tanstack/react-query', '@tanstack/react-query-devtools']
+    include: ['lucide-react']
   },
   test: {
     globals: true,

@@ -85,16 +85,19 @@ const permissionGuard = (featureKey, action = 'view') => {
 
             // 4. FALLBACK: Default hardcoded permissions for legacy support
             // (If no dynamic permission is found in DB, we use these safe defaults)
+            const normRole = String(role || '').toLowerCase();
             const defaultRoles = {
                 'owner': true, 
                 'manager': true, 
                 'accounting': ['accounting', 'keuangan', 'reports', 'dashboard', 'inventory', 'procurement'].includes(featureKey),
                 'chef': ['inventory', 'menu', 'kds', 'dashboard', 'procurement'].includes(featureKey),
                 'staff': ['pos', 'dashboard', 'shifts', 'tables', 'inventory'].includes(featureKey),
+                'cashier': ['pos', 'dashboard', 'shifts', 'tables', 'inventory'].includes(featureKey),
+                'kasir': ['pos', 'dashboard', 'shifts', 'tables', 'inventory'].includes(featureKey),
                 'hrd': ['hrd', 'dashboard'].includes(featureKey)
             };
 
-            if (defaultRoles[role] === true || (Array.isArray(defaultRoles[role]) && defaultRoles[role].includes(featureKey))) {
+            if (defaultRoles[normRole] === true || (Array.isArray(defaultRoles[normRole]) && defaultRoles[normRole].includes(featureKey))) {
                 return next();
             }
 
