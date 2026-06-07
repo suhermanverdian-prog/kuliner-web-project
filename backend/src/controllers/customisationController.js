@@ -12,11 +12,7 @@ const { emitCustomisationUpdate } = require('../utils/realtimeNotifier');
  */
 async function getCustomisations(req, res) {
   try {
-    const fs = require('fs');
-    const path = require('path');
-    const logPath = path.join(__dirname, '../../debug.log');
-    const logMsg = `[${new Date().toISOString()}] GET Headers: ${JSON.stringify(req.headers)}\nGET userContext: ${JSON.stringify(req.userContext || null)}\n\n`;
-    fs.appendFileSync(logPath, logMsg, 'utf8');
+    console.log(`[${new Date().toISOString()}] GET /api/customisations - userContext:`, req.userContext || null);
 
     const tenantId = req.userContext?.tenantId || req.headers['x-tenant-id'];
     const outletId = req.userContext?.outletId || req.headers['x-outlet-id'] || null;
@@ -36,11 +32,7 @@ async function getCustomisations(req, res) {
 async function upsertCustomisation(req, res) {
   try {
     const { key, value } = req.body;
-    const fs = require('fs');
-    const path = require('path');
-    const logPath = path.join(__dirname, '../../debug.log');
-    const logMsg = `[${new Date().toISOString()}] POST Body: ${JSON.stringify(req.body)}\nPOST Headers: ${JSON.stringify(req.headers)}\nPOST userContext: ${JSON.stringify(req.userContext || null)}\n\n`;
-    fs.appendFileSync(logPath, logMsg, 'utf8');
+    console.log(`[${new Date().toISOString()}] POST /api/customisations - key: ${key}, userContext:`, req.userContext || null);
 
     const tenantId = req.userContext?.tenantId || req.headers['x-tenant-id'];
     const outletId = req.userContext?.outletId || req.headers['x-outlet-id'] || null;
