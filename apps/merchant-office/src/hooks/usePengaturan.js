@@ -12,11 +12,20 @@ export function usePengaturan() {
   const [selected, setSelected] = useState(null);
   
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'users';
+  const activeTab = useMemo(() => {
+    const hash = window.location.hash;
+    const searchPart = hash.includes('?') ? hash.split('?')[1] : '';
+    const hashParams = new URLSearchParams(searchPart);
+    return searchParams.get('tab') || hashParams.get('tab') || 'users';
+  }, [searchParams]);
+
   const setActiveTab = useCallback((newTab) => {
-    // Preserve other search parameters like standalone when switching tabs
-    const nextParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    const hash = window.location.hash;
+    const pathPart = hash.includes('?') ? hash.split('?')[0] : hash;
+    const searchPart = hash.includes('?') ? hash.split('?')[1] : '';
+    const nextParams = new URLSearchParams(searchPart);
     nextParams.set('tab', newTab);
+    window.location.hash = `${pathPart}?${nextParams.toString()}`;
     setSearchParams(nextParams);
   }, [setSearchParams]);
   const [settings, setSettings] = useState({ storeName: '', taxPct: 0, servicePct: 0 });
