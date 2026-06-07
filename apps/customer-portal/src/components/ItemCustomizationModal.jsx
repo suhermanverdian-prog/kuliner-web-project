@@ -88,37 +88,69 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
   
   const isBeverage = isCoffee || isNonCoffee || isTea || cat.includes('beverage') || cat.includes('drink');
 
-  // Memoized saved configs to guarantee stable references and avoid useEffect loops
-  const { sizes, extras, milksList } = useMemo(() => {
-    let sSizes = DEFAULT_SIZES;
-    let sExtras = SWEET_EXTRAS;
-    let sMilks = [
+  // ─── State modifier — diisi dari Supabase via getCustomisations() ───
+  const [sizes,     setSizes]     = useState(() => {
+    try {
+      const ls = JSON.parse(localStorage.getItem('ken_custom_sizes'));
+      if (Array.isArray(ls) && ls.length > 0) return ls;
+    } catch (_) {}
+    return DEFAULT_SIZES;
+  });
+  const [extras,    setExtras]    = useState(() => {
+    try {
+      const ls = JSON.parse(localStorage.getItem('ken_custom_extras'));
+      if (Array.isArray(ls) && ls.length > 0) return isTea ? TEA_EXTRAS : ls;
+    } catch (_) {}
+    return isTea ? TEA_EXTRAS : SWEET_EXTRAS;
+  });
+  const [milksList, setMilksList] = useState(() => {
+    try {
+      const ls = JSON.parse(localStorage.getItem('ken_custom_milks'));
+      if (Array.isArray(ls) && ls.length > 0) {
+        return [{ key: 'standard', label: 'Standard', priceAdd: 0 }, ...ls, { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 }];
+      }
+    } catch (_) {}
+    const defaultMilks = [
       { key: 'oat',     label: 'Oat Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
       { key: 'almond',  label: 'Almond Milk',  priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
       { key: 'soy',     label: 'Soy Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
     ];
+    return [{ key: 'standard', label: 'Standard', priceAdd: 0 }, ...defaultMilks, { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 }];
+  });
+  const [customisationsLoading, setCustomisationsLoading] = useState(true);
 
-    try {
-      const parsedSizes = JSON.parse(localStorage.getItem('ken_custom_sizes'));
-      if (parsedSizes) sSizes = parsedSizes;
-    } catch(e) {}
-    try {
-      const parsedExtras = JSON.parse(localStorage.getItem('ken_custom_extras'));
-      if (parsedExtras) sExtras = parsedExtras;
-    } catch(e) {}
-    try {
-      const parsedMilks = JSON.parse(localStorage.getItem('ken_custom_milks'));
-      if (parsedMilks) sMilks = parsedMilks;
-    } catch(e) {}
+  // ─── Fetch customisations dari Supabase ───────────────────────────────
+  useEffect(() => {
+    api.getCustomisations()
+      .then(res => {
+        const cfg = res?.data || res || {};
 
-    const resolvedExtras = isTea ? TEA_EXTRAS : sExtras;
-    const resolvedMilksList = [
-      { key: 'standard', label: 'Standard', priceAdd: 0 },
-      ...sMilks,
-      { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 },
-    ];
+        const dbSizes = cfg['ken_custom_sizes'];
+        if (Array.isArray(dbSizes) && dbSizes.length > 0) {
+          setSizes(dbSizes);
+          localStorage.setItem('ken_custom_sizes', JSON.stringify(dbSizes));
+        }
 
-    return { sizes: sSizes, extras: resolvedExtras, milksList: resolvedMilksList };
+        const dbExtras = cfg['ken_custom_extras'];
+        if (Array.isArray(dbExtras) && dbExtras.length > 0) {
+          setExtras(isTea ? TEA_EXTRAS : dbExtras);
+          localStorage.setItem('ken_custom_extras', JSON.stringify(dbExtras));
+        }
+
+        const dbMilks = cfg['ken_custom_milks'];
+        if (Array.isArray(dbMilks) && dbMilks.length > 0) {
+          setMilksList([
+            { key: 'standard', label: 'Standard',   priceAdd: 0 },
+            ...dbMilks,
+            { key: 'no-milk',  label: 'Tanpa Susu', priceAdd: 0 },
+          ]);
+          localStorage.setItem('ken_custom_milks', JSON.stringify(dbMilks));
+        }
+      })
+      .catch(err => {
+        console.warn('[KEN CustomizationModal] Failed to fetch customisations, using local defaults/localStorage:', err);
+      })
+      .finally(() => setCustomisationsLoading(false));
   }, [isTea]);
 
   const isGuest = useMemo(() => {
@@ -738,13 +770,13 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             className={cn(
                               'flex items-center justify-between px-3 h-10 rounded-md border-2 text-[10px] font-bold transition-all active:scale-95',
                               selected
-                                ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500 text-amber-700 dark:text-amber-400'
+                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900 shadow-sm shadow-amber-500/20'
                                 : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
                             )}
                           >
                             <span className="truncate">{e.label}</span>
                             {e.priceAdd > 0 && (
-                              <span className={cn('font-mono text-[9px] font-bold ml-1', selected ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-400')}>
+                              <span className={cn('font-mono text-[9px] font-bold ml-1', selected ? 'text-white/80 dark:text-zinc-900/70' : 'text-zinc-400 dark:text-zinc-500')}>
                                 +{formatRupiah(e.priceAdd)}
                               </span>
                             )}
@@ -788,13 +820,13 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             className={cn(
                               'flex items-center justify-between px-3 h-10 rounded-md border-2 text-[10px] font-bold transition-all active:scale-95',
                               selected
-                                ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500 text-amber-700 dark:text-amber-400'
+                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900 shadow-sm shadow-amber-500/20'
                                 : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
                             )}
                           >
                             <span className="truncate">{e.label}</span>
                             {e.priceAdd > 0 && (
-                              <span className="font-mono text-[9px] font-bold ml-1 text-amber-600 dark:text-amber-400">
+                              <span className={cn('font-mono text-[9px] font-bold ml-1', selected ? 'text-white/80 dark:text-zinc-900/70' : 'text-zinc-400 dark:text-zinc-500')}>
                                 +{formatRupiah(e.priceAdd)}
                               </span>
                             )}

@@ -437,7 +437,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Main Panel */}
-      <div className="relative w-full md:max-w-6xl sm:max-w-2xl bg-card rounded-lg border border-border shadow-2xl overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-300">
+      <div className="relative w-full md:max-w-6xl sm:max-w-2xl bg-card rounded-lg border border-border shadow-2xl dark:shadow-none overflow-hidden flex flex-col max-h-[92vh] animate-in zoom-in-95 duration-300">
         
         {/* Absolute Close Button */}
         <button
@@ -454,16 +454,16 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
             {/* Left Column (col-span-4): Visual Preview, BOM & Checkout */}
             <div className="md:col-span-4 space-y-4">
               {/* Product Visual Card */}
-              <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-border rounded-lg p-3 flex gap-3">
+              <div className="bg-zinc-50 dark:bg-zinc-900/30 border border-border rounded-lg p-4 flex gap-4">
                 {item.image ? (
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="w-20 h-20 object-cover rounded-md border border-border shadow-sm shrink-0"
+                    className="w-20 h-20 object-cover rounded-lg border border-border shadow-sm shrink-0"
                     onError={e => { e.target.style.display = 'none'; }}
                   />
                 ) : (
-                  <div className="w-20 h-20 rounded-md bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center border border-border shadow-sm shrink-0">
+                  <div className="w-20 h-20 rounded-lg bg-amber-50 dark:bg-amber-950/30 flex items-center justify-center border border-border shadow-sm shrink-0">
                     {isBeverage ? (
                       <Coffee size={32} className="text-amber-500 dark:text-amber-400" />
                     ) : (
@@ -475,7 +475,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                   <div>
                     <div className="flex items-center justify-between gap-1 mb-1">
                       <span className="text-[9px] uppercase font-bold tracking-widest text-zinc-400 dark:text-zinc-500">Pratinjau Item</span>
-                      <span className="px-1.5 py-0.5 rounded-sm bg-zinc-100 dark:bg-zinc-800 text-[9px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-widest">
+                      <span className="px-2 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-[9px] font-bold uppercase text-zinc-500 dark:text-zinc-400 tracking-widest">
                         {item.category || 'Menu'}
                       </span>
                     </div>
@@ -496,8 +496,8 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
 
               {/* Real-time Dynamic BOM Checklist */}
               {recipeIngredients.length > 0 && (
-                <div className="border border-border rounded-lg p-2.5 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col">
-                  <div className="flex items-center gap-1.5 mb-1 shrink-0">
+                <div className="border border-border rounded-lg p-4 bg-zinc-50/50 dark:bg-zinc-900/30 flex flex-col">
+                  <div className="flex items-center gap-2 mb-1 shrink-0">
                     <span className="text-amber-500 dark:text-amber-400">
                       <Sliders size={10} />
                     </span>
@@ -516,15 +516,15 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                           key={row.id}
                           onClick={() => toggleRecipeIngredient(row.id)}
                           className={cn(
-                            "flex items-center justify-between py-1.5 px-2 rounded border text-xs cursor-pointer select-none transition-all active:scale-[0.99]",
+                            "flex items-center justify-between py-2 px-2 rounded-lg border text-xs cursor-pointer select-none transition-all active:scale-[0.99]",
                             row.active 
                               ? "bg-card border-border hover:border-amber-500/30 text-zinc-800 dark:text-zinc-200" 
                               : "bg-zinc-100/50 dark:bg-zinc-900/50 border-transparent text-zinc-400 dark:text-zinc-600 line-through"
                           )}
                         >
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             <div className={cn(
-                              "w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors",
+                              "w-4 h-4 rounded-lg border flex items-center justify-center transition-colors",
                               row.active 
                                 ? "bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900" 
                                 : "bg-transparent border-zinc-300 dark:border-zinc-700"
@@ -544,10 +544,10 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
               )}
 
               {/* Quantity selector & Add button */}
-              <div className="space-y-3 pt-2 border-t border-border">
+              <div className="space-y-4 pt-2 border-t border-border">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Jumlah</span>
-                  <div className="flex items-center gap-3 bg-card border border-border rounded-md p-0.5">
+                  <div className="flex items-center gap-4 bg-card border border-border rounded-lg p-2">
                     <button
                       onClick={() => setQty(q => Math.max(1, q - 1))}
                       className="w-7 h-7 rounded flex items-center justify-center text-zinc-700 dark:text-zinc-300 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-500 transition-colors"
@@ -566,7 +566,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
 
                 <button
                   onClick={handleConfirm}
-                  className="w-full h-10 rounded bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 font-bold text-xs shadow shadow-amber-500/10 active:scale-[0.98] transition-all flex items-center justify-between px-3"
+                  className="w-full h-10 rounded-lg bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 font-bold text-xs active:scale-[0.98] transition-all flex items-center justify-between px-4"
                 >
                   <span>Tambah ke Pesanan</span>
                   <span className="font-mono tabular-nums text-xs font-bold">{formatRupiah(finalPrice)}</span>
@@ -587,7 +587,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                           key={s.key}
                           onClick={() => setSize(s.key)}
                           className={cn(
-                            'flex flex-col items-center justify-center h-12 rounded-md border-2 text-xs font-bold transition-all active:scale-95',
+                            'flex flex-col items-center justify-center h-12 rounded-lg border-2 text-xs font-bold transition-all active:scale-95',
                             size === s.key
                               ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/20'
                               : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
@@ -633,7 +633,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             key={s.key}
                             onClick={() => setStrength(s.key)}
                             className={cn(
-                              'h-10 rounded-md border-2 text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95',
+                              'h-10 rounded-lg border-2 text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95',
                               strength === s.key
                                 ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900'
                                 : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
@@ -655,9 +655,9 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             key={m.key}
                             onClick={() => setMilk(m.key)}
                             className={cn(
-                              'h-8 px-4 rounded-md border-2 text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95',
+                              'h-8 px-4 rounded-lg border-2 text-[10px] font-bold uppercase tracking-wider transition-all active:scale-95',
                               milk === m.key
-                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-sm shadow-amber-500/10'
+                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900'
                                 : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
                             )}
                           >
@@ -678,9 +678,9 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                           key={s.key}
                           onClick={() => setSize(s.key)}
                           className={cn(
-                            'flex flex-col items-center justify-center h-12 rounded-md border-2 text-xs font-bold transition-all active:scale-95',
+                            'flex flex-col items-center justify-center h-12 rounded-lg border-2 text-xs font-bold transition-all active:scale-95',
                             size === s.key
-                              ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/20'
+                              ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900'
                               : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
                           )}
                         >
@@ -714,7 +714,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             className={cn(
                               'flex items-center justify-center gap-2 h-12 rounded-md border-2 transition-all active:scale-95 font-bold text-xs uppercase tracking-widest',
                               temperature === t.key
-                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/20'
+                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900'
                                 : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
                             )}
                           >
@@ -736,7 +736,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             key={e.key}
                             onClick={() => toggleExtra(e.key)}
                             className={cn(
-                              'flex items-center justify-between px-3 h-10 rounded-md border-2 text-[10px] font-bold transition-all active:scale-95',
+                              'flex items-center justify-between px-4 h-10 rounded-lg border-2 text-[10px] font-bold transition-all active:scale-95',
                               selected
                                 ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500 text-amber-700 dark:text-amber-400'
                                 : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
@@ -764,7 +764,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                           key={t.key}
                           onClick={() => setTemperature(t.key)}
                           className={cn(
-                            'flex flex-col items-center justify-center h-12 rounded-md border-2 transition-all active:scale-95 text-xs font-bold uppercase tracking-wider',
+                            'flex flex-col items-center justify-center h-12 rounded-lg border-2 transition-all active:scale-95 text-xs font-bold uppercase tracking-wider',
                             temperature === t.key
                               ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/20'
                               : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
@@ -786,7 +786,7 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             key={e.key}
                             onClick={() => toggleExtra(e.key)}
                             className={cn(
-                              'flex items-center justify-between px-3 h-10 rounded-md border-2 text-[10px] font-bold transition-all active:scale-95',
+                              'flex items-center justify-between px-4 h-10 rounded-lg border-2 text-[10px] font-bold transition-all active:scale-95',
                               selected
                                 ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500 text-amber-700 dark:text-amber-400'
                                 : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'

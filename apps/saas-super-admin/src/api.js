@@ -1,7 +1,8 @@
-const API_URL = import.meta.env.VITE_API_URL || 
-  ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? `http://${window.location.hostname}:3001/api`
-    : '/api');
+const RAW_URL = import.meta.env.VITE_API_URL;
+const API_URL = RAW_URL ? RAW_URL.replace(/\/v1$/,'') : ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? `http://${window.location.hostname}:3001/api`
+  : '/api');
+
 
 import * as Sentry from '@sentry/react';
 
@@ -41,7 +42,7 @@ const getHeaders = () => {
 
 // --- ELITE PROXY ENGINE ---
 const getResource = (prop) => {
-  const map = {
+  const map = { 'login': 'login',
     // Inventory
     'getBahan': 'inventory',
     'saveBahan': 'inventory',
@@ -76,7 +77,7 @@ const getResource = (prop) => {
     'getOutletInfo': 'system/outletinfos',
     'getSettingsLoyalty': 'system/settings/loyalty',
     'saveSettingsLoyalty': 'system/settings/loyalty',
-    'getSystemLogs': 'system/system-logs',
+    'getSystemLogs': 'system/logs',
     'getSystemStats': 'system/stats',
     
     // Menu

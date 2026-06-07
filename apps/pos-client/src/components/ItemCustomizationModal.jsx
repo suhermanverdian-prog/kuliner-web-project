@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   X, Plus, Minus, Coffee, Thermometer, Droplets, Zap, 
   SlidersHorizontal, Utensils, Flame, Sparkles, FileText, 
-  CheckCircle2, Snowflake, Candy, Sliders
+  CheckCircle2, Snowflake, Candy, Sliders, Loader2
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
@@ -38,7 +38,13 @@ const DEFAULT_STRENGTHS = [
   { key: 'triple',   label: '+3 Shot' },
 ];
 
-// DEFAULT_MILKS has been refactored to be dynamically loaded from localStorage inside the component.
+// DEFAULT_MILKS dan DEFAULT_EXTRAS dimuat dari Supabase via api.getCustomisations()
+// localStorage digunakan sebagai fallback jika API belum tersedia.
+const DEFAULT_MILKS = [
+  { key: 'oat',    label: 'Oat Milk',    priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+  { key: 'almond', label: 'Almond Milk', priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+  { key: 'soy',    label: 'Soy Milk',    priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+];
 
 // Coffee & Chocolate Toppings
 const SWEET_EXTRAS = [
@@ -88,73 +94,113 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
   
   const isBeverage = isCoffee || isNonCoffee || isTea || cat.includes('beverage') || cat.includes('drink');
 
-  // Memoized saved configs to guarantee stable references and avoid useEffect loops
-  const { sizes, extras, milksList } = useMemo(() => {
-    let sSizes = DEFAULT_SIZES;
-    let sExtras = SWEET_EXTRAS;
-    let sMilks = [
-      { key: 'oat',     label: 'Oat Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
-      { key: 'almond',  label: 'Almond Milk',  priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
-      { key: 'soy',     label: 'Soy Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
-    ];
-
-    try {
-      const parsedSizes = JSON.parse(localStorage.getItem('ken_custom_sizes'));
-      if (parsedSizes) sSizes = parsedSizes;
-    } catch(e) {}
-    try {
-      const parsedExtras = JSON.parse(localStorage.getItem('ken_custom_extras'));
-      if (parsedExtras) sExtras = parsedExtras;
-    } catch(e) {}
-    try {
-      const parsedMilks = JSON.parse(localStorage.getItem('ken_custom_milks'));
-      if (parsedMilks) sMilks = parsedMilks;
-    } catch(e) {}
-
-    const resolvedExtras = isTea ? TEA_EXTRAS : sExtras;
-    const resolvedMilksList = [
-      { key: 'standard', label: 'Standard', priceAdd: 0 },
-      ...sMilks,
-      { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 },
-    ];
-
-    return { sizes: sSizes, extras: resolvedExtras, milksList: resolvedMilksList };
-  }, [isTea]);
+  // ─── State modifier — diisi dari Supabase via getCustomisations() ───
+  const [sizes,     setSizes]     = useState(DEFAULT_SIZES);
+  const [extras,    setExtras]    = useState(SWEET_EXTRAS);
+  const [milksList, setMilksList] = useState([
+    { key: 'standard', label: 'Standard',   priceAdd: 0 },
+    ...DEFAULT_MILKS,
+    { key: 'no-milk',  label: 'Tanpa Susu', priceAdd: 0 },
+  ]);
+  const [customisationsLoading, setCustomisationsLoading] = useState(true);
 
   const isGuest = useMemo(() => {
     try {
       if (typeof window !== 'undefined') {
         const path = window.location.pathname;
         if (path.includes('/guest') || path.includes('/store') || path.includes('/order') || path.includes('/customer')) {
-          console.log("[KEN CustomizationModal] isGuest=true (URL Path Match):", path);
           return true;
         }
       }
       const storageStr = localStorage.getItem('ken-enterprise-storage');
       if (storageStr) {
         const storage = JSON.parse(storageStr);
-        const state = storage.state || storage;
-        const user = state.user || state;
-        const innerUser = user?.user || user;
-        const role = innerUser?.role;
-        console.log("[KEN CustomizationModal] isGuest role check:", { role, user });
+        const state   = storage.state || storage;
+        const user    = state.user || state;
+        const inner   = user?.user || user;
+        const role    = inner?.role;
         if (!role) return true;
         return ['guest', 'customer'].includes(String(role).toLowerCase());
       }
-      const hasToken = !!localStorage.getItem('token');
-      console.log("[KEN CustomizationModal] isGuest token fallback check:", { hasToken });
-      return !hasToken;
+      return !localStorage.getItem('token');
     } catch (e) {
-      console.error("[KEN CustomizationModal] isGuest evaluation error:", e);
       return true;
     }
   }, []);
 
+  // ─── Fetch customisations dari Supabase ───────────────────────────────
+  useEffect(() => {
+    if (isGuest) { setCustomisationsLoading(false); return; }
+
+    api.getCustomisations()
+      .then(res => {
+        // Backend mengembalikan { success: true, data: { key: value, ... } }
+        const cfg = res?.data || res || {};
+
+        // 1. Sizes
+        const dbSizes = cfg['ken_custom_sizes'];
+        if (Array.isArray(dbSizes) && dbSizes.length > 0) {
+          setSizes(dbSizes);
+          localStorage.setItem('ken_custom_sizes', JSON.stringify(dbSizes));
+        } else {
+          // fallback ke localStorage
+          try {
+            const ls = JSON.parse(localStorage.getItem('ken_custom_sizes'));
+            if (ls) setSizes(ls);
+          } catch (_) {}
+        }
+
+        // 2. Extras / Toppings
+        const dbExtras = cfg['ken_custom_extras'];
+        if (Array.isArray(dbExtras) && dbExtras.length > 0) {
+          setExtras(isTea ? TEA_EXTRAS : dbExtras);
+          localStorage.setItem('ken_custom_extras', JSON.stringify(dbExtras));
+        } else {
+          try {
+            const ls = JSON.parse(localStorage.getItem('ken_custom_extras'));
+            if (ls) setExtras(isTea ? TEA_EXTRAS : ls);
+          } catch (_) {}
+        }
+
+        // 3. Milks
+        const dbMilks = cfg['ken_custom_milks'];
+        if (Array.isArray(dbMilks) && dbMilks.length > 0) {
+          setMilksList([
+            { key: 'standard', label: 'Standard',   priceAdd: 0 },
+            ...dbMilks,
+            { key: 'no-milk',  label: 'Tanpa Susu', priceAdd: 0 },
+          ]);
+          localStorage.setItem('ken_custom_milks', JSON.stringify(dbMilks));
+        } else {
+          try {
+            const ls = JSON.parse(localStorage.getItem('ken_custom_milks'));
+            if (ls) setMilksList([
+              { key: 'standard', label: 'Standard',   priceAdd: 0 },
+              ...ls,
+              { key: 'no-milk',  label: 'Tanpa Susu', priceAdd: 0 },
+            ]);
+          } catch (_) {}
+        }
+      })
+      .catch(err => {
+        console.warn('[KEN CustomizationModal] getCustomisations gagal, fallback ke localStorage:', err);
+        // Fallback graceful ke localStorage
+        try { const s = JSON.parse(localStorage.getItem('ken_custom_sizes'));  if (s) setSizes(s); } catch (_) {}
+        try {
+          const e = JSON.parse(localStorage.getItem('ken_custom_extras'));
+          if (e) setExtras(isTea ? TEA_EXTRAS : e);
+        } catch (_) {}
+        try {
+          const m = JSON.parse(localStorage.getItem('ken_custom_milks'));
+          if (m) setMilksList([{ key: 'standard', label: 'Standard', priceAdd: 0 }, ...m, { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 }]);
+        } catch (_) {}
+      })
+      .finally(() => setCustomisationsLoading(false));
+  }, [isGuest, isTea]);
+
   const [qty, setQty] = useState(1);
-  const [size, setSize] = useState(() => {
-    return isBeverage ? 'R' : 'Regular';
-  });
-  const [temperature, setTemperature] = useState('iced'); // Default Iced
+  const [size, setSize] = useState(() => isBeverage ? 'R' : 'Regular');
+  const [temperature, setTemperature] = useState('iced');
   const [sweetness, setSweetness] = useState('normal');
   const [strength, setStrength] = useState('standard');
   const [milk, setMilk] = useState('standard');
@@ -165,14 +211,12 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
   const [bahanList, setBahanList] = useState([]);
   const [recipeIngredients, setRecipeIngredients] = useState([]);
 
-  // Fetch materials for real-time BOM display
+  // Fetch bahan baku dari Supabase via API
   useEffect(() => {
-    console.log("[KEN CustomizationModal] Fetching bahan list. isGuest=", isGuest);
     if (isGuest) return;
-    api.getBahan().then(data => {
-      console.log("[KEN CustomizationModal] Bahan list loaded successfully:", data?.length || 0, "items");
-      if (data) setBahanList(data);
-    }).catch(err => console.error("[KEN CustomizationModal] Gagal memuat bahan baku untuk BOM", err));
+    api.getBahan()
+      .then(data => { if (data) setBahanList(data); })
+      .catch(err => console.error('[KEN CustomizationModal] Gagal memuat bahan baku untuk BOM', err));
   }, [isGuest]);
 
   const activeExtras = isBeverage ? extras : FOOD_EXTRAS;
@@ -738,13 +782,13 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             className={cn(
                               'flex items-center justify-between px-3 h-10 rounded-md border-2 text-[10px] font-bold transition-all active:scale-95',
                               selected
-                                ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500 text-amber-700 dark:text-amber-400'
+                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900 shadow-sm shadow-amber-500/20'
                                 : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
                             )}
                           >
                             <span className="truncate">{e.label}</span>
                             {e.priceAdd > 0 && (
-                              <span className={cn('font-mono text-[9px] font-bold ml-1', selected ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-400')}>
+                              <span className={cn('font-mono text-[9px] font-bold ml-1', selected ? 'text-white/80 dark:text-zinc-900/70' : 'text-zinc-400')}>
                                 +{formatRupiah(e.priceAdd)}
                               </span>
                             )}
@@ -788,13 +832,13 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
                             className={cn(
                               'flex items-center justify-between px-3 h-10 rounded-md border-2 text-[10px] font-bold transition-all active:scale-95',
                               selected
-                                ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-500 text-amber-700 dark:text-amber-400'
+                                ? 'bg-amber-500 border-amber-500 text-white dark:bg-amber-400 dark:border-amber-400 dark:text-zinc-900 shadow-sm shadow-amber-500/20'
                                 : 'bg-card border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:border-amber-500 dark:hover:border-amber-400'
                             )}
                           >
                             <span className="truncate">{e.label}</span>
                             {e.priceAdd > 0 && (
-                              <span className="font-mono text-[9px] font-bold ml-1 text-amber-600 dark:text-amber-400">
+                              <span className={cn('font-mono text-[9px] font-bold ml-1', selected ? 'text-white/80 dark:text-zinc-900/70' : 'text-zinc-400')}>
                                 +{formatRupiah(e.priceAdd)}
                               </span>
                             )}

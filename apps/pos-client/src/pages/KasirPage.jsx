@@ -21,21 +21,7 @@ import DigitalReceipt from '../components/DigitalReceipt';
 
 const getImgUrl = (url) => {
   if (!url) return '';
-  if (url.startsWith('http')) return url;
-  
-  const cleanPath = url.startsWith('/') ? url : `/${url}`;
-  const envUrl = import.meta.env.VITE_API_URL || '';
-  
-  if (envUrl.startsWith('http')) {
-    try {
-      const parsed = new URL(envUrl);
-      return `${parsed.protocol}//${parsed.host}${cleanPath}`;
-    } catch (e) {}
-  }
-  
-  // Local fallback
-  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  return isLocal ? `http://${window.location.hostname}:3001${cleanPath}` : cleanPath;
+  return url;
 };
 
 const parseItems = (items) => {
