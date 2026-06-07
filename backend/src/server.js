@@ -33,6 +33,9 @@ try {
   app = express();
   app.use((req, res, next) => {
     console.log(`🔍 [Incoming Request] ${req.method} ${req.url} (path: ${req.path})`);
+    if (req.headers['access-control-request-private-network']) {
+      res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    }
     next();
   });
   const server = http.createServer(app);
@@ -80,6 +83,9 @@ try {
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant-id, x-outlet-id, x-user-id, x-user-role, X-Requested-With, Accept, sentry-trace, baggage');
+    if (req.headers['access-control-request-private-network']) {
+      res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    }
     res.sendStatus(200);
   });
 

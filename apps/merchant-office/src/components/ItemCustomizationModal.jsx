@@ -88,37 +88,71 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
   
   const isBeverage = isCoffee || isNonCoffee || isTea || cat.includes('beverage') || cat.includes('drink');
 
-  // Memoized saved configs to guarantee stable references and avoid useEffect loops
-  const { sizes, extras, milksList } = useMemo(() => {
-    let sSizes = DEFAULT_SIZES;
-    let sExtras = SWEET_EXTRAS;
-    let sMilks = [
-      { key: 'oat',     label: 'Oat Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
-      { key: 'almond',  label: 'Almond Milk',  priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
-      { key: 'soy',     label: 'Soy Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
-    ];
+  // DEFAULT_MILKS & DEFAULT_EXTRAS fallback values
+  const DEFAULT_MILKS = useMemo(() => [
+    { key: 'oat',     label: 'Oat Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+    { key: 'almond',  label: 'Almond Milk',  priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+    { key: 'soy',     label: 'Soy Milk',     priceAdd: 5000, dose: 150, unit: 'ml', bahanId: '' },
+  ], []);
 
+  // ─── State modifier — diisi dari Supabase via getCustomisations() ───
+  const [sizes,     setSizes]     = useState(() => {
     try {
-      const parsedSizes = JSON.parse(localStorage.getItem('ken_custom_sizes'));
-      if (parsedSizes) sSizes = parsedSizes;
-    } catch(e) {}
+      const ls = JSON.parse(localStorage.getItem('ken_custom_sizes'));
+      if (Array.isArray(ls) && ls.length > 0) return ls;
+    } catch (_) {}
+    return DEFAULT_SIZES;
+  });
+  const [extras,    setExtras]    = useState(() => {
     try {
-      const parsedExtras = JSON.parse(localStorage.getItem('ken_custom_extras'));
-      if (parsedExtras) sExtras = parsedExtras;
-    } catch(e) {}
+      const ls = JSON.parse(localStorage.getItem('ken_custom_extras'));
+      if (Array.isArray(ls) && ls.length > 0) return isTea ? TEA_EXTRAS : ls;
+    } catch (_) {}
+    return isTea ? TEA_EXTRAS : SWEET_EXTRAS;
+  });
+  const [milksList, setMilksList] = useState(() => {
     try {
-      const parsedMilks = JSON.parse(localStorage.getItem('ken_custom_milks'));
-      if (parsedMilks) sMilks = parsedMilks;
-    } catch(e) {}
+      const ls = JSON.parse(localStorage.getItem('ken_custom_milks'));
+      if (Array.isArray(ls) && ls.length > 0) {
+        return [{ key: 'standard', label: 'Standard', priceAdd: 0 }, ...ls, { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 }];
+      }
+    } catch (_) {}
+    return [{ key: 'standard', label: 'Standard', priceAdd: 0 }, ...DEFAULT_MILKS, { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 }];
+  });
+  const [customisationsLoading, setCustomisationsLoading] = useState(true);
 
-    const resolvedExtras = isTea ? TEA_EXTRAS : sExtras;
-    const resolvedMilksList = [
-      { key: 'standard', label: 'Standard', priceAdd: 0 },
-      ...sMilks,
-      { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 },
-    ];
+  // ─── Fetch customisations dari Supabase ───────────────────────────────
+  useEffect(() => {
+    api.getCustomisations()
+      .then(res => {
+        const cfg = res?.data || res || {};
 
-    return { sizes: sSizes, extras: resolvedExtras, milksList: resolvedMilksList };
+        const dbSizes = cfg['ken_custom_sizes'];
+        if (Array.isArray(dbSizes) && dbSizes.length > 0) {
+          setSizes(dbSizes);
+          localStorage.setItem('ken_custom_sizes', JSON.stringify(dbSizes));
+        }
+
+        const dbExtras = cfg['ken_custom_extras'];
+        if (Array.isArray(dbExtras) && dbExtras.length > 0) {
+          setExtras(isTea ? TEA_EXTRAS : dbExtras);
+          localStorage.setItem('ken_custom_extras', JSON.stringify(dbExtras));
+        }
+
+        const dbMilks = cfg['ken_custom_milks'];
+        if (Array.isArray(dbMilks) && dbMilks.length > 0) {
+          setMilksList([
+            { key: 'standard', label: 'Standard',   priceAdd: 0 },
+            ...dbMilks,
+            { key: 'no-milk',  label: 'Tanpa Susu', priceAdd: 0 },
+          ]);
+          localStorage.setItem('ken_custom_milks', JSON.stringify(dbMilks));
+        }
+      })
+      .catch(err => {
+        console.warn('[KEN CustomizationModal] Failed to fetch customisations, using local defaults/localStorage:', err);
+      })
+      .finally(() => setCustomisationsLoading(false));
   }, [isTea]);
 
   const isGuest = useMemo(() => {
