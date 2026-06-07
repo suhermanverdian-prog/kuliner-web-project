@@ -1,0 +1,27 @@
+/*
+ * Theme Design Token File (KEN Enterprise)
+ * This file centralizes semantic utility classes using the CSS variables defined in index.css.
+ * It provides convenient class names that map to the Zinc and Amber palette, ensuring
+ * a consistent visual language across the application.
+ */
+
+/* Background utilities */
+.bg-background { background-color: var(--bg-app); }
+.bg-card { background-color: var(--bg-card); }
+.bg-muted { background-color: var(--bg-subtle); }
+
+/* Text utilities */
+.text-foreground { color: var(--text-primary); }
+.text-muted-foreground { color: var(--text-tertiary); }
+
+/* Amber accent utilities */
+.bg-amber-primary { background-color: var(--amber); color: var(--text-on-amber); }
+.hover\:bg-amber-primary:hover { background-color: var(--amber-hover); }
+
+/* Rounded utilities (8px grid) */
+.rounded-lg { border-radius: var(--radius); }
+.rounded-md { border-radius: var(--radius-md); }
+
+/* Font utilities */
+.font-mono { font-family: var(--font-mono); }
+.tabular-nums { font-variant-numeric: tabular-nums; }
