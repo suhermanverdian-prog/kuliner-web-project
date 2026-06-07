@@ -60,6 +60,12 @@ router.delete('/tables/:id', systemController.deleteTable);
 router.get('/system-logs', systemController.getActivityLogs);
 
 /**
+ * @route GET /api/system/logs
+ * @desc Alias untuk /system-logs — digunakan oleh frontend (CommandCenterPage & ActivityLogPage)
+ */
+router.get('/logs', systemController.getActivityLogs);
+
+/**
  * @route GET /api/outletinfos
  * Menyediakan informasi geofence dan koordinat outlet.
  */
