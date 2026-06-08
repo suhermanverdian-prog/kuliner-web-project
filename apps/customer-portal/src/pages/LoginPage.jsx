@@ -1,10 +1,9 @@
 import React from 'react';
 import { 
-  Command, Lock, User, Phone, 
-  ShieldCheck, ArrowRight, Sparkles,
-  ChevronRight, Laptop, UserCircle, Briefcase,
-  Smartphone, Mail, CheckCircle2, Star,
-  Zap, LayoutDashboard, Globe
+  Command, Lock, User,
+  ShieldCheck, ArrowRight,
+  Smartphone, Mail,
+  Star, Zap, LayoutDashboard, Globe
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -25,182 +24,220 @@ export default function LoginPage({ onLogin, memberOnly = false, onGoRegister, o
   } = useLoginPage(onLogin, memberOnly);
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden font-sans font-mono tabular-nums">
-      {/* Dynamic Background Elements */}
+    /* h-screen + overflow-hidden → tidak pernah melebihi viewport */
+    <div className="h-screen w-full flex items-center justify-center bg-background relative overflow-hidden font-sans tabular-nums">
+
+      {/* Dekorasi latar */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-15%] left-[-5%] w-[50%] h-[50%] bg-amber- blur-[150px] rounded-lg animate-pulse duration-[10s]" />
-        <div className="absolute bottom-[-15%] right-[-5%] w-[45%] h-[45%] " />
+        <div className="absolute top-[-15%] left-[-5%] w-[50%] h-[50%] blur-[150px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-15%] right-[-5%] w-[45%] h-[45%] blur-[120px] rounded-full animate-pulse" style={{ animationDelay: '3s' }} />
       </div>
 
-      <div className="w-full max-w-[1200px] flex flex-col lg:flex-row gap-0 lg:gap-16 p-8 lg:p-16 relative z-10 items-center justify-center">
-        
-        {/* Brand Side (Visible on Desktop) */}
-        <div className="hidden lg:flex flex-col flex-1 space-y-12 animate-in fade-in slide-in-from-left-12 duration-1000">
-           <div className="w-24 h-24 ">
-              <Command className="text-zinc-950" size={48} />
-           </div>
-           <div className="space-y-6">
-              <h1 className="text-8xl font-black tracking-tighter text-zinc-950 leading-none">KEN <span className="text-amber-500">ENTERPRISE</span></h1>
-              <p className="text-xl font-medium text-zinc-500 dark:text-zinc-100 max-w-md leading-relaxed ">Antarmuka ERP premium untuk manajemen operasional berskala global yang lebih cerdas, cepat, dan modern.</p>
-           </div>
-           
-           <div className="grid grid-cols-2 gap-10 pt-10">
-              <div className="flex items-center gap-4 group">
-                 <div className="w-16 h-16 rounded-lg bg-background flex items-center justify-center group-hover:bg-amber- group-hover:text-amber-500 transition-all border border-white/5">
-                    <Zap size={28} />
-                 </div>
-                 <div>
-                    <p className="text-xs font-black uppercase tracking-[0.3em]">Ultra Fast</p>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-100 font-bold ">High-Performance Cloud Nodes.</p>
-                 </div>
+      {/* Layout dua kolom — tidak melampaui layar */}
+      <div className="w-full max-w-5xl flex flex-col lg:flex-row items-center justify-center gap-8 px-4 sm:px-8 lg:px-12 relative z-10">
+
+        {/* ───── Brand Side (desktop only) ───── */}
+        <div className="hidden lg:flex flex-col flex-1 gap-6 animate-in fade-in slide-in-from-left-8 duration-700">
+          <Command className="text-zinc-900 dark:text-zinc-100" size={36} />
+
+          <div className="space-y-3">
+            <h1 className="text-5xl xl:text-6xl font-black tracking-tighter text-zinc-900 dark:text-zinc-50 leading-none">
+              KEN <span className="text-amber-500">ENTERPRISE</span>
+            </h1>
+            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
+              Antarmuka ERP premium untuk manajemen operasional berskala global yang lebih cerdas, cepat, dan modern.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 pt-2">
+            {[
+              { icon: <Zap size={18} />, title: 'Ultra Fast', desc: 'High-Performance Cloud.' },
+              { icon: <Star size={18} />, title: 'SaaS Elite', desc: 'Premium Enterprise Interface.' },
+            ].map(f => (
+              <div key={f.title} className="flex items-center gap-3 group">
+                <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-600 dark:text-zinc-400 group-hover:text-amber-500 transition-colors border border-zinc-200 dark:border-zinc-700 shrink-0">
+                  {f.icon}
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-zinc-900 dark:text-zinc-100">{f.title}</p>
+                  <p className="text-[10px] text-zinc-500 dark:text-zinc-400">{f.desc}</p>
+                </div>
               </div>
-              <div className="flex items-center gap-4 group">
-                 <div className="w-16 h-16 rounded-lg bg-background flex items-center justify-center group-hover:bg-amber- group-hover:text-amber-600 transition-all border border-white/5">
-                    <Star size={28} />
-                 </div>
-                 <div>
-                    <p className="text-xs font-black uppercase tracking-[0.3em]">SaaS Elite</p>
-                    <p className="text-[11px] text-zinc-500 dark:text-zinc-100 font-bold ">Premium Enterprise Interface.</p>
-                 </div>
-              </div>
-           </div>
+            ))}
+          </div>
         </div>
 
-        {/* Login Card */}
-        <Card className="w-full max-w-[480px] border-none shadow-[0_32px_128px_-32px_rgba(0,0,0,0.2)] bg-background/80 backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-12 duration-1000 relative overflow-hidden rounded-lg">
-          <div className="absolute top-0 left-0 w-full h-2.5 " />
-          
-          <CardHeader className="text-center pt-8 pb-4 space-y-4">
-            <div className="lg:hidden w-16 h-16 ">
-              <Command className="text-zinc-950" size={32} />
+        {/* ───── Login Card ───── */}
+        <Card className="w-full max-w-sm lg:max-w-[420px] border border-zinc-200 dark:border-zinc-700 shadow-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl animate-in fade-in slide-in-from-bottom-8 duration-700 rounded-lg overflow-hidden">
+
+          {/* Amber accent stripe */}
+          <div className="h-1 w-full bg-amber-500" />
+
+          {/* Header */}
+          <CardHeader className="text-center px-6 pt-5 pb-3 space-y-1">
+            <div className="lg:hidden flex justify-center mb-1">
+              <Command className="text-zinc-900 dark:text-zinc-100" size={24} />
             </div>
-            <div className="space-y-2">
-              <CardTitle className="text-4xl font-black tracking-tighter text-zinc-950">AUTHENTICATION</CardTitle>
-              <CardDescription className="text-[10px] font-black uppercase tracking-[0.5em] text-zinc-500 dark:text-zinc-100 mt-4">Secure Gateway Access</CardDescription>
-            </div>
+            <CardTitle className="text-2xl font-black tracking-tighter text-zinc-900 dark:text-zinc-50">
+              AUTHENTICATION
+            </CardTitle>
+            <CardDescription className="text-[9px] font-black uppercase tracking-[0.5em] text-zinc-400">
+              Secure Gateway Access
+            </CardDescription>
           </CardHeader>
-          
-          <CardContent className="px-8 pb-8 space-y-8">
+
+          {/* Content */}
+          <CardContent className="px-6 pb-4 space-y-4">
+
             {/* Role Switcher */}
             {!memberOnly && (
-              <div className="space-y-4">
-                <p className="text-[9px] font-black uppercase tracking-[0.5em] text-zinc-500 dark:text-zinc-100 text-center ">Select Operational Role</p>
-                <div className="flex bg-background p-2.5 rounded-lg border border-white/5 overflow-x-auto no-scrollbar gap-2">
+              <div className="space-y-2">
+                <p className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-400 text-center">
+                  Select Operational Role
+                </p>
+                <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1.5 rounded-lg gap-1 overflow-x-auto no-scrollbar">
                   <button
                     type="button"
                     onClick={() => { setSelectedRole('customer'); setError(''); }}
                     className={cn(
-                      "flex-1 px-8 py-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap",
-                      selectedRole === 'customer' 
-                        ? "bg-zinc-950 text-amber-500 shadow-2xl" 
-                        : "text-zinc-500 dark:text-zinc-100 hover:text-foreground"
+                      "shrink-0 px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all whitespace-nowrap",
+                      selectedRole === 'customer'
+                        ? "bg-zinc-900 dark:bg-zinc-950 text-amber-400 shadow-md"
+                        : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                     )}
                   >
                     Customer
                   </button>
-                  <div className="flex-1 flex gap-2">
-                    {staffRoles.map(role => (
-                      <button
-                        key={role.key}
-                        type="button"
-                        onClick={() => { setSelectedRole(role.key); setError(''); }}
-                        className={cn(
-                          "px-2 py-2 rounded-lg text-[9px] font-black uppercase transition-all flex-1 text-center whitespace-nowrap overflow-hidden",
-                          selectedRole === role.key 
-                            ? "bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/30" 
-                            : "text-zinc-500 dark:text-zinc-100 hover:bg-background/5"
-                        )}
-                      >
-                        {role.key === 'superadmin' ? 'SYS' : role.key === 'owner' ? 'OWN' : role.key === 'manager' ? 'MGR' : role.key === 'accounting' ? 'ACC' : role.key === 'chef' ? 'KDS' : role.key === 'staff' ? 'POS' : 'HRD'}
-                      </button>
-                    ))}
-                  </div>
+                  {staffRoles.map(role => (
+                    <button
+                      key={role.key}
+                      type="button"
+                      onClick={() => { setSelectedRole(role.key); setError(''); }}
+                      className={cn(
+                        "shrink-0 px-2.5 py-1.5 rounded-md text-[9px] font-black uppercase transition-all text-center whitespace-nowrap",
+                        selectedRole === role.key
+                          ? "bg-amber-500 text-zinc-950 shadow-md shadow-amber-500/20"
+                          : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                      )}
+                    >
+                      {role.key === 'superadmin' ? 'SYS'
+                        : role.key === 'owner' ? 'OWN'
+                        : role.key === 'manager' ? 'MGR'
+                        : role.key === 'accounting' ? 'ACC'
+                        : role.key === 'chef' ? 'KDS'
+                        : role.key === 'staff' ? 'POS'
+                        : 'HRD'}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div className="space-y-3">
-                <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-[0.4em] px-4">
+            {/* Form */}
+            <form onSubmit={handleLogin} className="space-y-3">
+              {/* Username */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.4em] px-1">
                   {selectedRole === 'customer' ? 'Identity Reference' : 'Operator Access Code'}
                 </label>
                 <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-background flex items-center justify-center group-focus-within:bg-amber- group-focus-within:text-amber-500 transition-all text-zinc-500 dark:text-zinc-100">
-                    {selectedRole === 'customer' ? <Smartphone size={16} /> : <User size={16} />}
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-amber-500 transition-colors">
+                    {selectedRole === 'customer' ? <Smartphone size={14} /> : <User size={14} />}
                   </div>
-                  <Input 
+                  <Input
                     placeholder={selectedRole === 'customer' ? '0812xxxx' : 'Username'}
-                    className="pl-14 h-14 bg-background border-none rounded-lg focus:bg-background focus:ring-2 focus:ring-amber-500/20 transition-all font-black text-base tracking-tight"
-                    value={username} onChange={e => setUsername(e.target.value)}
+                    className="pl-9 h-10 bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-amber-500/20 font-black text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-center px-4">
-                   <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-[0.4em]">Credentials</label>
-                   <button type="button" className="text-[9px] font-black text-amber-500 hover:text-amber-600 uppercase tracking-widest transition-colors">Reset Password?</button>
+              {/* Password */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.4em]">Credentials</label>
+                  <button type="button" className="text-[9px] font-black text-amber-500 hover:text-amber-600 uppercase tracking-wider transition-colors">
+                    Reset Password?
+                  </button>
                 </div>
                 <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-background flex items-center justify-center group-focus-within:bg-amber- group-focus-within:text-amber-500 transition-all text-zinc-500 dark:text-zinc-100">
-                    <Lock size={16} />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-amber-500 transition-colors">
+                    <Lock size={14} />
                   </div>
-                  <Input 
+                  <Input
                     type="password"
                     placeholder="••••••••"
-                    className="pl-14 h-14 bg-background border-none rounded-lg focus:bg-background focus:ring-2 focus:ring-amber-500/20 transition-all font-black text-xl tracking-widest"
-                    value={password} onChange={e => setPassword(e.target.value)}
+                    className="pl-9 h-10 bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 rounded-lg focus:ring-2 focus:ring-amber-500/20 font-black text-base tracking-widest text-zinc-900 dark:text-zinc-100"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
                   />
                 </div>
               </div>
 
+              {/* Error */}
               {error && (
-                <div className="p-4 rounded-lg bg-rose-500/5 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-[11px] font-black flex items-center gap-4 animate-in shake-in duration-500">
-                  <div className="w-6 h-6 rounded-lg bg-rose-50 dark:bg-rose-950/30 flex items-center justify-center shrink-0">!</div>
+                <div className="px-3 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-[10px] font-black flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-md bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center shrink-0 text-rose-500">!</div>
                   {error}
                 </div>
               )}
 
-              <div className="pt-2 flex flex-col gap-4">
-                <Button variant="primary"
-                  type="submit" 
+              {/* Buttons */}
+              <div className="flex flex-col gap-2 pt-1">
+                <Button
+                  variant="primary"
+                  type="submit"
                   disabled={loading}
-                  className="w-full h-16 font-black rounded-lg group relative overflow-hidden "
+                  className="w-full h-11 font-black rounded-lg group active:scale-[0.98] transition-all bg-amber-500 hover:bg-amber-600 text-white shadow-lg shadow-amber-500/20"
                 >
-                  <span className="relative z-10 flex items-center justify-center gap-4">
+                  <span className="flex items-center justify-center gap-3 text-[11px] tracking-[0.3em] uppercase">
                     {loading ? 'INITIALIZING...' : 'AUTHORIZE ACCESS'}
-                    {!loading && <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform duration-300" />}
+                    {!loading && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-200" />}
                   </span>
                 </Button>
-                
-                <Button 
-                  type="button" 
-                  variant="ghost" 
+
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={fillDemo}
-                  className="w-full h-12 text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500 dark:text-zinc-100 hover:bg-background/5 rounded-lg border border-white/5"
+                  className="w-full h-9 text-[9px] font-black uppercase tracking-[0.4em] text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded-lg border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 transition-all"
                 >
-                  <Zap size={14} className="mr-2 text-amber-500" /> Bypass Credentials (Demo)
+                  <Zap size={12} className="mr-1.5 text-amber-500" /> Bypass Credentials (Demo)
                 </Button>
               </div>
             </form>
           </CardContent>
 
-          <CardFooter className="bg-background p-8 flex flex-col items-center gap-6 border-t border-white/5">
+          {/* Footer */}
+          <CardFooter className="px-6 py-3 flex flex-col items-center gap-2 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50">
             {selectedRole === 'customer' ? (
-              <div className="text-center space-y-8 w-full">
-                 <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-[0.4em] ">Join the Global Enterprise Network</p>
-                 <Button variant="outline" className="w-full h-16 border-amber-500 text-white font-black uppercase tracking-[0.3em] rounded-lg hover:" onClick={onGoRegister}>Initialize Membership</Button>
+              <div className="w-full text-center space-y-2">
+                <p className="text-[8px] font-black text-zinc-400 uppercase tracking-[0.4em]">Join the Global Enterprise Network</p>
+                <Button
+                  variant="outline"
+                  className="w-full h-9 border-amber-500 text-amber-600 dark:text-amber-400 font-black uppercase tracking-[0.25em] text-[9px] rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/20 transition-all"
+                  onClick={onGoRegister}
+                >
+                  Initialize Membership
+                </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-6 py-4 px-8 ">
-                 <ShieldCheck size={20} className="text-amber-500 group-hover:scale-125 transition-transform" />
-                 <span className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-[0.4em]">Encrypted AES-256 Protocol</span>
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={14} className="text-amber-500" />
+                <span className="text-[9px] font-black text-zinc-400 uppercase tracking-[0.35em]">Encrypted AES-256 Protocol</span>
               </div>
             )}
-            <div className="flex gap-10  grayscale hover:grayscale-0 transition-all cursor-pointer">
-               <LayoutDashboard size={24} /> <Globe size={24} /> <Mail size={24} />
+
+            <div className="flex gap-4 text-zinc-300 dark:text-zinc-600 hover:text-zinc-500 transition-colors cursor-pointer">
+              <LayoutDashboard size={16} />
+              <Globe size={16} />
+              <Mail size={16} />
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-100/30">KEN ENTERPRISE NODES (v4.0) • GLOBAL CLOUD ACTIVE</p>
+
+            <p className="text-[8px] font-black uppercase tracking-widest text-zinc-300 dark:text-zinc-600">
+              KEN ENTERPRISE v4.0 • GLOBAL CLOUD ACTIVE
+            </p>
           </CardFooter>
         </Card>
       </div>

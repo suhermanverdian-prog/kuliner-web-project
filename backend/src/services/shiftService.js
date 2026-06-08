@@ -95,7 +95,58 @@ class ShiftService {
         difference,
         notes: shift.notes || ''
     };
-}
+  }
+
+  async closeShift(tenantId, shiftId, closeData) {
+    if (!tenantId) throw new AppError('Akses Ditolak: Tenant ID tidak ditemukan.', 401);
+    if (!shiftId) throw new AppError('Shift ID wajib disertakan.', 400);
+
+    // Pastikan shift ada dan masih open
+    const shift = await shiftRepository.getById(tenantId, shiftId);
+    if (!shift) throw new AppError('Shift tidak ditemukan.', 404);
+    if (shift.status !== 'open') throw new AppError('Shift ini sudah ditutup sebelumnya.', 400);
+
+    // Hitung total penjualan aktual sejak shift dibuka
+    const startTime = shift.start_time || new Date().toISOString();
+    let stats = { currentSales: 0, currentCash: 0, currentQris: 0, currentDebit: 0, currentSalesCount: 0 };
+    try {
+      stats = await shiftRepository.getSalesAggregation(tenantId, startTime);
+    } catch (e) {
+      console.warn('⚠️ [ShiftService] Sales aggregation failed on close, using zeros:', e.message);
+    }
+
+    const closingCash = typeof closeData.closingCash === 'number' ? closeData.closingCash : null;
+    const endTime = new Date().toISOString();
+    const expectedCash = Number(shift.initial_cash) + (stats.currentCash || 0);
+    const difference = closingCash !== null ? closingCash - expectedCash : null;
+
+    const updatedShift = await shiftRepository.update(tenantId, shiftId, {
+      status: 'closed',
+      end_time: endTime,
+      closing_cash: closingCash,
+      total_sales: stats.currentSales,
+      expected_cash: expectedCash,
+      difference: difference,
+      notes: closeData.notes || shift.notes || '',
+    });
+
+    return {
+      ...updatedShift,
+      openCash: updatedShift.initial_cash,
+      openTime: updatedShift.start_time,
+      closeTime: updatedShift.end_time,
+      currentSales: stats.currentSales,
+      currentSalesCount: stats.currentSalesCount,
+      currentCash: stats.currentCash,
+      currentQris: stats.currentQris,
+      currentDebit: stats.currentDebit,
+      closingCash,
+      expectedCash: Number(shift.initial_cash) + stats.currentCash,
+      difference: closingCash !== null
+        ? closingCash - (Number(shift.initial_cash) + stats.currentCash)
+        : null,
+    };
+  }
 
 }
 

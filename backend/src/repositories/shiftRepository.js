@@ -77,7 +77,10 @@ class ShiftRepository {
       .select()
       .single();
 
-    if (error) throw new AppError('Gagal memperbarui shift', 500);
+    if (error) {
+      console.error('Supabase Error on Update Shift:', error);
+      throw new AppError('Gagal memperbarui shift: ' + error.message, 500);
+    }
     return data;
   }
 

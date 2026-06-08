@@ -8,4 +8,5 @@ router.post('/', shiftController.openShift);
 router.get('/active', shiftController.getActiveShift);
 router.get('/:id/audit', shiftController.getShiftAudit);
 
+router.post('/:id/close', shiftController.closeShift);
 module.exports = router;
