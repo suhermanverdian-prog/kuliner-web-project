@@ -28,24 +28,54 @@ if not exist "backend\node_modules" (
     echo  [!] Backend node_modules missing. Rebuilding...
     cd backend && call npm install && cd ..
 )
-if not exist "frontend\node_modules" (
-    echo  [!] Frontend node_modules missing. Rebuilding...
-    cd frontend && call npm install && cd ..
+
+:: 3. Application Selector Menu
+echo.
+echo  --------------------------------------------------------
+echo   SELECT FRONTEND APPLICATION TO RUN:
+echo  --------------------------------------------------------
+echo   [1] Merchant Office (ERP, POS, Back-office) - DEFAULT
+echo   [2] POS Client (Kasir, KDS, Shift Management)
+echo   [3] Customer Portal (QR Menu and Customer Self-Order)
+echo   [4] SaaS Super Admin (Control Portal)
+echo   [5] Run ALL Applications Concurrently
+echo  --------------------------------------------------------
+set /p app_choice="Select application number (1-5, default 1): "
+
+if "%app_choice%"=="" set app_choice=1
+
+:: 4. Service Initialization
+echo.
+echo  [SYSTEM] Initializing KEN API Server (Development Mode)...
+start "KEN-BACKEND" /min cmd /k "title KEN API && cd backend && npm run dev"
+
+if "%app_choice%"=="1" (
+    echo  [SYSTEM] Initializing KEN UI Engine (Merchant Office)...
+    start "KEN-MERCHANT-OFFICE" /min cmd /k "title KEN Merchant Office && npm run dev:merchant"
+)
+if "%app_choice%"=="2" (
+    echo  [SYSTEM] Initializing KEN UI Engine (POS Client)...
+    start "KEN-POS-CLIENT" /min cmd /k "title KEN POS Client && npm run dev:pos"
+)
+if "%app_choice%"=="3" (
+    echo  [SYSTEM] Initializing KEN UI Engine (Customer Portal)...
+    start "KEN-CUSTOMER-PORTAL" /min cmd /k "title KEN Customer Portal && npm run dev:customer"
+)
+if "%app_choice%"=="4" (
+    echo  [SYSTEM] Initializing KEN UI Engine (SaaS Super Admin)...
+    start "KEN-SUPER-ADMIN" /min cmd /k "title KEN SaaS Super Admin && npm run dev:admin"
+)
+if "%app_choice%"=="5" (
+    echo  [SYSTEM] Initializing ALL Applications...
+    start "KEN-MONOREPO" /min cmd /k "title KEN Monorepo All && npm run dev:all"
 )
 
-:: 3. Service Initialization
-echo  [SYSTEM] Initializing KEN API Server (Development Mode)...
-start "KEN-BACKEND" /min cmd /k "title KEN API && cd backend && npm start"
-
-echo  [SYSTEM] Initializing KEN UI Engine (Development Mode)...
-start "KEN-FRONTEND" /min cmd /k "title KEN UI && cd frontend && npm run dev"
-
-:: 4. Sync Sequence
+:: 5. Sync Sequence
 echo.
 echo  [SYSTEM] Synchronizing enterprise nodes...
 timeout /t 5 /nobreak > nul
 
-:: 5. Launch
+:: 6. Launch
 echo.
 echo  [SYSTEM] Boot sequence complete.
 echo  [SERVICES] ---------------------------------------------
@@ -54,7 +84,7 @@ echo  [FRONTEND] : http://localhost:5173
 echo  [STATUS]   : ACTIVE
 echo  --------------------------------------------------------
 echo.
-echo  [ACTION] Launching Global Dashboard...
+echo  [ACTION] Launching Active Service...
 start http://localhost:5173
 
 echo.

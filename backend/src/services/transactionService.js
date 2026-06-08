@@ -779,8 +779,8 @@ class TransactionService {
     return true;
   }
 
-  static async getTrendReport(tenantId) {
-    const data = await TransactionRepository.getRecentPaidTransactions(tenantId, 7);
+  static async getTrendReport(userContext) {
+    const data = await TransactionRepository.getRecentPaidTransactions(userContext, 7);
     
     const daily = {};
     const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -806,8 +806,8 @@ class TransactionService {
     }));
   }
 
-  static async getTopSelling(tenantId) {
-    const data = await TransactionRepository.getTopSellingItems(tenantId);
+  static async getTopSelling(userContext) {
+    const data = await TransactionRepository.getTopSellingItems(userContext);
     
     const stats = data.reduce((acc, item) => {
         const id = item.menu_id;

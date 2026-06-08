@@ -88,6 +88,13 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
     if (user.role === 'superadmin' || user.is_superadmin === true) return true;
     if (item.perm === 'superadmin') return false;
     
+    // RLS / Scope Enforcement: Hide corporate/global pages if scope is outlet
+    const isOutletScope = user.scope === 'outlet';
+    const globalOnlyPages = ['/consolidated-finance', '/accounting', '/outlets'];
+    if (isOutletScope && globalOnlyPages.includes(item.id)) {
+      return false;
+    }
+    
     const requiredFlag = PAGE_FEATURE_MAP[item.id.replace('/', '').split('?')[0]];
     if (requiredFlag && !hasFeature(user, requiredFlag)) return false;
     if (user.permissions && user.permissions.all) return true;

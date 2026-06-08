@@ -47,28 +47,27 @@ graph TB
 
 ```
 Coffeeshop/
-├── frontend/                     # React + Vite (SPA)
-│   ├── src/
-│   │   ├── components/ui/        # Reusable UI (Button, Card, Input)
-│   │   ├── hooks/                # React-Query custom hooks
-│   │   ├── pages/                # Route-level pages
-│   │   ├── stores/               # Zustand state management
-│   │   └── lib/                  # Utilities (cn, formatCurrency)
-│   ├── .storybook/               # Storybook configuration
-│   └── vite.config.js
+├── apps/
+│   ├── saas-super-admin/         # SaaS control panel (React + Vite)
+│   ├── pos-client/               # Cashier POS, KDS & offline Dexie DB
+│   ├── customer-portal/          # Customer self-ordering portal (Vite)
+│   └── merchant-office/          # Merchant ERP, accounting & back-office
 │
-├── backend/                      # Express.js API Server
+├── packages/
+│   └── ui-kit/                   # Shared CSS, assets & Tailwind designs
+│
+├── backend/                      # Express.js API Server (SaaS core backend)
 │   └── src/
 │       ├── routes/               # HTTP route definitions
 │       ├── controllers/          # Request/response handling
 │       ├── services/             # Business logic & validation
 │       ├── repositories/         # Supabase data access layer
-│       ├── middleware/           # Auth, error handler
-│       └── utils/                # AppError, helpers
+│       └── middleware/           # Auth, JWT, RLS
 │
-├── .github/workflows/ci.yml     # GitHub Actions CI pipeline
-├── MASTER_GO_LIVE_SCHEMA.sql     # Production database schema
-└── supabase_security_migration.sql  # RLS & soft-delete migration
+├── archive-frontend/             # Backup of the old monolith frontend
+├── package.json                  # Root monorepo workspace settings
+├── Mulai_Aplikasi.bat            # Windows interactive bootstrapper
+└── vercel.json                   # Cloud hosting configuration
 ```
 
 ---
@@ -90,14 +89,14 @@ Coffeeshop/
 - **Grid System**: Strict 8px multiples
 - **Typography**: Inter (labels) + JetBrains Mono (numbers/currency)
 - **Dark Mode**: Full adaptive support with semantic CSS variables
-- **Components**: Documented in Storybook (`npm run storybook`)
+- **Components**: Shared tailwind configuration in `packages/ui-kit`
 
 ---
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 20+
+- Node.js 18+
 - Supabase project (with schema applied)
 
 ### Installation
@@ -107,29 +106,30 @@ Coffeeshop/
 git clone <repo-url>
 cd Coffeeshop
 
-# Install frontend dependencies
-cd frontend && npm install
-
-# Install backend dependencies
-cd ../backend && npm install
+# Install monorepo dependencies (from root)
+npm install
 ```
 
 ### Running Locally
 
+You can use the interactive bootstrapper on Windows:
 ```bash
-# Terminal 1: Start backend
-cd backend && npm run dev
+# Launch interactive helper
+./Mulai_Aplikasi.bat
+```
 
-# Terminal 2: Start frontend
-cd frontend && npm run dev
+Or run via npm workspaces:
+```bash
+# Start backend and Merchant Office
+npm run dev
 
-# Terminal 3: (Optional) Start Storybook
-cd frontend && npm run storybook
+# Start backend and all applications concurrently
+npm run dev:all
 ```
 
 ### Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory and in each app:
 
 ```env
 SUPABASE_URL=https://your-project.supabase.co

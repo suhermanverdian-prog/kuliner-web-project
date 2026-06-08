@@ -1,4 +1,5 @@
 const { supabase } = require('../supabase');
+const { applyScopeFilter } = require('../utils/queryHelper');
 
 class InventoryRepository {
   async getBahan(tenantId, options = {}) {
@@ -19,12 +20,14 @@ class InventoryRepository {
     return (data || []).filter(b => b.stock <= b.min_stock);
   }
 
-  async getLogs(tenantId) {
+  async getLogs(userContext) {
     // Join bahan untuk mendapatkan unit satuan (ml, gram, kg, dll)
     let query = supabase
       .from('inventory_logs')
       .select('*, bahan:bahan_id(unit)');
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    
+    query = applyScopeFilter(query, userContext);
+    
     const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
 
     if (error && error.code === 'PGRST205') return [];

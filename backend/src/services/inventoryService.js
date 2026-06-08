@@ -183,8 +183,8 @@ class InventoryService {
     return await InventoryRepository.getBahanLowStock(tenantId);
   }
 
-  static async getLogs(tenantId) {
-    const logs = await InventoryRepository.getLogs(tenantId);
+  static async getLogs(userContext) {
+    const logs = await InventoryRepository.getLogs(userContext);
     return (logs || []).map(l => ({
         ...l,
         bahan_name: l.bahan_name || 'Item #' + (l.bahan_id || 'Unknown'),

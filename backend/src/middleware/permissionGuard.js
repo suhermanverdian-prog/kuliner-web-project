@@ -26,6 +26,23 @@ const permissionGuard = (featureKey, action = 'view') => {
             // 1. MASTER BYPASS: Superadmin has absolute power
             if (role === 'superadmin') return next();
 
+            // 1.2 SCOPE ENFORCEMENT: Outlet / Regional level validation on request parameters
+            if (role !== 'owner') {
+                const reqOutletId = req.headers['x-outlet-id'] || req.query.outletId || req.query.outlet_id || req.body.outletId || req.body.outlet_id || req.params.outletId || req.params.outlet_id;
+                const userScope = req.userContext.scope;
+                const allowedOutlets = req.userContext.allowed_outlets;
+
+                if (reqOutletId && userScope && ['outlet', 'regional'].includes(userScope)) {
+                    const isAllowed = Array.isArray(allowedOutlets) && allowedOutlets.includes(reqOutletId);
+                    if (!isAllowed) {
+                        return res.status(403).json({
+                            error: 'Akses Ditolak',
+                            message: `Konteks operasional Anda dibatasi. Anda tidak memiliki wewenang untuk outlet: ${reqOutletId}`
+                        });
+                    }
+                }
+            }
+
             // 1.5 CHECK USER-SPECIFIC PERMISSIONS (Overrides role - Cached for 5 min)
             if (activeId) {
                 const cacheKey = `user_perms_${activeId}`;

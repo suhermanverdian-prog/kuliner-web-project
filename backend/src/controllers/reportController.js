@@ -4,9 +4,9 @@ class ReportController {
 
   async getSummary(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
+      const userContext = req.userContext || {};
       const { period } = req.query;
-      const result = await ReportService.getSummary(tenantId, period);
+      const result = await ReportService.getSummary(userContext, period);
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -15,8 +15,8 @@ class ReportController {
 
   async getTrend(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
-      const result = await ReportService.getTrend(tenantId);
+      const userContext = req.userContext || {};
+      const result = await ReportService.getTrend(userContext);
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -25,8 +25,8 @@ class ReportController {
 
   async getTopProducts(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
-      const result = await ReportService.getTopProducts(tenantId);
+      const userContext = req.userContext || {};
+      const result = await ReportService.getTopProducts(userContext);
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -35,8 +35,8 @@ class ReportController {
 
   async getPaymentMethods(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
-      const result = await ReportService.getPaymentMethods(tenantId);
+      const userContext = req.userContext || {};
+      const result = await ReportService.getPaymentMethods(userContext);
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -45,8 +45,8 @@ class ReportController {
 
   async getCriticalStock(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
-      const result = await ReportService.getCriticalStock(tenantId);
+      const userContext = req.userContext || {};
+      const result = await ReportService.getCriticalStock(userContext);
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -55,8 +55,8 @@ class ReportController {
 
   async getWaste(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
-      const result = await ReportService.getWaste(tenantId);
+      const userContext = req.userContext || {};
+      const result = await ReportService.getWaste(userContext);
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -65,8 +65,8 @@ class ReportController {
 
   async getInsights(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
-      const result = await ReportService.getInsights(tenantId);
+      const userContext = req.userContext || {};
+      const result = await ReportService.getInsights(userContext);
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });

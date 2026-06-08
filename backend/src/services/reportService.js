@@ -2,7 +2,7 @@ const ReportRepository = require('../repositories/reportRepository');
 
 class ReportService {
 
-  static async getSummary(tenantId, period) {
+  static async getSummary(userContext, period) {
     let dateFilter = new Date();
     if (period === '7days') dateFilter.setDate(dateFilter.getDate() - 7);
     else if (period === 'month') dateFilter.setDate(dateFilter.getDate() - 30);
@@ -10,12 +10,12 @@ class ReportService {
 
     const dateFilterStr = dateFilter.toISOString();
 
-    const transactions = await ReportRepository.getTransactionsSum(tenantId, dateFilterStr);
+    const transactions = await ReportRepository.getTransactionsSum(userContext, dateFilterStr);
     const totalRevenue = transactions.reduce((s, t) => s + (t.total || 0), 0);
     const totalTransactions = transactions.length;
 
-    const hppLines = await ReportRepository.getJournalLinesSum(tenantId, dateFilterStr, '5-%');
-    const expLines = await ReportRepository.getJournalLinesSum(tenantId, dateFilterStr, '6-%');
+    const hppLines = await ReportRepository.getJournalLinesSum(userContext, dateFilterStr, '5-%');
+    const expLines = await ReportRepository.getJournalLinesSum(userContext, dateFilterStr, '6-%');
 
     const totalHPP = hppLines.reduce((s, l) => s + (l.debit || 0), 0);
     const totalExpenses = expLines.reduce((s, l) => s + (l.debit || 0), 0);
@@ -34,9 +34,9 @@ class ReportService {
     };
   }
 
-  static async getTrend(tenantId) {
+  static async getTrend(userContext) {
     const today = new Date(new Date().setHours(0,0,0,0)).toISOString();
-    const txs = await ReportRepository.getTransactionTrend(tenantId, today);
+    const txs = await ReportRepository.getTransactionTrend(userContext, today);
     
     const hourly = Array.from({ length: 24 }, (_, i) => ({ hour: i, value: 0 }));
     txs.forEach(t => {
@@ -50,8 +50,8 @@ class ReportService {
     };
   }
 
-  static async getTopProducts(tenantId) {
-    const data = await ReportRepository.getTopProducts(tenantId);
+  static async getTopProducts(userContext) {
+    const data = await ReportRepository.getTopProducts(userContext);
     const stats = data.reduce((acc, item) => {
         const name = item.menu?.name || 'Unknown';
         if (!acc[name]) acc[name] = { name, icon: item.menu?.icon, qty: 0, revenue: 0 };
@@ -63,8 +63,8 @@ class ReportService {
     return Object.values(stats).sort((a, b) => b.qty - a.qty).slice(0, 5);
   }
 
-  static async getPaymentMethods(tenantId) {
-    const data = await ReportRepository.getPaymentMethods(tenantId);
+  static async getPaymentMethods(userContext) {
+    const data = await ReportRepository.getPaymentMethods(userContext);
     const totalAll = data.reduce((s, t) => s + t.total, 0);
     const stats = data.reduce((acc, t) => {
         const m = t.payment_method || 'Tunai';
@@ -81,8 +81,8 @@ class ReportService {
     return { methods: result, total: totalAll };
   }
 
-  static async getCriticalStock(tenantId) {
-    const data = await ReportRepository.getCriticalStock(tenantId, 10);
+  static async getCriticalStock(userContext) {
+    const data = await ReportRepository.getCriticalStock(userContext, 10);
     return data.map(b => ({
         name: b.name,
         stock: b.stock,
@@ -91,8 +91,8 @@ class ReportService {
     }));
   }
 
-  static async getWaste(tenantId) {
-    const data = await ReportRepository.getWasteLogs(tenantId);
+  static async getWaste(userContext) {
+    const data = await ReportRepository.getWasteLogs(userContext);
     const totalWaste = data.reduce((s, l) => s + (Math.abs(l.change_qty) * (l.bahan?.cost || 0)), 0);
     const cats = data.reduce((acc, l) => {
         const n = l.bahan?.name || 'Lainnya';
@@ -108,8 +108,7 @@ class ReportService {
     };
   }
 
-  static async getInsights(tenantId) {
-    // tenantId can be utilized to generate dynamic insights based on tenant statistics in future phases
+  static async getInsights(userContext) {
     return [
         { title: 'Optimasi Menu', body: 'Produk unggulan Anda memiliki margin 65%, pertimbangkan promosi bundling.', type: 'info' },
         { title: 'Efisiensi Stok', body: 'Terdeteksi pemborosan pada bahan Susu, periksa metode penyimpanan.', type: 'warning' }

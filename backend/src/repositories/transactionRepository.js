@@ -1,8 +1,9 @@
 const { supabase } = require('../supabase');
+const { applyScopeFilter } = require('../utils/queryHelper');
 
 class TransactionRepository {
   
-  async getTransactions(tenantId, page = 1, limit = 50) {
+  async getTransactions(userContext, page = 1, limit = 50) {
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
@@ -12,7 +13,7 @@ class TransactionRepository {
         .order('created_at', { ascending: false })
         .range(from, to);
 
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    query = applyScopeFilter(query, userContext);
     
     const { data, error, count } = await query;
     if (error) throw error;
@@ -20,8 +21,11 @@ class TransactionRepository {
     return { data, count };
   }
 
-  async getTransactionById(id) {
-    const { data, error } = await supabase.from('transactions').select('*').eq('id', id).maybeSingle();
+  async getTransactionById(id, userContext) {
+    let query = supabase.from('transactions').select('*').eq('id', id);
+    query = applyScopeFilter(query, userContext);
+    
+    const { data, error } = await query.maybeSingle();
     if (error) throw error;
     if (data) return data;
 
@@ -145,7 +149,7 @@ class TransactionRepository {
   }
 
   // --- Reports ---
-  async getRecentPaidTransactions(tenantId, days = 7) {
+  async getRecentPaidTransactions(userContext, days = 7) {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     const startDateStr = startDate.toISOString().split('T')[0];
@@ -156,19 +160,19 @@ class TransactionRepository {
         .gte('created_at', startDateStr)
         .eq('payment_status', 'paid');
 
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    query = applyScopeFilter(query, userContext);
 
     const { data, error } = await query;
     if (error) throw error;
     return data || [];
   }
 
-  async getTopSellingItems(tenantId) {
+  async getTopSellingItems(userContext) {
     let query = supabase
         .from('transaction_items')
         .select('menu_id, qty, menu(name, price, image, icon)');
     
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    query = applyScopeFilter(query, userContext);
     
     const { data, error } = await query;
     if (error) throw error;

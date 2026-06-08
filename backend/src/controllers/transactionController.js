@@ -6,11 +6,11 @@ class TransactionController {
 
   async getTransactions(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
+      const userContext = req.userContext || {};
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 50;
       
-      const { data, count } = await TransactionRepository.getTransactions(tenantId, page, limit);
+      const { data, count } = await TransactionRepository.getTransactions(userContext, page, limit);
 
       res.set('X-Total-Count', count);
       res.set('X-Total-Pages', Math.ceil(count / limit));
@@ -148,8 +148,8 @@ class TransactionController {
 
   async getTrendReport(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
-      const current = await TransactionService.getTrendReport(tenantId);
+      const userContext = req.userContext || {};
+      const current = await TransactionService.getTrendReport(userContext);
       res.json({ current });
     } catch (err) {
       res.status(500).json({ error: err.message });
@@ -158,8 +158,8 @@ class TransactionController {
 
   async getTopSelling(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
-      const result = await TransactionService.getTopSelling(tenantId);
+      const userContext = req.userContext || {};
+      const result = await TransactionService.getTopSelling(userContext);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: error.message });

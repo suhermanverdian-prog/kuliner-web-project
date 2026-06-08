@@ -1,52 +1,57 @@
 const { supabase } = require('../supabase');
+const { applyScopeFilter } = require('../utils/queryHelper');
 
 class ReportRepository {
 
-  async getTransactionsSum(tenantId, dateFilterStr) {
+  async getTransactionsSum(userContext, dateFilterStr) {
     let txQuery = supabase.from('transactions')
         .select('total')
         .eq('payment_status', 'paid')
         .gte('created_at', dateFilterStr);
     
-    if (tenantId) txQuery = txQuery.eq('tenant_id', tenantId);
+    txQuery = applyScopeFilter(txQuery, userContext);
     
     const { data, error } = await txQuery;
     if (error) throw error;
     return data || [];
   }
 
-  async getJournalLinesSum(tenantId, dateFilterStr, accountCodePattern) {
+  async getJournalLinesSum(userContext, dateFilterStr, accountCodePattern) {
     let query = supabase.from('journal_lines')
         .select('debit')
         .ilike('account_code', accountCodePattern)
         .gte('created_at', dateFilterStr);
     
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    // NOTE: journal_lines does not have outlet_id column. 
+    // We only filter by tenant_id (which is automatically done if we pass a minimal userContext or filter manually).
+    if (userContext && userContext.tenantId) {
+      query = query.eq('tenant_id', userContext.tenantId);
+    }
     
     const { data, error } = await query;
     if (error) throw error;
     return data || [];
   }
 
-  async getTransactionTrend(tenantId, dateFilterStr) {
+  async getTransactionTrend(userContext, dateFilterStr) {
     let query = supabase.from('transactions')
         .select('total, created_at')
         .eq('payment_status', 'paid')
         .gte('created_at', dateFilterStr);
         
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    query = applyScopeFilter(query, userContext);
     
     const { data, error } = await query;
     if (error) throw error;
     return data || [];
   }
 
-  async getTopProducts(tenantId) {
+  async getTopProducts(userContext) {
     let query = supabase.from('transactions')
         .select('items')
         .eq('payment_status', 'paid');
         
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    query = applyScopeFilter(query, userContext);
     
     const { data, error } = await query;
     if (error) throw error;
@@ -73,36 +78,39 @@ class ReportRepository {
     return parsedItems;
   }
 
-  async getPaymentMethods(tenantId) {
+  async getPaymentMethods(userContext) {
     let query = supabase.from('transactions')
         .select('payment_method, total')
         .eq('payment_status', 'paid');
         
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    query = applyScopeFilter(query, userContext);
     
     const { data, error } = await query;
     if (error) throw error;
     return data || [];
   }
 
-  async getCriticalStock(tenantId, threshold) {
+  async getCriticalStock(userContext, threshold) {
     let query = supabase.from('bahan')
         .select('*')
         .lt('stock', threshold);
         
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    // NOTE: bahan is global Master data under tenant. We only filter by tenantId.
+    if (userContext && userContext.tenantId) {
+      query = query.eq('tenant_id', userContext.tenantId);
+    }
     
     const { data, error } = await query;
     if (error) throw error;
     return data || [];
   }
 
-  async getWasteLogs(tenantId) {
+  async getWasteLogs(userContext) {
     let query = supabase.from('inventory_logs')
         .select('change_qty, bahan(name, cost)')
         .eq('type', 'Waste');
         
-    if (tenantId) query = query.eq('tenant_id', tenantId);
+    query = applyScopeFilter(query, userContext);
     
     const { data, error } = await query;
     if (error) throw error;
