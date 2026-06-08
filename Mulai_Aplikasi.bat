@@ -52,22 +52,27 @@ start "KEN-BACKEND" /min cmd /k "title KEN API && cd backend && npm run dev"
 if "%app_choice%"=="1" (
     echo  [SYSTEM] Initializing KEN UI Engine (Merchant Office)...
     start "KEN-MERCHANT-OFFICE" /min cmd /k "title KEN Merchant Office && npm run dev:merchant"
+    set TARGET_PORT=5178
 )
 if "%app_choice%"=="2" (
     echo  [SYSTEM] Initializing KEN UI Engine (POS Client)...
     start "KEN-POS-CLIENT" /min cmd /k "title KEN POS Client && npm run dev:pos"
+    set TARGET_PORT=5175
 )
 if "%app_choice%"=="3" (
     echo  [SYSTEM] Initializing KEN UI Engine (Customer Portal)...
     start "KEN-CUSTOMER-PORTAL" /min cmd /k "title KEN Customer Portal && npm run dev:customer"
+    set TARGET_PORT=5176
 )
 if "%app_choice%"=="4" (
     echo  [SYSTEM] Initializing KEN UI Engine (SaaS Super Admin)...
     start "KEN-SUPER-ADMIN" /min cmd /k "title KEN SaaS Super Admin && npm run dev:admin"
+    set TARGET_PORT=5177
 )
 if "%app_choice%"=="5" (
     echo  [SYSTEM] Initializing ALL Applications...
     start "KEN-MONOREPO" /min cmd /k "title KEN Monorepo All && npm run dev:all"
+    set TARGET_PORT=5178
 )
 
 :: 5. Sync Sequence
@@ -80,12 +85,12 @@ echo.
 echo  [SYSTEM] Boot sequence complete.
 echo  [SERVICES] ---------------------------------------------
 echo  [API]      : http://localhost:3001
-echo  [FRONTEND] : http://localhost:5173
+echo  [FRONTEND] : http://localhost:%TARGET_PORT%
 echo  [STATUS]   : ACTIVE
 echo  --------------------------------------------------------
 echo.
 echo  [ACTION] Launching Active Service...
-start http://localhost:5173
+start http://localhost:%TARGET_PORT%
 
 echo.
 echo  [SUCCESS] KEN Enterprise is now online.
