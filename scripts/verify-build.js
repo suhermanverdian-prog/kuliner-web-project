@@ -27,14 +27,14 @@ try {
     const lines = status.split('\n');
     const sourceChanges = lines.filter(line => {
       const file = line.substring(3);
-      return (file.startsWith('frontend/src/') || file.startsWith('backend/src/')) && 
+      return (file.startsWith('apps/') || file.startsWith('backend/src/')) && 
              !file.includes('coverage/') && 
              !file.includes('package-lock.json');
     });
 
     if (sourceChanges.length > 0) {
       console.warn(`${style.bold}${style.roseText}⚠️ WARNING: Terdapat perubahan kode sumber yang belum di-commit:${style.reset}`);
-      sourceChanges.forEach(change => console.log(`   ${change}`));
+      sourceChanges.forEach(change => console.log("   " + change));
       console.log(`\n${style.bold}${style.amberText}💡 Rekomendasi: Harap lakukan 'git add .' dan commit perubahan sebelum melakukan push untuk menghindari ghost code di Vercel!${style.reset}\n`);
     } else {
       console.log(`${style.emeraldText}✅ Bersih: Tidak ada perubahan kode aplikasi yang belum di-commit.${style.reset}`);
@@ -48,14 +48,14 @@ try {
 
 // 2. Dry-Run Vite Production Build
 try {
-  console.log(`\n${style.zincText}[2/3] Menguji kompilasi build produksi frontend (Vite/Rollup)...${style.reset}`);
-  console.log(`${style.zincText}     Menjalankan 'npm run build' di folder frontend...${style.reset}`);
+  console.log(`\n${style.zincText}[2/3] Menguji kompilasi build produksi monorepo frontend...${style.reset}`);
+  console.log(`${style.zincText}     Menjalankan 'npm run build' di root workspace...${style.reset}`);
   
-  execSync('npm run build --prefix frontend', { stdio: 'inherit' });
+  execSync('npm run build', { stdio: 'inherit' });
   
-  console.log(`\n${style.emeraldText}✅ SUCCESS: Kompilasi frontend berhasil dengan status 100% prima!${style.reset}`);
+  console.log(`\n${style.emeraldText}✅ SUCCESS: Kompilasi seluruh apps monorepo berhasil dengan status 100% prima!${style.reset}`);
 } catch (err) {
-  console.error(`\n${style.bold}${style.roseText}🚨 ERROR: Kompilasi frontend GAGAL!${style.reset}`);
+  console.error(`\n${style.bold}${style.roseText}🚨 ERROR: Kompilasi monorepo GAGAL!${style.reset}`);
   console.error(`${style.roseText}Ada kesalahan sintaksis, duplikasi import, atau file hilang di kode Anda. Perbaiki sebelum melakukan push!${style.reset}`);
   process.exit(1);
 }
