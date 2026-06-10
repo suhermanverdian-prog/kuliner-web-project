@@ -120,7 +120,10 @@ export default function WasteMonitoringPage() {
           <Button
             variant="outline"
             className="h-14 px-8 font-black uppercase tracking-widest bg-card border border-border text-foreground hover:bg-zinc-50 dark:hover:bg-zinc-800"
-            onClick={() => {}}
+            onClick={() => {
+              const el = document.getElementById('waste-logs-history');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
           >
             <History size={18} className="mr-2 text-rose-600 dark:text-rose-400" /> Waste Logs ({totalWasteQty})
           </Button>
@@ -232,7 +235,7 @@ export default function WasteMonitoringPage() {
           </Card>
 
           {/* WASTE LOG HISTORY – real data */}
-          <Card className="border border-border bg-card shadow-sm">
+          <Card id="waste-logs-history" className="border border-border bg-card shadow-sm">
             <CardHeader className="p-8 border-b border-border">
               <CardTitle className="text-lg font-black tracking-tighter uppercase text-zinc-900 dark:text-zinc-100">
                 Riwayat Waste Tercatat

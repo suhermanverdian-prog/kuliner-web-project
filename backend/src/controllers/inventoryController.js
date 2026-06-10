@@ -170,6 +170,36 @@ class InventoryController {
       res.status(500).json({ error: err.message });
     }
   }
+
+  async getWarehouses(req, res) {
+    try {
+      const { tenantId } = req.userContext || {};
+      const data = await InventoryService.getWarehouses(tenantId);
+      res.json(data);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  async createWarehouse(req, res) {
+    try {
+      const { tenantId } = req.userContext || {};
+      const data = await InventoryService.createWarehouse(req.body, tenantId);
+      res.status(201).json(data);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  async executeTransfer(req, res) {
+    try {
+      const { tenantId } = req.userContext || {};
+      const data = await InventoryService.executeStockTransfer(req.body, tenantId);
+      res.status(200).json(data);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 }
 
 module.exports = new InventoryController();

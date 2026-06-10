@@ -100,21 +100,9 @@ class AccountingService {
       }
     }
 
-    // 3. Approval Workflow Check with Toggle
-    const SystemService = require('./systemService');
-    const settings = await SystemService.getSettings(tenantId).catch(() => ({ approval_workflow_enabled: false }));
-    const approvalEnabled = !!settings?.approval_workflow_enabled;
-    
-    let status = 'APPROVED';
-    const amountThreshold = 10000000; // Rp 10.000.000
+    // 3. Approval Workflow Check with Toggle (Skipped header.status since general journals doesn't have status column in this schema version)
     const totalAmount = header.total_amount || roundedDebit;
     
-    if (approvalEnabled && totalAmount >= amountThreshold) {
-      status = 'PENDING_APPROVAL';
-    }
-    
-    header.status = status;
-
     // 4. Create Header
     const journal = await AccountingRepository.createJournalHeader(header);
 

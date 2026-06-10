@@ -108,4 +108,11 @@ router.post('/categories', permissionGuard('inventory', 'create'), inventoryCont
  */
 router.delete('/categories/:id', permissionGuard('inventory', 'delete'), inventoryController.deleteCategory);
 
+/**
+ * Multi-Warehouse & Transfer Routes
+ */
+router.get('/warehouses', permissionGuard('inventory', 'view'), inventoryController.getWarehouses);
+router.post('/warehouses', permissionGuard('inventory', 'create'), inventoryController.createWarehouse);
+router.post('/transfers', permissionGuard('inventory', 'create'), inventoryController.executeTransfer);
+
 module.exports = router;

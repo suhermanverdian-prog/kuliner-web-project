@@ -65,6 +65,9 @@ const getResource = (prop) => {
     'createCategory': 'inventory/categories',
     'deleteCategory': 'inventory/categories',
     'assembleInventory': 'inventory/assemble',
+    'getWarehouses': 'inventory/warehouses',
+    'addWarehouse': 'inventory/warehouses',
+    'executeTransfer': 'inventory/transfers',
     
     // System & Shifts
     'getShifts': 'shifts',

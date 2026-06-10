@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
+import { useAppStore } from '../store/useAppStore';
 
 export function useOutletPage() {
   const [outlets, setOutlets] = useState([]);
@@ -32,6 +33,11 @@ export function useOutletPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const user = useAppStore.getState().user;
+    if (user?.role !== 'super_admin') {
+      alert('Akses Ditolak: Hanya Superadmin yang diperbolehkan menambah atau mengubah outlet.');
+      return;
+    }
     try {
       if (editingOutlet) {
         await api.updateOutlet({ ...formData, id: editingOutlet.id });
@@ -59,6 +65,11 @@ export function useOutletPage() {
   };
 
   const handleDelete = async (id) => {
+    const user = useAppStore.getState().user;
+    if (user?.role !== 'super_admin') {
+      alert('Akses Ditolak: Hanya Superadmin yang diperbolehkan menghapus outlet.');
+      return;
+    }
     if (window.confirm('Apakah Anda yakin ingin menonaktifkan atau menghapus node outlet ini?')) {
       try {
         const response = await api.deleteOutlet(id);

@@ -11,8 +11,12 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "@/lib/utils";
 import { useOutletPage } from '../hooks/useOutletPage';
+import { useAppStore } from '../store/useAppStore';
 
 const OutletPage = () => {
+  const user = useAppStore(state => state.user);
+  const isSuperAdmin = user?.role === 'super_admin';
+  
   const {
     outlets,
     loading,
@@ -52,12 +56,14 @@ const OutletPage = () => {
            <Button variant="outline" className="h-14 px-8 font-black uppercase tracking-widest text-[10px] bg-card border-border rounded-lg">
               <Map size={18} className="mr-2" /> View Map Hub
            </Button>
-           <Button variant="primary"
-             onClick={() => { setEditingOutlet(null); setFormData({ name: '', address: '', phone: '', is_active: true }); setShowModal(true); }}
-             className="h-14 px-10 font-black uppercase tracking-widest rounded-lg"
-           >
-             <Plus size={18} className="mr-2" /> Add New Node
-           </Button>
+           {isSuperAdmin && (
+             <Button variant="primary"
+               onClick={() => { setEditingOutlet(null); setFormData({ name: '', address: '', phone: '', is_active: true }); setShowModal(true); }}
+               className="h-14 px-10 font-black uppercase tracking-widest rounded-lg"
+             >
+               <Plus size={18} className="mr-2" /> Add New Node
+             </Button>
+           )}
         </div>
       </div>
 
@@ -122,14 +128,16 @@ const OutletPage = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(outlet)} className="h-12 w-12 rounded-lg hover:bg-amber-500/10 hover:text-amber-500 transition-colors">
-                          <Edit2 size={18} />
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(outlet.id)} className="h-12 w-12 rounded-lg hover:bg-rose-50 dark:bg-rose-950/30 hover:text-rose-600 dark:text-rose-400 transition-colors">
-                          <Trash2 size={18} />
-                        </Button>
-                      </div>
+                      {isSuperAdmin && (
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(outlet)} className="h-12 w-12 rounded-lg hover:bg-amber-500/10 hover:text-amber-500 transition-colors">
+                            <Edit2 size={18} />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(outlet.id)} className="h-12 w-12 rounded-lg hover:bg-rose-50 dark:bg-rose-950/30 hover:text-rose-600 dark:text-rose-400 transition-colors">
+                            <Trash2 size={18} />
+                          </Button>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">

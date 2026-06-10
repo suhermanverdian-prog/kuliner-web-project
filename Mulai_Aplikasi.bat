@@ -89,7 +89,14 @@ echo.
 echo  [SYSTEM] Boot sequence complete.
 echo  [SERVICES] ---------------------------------------------
 echo  [API]      : http://localhost:3001
-echo  [FRONTEND] : http://localhost:%TARGET_PORT%
+if "%app_choice%"=="5" (
+    echo  [FRONTEND - Merchant Office] : http://localhost:5178 (Primary)
+    echo  [FRONTEND - POS Client]      : http://localhost:5175
+    echo  [FRONTEND - Customer Portal] : http://localhost:5176
+    echo  [FRONTEND - SaaS Super Admin] : http://localhost:5177
+) else (
+    echo  [FRONTEND] : http://localhost:%TARGET_PORT%
+)
 echo  [STATUS]   : ACTIVE
 echo  --------------------------------------------------------
 echo.

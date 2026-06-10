@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Truck, ArrowRightLeft, Package, 
   MapPin, Clock, CheckCircle2, 
@@ -12,8 +12,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { cn } from "@/lib/utils";
 import { useLogisticsHubPage } from '../hooks/useLogisticsHubPage';
+import { useNavigate } from 'react-router-dom';
+import StockTransferModal from '../components/StockTransferModal';
 
 export default function LogisticsHubPage() {
+  const navigate = useNavigate();
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const {
     loading,
     activeShipments
@@ -49,10 +53,10 @@ export default function LogisticsHubPage() {
            <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium">Coordinate stock movement across multi-outlet nodes with real-time tracking.</p>
         </div>
         <div className="flex gap-4">
-           <Button variant="outline" className="h-14 px-8 font-black uppercase tracking-widest text-[10px] bg-card border-border rounded-lg">
+           <Button onClick={() => alert("Menampilkan logistik riwayat...")} variant="outline" className="h-14 px-8 font-black uppercase tracking-widest text-[10px] bg-card border-border rounded-lg">
               <Timer size={18} className="mr-2" /> Shipment Logs
            </Button>
-           <Button className="h-14 px-10 font-black uppercase tracking-widest text-white ">
+           <Button onClick={() => setShowTransferModal(true)} className="h-14 px-10 font-black uppercase tracking-widest text-white ">
               <ArrowRightLeft size={18} className="mr-2" /> New Transfer
            </Button>
         </div>
@@ -154,7 +158,7 @@ export default function LogisticsHubPage() {
                         Sistem mendeteksi kemacetan tinggi di rute Sudirman-Menteng. Neural model menyarankan pengiriman stok dijadwalkan sebelum pukul 08:00 WIB untuk efisiensi bahan bakar 15%.
                      </p>
                   </div>
-                  <Button className="w-full h-14 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800">OPTIMIZE SCHEDULE</Button>
+                  <Button onClick={() => alert("Menjalankan optimasi jadwal rute pengiriman...")} className="w-full h-14 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800">OPTIMIZE SCHEDULE</Button>
                </Card>
                <Card className="border-none relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-8 group-hover:rotate-12 transition-transform duration-1000">
@@ -167,7 +171,7 @@ export default function LogisticsHubPage() {
                         Rata-rata waktu bongkar muat di PIK Hub meningkat. Sistem menyarankan peninjauan SOP penerimaan barang untuk mempercepat rotasi armada.
                      </p>
                   </div>
-                  <Button className="w-full h-14 ">VIEW FLEET REPORT</Button>
+                  <Button onClick={() => alert("Membuka laporan kinerja armada logistik...")} className="w-full h-14 ">VIEW FLEET REPORT</Button>
                </Card>
             </div>
          </div>
@@ -228,6 +232,7 @@ export default function LogisticsHubPage() {
             </div>
          </div>
       </div>
+      <StockTransferModal isOpen={showTransferModal} onClose={() => setShowTransferModal(false)} />
     </div>
   );
 }

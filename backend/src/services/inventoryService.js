@@ -557,14 +557,254 @@ class InventoryService {
         id: `TRX-${t.id.toString().slice(-4).toUpperCase()}`,
         material: t.bahan_name || 'Material',
         qty: Math.abs(t.change_qty).toString(),
-        from: 'Gudang Utama',
-        to: 'Outlet Cabang',
+        from: t.notes?.split(' -> ')[0] || 'Gudang Utama',
+        to: t.notes?.split(' -> ')[1] || 'Outlet Cabang',
         status: t.change_qty < 0 ? 'Outbound' : 'Inbound',
         eta: 'Done'
       }));
     } catch (err) {
       return [];
     }
+  }
+
+  // --- Multi-Warehouse & Stock Transfer Services ---
+  static async getWarehouses(tenantId) {
+    const { data, error } = await supabase
+      .from('warehouses')
+      .select('*, outlet:outlet_id(name)');
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async createWarehouse(payload, tenantId) {
+    const { outletId, name } = payload;
+    const { data, error } = await supabase
+      .from('warehouses')
+      .insert([{
+        tenant_id: tenantId,
+        outlet_id: outletId,
+        name: name,
+        is_main: false
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  static async executeStockTransfer(payload, tenantId) {
+    const { sourceWarehouseId, destWarehouseId, destOutletId, items } = payload;
+
+    // 1. Fetch Source Warehouse
+    const { data: sourceWh, error: srcErr } = await supabase
+      .from('warehouses')
+      .select('*')
+      .eq('id', sourceWarehouseId)
+      .eq('tenant_id', tenantId)
+      .single();
+    if (srcErr || !sourceWh) throw new Error('Gudang asal tidak ditemukan.');
+
+    // 2. Fetch Destination Warehouse (Auto-resolve target main warehouse if inter-outlet)
+    let destWh;
+    let isInterOutlet = false;
+
+    if (destOutletId && destOutletId !== sourceWh.outlet_id) {
+      isInterOutlet = true;
+      const { data: targetMainWh, error: targetMainErr } = await supabase
+        .from('warehouses')
+        .select('*')
+        .eq('outlet_id', destOutletId)
+        .eq('is_main', true)
+        .eq('tenant_id', tenantId)
+        .single();
+      if (targetMainErr || !targetMainWh) {
+        throw new Error('Gudang Utama untuk outlet tujuan tidak ditemukan.');
+      }
+      destWh = targetMainWh;
+    } else {
+      const { data: targetWh, error: destErr } = await supabase
+        .from('warehouses')
+        .select('*')
+        .eq('id', destWarehouseId)
+        .eq('tenant_id', tenantId)
+        .single();
+      if (destErr || !targetWh) throw new Error('Gudang tujuan tidak ditemukan.');
+      destWh = targetWh;
+    }
+
+    const referenceId = `TRF-${Date.now().toString().slice(-6).toUpperCase()}`;
+
+    // Loop through transfer items
+    for (const item of items) {
+      const { bahanId, qty } = item;
+      const transferQty = Number(qty);
+      if (transferQty <= 0) continue;
+
+      // Fetch material info
+      const { data: bahan, error: bahanErr } = await supabase
+        .from('bahan')
+        .select('*')
+        .eq('id', bahanId)
+        .eq('tenant_id', tenantId)
+        .single();
+      if (bahanErr || !bahan) throw new Error(`Bahan dengan ID ${bahanId} tidak ditemukan.`);
+
+      // Resolve Source Warehouse Stock
+      const { data: srcStockRow, error: srcStockErr } = await supabase
+        .from('warehouse_stock')
+        .select('qty')
+        .eq('warehouse_id', sourceWh.id)
+        .eq('bahan_id', bahanId)
+        .maybeSingle();
+
+      let currentSourceStock = 0;
+      if (srcStockRow) {
+        currentSourceStock = Number(srcStockRow.qty);
+      } else {
+        // Fallback & Auto-seed: Use the global bahan.stock value
+        currentSourceStock = Number(bahan.stock || 0);
+        await supabase
+          .from('warehouse_stock')
+          .insert([{
+            tenant_id: tenantId,
+            warehouse_id: sourceWh.id,
+            bahan_id: bahanId,
+            qty: currentSourceStock
+          }]);
+      }
+
+      if (currentSourceStock < transferQty) {
+        throw new Error(`Stok bahan "${bahan.name}" di gudang "${sourceWh.name}" tidak mencukupi (Stok: ${currentSourceStock} ${bahan.unit}, Diminta: ${transferQty}).`);
+      }
+
+      // Resolve Destination Warehouse Stock
+      const { data: destStockRow } = await supabase
+        .from('warehouse_stock')
+        .select('qty')
+        .eq('warehouse_id', destWh.id)
+        .eq('bahan_id', bahanId)
+        .maybeSingle();
+
+      let currentDestStock = 0;
+      if (destStockRow) {
+        currentDestStock = Number(destStockRow.qty);
+      } else {
+        // Seed new target stock row with 0
+        await supabase
+          .from('warehouse_stock')
+          .insert([{
+            tenant_id: tenantId,
+            warehouse_id: destWh.id,
+            bahan_id: bahanId,
+            qty: 0
+          }]);
+      }
+
+      // Update source stock
+      await supabase
+        .from('warehouse_stock')
+        .update({ qty: currentSourceStock - transferQty })
+        .eq('warehouse_id', sourceWh.id)
+        .eq('bahan_id', bahanId);
+
+      // Update destination stock
+      await supabase
+        .from('warehouse_stock')
+        .update({ qty: currentDestStock + transferQty })
+        .eq('warehouse_id', destWh.id)
+        .eq('bahan_id', bahanId);
+
+      // Write stock movement logs
+      const logNotes = `${sourceWh.name} -> ${destWh.name}`;
+      await supabase.from('inventory_logs').insert([
+        {
+          tenant_id: tenantId,
+          bahan_id: bahanId,
+          bahan_name: bahan.name,
+          type: 'Transfer Out',
+          change_qty: -transferQty,
+          prev_stock: currentSourceStock,
+          next_stock: currentSourceStock - transferQty,
+          reference_id: referenceId,
+          notes: logNotes,
+          created_at: new Date().toISOString()
+        },
+        {
+          tenant_id: tenantId,
+          bahan_id: bahanId,
+          bahan_name: bahan.name,
+          type: 'Transfer In',
+          change_qty: transferQty,
+          prev_stock: currentDestStock,
+          next_stock: currentDestStock + transferQty,
+          reference_id: referenceId,
+          notes: logNotes,
+          created_at: new Date().toISOString()
+        }
+      ]);
+    }
+
+    // 3. Create General Ledger Journal entries if it's an Inter-Outlet Transfer
+    if (isInterOutlet) {
+      const AccountingService = require('./accountingService');
+      const { data: srcOutlet } = await supabase.from('outlets').select('name').eq('id', sourceWh.outlet_id).single();
+      const { data: destOutlet } = await supabase.from('outlets').select('name').eq('id', destWh.outlet_id).single();
+
+      let totalTransferValue = 0;
+      for (const item of items) {
+        const { data: b } = await supabase.from('bahan').select('cost').eq('id', item.bahanId).single();
+        totalTransferValue += (Number(item.qty) * (b?.cost || 0));
+      }
+
+      if (totalTransferValue > 0) {
+        const header = {
+          tenant_id: tenantId,
+          date: new Date().toISOString(),
+          reference: referenceId,
+          description: `Mutasi Antar Outlet: ${srcOutlet?.name || 'Cabang Asal'} -> ${destOutlet?.name || 'Cabang Tujuan'}`,
+          total_amount: Math.round(totalTransferValue)
+        };
+
+        const AccountingRepository = require('../repositories/accountingRepository');
+        let inventoryAccount = await AccountingRepository.getAccountByCode(tenantId, '1-2000');
+        if (!inventoryAccount) {
+          inventoryAccount = await AccountingRepository.createAccount({
+            tenant_id: tenantId,
+            code: '1-2000',
+            name: 'Persediaan',
+            category: 'Asset',
+            normal_balance: 'Debit'
+          });
+        }
+
+        const lines = [
+          {
+            tenant_id: tenantId,
+            account_id: inventoryAccount.id,
+            account_code: '1-2000',
+            account_name: `Persediaan (${destOutlet?.name || 'Tujuan'})`,
+            debit: Math.round(totalTransferValue),
+            credit: 0
+          },
+          {
+            tenant_id: tenantId,
+            account_id: inventoryAccount.id,
+            account_code: '1-2000',
+            account_name: `Persediaan (${srcOutlet?.name || 'Asal'})`,
+            debit: 0,
+            credit: Math.round(totalTransferValue)
+          }
+        ];
+
+        await AccountingService.saveJournalEntry(header, lines, tenantId);
+      }
+    }
+
+    return {
+      success: true,
+      referenceId,
+      message: 'Transfer stok berhasil diselesaikan!'
+    };
   }
 }
 
