@@ -1,5 +1,6 @@
 @echo off
 SETLOCAL EnableDelayedExpansion
+cd /d "%~dp0"
 title KEN ENTERPRISE — Global ERP Node
 mode con: cols=100 lines=30
 color 0E
