@@ -73,6 +73,17 @@ class ReportController {
     }
   }
 
+  async getFlexCompile(req, res) {
+    try {
+      const userContext = req.userContext || {};
+      const { node, metrics, period } = req.query;
+      const result = await ReportService.getFlexCompile(userContext, node, metrics, period);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
 }
 
 module.exports = new ReportController();

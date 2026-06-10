@@ -37,4 +37,9 @@ router.get('/waste', reportController.getWaste);
  */
 router.get('/insights', reportController.getInsights);
 
+/**
+ * @route GET /api/laporan/flex-compile
+ */
+router.get('/flex-compile', reportController.getFlexCompile);
+
 module.exports = router;

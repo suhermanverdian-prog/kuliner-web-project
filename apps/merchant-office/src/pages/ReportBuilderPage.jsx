@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { cn } from "../lib/utils";
 import { useReportBuilderPage } from '../hooks/useReportBuilderPage';
+import { jsPDF } from 'jspdf';
 
 const DATA_NODES = [
   { id: 'sales', label: 'Sales & Transactions', icon: BarChart3, color: 'text-amber-500' },
@@ -34,8 +35,55 @@ export default function ReportBuilderPage() {
     loading, setLoading,
     generated, setGenerated,
     toggleMetric,
-    generateReport
+    generateReport,
+    reportData
   } = useReportBuilderPage();
+
+  const exportPDF = () => {
+    if (!reportData) return;
+    const doc = new jsPDF();
+    doc.setFont("courier", "bold");
+    doc.setFontSize(18);
+    doc.text("KEN ENTERPRISE - FLEXREPORT", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 28);
+    doc.text(`Node Source: ${selectedNode.toUpperCase()}`, 14, 34);
+    doc.text(`Temporal Scope: ${period.toUpperCase()}`, 14, 40);
+    doc.line(14, 44, 196, 44);
+
+    let y = 55;
+    doc.setFont("courier", "normal");
+    Object.entries(reportData).forEach(([metric, val]) => {
+      const displayVal = typeof val === 'number' && !metric.toLowerCase().includes('rate') && !metric.toLowerCase().includes('alert') && !metric.toLowerCase().includes('count') && !metric.toLowerCase().includes('members')
+        ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
+        : String(val);
+      doc.text(`${metric.padEnd(30, '.')} : ${displayVal}`, 14, y);
+      y += 10;
+    });
+
+    doc.line(14, y + 5, 196, y + 5);
+    doc.text("Verified by KEN System Log Integrity", 14, y + 15);
+    doc.save(`FlexReport_${selectedNode}_${period}.pdf`);
+  };
+
+  const exportExcel = () => {
+    if (!reportData) return;
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Metric,Value\r\n";
+    Object.entries(reportData).forEach(([metric, val]) => {
+      const displayVal = typeof val === 'number' && !metric.toLowerCase().includes('rate') && !metric.toLowerCase().includes('alert') && !metric.toLowerCase().includes('count') && !metric.toLowerCase().includes('members')
+        ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
+        : String(val);
+      csvContent += `"${metric}","${displayVal}"\r\n`;
+    });
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `FlexReport_${selectedNode}_${period}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in duration-500 font-mono tabular-nums">
@@ -89,15 +137,15 @@ export default function ReportBuilderPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                      {DATA_NODES.map(node => (
                         <button 
-                          key={node.id}
-                          onClick={() => {
-                            setSelectedNode(node.id);
-                            setSelectedMetrics([]);
-                          }}
-                          className={cn(
-                            "p-6 rounded-lg border-2 transition-all flex flex-col items-center gap-4 text-center group",
-                            selectedNode === node.id ? "bg-amber-500 border-amber-500 text-zinc-950 shadow-xl shadow-amber-500/20" : "bg-background border-transparent hover:border-border text-foreground"
-                          )}
+                           key={node.id}
+                           onClick={() => {
+                             setSelectedNode(node.id);
+                             setSelectedMetrics([]);
+                           }}
+                           className={cn(
+                             "p-6 rounded-lg border-2 transition-all flex flex-col items-center gap-4 text-center group",
+                             selectedNode === node.id ? "bg-amber-500 border-amber-500 text-zinc-950 shadow-xl shadow-amber-500/20" : "bg-background border-transparent hover:border-border text-foreground"
+                           )}
                         >
                            <div className={cn("p-4 rounded-lg transition-colors", selectedNode === node.id ? "bg-zinc-950 text-amber-500" : "bg-card text-zinc-500 dark:text-zinc-100")}>
                               <node.icon size={24} />
@@ -220,11 +268,25 @@ export default function ReportBuilderPage() {
                              <p className="text-[9px] font-black  mt-1 uppercase">Report ready for distribution</p>
                           </div>
                        </div>
+                       {/* Compiled Metric Values */}
+                       <div className="space-y-3 p-4 bg-background border border-border rounded-lg font-mono">
+                          <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest border-b border-border pb-1">Compiled Results</p>
+                          {Object.entries(reportData || {}).map(([metric, val]) => (
+                            <div key={metric} className="flex justify-between items-center text-xs">
+                               <span className="text-zinc-400 font-bold">{metric}</span>
+                               <span className="text-amber-500 font-black">
+                                 {typeof val === 'number' && !metric.toLowerCase().includes('rate') && !metric.toLowerCase().includes('alert') && !metric.toLowerCase().includes('count') && !metric.toLowerCase().includes('members')
+                                   ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(val)
+                                   : String(val)}
+                               </span>
+                            </div>
+                          ))}
+                       </div>
                        <div className="grid grid-cols-2 gap-4">
-                          <Button className="h-12 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800">
+                          <Button className="h-12 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800" onClick={exportPDF}>
                              <Download size={16} className="mr-2" /> PDF
                           </Button>
-                          <Button className="h-12 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800">
+                          <Button className="h-12 bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-800" onClick={exportExcel}>
                              <Download size={16} className="mr-2" /> EXCEL
                           </Button>
                        </div>
