@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
 import MainLayout from '@/components/MainLayout';
 
@@ -40,7 +40,7 @@ function App() {
   const setUser = useAppStore(state => state.setUser);
 
   return (
-    <HashRouter>
+    <BrowserRouter>
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route
@@ -66,7 +66,7 @@ function App() {
           <Route path="*" element={<Navigate to={user ? '/superadmin' : '/login'} replace />} />
         </Routes>
       </Suspense>
-    </HashRouter>
+    </BrowserRouter>
   );
 }
 
