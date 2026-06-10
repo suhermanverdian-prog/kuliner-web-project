@@ -16,9 +16,12 @@ echo   [ ELITE ENTERPRISE - SYSTEM BOOTSTRAPPER ]
 echo.
 
 :: 1. Cleanup stale processes
-echo  [SYSTEM] Terminating stale services on Port 3001 ^& 5173...
+echo  [SYSTEM] Terminating stale services on Port 3001, 5175, 5176, 5177, 5178...
 for /f "tokens=5" %%a in ('netstat -aon ^| findstr :3001') do taskkill /F /PID %%a 2>nul
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5173') do taskkill /F /PID %%a 2>nul
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5175') do taskkill /F /PID %%a 2>nul
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5176') do taskkill /F /PID %%a 2>nul
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5177') do taskkill /F /PID %%a 2>nul
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :5178') do taskkill /F /PID %%a 2>nul
 echo  [SYSTEM] Environment cleaned.
 echo.
 
@@ -51,27 +54,27 @@ start "KEN-BACKEND" /min cmd /k "title KEN API && cd backend && npm run dev"
 
 if "%app_choice%"=="1" (
     echo  [SYSTEM] Initializing KEN UI Engine (Merchant Office)...
-    start "KEN-MERCHANT-OFFICE" /min cmd /k "title KEN Merchant Office && npm run dev:merchant"
+    start "KEN-MERCHANT-OFFICE" /min cmd /k "title KEN Merchant Office && npm run dev -w merchant-office"
     set TARGET_PORT=5178
 )
 if "%app_choice%"=="2" (
     echo  [SYSTEM] Initializing KEN UI Engine (POS Client)...
-    start "KEN-POS-CLIENT" /min cmd /k "title KEN POS Client && npm run dev:pos"
+    start "KEN-POS-CLIENT" /min cmd /k "title KEN POS Client && npm run dev -w pos-client"
     set TARGET_PORT=5175
 )
 if "%app_choice%"=="3" (
     echo  [SYSTEM] Initializing KEN UI Engine (Customer Portal)...
-    start "KEN-CUSTOMER-PORTAL" /min cmd /k "title KEN Customer Portal && npm run dev:customer"
+    start "KEN-CUSTOMER-PORTAL" /min cmd /k "title KEN Customer Portal && npm run dev -w customer-portal"
     set TARGET_PORT=5176
 )
 if "%app_choice%"=="4" (
     echo  [SYSTEM] Initializing KEN UI Engine (SaaS Super Admin)...
-    start "KEN-SUPER-ADMIN" /min cmd /k "title KEN SaaS Super Admin && npm run dev:admin"
+    start "KEN-SUPER-ADMIN" /min cmd /k "title KEN SaaS Super Admin && npm run dev -w saas-super-admin"
     set TARGET_PORT=5177
 )
 if "%app_choice%"=="5" (
     echo  [SYSTEM] Initializing ALL Applications...
-    start "KEN-MONOREPO" /min cmd /k "title KEN Monorepo All && npm run dev:all"
+    start "KEN-MONOREPO" /min cmd /k "title KEN Monorepo All && npx concurrently \"npm run dev -w merchant-office\" \"npm run dev -w pos-client\" \"npm run dev -w customer-portal\" \"npm run dev -w saas-super-admin\""
     set TARGET_PORT=5178
 )
 
