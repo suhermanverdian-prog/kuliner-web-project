@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '@/store/useAppStore';
 import { 
   LayoutDashboard, ShoppingCart, Box, ChefHat, 
@@ -19,21 +19,18 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
   const user = (rawUser && rawUser.user && rawUser.token) ? rawUser.user : rawUser;
   const logout = useAppStore(state => state.logout);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [settingsExpanded, setSettingsExpanded] = useState(() => {
-    return window.location.hash.includes('/settings');
+    return location.pathname.includes('/settings');
   });
 
-  // Sync expanded state when hash changes externally
+  // Sync expanded state when pathname changes
   useEffect(() => {
-    const handleHash = () => {
-      if (window.location.hash.includes('/settings')) {
-        setSettingsExpanded(true);
-      }
-    };
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
-  }, []);
+    if (location.pathname.includes('/settings')) {
+      setSettingsExpanded(true);
+    }
+  }, [location.pathname]);
 
   const allNav = [
     { group: 'Utama', items: [
@@ -175,7 +172,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                         isCollapsed 
                           ? "justify-center w-10 h-10 mx-auto px-0 rounded-lg" 
                           : "gap-4 px-4 py-2.5 rounded-lg justify-between text-left",
-                        window.location.hash.includes('/settings')
+                        location.pathname.includes('/settings')
                           ? "bg-amber-50 text-amber-600 dark:bg-zinc-800 dark:text-amber-400 font-bold border border-amber-500/20 dark:border-zinc-700/50"
                           : "text-muted-foreground hover:text-foreground hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:-translate-y-[1px]"
                       )}
@@ -193,7 +190,7 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
                       <div className="pl-6 space-y-1 animate-in fade-in slide-in-from-top-2 duration-300 border-l border-zinc-200 dark:border-zinc-800 ml-6">
                         {allowedSubmenu.map(sub => {
                           const SubIcon = sub.icon;
-                          const isSubActive = window.location.hash.includes(sub.id.replace('/', ''));
+                          const isSubActive = (location.pathname + location.search).includes(sub.id.split('&')[0]);
                           return (
                             <NavLink
                               key={sub.id}

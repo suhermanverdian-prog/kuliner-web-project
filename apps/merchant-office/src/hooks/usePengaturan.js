@@ -13,20 +13,11 @@ export function usePengaturan() {
   
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = useMemo(() => {
-    const hash = window.location.hash;
-    const searchPart = hash.includes('?') ? hash.split('?')[1] : '';
-    const hashParams = new URLSearchParams(searchPart);
-    return searchParams.get('tab') || hashParams.get('tab') || 'users';
+    return searchParams.get('tab') || 'users';
   }, [searchParams]);
 
   const setActiveTab = useCallback((newTab) => {
-    const hash = window.location.hash;
-    const pathPart = hash.includes('?') ? hash.split('?')[0] : hash;
-    const searchPart = hash.includes('?') ? hash.split('?')[1] : '';
-    const nextParams = new URLSearchParams(searchPart);
-    nextParams.set('tab', newTab);
-    window.location.hash = `${pathPart}?${nextParams.toString()}`;
-    setSearchParams(nextParams);
+    setSearchParams({ tab: newTab, standalone: 'true' });
   }, [setSearchParams]);
   const [settings, setSettings] = useState({ storeName: '', taxPct: 0, servicePct: 0 });
   const [aiConfig, setAiConfig] = useState({ provider: 'openai', apiKey: '', isEnabled: false });

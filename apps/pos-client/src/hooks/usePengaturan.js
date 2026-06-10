@@ -14,8 +14,7 @@ export function usePengaturan() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'users';
   const setActiveTab = useCallback((newTab) => {
-    // Preserve other search parameters like standalone when switching tabs
-    const nextParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    const nextParams = new URLSearchParams(window.location.search);
     nextParams.set('tab', newTab);
     setSearchParams(nextParams);
   }, [setSearchParams]);

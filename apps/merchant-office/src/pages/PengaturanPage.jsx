@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { usePengaturan } from '../hooks/usePengaturan';
 import { api } from '../api';
 import { 
@@ -1701,10 +1702,8 @@ export default function PengaturanPage() {
 
   const currentTab = tabInfo[activeTab] || tabInfo.users;
   
-  const hash = window.location.hash;
-  const searchPart = hash.includes('?') ? hash.split('?')[1] : '';
-  const params = new URLSearchParams(searchPart);
-  const isStandalone = params.get('standalone') === 'true';
+  const [searchParams] = useSearchParams();
+  const isStandalone = searchParams.get('standalone') === 'true';
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in duration-500">
