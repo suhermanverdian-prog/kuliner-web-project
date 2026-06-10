@@ -34,10 +34,15 @@ const TABS = [
 
 const COA_COLORS = {
   'Aset': 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  'Asset': 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-500/20',
   'Kewajiban': 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-500/20',
+  'Liability': 'bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-500/20',
   'Ekuitas': 'bg-amber-500/10 text-primary border-zinc-800/20',
+  'Equity': 'bg-amber-500/10 text-primary border-zinc-800/20',
   'Pendapatan': 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-500/20',
+  'Revenue': 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-500/20',
   'Beban': 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 border-amber-500/20',
+  'Expense': 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 border-amber-500/20',
 };
 
 function KPICard({ label, value, sub, icon: Icon, color, trend, trendVal }) {
