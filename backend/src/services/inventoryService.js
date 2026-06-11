@@ -600,7 +600,8 @@ class InventoryService {
   static async getWarehouses(tenantId) {
     const { data, error } = await supabase
       .from('warehouses')
-      .select('*, outlet:outlet_id(name)');
+      .select('*, outlet:outlet_id(name)')
+      .eq('tenant_id', tenantId);
     if (error) throw error;
     return data || [];
   }
