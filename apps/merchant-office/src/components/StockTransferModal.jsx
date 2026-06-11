@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowRightLeft, Plus, Trash2, Loader2, CheckCircle2, ChevronRight, Store, AlertCircle } from 'lucide-react';
+import { X, ArrowRightLeft, Plus, Trash2, Loader2, CheckCircle2, ChevronRight, Store, AlertCircle, ChevronDown } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
@@ -7,6 +7,84 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { api } from '../api';
 import { cn } from '../lib/utils';
 import { useAppStore } from '../store/useAppStore';
+
+function SearchableBahanSelect({ value, onChange, bahanList, placeholder = "-- Cari atau pilih bahan baku --" }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const containerRef = React.useRef(null);
+
+  const selectedBahan = bahanList.find(b => b.id === value);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearch(selectedBahan ? `${selectedBahan.name} (Stok: ${selectedBahan.stock} ${selectedBahan.unit})` : '');
+    }
+  }, [value, isOpen, selectedBahan]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const filteredBahan = bahanList.filter(b => 
+    b.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <div className="relative">
+        <input
+          type="text"
+          className="flex h-10 w-full rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 py-2 text-xs font-bold text-zinc-900 dark:text-zinc-100 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 cursor-pointer"
+          placeholder={placeholder}
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            if (!isOpen) setIsOpen(true);
+          }}
+          onFocus={() => {
+            setIsOpen(true);
+            setSearch('');
+          }}
+        />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400">
+          <ChevronDown size={14} />
+        </div>
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-[110] w-full mt-1 max-h-60 overflow-y-auto rounded-md border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 shadow-lg custom-scrollbar">
+          {filteredBahan.length === 0 ? (
+            <div className="p-3 text-xs text-zinc-400 text-center">Bahan tidak ditemukan</div>
+          ) : (
+            filteredBahan.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                className={cn(
+                  "w-full text-left px-3 py-2 text-xs font-semibold hover:bg-zinc-100 dark:hover:bg-zinc-700/50 transition-colors flex justify-between items-center",
+                  b.id === value ? "text-amber-500 bg-amber-500/5 dark:bg-amber-500/10 font-bold" : "text-zinc-700 dark:text-zinc-300"
+                )}
+                onClick={() => {
+                  onChange({ target: { value: b.id } });
+                  setIsOpen(false);
+                }}
+              >
+                <span>{b.name}</span>
+                <span className="font-mono tabular-nums text-[10px] text-zinc-400">Stok: {b.stock} {b.unit}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
   const user = useAppStore(state => state.user);
@@ -352,7 +430,16 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                   </label>
                 </div>
 
-                <div className="space-y-3">
+                {/* Table Headers */}
+                <div className="hidden md:flex gap-4 px-2 text-[9px] font-black text-zinc-400 uppercase tracking-widest pb-1 border-b border-zinc-100 dark:border-zinc-800">
+                  <div className="flex-1">Pilih Bahan</div>
+                  <div className="w-32">Kuantitas</div>
+                  <div className="w-28">Satuan</div>
+                  <div className="w-36 text-right">Unit Cost (Base)</div>
+                  <div className="w-10"></div>
+                </div>
+
+                <div className="space-y-3 divide-y divide-zinc-100 dark:divide-zinc-800">
                   {items.map((item, idx) => {
                     const selectedBahan = bahanList.find(b => b.id === item.bahanId) || {};
                     const conversions = selectedBahan.conversions || [];
@@ -365,25 +452,24 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                     const availableStock = Number(selectedBahan.stock || 0);
                     const isOverStock = transferQtyInBaseUnit > availableStock;
 
+                    // Temporary text search state local to row or inline filter
                     return (
-                      <div key={idx} className="flex flex-col gap-2 bg-zinc-50/50 dark:bg-zinc-900/10 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700">
-                        <div className="flex gap-4 items-end">
-                          <div className="flex-1 space-y-1.5">
-                            <label className="text-[8px] font-black uppercase text-zinc-500">Pilih Bahan</label>
-                            <Select
-                              value={item.bahanId}
-                              onChange={e => handleItemChange(idx, 'bahanId', e.target.value)}
-                              className="h-10"
-                            >
-                              <option value="">-- Pilih bahan --</option>
-                              {bahanList.map(b => (
-                                <option key={b.id} value={b.id}>{b.name} (Stok: {b.stock} {b.unit})</option>
-                              ))}
-                            </Select>
+                      <div key={idx} className="flex flex-col gap-2 pt-3 first:pt-0">
+                        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+                          {/* Searchable selector */}
+                          <div className="flex-1 min-w-0">
+                            <span className="md:hidden text-[8px] font-black uppercase text-zinc-400 block mb-1">Pilih Bahan</span>
+                            <div className="relative w-full">
+                              <SearchableBahanSelect
+                                value={item.bahanId}
+                                onChange={e => handleItemChange(idx, 'bahanId', e.target.value)}
+                                bahanList={bahanList}
+                              />
+                            </div>
                           </div>
 
-                          <div className="w-24 space-y-1.5">
-                            <label className="text-[8px] font-black uppercase text-zinc-500">Kuantitas</label>
+                          <div className="w-full md:w-32">
+                            <span className="md:hidden text-[8px] font-black uppercase text-zinc-400 block mb-1">Kuantitas</span>
                             <Input
                               type="number"
                               min="0.01"
@@ -395,9 +481,9 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                             />
                           </div>
 
-                          {availableUnits.length > 1 ? (
-                            <div className="w-24 space-y-1.5">
-                              <label className="text-[8px] font-black uppercase text-zinc-500">Satuan</label>
+                          <div className="w-full md:w-28">
+                            <span className="md:hidden text-[8px] font-black uppercase text-zinc-400 block mb-1">Satuan</span>
+                            {availableUnits.length > 1 ? (
                               <Select
                                 value={item.selectedUnit}
                                 onChange={e => handleItemChange(idx, 'selectedUnit', e.target.value)}
@@ -407,33 +493,32 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                                   <option key={unitName} value={unitName}>{unitName}</option>
                                 ))}
                               </Select>
-                            </div>
-                          ) : (
-                            <div className="w-24 space-y-1.5">
-                              <label className="text-[8px] font-black uppercase text-zinc-500">Satuan</label>
+                            ) : (
                               <div className="h-10 px-3 flex items-center border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-bold text-zinc-500 uppercase">
                                 {selectedBahan.unit || '-'}
                               </div>
-                            </div>
-                          )}
+                            )}
+                          </div>
 
-                          <div className="w-32 space-y-1.5">
-                            <label className="text-[8px] font-black uppercase text-zinc-500">Unit Cost (Base)</label>
-                            <div className="h-10 px-3 flex items-center justify-end border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-mono tabular-nums text-zinc-500 font-bold">
+                          <div className="w-full md:w-36">
+                            <span className="md:hidden text-[8px] font-black uppercase text-zinc-400 block mb-1">Unit Cost</span>
+                            <div className="h-10 px-3 flex items-center justify-end border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-mono tabular-nums text-zinc-500 font-bold md:text-right">
                               Rp {(selectedBahan.cost || 0).toLocaleString('id-ID')}
                             </div>
                           </div>
 
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 shrink-0"
-                            onClick={() => removeItemRow(idx)}
-                            disabled={items.length === 1}
-                          >
-                            <Trash2 size={14} />
-                          </Button>
+                          <div className="flex items-center justify-end">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 shrink-0"
+                              onClick={() => removeItemRow(idx)}
+                              disabled={items.length === 1}
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          </div>
                         </div>
 
                         {/* Real-time warning alert */}
