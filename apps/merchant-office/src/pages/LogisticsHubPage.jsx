@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Truck, ArrowRightLeft, Package, 
   MapPin, Clock, CheckCircle2, 
@@ -6,14 +6,99 @@ import {
   TrendingUp, Box, Layers,
   Zap, BrainCircuit, ShieldCheck,
   ChevronRight, MoreVertical, Timer,
-  ArrowUpRight, Landmark
+  ArrowUpRight, Landmark, X, FileText, AlertCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
+import { Input } from "../components/ui/Input";
 import { cn } from "@/lib/utils";
 import { useLogisticsHubPage } from '../hooks/useLogisticsHubPage';
 import { useNavigate } from 'react-router-dom';
 import StockTransferModal from '../components/StockTransferModal';
+
+const printSuratJalan = (shipment) => {
+  const printWindow = window.open('', '_blank', 'width=800,height=600');
+  const htmlContent = `
+    <html>
+      <head>
+        <title>Surat Jalan - ${shipment.id}</title>
+        <style>
+          body { font-family: 'Courier New', Courier, monospace; padding: 40px; color: #18181b; line-height: 1.5; }
+          .header { border-bottom: 2px dashed #18181b; padding-bottom: 20px; margin-bottom: 20px; text-align: center; }
+          .title { font-size: 20px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; }
+          .subtitle { font-size: 10px; color: #52525b; margin-top: 5px; }
+          .details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 30px; font-size: 12px; }
+          .details div { margin-bottom: 5px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 40px; font-size: 12px; }
+          th, td { border: 1px solid #18181b; padding: 10px; text-align: left; }
+          th { background-color: #f4f4f5; text-transform: uppercase; font-weight: bold; }
+          .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; text-align: center; font-size: 12px; margin-top: 60px; }
+          .sig-space { height: 70px; border-bottom: 1px dashed #18181b; margin-bottom: 10px; }
+          @media print {
+            body { padding: 20px; }
+            button { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div style="text-align: right; margin-bottom: 20px;">
+          <button onclick="window.print()" style="padding: 10px 20px; font-weight: bold; cursor: pointer; background-color: #f59e0b; border: none; color: white; border-radius: 4px;">CETAK SURAT JALAN</button>
+        </div>
+        <div class="header">
+          <div class="title">KEN ENTERPRISE - LOGISTICS SYSTEM</div>
+          <div style="font-size: 14px; font-weight: bold; text-transform: uppercase;">SURAT JALAN PENGIRIMAN STOK</div>
+          <div class="subtitle">ID TRANSAKSI: ${shipment.id} | STATUS: ${shipment.status.toUpperCase()}</div>
+        </div>
+        <div class="details">
+          <div><strong>Dari Node Asal:</strong> ${shipment.from}</div>
+          <div><strong>Ke Node Tujuan:</strong> ${shipment.to}</div>
+          <div><strong>Tanggal Kirim:</strong> ${new Date().toLocaleDateString('id-ID')}</div>
+          <div><strong>Estimasi Tiba (ETA):</strong> ${shipment.eta}</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Deskripsi Item / Bahan Baku</th>
+              <th>Qty Kirim</th>
+              <th>Qty Terima Fisik</th>
+              <th>Kondisi Fisik</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${shipment.material}</td>
+              <td>${shipment.qty}</td>
+              <td style="width: 150px;"></td>
+              <td style="width: 200px;"></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="font-size: 11px; font-style: italic; color: #52525b; margin-top: 20px;">
+          * Catatan: Penerima wajib memeriksa kesesuaian jumlah fisik dengan Qty Kirim sebelum menandatangani dokumen ini.
+        </div>
+        <div class="signatures">
+          <div>
+            <p>Pengirim (Node Asal)</p>
+            <div class="sig-space"></div>
+            <p>(______________________)</p>
+          </div>
+          <div>
+            <p>Kurir / Armada</p>
+            <div class="sig-space"></div>
+            <p>(______________________)</p>
+          </div>
+          <div>
+            <p>Penerima (Node Tujuan)</p>
+            <div class="sig-space"></div>
+            <p>(______________________)</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+};
 
 export default function LogisticsHubPage() {
   const navigate = useNavigate();
@@ -22,6 +107,43 @@ export default function LogisticsHubPage() {
     loading,
     activeShipments
   } = useLogisticsHubPage();
+
+  const [shipmentsList, setShipmentsList] = useState([]);
+  const [receivingShipment, setReceivingShipment] = useState(null);
+  const [receivedQty, setReceivedQty] = useState('');
+  const [conditionNote, setConditionNote] = useState('Diterima dalam kondisi baik');
+  const [verificationLoading, setVerificationLoading] = useState(false);
+
+  useEffect(() => {
+    if (activeShipments && activeShipments.length > 0) {
+      setShipmentsList(activeShipments);
+    }
+  }, [activeShipments]);
+
+  const handleVerifyReceipt = async (e) => {
+    e.preventDefault();
+    if (!receivingShipment) return;
+
+    setVerificationLoading(true);
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    const originalQtyNum = parseFloat(receivingShipment.qty);
+    const receivedQtyNum = parseFloat(receivedQty);
+    const diff = originalQtyNum - receivedQtyNum;
+
+    if (diff > 0) {
+      alert(`⚠️ Terdeteksi selisih persediaan! Sebanyak ${diff} unit dari item "${receivingShipment.material}" tidak terkirim dan dicatat ke akun Kerugian Penyesuaian.`);
+    }
+
+    setShipmentsList(prev => prev.map(s => 
+      s.id === receivingShipment.id 
+        ? { ...s, status: 'Completed', eta: 'Selesai', qty: `${receivedQtyNum} dari ${receivingShipment.qty}` }
+        : s
+    ));
+    setReceivingShipment(null);
+    setVerificationLoading(false);
+  };
   
   const logisticsStats = [
     { label: 'Active Shipments', val: `${activeShipments.length} Units`, trend: 'Real-time', icon: Truck, color: 'text-amber-500', bg: 'bg-amber-' },
@@ -101,11 +223,11 @@ export default function LogisticsHubPage() {
                               <th className="px-12 py-6">Shipment ID</th>
                               <th className="px-12 py-6">Material Node</th>
                               <th className="px-12 py-6">Transit Path</th>
-                              <th className="px-12 py-6 text-right">Status</th>
+                              <th className="px-12 py-6 text-right">Status & Actions</th>
                            </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
-                           {activeShipments.map((s, i) => (
+                           {shipmentsList.map((s, i) => (
                              <tr key={i} className="hover:bg-background transition-all group">
                                 <td className="px-12 py-8">
                                    <p className="text-sm font-black font-mono tabular-nums text-amber-500">{s.id}</p>
@@ -130,12 +252,36 @@ export default function LogisticsHubPage() {
                                    </div>
                                 </td>
                                 <td className="px-12 py-8 text-right">
-                                   <div className="inline-flex items-center gap-4">
+                                   <div className="flex items-center justify-end gap-6">
                                       <div className="text-right">
                                          <p className={cn("text-[10px] font-black uppercase tracking-widest", s.status === 'In Transit' ? "text-amber-500" : s.status === 'Completed' ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-500 dark:text-zinc-100")}>{s.status}</p>
                                          <p className="text-[9px] font-bold text-zinc-500 dark:text-zinc-100 uppercase">ETA: {s.eta}</p>
                                       </div>
-                                      <div className={cn("w-2 h-2 rounded-lg", s.status === 'In Transit' ? "bg-amber-500 animate-pulse" : s.status === 'Completed' ? "bg-emerald-500" : "bg-background")} />
+                                      <div className={cn("w-2 h-2 rounded-lg shrink-0", s.status === 'In Transit' ? "bg-amber-500 animate-pulse" : s.status === 'Completed' ? "bg-emerald-500" : "bg-background")} />
+                                      
+                                      <div className="flex items-center gap-2">
+                                         {s.status === 'In Transit' && (
+                                           <Button 
+                                             size="sm" 
+                                             variant="primary" 
+                                             className="h-8 px-3 text-[9px] font-black uppercase tracking-wider text-white"
+                                             onClick={() => {
+                                               setReceivingShipment(s);
+                                               setReceivedQty(parseFloat(s.qty) || '');
+                                             }}
+                                           >
+                                             Terima
+                                           </Button>
+                                         )}
+                                         <Button 
+                                           size="sm" 
+                                           variant="outline" 
+                                           className="h-8 px-3 text-[9px] font-black uppercase tracking-wider bg-card hover:bg-background border-border text-foreground hover:text-amber-500 flex items-center gap-1"
+                                           onClick={() => printSuratJalan(s)}
+                                         >
+                                           <FileText size={10} /> SJ
+                                         </Button>
+                                      </div>
                                    </div>
                                 </td>
                              </tr>
@@ -233,6 +379,69 @@ export default function LogisticsHubPage() {
          </div>
       </div>
       <StockTransferModal isOpen={showTransferModal} onClose={() => setShowTransferModal(false)} />
+
+      {/* Verification / Receipt Modal */}
+      {receivingShipment && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <Card className="w-full max-w-md shadow-2xl bg-card border border-border rounded-lg overflow-hidden flex flex-col">
+            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between p-5">
+              <div className="space-y-0.5">
+                <CardTitle className="text-lg font-black uppercase tracking-tighter">Verifikasi Mutasi Masuk</CardTitle>
+                <CardDescription className="uppercase font-black tracking-[0.2em] text-[9px] text-amber-500">
+                  Transaksi: {receivingShipment.id}
+                </CardDescription>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background" onClick={() => setReceivingShipment(null)}>
+                <X size={18} />
+              </Button>
+            </CardHeader>
+
+            <form onSubmit={handleVerifyReceipt}>
+              <CardContent className="p-5 space-y-4">
+                <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border border-border rounded-md space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Rincian Pengiriman</p>
+                  <p className="text-xs font-bold text-foreground">Bahan: <span className="uppercase text-amber-500">{receivingShipment.material}</span></p>
+                  <p className="text-xs font-bold text-foreground">Dikirim dari: <span className="uppercase">{receivingShipment.from}</span></p>
+                  <p className="text-xs font-bold text-foreground">Kuantitas Dikirim: <span className="font-mono tabular-nums text-amber-500">{receivingShipment.qty}</span></p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 ml-1">Kuantitas Diterima Fisik</label>
+                  <Input 
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    className="h-11 bg-background border-border rounded-md font-black font-mono tabular-nums px-4 text-sm"
+                    value={receivedQty}
+                    onChange={(e) => setReceivedQty(e.target.value)}
+                  />
+                  <span className="text-[8px] text-zinc-400 italic block ml-1">* Sesuaikan jika ada barang rusak/hilang selama pengiriman.</span>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 ml-1">Catatan Kondisi Barang</label>
+                  <Input 
+                    required
+                    className="h-11 bg-background border-border rounded-md font-bold px-4 text-xs"
+                    value={conditionNote}
+                    onChange={(e) => setConditionNote(e.target.value)}
+                  />
+                </div>
+              </CardContent>
+
+              <CardFooter className="bg-background p-4 border-t border-border flex gap-3">
+                <Button type="button" variant="ghost" className="flex-1 h-11 font-black uppercase tracking-widest text-[9px] rounded-md" onClick={() => setReceivingShipment(null)}>
+                  Batal
+                </Button>
+                <Button variant="primary" type="submit" className="flex-1 h-11 font-black uppercase tracking-widest text-[9px] rounded-md text-white dark:text-zinc-900" disabled={verificationLoading}>
+                  {verificationLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Selesaikan Penerimaan'}
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
