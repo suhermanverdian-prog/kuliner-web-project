@@ -435,11 +435,11 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                   <div className="flex-1">Pilih Bahan</div>
                   <div className="w-32">Kuantitas</div>
                   <div className="w-28">Satuan</div>
-                  <div className="w-36 text-right">Unit Cost (Base)</div>
+                  <div className="w-36 text-right">Unit Cost</div>
                   <div className="w-10"></div>
                 </div>
 
-                <div className="space-y-3 divide-y divide-zinc-100 dark:divide-zinc-800">
+                <div className="space-y-1.5 divide-y divide-zinc-100 dark:divide-zinc-800">
                   {items.map((item, idx) => {
                     const selectedBahan = bahanList.find(b => b.id === item.bahanId) || {};
                     const conversions = selectedBahan.conversions || [];
@@ -454,8 +454,8 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
 
                     // Temporary text search state local to row or inline filter
                     return (
-                      <div key={idx} className="flex flex-col gap-2 pt-3 first:pt-0">
-                        <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+                      <div key={idx} className="flex flex-col gap-1.5 pt-1.5 first:pt-0">
+                        <div className="flex flex-col md:flex-row gap-2.5 items-stretch md:items-center">
                           {/* Searchable selector */}
                           <div className="flex-1 min-w-0">
                             <span className="md:hidden text-[8px] font-black uppercase text-zinc-400 block mb-1">Pilih Bahan</span>
@@ -503,7 +503,7 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                           <div className="w-full md:w-36">
                             <span className="md:hidden text-[8px] font-black uppercase text-zinc-400 block mb-1">Unit Cost</span>
                             <div className="h-10 px-3 flex items-center justify-end border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-mono tabular-nums text-zinc-500 font-bold md:text-right">
-                              Rp {(selectedBahan.cost || 0).toLocaleString('id-ID')}
+                              Rp {((selectedBahan.cost || 0) * (item.multiplier || 1)).toLocaleString('id-ID')}
                             </div>
                           </div>
 
