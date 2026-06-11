@@ -107,6 +107,8 @@ function getMaterialType(item) {
 
 export default function InventoriPage() {
   const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('inventory');
+  const [unassignedSupplierId, setUnassignedSupplierId] = useState('');
   const {
     user,
     search, setSearch,
@@ -252,81 +254,36 @@ export default function InventoriPage() {
             </Button>
         </div>
       </div>
-
-      {/* Stat Summary Bar — Mobile friendly */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: 'Total Bahan', value: filtered.length, icon: Package, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20' },
-          { label: 'Bahan Murni', value: filtered.filter(i => !getMaterialType(i).isAssembly).length, icon: Leaf, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
-          { label: 'Assembly / BOM', value: filtered.filter(i => getMaterialType(i).isAssembly).length, icon: FlaskConical, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/20' },
-          { label: 'Stok Kritis', value: filtered.filter(i => i.stock <= (i.min_stock || 0)).length, icon: AlertTriangle, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20' },
-        ].map((stat, i) => (
-          <div key={i} className="flex items-center gap-3 p-4 bg-card border border-zinc-200 dark:border-zinc-800 rounded-lg">
-            <div className={cn('w-8 h-8 rounded-md flex items-center justify-center shrink-0', stat.bg)}>
-              <stat.icon size={16} className={stat.color} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest truncate">{stat.label}</p>
-              <p className="text-lg font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100 leading-none">{stat.value}</p>
-            </div>
-          </div>
-        ))}
+      
+      {/* ── Tabs Navigation ── */}
+      <div className="flex border-b border-zinc-200 dark:border-zinc-800">
+         <button
+            onClick={() => setActiveTab('inventory')}
+            className={cn(
+               "px-6 py-3 text-xs font-black uppercase tracking-wider transition-all relative",
+               activeTab === 'inventory' 
+                  ? "text-amber-500 border-b-2 border-amber-500 font-bold" 
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+            )}
+         >
+            Inventori & Stok
+         </button>
+         <button
+            onClick={() => setActiveTab('analytics')}
+            className={cn(
+               "px-6 py-3 text-xs font-black uppercase tracking-wider transition-all relative flex items-center gap-1.5",
+               activeTab === 'analytics' 
+                  ? "text-amber-500 border-b-2 border-amber-500 font-bold" 
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+            )}
+         >
+            <BrainCircuit size={14} className={activeTab === 'analytics' ? 'text-amber-500' : 'text-zinc-400'} />
+            Analitik & Rekomendasi AI
+         </button>
       </div>
 
-      {/* Main Content Area — Responsive Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-         <div className="xl:col-span-8 space-y-6">
-            {/* AI Predictions Hub */}
-            <Card className="border border-zinc-200 dark:border-zinc-800 bg-card text-card-foreground rounded-lg shadow-lg overflow-hidden relative group">
-               <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                  <BrainCircuit size={120} />
-               </div>
-               <CardHeader className="p-4 sm:p-6 pb-0 relative z-10 flex flex-row items-center justify-between">
-                  <div className="space-y-1">
-                     <div className="flex items-center gap-3">
-                        <Sparkles className="text-amber-500 animate-pulse" size={16} />
-                        <CardTitle className="text-lg sm:text-xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">
-                          Neural Stock <span className="text-amber-500 italic">Forecaster</span>
-                        </CardTitle>
-                     </div>
-                     <CardDescription className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
-                       Predictive analysis based on consumption trends
-                     </CardDescription>
-                  </div>
-                   <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 dark:border-amber-400/20 text-amber-600 dark:text-amber-400 rounded-lg font-bold shadow-sm">
-                     <Zap size={10} className="text-amber-500 fill-current animate-pulse" />
-                     <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">AI ACTIVE</span>
-                  </div>
-               </CardHeader>
-               <CardContent className="p-4 sm:p-6 relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {aiPredictions.length === 0 ? (
-                     <div className="col-span-3 py-8 text-center text-zinc-500 text-xs font-black uppercase tracking-widest border border-dashed border-border rounded-lg">
-                       Need more transaction data for accurate prediction
-                     </div>
-                  ) : aiPredictions.map((pred, i) => (
-                    <div key={i} className="p-4 rounded-md border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/20 dark:bg-zinc-900/40 hover:-translate-y-0.5 transition-all shadow-sm flex flex-col justify-between min-h-[140px]">
-                       <div>
-                          <div className="flex justify-between items-start mb-2">
-                             <p className="text-xs font-black uppercase tracking-tight text-zinc-800 dark:text-zinc-200 truncate max-w-[80%]">{pred.name}</p>
-                             <Timer size={14} className={cn(pred.status === 'Kritis' ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400")} />
-                          </div>
-                          <div className="space-y-0.5">
-                             <p className="text-xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">{pred.daysLeft} DAYS</p>
-                             <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Estimated stockout</p>
-                          </div>
-                       </div>
-                       <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/50 flex items-center justify-between">
-                          <span className={cn(
-                            "px-2.5 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest border",
-                            pred.status === 'Kritis' ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800" : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
-                          )}>{pred.recommendation}</span>
-                           <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"><ArrowUpRight size={14} /></Button>
-                       </div>
-                    </div>
-                  ))}
-               </CardContent>
-            </Card>
-
+      {activeTab === 'inventory' ? (
+         <div className="w-full">
             {/* Main Inventory Table — Responsive */}
             <Card className="border border-border bg-card text-card-foreground shadow-lg rounded-lg overflow-hidden">
                <CardHeader className="p-4 sm:p-6 border-b border-zinc-200/80 dark:border-zinc-800/50 bg-background">
@@ -376,17 +333,18 @@ export default function InventoriPage() {
                     </div>
                   </div>
                </CardHeader>
-
-                {/* ── Desktop Table — hidden on mobile ── */}
-                <div className="hidden sm:block overflow-x-auto custom-scrollbar">
-                   <table className="w-full text-left border-collapse min-w-[780px]">
+               
+               {/* ── Desktop Table View ── */}
+               <div className="hidden sm:block overflow-x-auto">
+                  <table className="w-full text-left border-collapse text-xs">
                      <thead>
-                        <tr className="bg-background text-[10px] font-black uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400 border-b border-zinc-200/80 dark:border-zinc-800/50">
-                           <th className="px-4 py-3">Material Node</th>
-                           <th className="px-4 py-3 text-center">Availability</th>
-                           <th className="px-4 py-3">Unit Cost</th>
-                           <th className="px-4 py-3">Status</th>
-                           <th className="px-4 py-3 text-right">Actions</th>
+                        <tr className="bg-zinc-50 dark:bg-zinc-900/50 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 font-black uppercase tracking-widest">
+                           <th className="px-4 py-3">Nama Bahan</th>
+                           <th className="px-4 py-3">Kategori</th>
+                           <th className="px-4 py-3 text-center">Stok Fisik (Unit)</th>
+                           <th className="px-4 py-3 text-center">Status</th>
+                           <th className="px-4 py-3 text-right">Unit Cost</th>
+                           <th className="px-4 py-3 text-right">Aksi</th>
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-zinc-200/80 dark:divide-zinc-800/50">
@@ -396,38 +354,28 @@ export default function InventoriPage() {
                           const { isAssembly, bomCount } = getMaterialType(item);
                           return (
                             <tr key={item.id} className={cn(
-                              "hover:bg-background transition-all group",
-                              isAssembly ? "border-l-2 border-l-sky-400 dark:border-l-sky-500" : "border-l-2 border-l-emerald-400 dark:border-l-emerald-500"
+                              "hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors font-medium text-zinc-700 dark:text-zinc-300",
+                              st.label === 'HABIS' && "bg-rose-50/20 dark:bg-rose-950/5"
                             )}>
-                               <td className="px-4 py-3">
+                               <td className="px-4 py-3 min-w-[160px]">
                                   <div className="flex items-center gap-3">
-                                     {/* Type icon */}
-                                     <div className={cn(
-                                       "w-9 h-9 rounded-md border flex items-center justify-center shrink-0 shadow-inner",
-                                       isAssembly
-                                         ? "bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800"
-                                         : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800"
-                                     )}>
-                                       {isAssembly
-                                         ? <FlaskConical size={16} className="text-sky-600 dark:text-sky-400" />
-                                         : <Leaf size={16} className="text-emerald-600 dark:text-emerald-400" />
-                                       }
-                                     </div>
                                      <div className="min-w-0">
-                                        <div className="flex items-center gap-2">
-                                          <p className="text-xs font-black tracking-tight uppercase text-zinc-900 dark:text-zinc-100 group-hover:text-amber-500 transition-colors truncate">{item.name}</p>
-                                          {isAssembly && bomCount > 0 && (
-                                            <span className="shrink-0 px-1.5 py-0.5 bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded text-[8px] font-black text-sky-600 dark:text-sky-400 uppercase tracking-widest">
-                                              {bomCount} BOM
-                                            </span>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-2 mt-0.5">
-                                           <Truck size={9} className="text-zinc-400" />
-                                           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400 truncate">{item.supplier?.name || 'No Supplier'}</span>
+                                        <p className="font-black text-zinc-900 dark:text-zinc-100 text-xs sm:text-sm tracking-tight truncate">{item.name}</p>
+                                        <div className="flex items-center gap-1.5 mt-0.5">
+                                           <span className="text-[10px] font-bold text-zinc-400 capitalize tracking-tighter">Min: {item.min_stock || item.minStock || 0} {item.unit}</span>
+                                           {isAssembly && (
+                                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 text-[8px] font-black uppercase tracking-widest rounded-sm">
+                                                <Layers size={8} /> BOM ({bomCount})
+                                             </span>
+                                           )}
                                         </div>
                                      </div>
                                   </div>
+                               </td>
+                               <td className="px-4 py-3">
+                                  <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-[9px] font-bold text-zinc-600 dark:text-zinc-400 uppercase tracking-wider">
+                                     {item.category || 'N/A'}
+                                  </span>
                                </td>
                                <td className="px-4 py-3">
                                   <div className="flex flex-col items-center gap-1">
@@ -438,49 +386,44 @@ export default function InventoriPage() {
                                         
                                         {item.warehouse_stocks && item.warehouse_stocks.length > 0 && (
                                           <div className="relative group/wh inline-block">
-                                            <button className="text-zinc-400 hover:text-amber-500 p-0.5 rounded transition-colors">
-                                              <Warehouse size={12} />
-                                            </button>
-                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/wh:block z-50 w-56 bg-zinc-950/95 text-zinc-100 text-[10px] rounded-lg shadow-xl border border-zinc-800 p-3 pointer-events-none space-y-1.5 text-left">
-                                              <p className="font-black border-b border-zinc-800 pb-1.5 uppercase tracking-wider text-amber-500">Warehouse Breakdown</p>
+                                            <span className="cursor-pointer text-[10px] text-amber-500 hover:underline flex items-center gap-0.5">
+                                              <Warehouse size={10} />
+                                            </span>
+                                            {/* Tooltip detail per gudang */}
+                                            <div className="absolute z-20 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-zinc-950 text-white text-[10px] p-2.5 rounded-md shadow-2xl border border-zinc-800 pointer-events-none opacity-0 group-hover/wh:opacity-100 transition-opacity">
+                                              <p className="font-bold border-b border-zinc-800 pb-1 mb-1 text-zinc-400">Rincian Gudang:</p>
                                               {item.warehouse_stocks.map((ws, idx) => (
-                                                <div key={idx} className="flex justify-between items-center font-mono tracking-tight">
-                                                  <div className="flex flex-col">
-                                                    <span className="font-bold text-zinc-100 uppercase">{ws.warehouse_name}</span>
-                                                    <span className="text-[8px] text-zinc-400 uppercase">{ws.outlet_name}</span>
-                                                  </div>
-                                                  <span className="font-black text-amber-400 tabular-nums">
-                                                    {ws.qty.toLocaleString('id-ID')} {item.unit}
-                                                  </span>
+                                                <div key={idx} className="flex justify-between items-center py-0.5">
+                                                  <span className="truncate max-w-[70%]">{ws.warehouse_name} <span className="text-[8px] text-zinc-500">({ws.outlet_name})</span></span>
+                                                  <span className="font-mono font-bold text-amber-400">{ws.qty.toLocaleString('id-ID')} {item.unit}</span>
                                                 </div>
                                               ))}
-                                              <div className="border-t border-zinc-800 pt-1.5 flex justify-between font-bold text-zinc-300">
-                                                <span className="uppercase">Total Stock</span>
-                                                <span className="font-black text-white">{item.stock.toLocaleString('id-ID')} {item.unit}</span>
-                                              </div>
                                             </div>
                                           </div>
                                         )}
                                      </div>
-                                     <div className="h-1 w-20 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full overflow-hidden">
-                                        <div className={cn("h-full transition-all duration-1000", st.barCls)} style={{ width: `${st.pct}%` }} />
+                                     <div className="w-24 sm:w-28 h-1 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                        <div className={cn("h-full transition-all", st.barCls)} style={{ width: `${st.pct}%` }} />
                                      </div>
                                   </div>
                                </td>
-                               <td className="px-4 py-3 text-sm font-black font-mono tabular-nums text-zinc-800 dark:text-zinc-200">{formatRupiah(item.cost || 0)}</td>
-                               <td className="px-4 py-3">
+                               <td className="px-4 py-3 text-center">
                                   <span className={cn(
-                                    "px-2 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest shadow-sm border",
-                                    st.bg, st.color
+                                    "px-2.5 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest border shadow-sm",
+                                    st.bg,
+                                    st.color
                                   )}>
                                      {st.label}
                                   </span>
-                                </td>
+                               </td>
+                               <td className="px-4 py-3 text-right font-mono tabular-nums font-black text-zinc-900 dark:text-zinc-100">
+                                  {formatRupiah(item.cost || 0)}
+                               </td>
                                <td className="px-4 py-3 text-right">
                                     <div className="flex justify-end gap-1.5">
                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md border border-zinc-200 dark:border-zinc-800/80 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-500 text-zinc-500 dark:text-zinc-400" onClick={() => { setAdjItem(item); setShowAdjModal(true); }}><Scale size={14} /></Button>
                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md border border-zinc-200 dark:border-zinc-800/80 hover:bg-background text-zinc-500" onClick={() => openEdit(item)}><Edit3 size={14} /></Button>
-                                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md border border-zinc-200 dark:border-zinc-800/80 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 text-zinc-500 dark:text-zinc-400 active:scale-95 transition-all" onClick={() => {
+                                       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md border border-zinc-200 dark:border-zinc-800/80 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 text-zinc-500 dark:text-zinc-400" onClick={() => {
                                           if (confirm(`Apakah Anda yakin ingin menghapus bahan baku "${item.name}"?`)) {
                                             handleDeleteBahan(item.id);
                                           }
@@ -489,9 +432,9 @@ export default function InventoriPage() {
                                 </td>
                              </tr>
                            );
-                         })}
-                      </tbody>
-                   </table>
+                        })}
+                     </tbody>
+                  </table>
                </div>
 
                {/* ── Mobile Card List — only on small screens ── */}
@@ -502,65 +445,47 @@ export default function InventoriPage() {
                    const { isAssembly, bomCount } = getMaterialType(item);
                    return (
                      <div key={item.id} className={cn(
-                       "p-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-all",
-                       isAssembly ? "border-l-2 border-l-sky-400" : "border-l-2 border-l-emerald-400"
+                       "p-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/10 transition-colors",
+                       st.label === 'HABIS' && "bg-rose-50/10 dark:bg-rose-950/5"
                      )}>
                        <div className="flex items-start justify-between gap-3">
-                         {/* Left: icon + info */}
-                         <div className="flex items-start gap-3 flex-1 min-w-0">
-                           <div className={cn(
-                             "w-10 h-10 rounded-md border flex items-center justify-center shrink-0 mt-0.5",
-                             isAssembly
-                               ? "bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800"
-                               : "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800"
-                           )}>
-                             {isAssembly
-                               ? <FlaskConical size={18} className="text-sky-600 dark:text-sky-400" />
-                               : <Leaf size={18} className="text-emerald-600 dark:text-emerald-400" />
-                             }
+                         {/* Left: Material Name + Details */}
+                         <div className="min-w-0 flex-1">
+                           <p className="font-black text-zinc-900 dark:text-zinc-100 text-sm tracking-tight truncate">{item.name}</p>
+                           <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                             <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-[8px] font-bold text-zinc-500 uppercase">{item.category || 'N/A'}</span>
+                             <span className="text-[10px] font-black text-zinc-400 font-mono tabular-nums leading-none">Min: {item.min_stock || 0} {item.unit}</span>
+                             {isAssembly && (
+                               <span className="inline-flex items-center gap-0.5 px-1 py-0.5 bg-sky-50 dark:bg-sky-950/30 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800 text-[8px] font-black rounded-sm">
+                                 BOM ({bomCount})
+                               </span>
+                             )}
                            </div>
-                           <div className="flex-1 min-w-0">
-                             <div className="flex flex-wrap items-center gap-2">
-                               <p className="text-sm font-black tracking-tight uppercase text-zinc-900 dark:text-zinc-100 truncate">{item.name}</p>
-                               {isAssembly && bomCount > 0 && (
-                                 <span className="px-1.5 py-0.5 bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded text-[8px] font-black text-sky-600 dark:text-sky-400 uppercase">{bomCount} BOM</span>
+                           
+                           {/* Qty and Progress Bar */}
+                           <div className="flex items-center gap-2 mt-2">
+                             <div className="flex items-center gap-1.5">
+                               <p className="text-sm font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">
+                                 {getDisplayMediumQty(item, displayStock).toLocaleString('id-ID')} <span className="text-[10px] uppercase text-zinc-400">{getMediumUnit(item)}</span>
+                               </p>
+                               {item.warehouse_stocks && item.warehouse_stocks.length > 0 && (
+                                 <div className="relative group/wh inline-block">
+                                   <span className="cursor-pointer text-[10px] text-amber-500 hover:underline">
+                                     <Warehouse size={10} />
+                                   </span>
+                                   <div className="absolute z-20 bottom-full left-0 mb-2 w-44 bg-zinc-950 text-white text-[9px] p-2 rounded-md shadow-2xl border border-zinc-800 pointer-events-none opacity-0 group-hover/wh:opacity-100 transition-opacity">
+                                     {item.warehouse_stocks.map((ws, idx) => (
+                                       <div key={idx} className="flex justify-between items-center py-0.5">
+                                         <span className="truncate max-w-[65%]">{ws.warehouse_name}</span>
+                                         <span className="font-mono text-amber-400">{ws.qty} {item.unit}</span>
+                                       </div>
+                                     ))}
+                                   </div>
+                                 </div>
                                )}
                              </div>
-                             <div className="flex items-center gap-1.5 mt-1">
-                               <Truck size={10} className="text-zinc-400" />
-                               <span className="text-[10px] font-bold text-zinc-400 uppercase">{item.supplier?.name || 'No Supplier'}</span>
-                             </div>
-                             {/* Stock bar */}
-                             <div className="flex items-center gap-2 mt-2">
-                               <div className="flex items-center gap-1.5">
-                                 <p className="text-sm font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">
-                                   {getDisplayMediumQty(item, displayStock).toLocaleString('id-ID')} <span className="text-[10px] uppercase text-zinc-400">{getMediumUnit(item)}</span>
-                                 </p>
-                                 {item.warehouse_stocks && item.warehouse_stocks.length > 0 && (
-                                   <div className="relative group/wh inline-block">
-                                     <button className="text-zinc-400 hover:text-amber-500 p-0.5 rounded transition-colors">
-                                       <Warehouse size={12} />
-                                     </button>
-                                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover/wh:block z-50 w-52 bg-zinc-950/95 text-zinc-100 text-[10px] rounded-lg shadow-xl border border-zinc-800 p-3 pointer-events-none space-y-1.5 text-left">
-                                       <p className="font-black border-b border-zinc-800 pb-1.5 uppercase tracking-wider text-amber-500">Warehouse Breakdown</p>
-                                       {item.warehouse_stocks.map((ws, idx) => (
-                                         <div key={idx} className="flex justify-between items-center font-mono tracking-tight">
-                                           <div className="flex flex-col">
-                                             <span className="font-bold text-zinc-100 uppercase">{ws.warehouse_name}</span>
-                                             <span className="text-[8px] text-zinc-400 uppercase">{ws.outlet_name}</span>
-                                           </div>
-                                           <span className="font-black text-amber-400 tabular-nums">
-                                             {ws.qty.toLocaleString('id-ID')} {item.unit}
-                                           </span>
-                                         </div>
-                                       ))}
-                                     </div>
-                                   </div>
-                                 )}
-                               </div>
-                               <div className="h-1.5 flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                                 <div className={cn("h-full transition-all", st.barCls)} style={{ width: `${st.pct}%` }} />
-                               </div>
+                             <div className="h-1.5 flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                               <div className={cn("h-full transition-all", st.barCls)} style={{ width: `${st.pct}%` }} />
                              </div>
                            </div>
                          </div>
@@ -593,144 +518,208 @@ export default function InventoriPage() {
                )}
             </Card>
          </div>
+      ) : (
+         <div className="space-y-6">
+            {/* Stat Summary Bar — Mobile friendly */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Total Bahan', value: filtered.length, icon: Package, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20' },
+                { label: 'Bahan Murni', value: filtered.filter(i => !getMaterialType(i).isAssembly).length, icon: Leaf, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/20' },
+                { label: 'Assembly / BOM', value: filtered.filter(i => getMaterialType(i).isAssembly).length, icon: FlaskConical, color: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-950/20' },
+                { label: 'Stok Kritis', value: filtered.filter(i => i.stock <= (i.min_stock || 0)).length, icon: AlertTriangle, color: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/20' },
+              ].map((stat, i) => (
+                <div key={i} className="flex items-center gap-3 p-4 bg-card border border-zinc-200 dark:border-zinc-800 rounded-lg">
+                  <div className={cn('w-8 h-8 rounded-md flex items-center justify-center shrink-0', stat.bg)}>
+                    <stat.icon size={16} className={stat.color} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest truncate">{stat.label}</p>
+                    <p className="text-lg font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100 leading-none">{stat.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          {/* Right Sidebar Activity — Responsive */}
-          <div className="xl:col-span-4 space-y-6">
-             {/* On desktop: sticky; on mobile: normal flow below main content */}
-             <div className="xl:sticky xl:top-24 space-y-6">
-             <Card className="border border-border bg-card text-card-foreground shadow-lg rounded-lg overflow-hidden">
-                <CardHeader className="p-6 border-b border-zinc-200/80 dark:border-zinc-800/50 bg-background">
-                   <div className="flex items-center gap-3">
-                       <div className="w-9 h-9 rounded-md bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center shrink-0 text-amber-500 dark:text-amber-400">
-                          <History size={16} />
-                       </div>
-                      <div>
-                         <CardTitle className="text-base font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">Stock Ledger</CardTitle>
-                         <CardDescription className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Recent Movement History</CardDescription>
-                      </div>
-                   </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                   <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1">
-                      {stockLogs.length === 0 ? (
-                        <div className="py-8 text-center border border-dashed border-zinc-200 dark:border-zinc-700 rounded-lg">
-                          <History size={20} className="mx-auto mb-2 text-zinc-400 dark:text-zinc-600" />
-                          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-600">Belum ada riwayat mutasi stok</p>
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+               <div className="xl:col-span-8 space-y-6">
+                  {/* AI Predictions Hub */}
+                  <Card className="border border-zinc-200 dark:border-zinc-800 bg-card text-card-foreground rounded-lg shadow-lg overflow-hidden relative group">
+                     <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+                        <BrainCircuit size={120} />
+                     </div>
+                     <CardHeader className="p-4 sm:p-6 pb-0 relative z-10 flex flex-row items-center justify-between">
+                        <div className="space-y-1">
+                           <div className="flex items-center gap-3">
+                              <Sparkles className="text-amber-500 animate-pulse" size={16} />
+                              <CardTitle className="text-lg sm:text-xl font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">
+                                Neural Stock <span className="text-amber-500 italic">Forecaster</span>
+                              </CardTitle>
+                           </div>
+                           <CardDescription className="text-[10px] font-black uppercase tracking-widest text-zinc-400">
+                             Predictive analysis based on consumption trends
+                           </CardDescription>
                         </div>
-                      ) : stockLogs.map((log, i) => {
-                        const cfg = LOG_TYPE_CONFIG[log.type] || LOG_TYPE_DEFAULT;
-                        const IconComp = cfg.icon;
-                        const isPositive = (log.change_qty || 0) > 0;
-                        return (
-                          <div key={log.id || i} className="flex gap-3 group relative">
-                            <div className={cn(
-                              "w-9 h-9 rounded-md border flex items-center justify-center shrink-0",
-                              cfg.bg
-                            )}>
-                              <IconComp size={14} className={cfg.color} />
-                            </div>
-                            <div className="flex-1 pt-0.5 min-w-0">
-                              <div className="flex justify-between items-start gap-2">
-                                <div className="min-w-0">
-                                  <p className="text-xs font-black uppercase tracking-tight leading-none text-zinc-800 dark:text-zinc-200 truncate">{cfg.label}</p>
-                                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium truncate">
-                                    {log.bahan_name || '-'}
-                                    {log.reference_id ? <span className="ml-1 font-mono text-zinc-400">#{log.reference_id}</span> : ''}
-                                  </p>
+                         <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 dark:border-amber-400/20 text-amber-600 dark:text-amber-400 rounded-lg font-bold shadow-sm">
+                           <Zap size={10} className="text-amber-500 fill-current animate-pulse" />
+                           <span className="text-[9px] font-black uppercase tracking-widest hidden sm:inline">AI ACTIVE</span>
+                        </div>
+                     </CardHeader>
+                     <CardContent className="p-4 sm:p-6 relative z-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {aiPredictions.length === 0 ? (
+                           <div className="col-span-3 py-8 text-center text-zinc-500 text-xs font-black uppercase tracking-widest border border-dashed border-border rounded-lg">
+                             Need more transaction data for accurate prediction
+                           </div>
+                        ) : aiPredictions.map((pred, i) => (
+                          <div key={i} className="p-4 rounded-md border border-zinc-200 dark:border-zinc-800/50 bg-zinc-50/20 dark:bg-zinc-900/40 hover:-translate-y-0.5 transition-all shadow-sm flex flex-col justify-between min-h-[140px]">
+                             <div>
+                                <div className="flex justify-between items-start mb-2">
+                                   <p className="text-xs font-black uppercase tracking-tight text-zinc-800 dark:text-zinc-200 truncate max-w-[80%]">{pred.name}</p>
+                                   <Timer size={14} className={cn(pred.status === 'Kritis' ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400")} />
                                 </div>
-                                <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 shrink-0 whitespace-nowrap">{timeAgo(log.created_at)}</span>
-                              </div>
-                              <div className="flex items-center gap-2 mt-1">
+                                <div className="space-y-0.5">
+                                   <p className="text-xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">{pred.daysLeft} DAYS</p>
+                                   <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Estimated stockout</p>
+                                </div>
+                             </div>
+                             <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800/50 flex items-center justify-between">
                                 <span className={cn(
-                                  "text-xs font-black font-mono tabular-nums",
-                                  isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                                )}>
-                                  {isPositive ? '+' : ''}{Number(log.change_qty || 0).toLocaleString('id-ID')}
-                                  {log.unit && <span className="ml-1 text-[10px] font-bold uppercase opacity-70">{log.unit}</span>}
-                                </span>
-                                {log.reason && <span className="text-[10px] text-zinc-400 dark:text-zinc-500 italic truncate">· {log.reason}</span>}
-                              </div>
-                            </div>
+                                  "px-2.5 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest border",
+                                  pred.status === 'Kritis' ? "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800" : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                                )}>{pred.recommendation}</span>
+                                 <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800"><ArrowUpRight size={14} /></Button>
+                             </div>
                           </div>
-                        );
-                      })}
-                   </div>
-                </CardContent>
-             </Card>
+                        ))}
+                     </CardContent>
+                  </Card>
+               </div>
 
-             {/* Smart Suggestion Card */}
-             <div className="p-6 bg-card text-card-foreground border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg relative group/promo active:scale-[0.98]">
-                <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 dark:bg-amber-400/10 rounded-lg blur-3xl group-hover/promo:scale-150 transition-all duration-1000" />
-                <div className="absolute top-0 right-0 p-6 text-zinc-700/20 dark:text-zinc-600/20 group-hover/promo:rotate-12 transition-transform duration-500">
-                   <ShoppingCart size={80} />
-                </div>
-                <div className="relative z-10 space-y-3">
-                   <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 dark:border-amber-400/20 text-amber-600 dark:text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest">
-                     <Sparkles size={10} className="text-amber-500" /> Smart Suggestion
-                   </div>
-                   <div className="space-y-1">
-                      <h4 className="text-xl font-black uppercase tracking-tighter leading-none text-zinc-900 dark:text-zinc-100">
-                        Automated <span className="text-amber-500 italic">Procurement</span>
-                      </h4>
-                      <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-relaxed uppercase tracking-wider">
-                        Berdasarkan tren penjualan terakhir, sistem menyarankan pengadaan bahan baku segera untuk menjaga stok aman.
-                      </p>
-                   </div>
-                </div>
-                <Button 
-                    onClick={async () => {
-                      try {
-                        setPoHubLoading(true);
-                        // Panggil saran prediksi AI cerdas yang sudah mencakup logika anti double-ordering OTW
-                        const suggestions = await api.getReplenishmentPredictions();
-                        
-                        // Filter: Hanya ambil bahan kritis yang memiliki suggestedQty > 0 dan isOtw = false
-                        const criticals = suggestions.filter(s => s.status === 'Kritis' && !s.isOtw && s.suggestedQty > 0);
-                        
-                        if (criticals.length === 0) {
-                          alert("🎉 Semua bahan baku terpantau aman (atau sudah memiliki Purchase Order yang sedang berjalan)!");
-                          return;
-                        }
+               <div className="xl:col-span-4 space-y-6">
+                  {/* Stock Ledger */}
+                  <Card className="border border-border bg-card text-card-foreground shadow-lg rounded-lg overflow-hidden">
+                     <CardHeader className="p-6 border-b border-zinc-200/80 dark:border-zinc-800/50 bg-background">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-md bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center shrink-0 text-amber-500 dark:text-amber-400">
+                               <History size={16} />
+                            </div>
+                           <div>
+                              <CardTitle className="text-base font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-100">Stock Ledger</CardTitle>
+                              <CardDescription className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Recent Movement History</CardDescription>
+                           </div>
+                        </div>
+                     </CardHeader>
+                     <CardContent className="p-6">
+                        <div className="space-y-4 max-h-[360px] overflow-y-auto pr-1">
+                           {stockLogs.length === 0 ? (
+                             <div className="py-8 text-center border border-dashed border-zinc-200 dark:border-zinc-700 rounded-lg">
+                               <History size={20} className="mx-auto mb-2 text-zinc-400 dark:text-zinc-600" />
+                               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400 dark:text-zinc-600">Belum ada riwayat mutasi stok</p>
+                             </div>
+                           ) : stockLogs.map((log, i) => {
+                             const cfg = LOG_TYPE_CONFIG[log.type] || LOG_TYPE_DEFAULT;
+                             const IconComp = cfg.icon;
+                             const isPositive = (log.change_qty || 0) > 0;
+                             return (
+                               <div key={log.id || i} className="flex gap-3 group relative">
+                                 <div className={cn(
+                                   "w-9 h-9 rounded-md border flex items-center justify-center shrink-0",
+                                   cfg.bg
+                                 )}>
+                                   <IconComp size={14} className={cfg.color} />
+                                 </div>
+                                 <div className="flex-1 pt-0.5 min-w-0">
+                                   <div className="flex justify-between items-start gap-2">
+                                     <div className="min-w-0">
+                                       <p className="text-xs font-black uppercase tracking-tight leading-none text-zinc-800 dark:text-zinc-200 truncate">{cfg.label}</p>
+                                       <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 font-medium truncate">
+                                         {log.bahan_name || '-'}
+                                         {log.reference_id ? <span className="ml-1 font-mono text-zinc-400">#{log.reference_id}</span> : ''}
+                                       </p>
+                                     </div>
+                                     <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 shrink-0 whitespace-nowrap">{timeAgo(log.created_at)}</span>
+                                   </div>
+                                   <div className="flex items-center gap-2 mt-1">
+                                     <span className={cn(
+                                       "text-xs font-black font-mono tabular-nums",
+                                       isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                     )}>
+                                       {isPositive ? '+' : ''}{Number(log.change_qty || 0).toLocaleString('id-ID')}
+                                       {log.unit && <span className="ml-1 text-[10px] font-bold uppercase opacity-70">{log.unit}</span>}
+                                     </span>
+                                     {log.reason && <span className="text-[10px] text-zinc-400 dark:text-zinc-500 italic truncate">· {log.reason}</span>}
+                                   </div>
+                                 </div>
+                               </div>
+                             );
+                           })}
+                        </div>
+                     </CardContent>
+                  </Card>
 
-                        // Hubungkan dengan data supplier untuk mendapatkan nama supplier
-                        const sData = await api.getSuppliers();
-                        setSuppliersList(sData || []);
-                        if (sData && sData.length > 0) {
-                          setUnassignedSupplierId(sData[0].id);
-                        }
-
-                        const supplierMap = {};
-                        (sData || []).forEach(s => { supplierMap[s.id] = s.name; });
-
-                        // Kelompokkan bahan kritis berdasarkan supplier_id
-                        const groups = {};
-                        criticals.forEach(c => {
-                          const sId = c.supplier_id || 'unassigned';
-                          const sName = supplierMap[sId] || 'Tanpa Supplier / Vendor Lain';
-                          if (!groups[sId]) {
-                            groups[sId] = { id: sId, name: sName, items: [] };
-                          }
-                          groups[sId].items.push(c);
-                        });
-
-                        setPoHubGroups(Object.values(groups));
-                        setShowPoHubModal(true);
-                      } catch (e) {
-                        alert("Gagal memproses saran pengadaan AI: " + e.message);
-                      } finally {
-                        setPoHubLoading(false);
-                      }
-                    }}
-                    disabled={poHubLoading}
-                    className="w-full h-12 mt-4 font-black uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 text-white active:scale-95 transition-all flex items-center justify-center gap-2"
-                 >
-                      {poHubLoading ? <RefreshCw className="animate-spin" size={14} /> : <BrainCircuit size={14} />}
-                      {poHubLoading ? 'MEMPROSES REKOMENDASI...' : 'GENERATE PURCHASE ORDER'}
-                 </Button>
-             </div>
-             </div>
-          </div>
-       </div>
+                  {/* Smart Suggestion Card */}
+                  <div className="p-6 bg-card text-card-foreground border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg relative group/promo active:scale-[0.98]">
+                     <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 dark:bg-amber-400/10 rounded-lg blur-3xl group-hover/promo:scale-150 transition-all duration-1000" />
+                     <div className="absolute top-0 right-0 p-6 text-zinc-700/20 dark:text-zinc-600/20 group-hover/promo:rotate-12 transition-transform duration-500">
+                        <ShoppingCart size={80} />
+                     </div>
+                     <div className="relative z-10 space-y-3">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 dark:border-amber-400/20 text-amber-600 dark:text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest">
+                          <Sparkles size={10} className="text-amber-500" /> Smart Suggestion
+                        </div>
+                        <div className="space-y-1">
+                           <h4 className="text-xl font-black uppercase tracking-tighter leading-none text-zinc-900 dark:text-zinc-100">
+                             Automated <span className="text-amber-500 italic">Procurement</span>
+                           </h4>
+                           <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-relaxed uppercase tracking-wider">
+                             Berdasarkan tren penjualan terakhir, sistem menyarankan pengadaan bahan baku segera untuk menjaga stok aman.
+                           </p>
+                        </div>
+                     </div>
+                     <Button 
+                         onClick={async () => {
+                           try {
+                             setPoHubLoading(true);
+                             const suggestions = await api.getReplenishmentPredictions();
+                             const criticals = suggestions.filter(s => s.status === 'Kritis' && !s.isOtw && s.suggestedQty > 0);
+                             if (criticals.length === 0) {
+                               alert("🎉 Semua bahan baku terpantau aman (atau sudah memiliki Purchase Order yang sedang berjalan)!");
+                               return;
+                             }
+                             const sData = await api.getSuppliers();
+                             setSuppliersList(sData || []);
+                             if (sData && sData.length > 0) {
+                               setUnassignedSupplierId(sData[0].id);
+                             }
+                             const supplierMap = {};
+                             (sData || []).forEach(s => { supplierMap[s.id] = s.name; });
+                             const groups = {};
+                             criticals.forEach(c => {
+                               const sId = c.supplier_id || 'unassigned';
+                               const sName = supplierMap[sId] || 'Tanpa Supplier / Vendor Lain';
+                               if (!groups[sId]) {
+                                 groups[sId] = { id: sId, name: sName, items: [] };
+                               }
+                               groups[sId].items.push(c);
+                             });
+                             setPoHubGroups(Object.values(groups));
+                             setShowPoHubModal(true);
+                           } catch (e) {
+                             alert("Gagal memproses saran pengadaan AI: " + e.message);
+                           } finally {
+                             setPoHubLoading(false);
+                           }
+                         }}
+                         disabled={poHubLoading}
+                         className="w-full h-12 mt-4 font-black uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 text-white active:scale-95 transition-all flex items-center justify-center gap-2"
+                      >
+                           {poHubLoading ? <RefreshCw className="animate-spin" size={14} /> : <BrainCircuit size={14} />}
+                           {poHubLoading ? 'MEMPROSES REKOMENDASI...' : 'GENERATE PURCHASE ORDER'}
+                      </Button>
+                  </div>
+               </div>
+            </div>
+         </div>
+      )}
 
         <InventoryFormModal isOpen={showModal} onClose={() => { setShowModal(false); setEditItem(null); }} onSave={handleSave} initialData={editItem} locations={locations} inventoryMeta={inventoryMeta} isSaving={saving} bahanList={bahan} />
 
