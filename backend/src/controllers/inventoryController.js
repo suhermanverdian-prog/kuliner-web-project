@@ -57,7 +57,8 @@ class InventoryController {
   async getLogs(req, res) {
     try {
       const userContext = req.userContext || {};
-      const logs = await InventoryService.getLogs(userContext);
+      const { startDate, endDate, type, search, limit } = req.query;
+      const logs = await InventoryService.getLogs(userContext, { startDate, endDate, type, search, limit });
       res.json(logs);
     } catch (err) {
       console.error('❌ Inventory Logs Error:', err.message);

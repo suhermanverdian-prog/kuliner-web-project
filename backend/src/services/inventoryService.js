@@ -183,8 +183,8 @@ class InventoryService {
     return await InventoryRepository.getBahanLowStock(tenantId);
   }
 
-  static async getLogs(userContext) {
-    const logs = await InventoryRepository.getLogs(userContext);
+  static async getLogs(userContext, filters = {}) {
+    const logs = await InventoryRepository.getLogs(userContext, filters);
     return (logs || []).map(l => ({
         ...l,
         bahan_name: l.bahan_name || 'Item #' + (l.bahan_id || 'Unknown'),
@@ -715,7 +715,7 @@ class InventoryService {
         .eq('bahan_id', bahanId);
 
       // Write stock movement logs
-      const logNotes = `${sourceWh.name} -> ${destWh.name}`;
+      const logNotes = `${isInterOutlet ? '[INTER-OUTLET]' : '[INTRA-OUTLET]'} ${sourceWh.name} -> ${destWh.name}`;
       await supabase.from('inventory_logs').insert([
         {
           tenant_id: tenantId,

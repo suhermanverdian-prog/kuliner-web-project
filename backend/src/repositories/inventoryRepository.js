@@ -20,7 +20,7 @@ class InventoryRepository {
     return (data || []).filter(b => b.stock <= b.min_stock);
   }
 
-  async getLogs(userContext) {
+  async getLogs(userContext, filters = {}) {
     // Join bahan untuk mendapatkan unit satuan (ml, gram, kg, dll)
     let query = supabase
       .from('inventory_logs')
@@ -28,7 +28,25 @@ class InventoryRepository {
     
     query = applyScopeFilter(query, userContext);
     
-    const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
+    if (filters.startDate) {
+      query = query.gte('created_at', filters.startDate);
+    }
+    if (filters.endDate) {
+      query = query.lte('created_at', filters.endDate);
+    }
+    if (filters.type) {
+      if (Array.isArray(filters.type)) {
+        query = query.in('type', filters.type);
+      } else {
+        query = query.eq('type', filters.type);
+      }
+    }
+    if (filters.search) {
+      query = query.ilike('bahan_name', `%${filters.search}%`);
+    }
+    
+    const limit = Number(filters.limit) || 100;
+    const { data, error } = await query.order('created_at', { ascending: false }).limit(limit);
 
     if (error && error.code === 'PGRST205') return [];
     if (error) throw error;

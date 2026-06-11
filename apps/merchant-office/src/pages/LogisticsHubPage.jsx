@@ -13,6 +13,7 @@ import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "@/lib/utils";
 import { useLogisticsHubPage } from '../hooks/useLogisticsHubPage';
+import { api } from '../api';
 import { useNavigate } from 'react-router-dom';
 import StockTransferModal from '../components/StockTransferModal';
 
@@ -121,6 +122,80 @@ export default function LogisticsHubPage() {
       setShipmentsList(activeShipments);
     }
   }, [activeShipments]);
+
+  // Report state and hooks
+  const [logs, setLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [timeframe, setTimeframe] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [mutationClass, setMutationClass] = useState('all');
+  const [direction, setDirection] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchLogs = async () => {
+    try {
+      setLogsLoading(true);
+      const fetchedLogs = await api.getInventoryLogs({ limit: 1000 });
+      const transferLogs = (fetchedLogs || []).filter(l => 
+        l.type === 'Transfer In' || l.type === 'Transfer Out'
+      );
+      setLogs(transferLogs);
+    } catch (err) {
+      console.error("Gagal mengambil log mutasi:", err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, [activeTab]);
+
+  const filteredLogs = logs.filter(log => {
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchName = log.bahan_name?.toLowerCase().includes(query);
+      const matchRef = log.reference_id?.toLowerCase().includes(query);
+      const matchNotes = log.notes?.toLowerCase().includes(query);
+      if (!matchName && !matchRef && !matchNotes) return false;
+    }
+    if (direction === 'in' && log.type !== 'Transfer In') return false;
+    if (direction === 'out' && log.type !== 'Transfer Out') return false;
+
+    const isInter = log.notes?.includes('[INTER-OUTLET]');
+    const isIntra = log.notes?.includes('[INTRA-OUTLET]');
+    if (mutationClass === 'inter' && !isInter) return false;
+    if (mutationClass === 'intra' && !isIntra) return false;
+
+    if (timeframe !== 'all') {
+      const logDate = new Date(log.created_at);
+      const today = new Date();
+      if (timeframe === 'today') {
+        if (logDate.toDateString() !== today.toDateString()) return false;
+      } else if (timeframe === 'week') {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(today.getDate() - 7);
+        if (logDate < oneWeekAgo) return false;
+      } else if (timeframe === 'month') {
+        const oneMonthAgo = new Date();
+        oneMonthAgo.setMonth(today.getMonth() - 1);
+        if (logDate < oneMonthAgo) return false;
+      } else if (timeframe === 'custom') {
+        if (startDate) {
+          const start = new Date(startDate);
+          start.setHours(0, 0, 0, 0);
+          if (logDate < start) return false;
+        }
+        if (endDate) {
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          if (logDate > end) return false;
+        }
+      }
+    }
+    return true;
+  });
 
   const handleVerifyReceipt = async (e) => {
     e.preventDefault();
@@ -297,9 +372,217 @@ export default function LogisticsHubPage() {
                          ))}
                       </tbody>
                    </table>
-                </div>
-             </CardContent>
-          </Card>
+                 </div>
+              </CardContent>
+           </Card>
+
+           {/* Laporan Mutasi Section */}
+           <Card className="border-none bg-card shadow-xl rounded-lg overflow-hidden mt-6">
+              <CardHeader className="p-8 border-b border-border bg-background flex flex-col md:flex-row md:items-center justify-between gap-4">
+                 <div className="space-y-1">
+                    <CardTitle className="text-xl font-black tracking-tighter uppercase leading-none">Laporan Mutasi & Pergerakan Stok</CardTitle>
+                    <CardDescription className="text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                      Audit trail mutasi keluar/masuk antar outlet dan gudang
+                    </CardDescription>
+                 </div>
+                 <div className="flex gap-2">
+                   <Button 
+                     variant="outline" 
+                     onClick={() => {
+                       const printContent = document.getElementById('print-mutation-report').innerHTML;
+                       const printWindow = window.open('', '_blank', 'width=1000,height=800');
+                       printWindow.document.write(`
+                         <html>
+                           <head>
+                             <title>Laporan Mutasi Stok</title>
+                             <style>
+                               body { font-family: monospace; padding: 20px; font-size: 12px; }
+                               table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                               th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                               th { background-color: #f5f5f5; }
+                             </style>
+                           </head>
+                           <body>
+                             <h2>LAPORAN MUTASI & PERGERAKAN STOK</h2>
+                             <p>Dicetak pada: ${new Date().toLocaleString()}</p>
+                             ${printContent}
+                           </body>
+                         </html>
+                       `);
+                       printWindow.document.close();
+                     }}
+                     className="h-10 px-4 font-black uppercase tracking-wider text-[10px] bg-card border-border text-foreground hover:bg-background"
+                   >
+                     Print Laporan
+                   </Button>
+                   <Button 
+                     variant="outline" 
+                     onClick={fetchLogs}
+                     className="h-10 w-10 flex items-center justify-center bg-card border-border text-foreground hover:bg-background"
+                     title="Refresh Data"
+                   >
+                     <RefreshCw size={16} className={cn(logsLoading && "animate-spin")} />
+                   </Button>
+                 </div>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                 {/* Filters Bar */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-background p-4 rounded-lg border border-border">
+                    {/* Search */}
+                    <div className="space-y-1.5">
+                       <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Pencarian</label>
+                       <div className="relative">
+                          <Search className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                          <Input 
+                             type="text" 
+                             placeholder="Cari bahan / ID..." 
+                             value={searchQuery}
+                             onChange={(e) => setSearchQuery(e.target.value)}
+                             className="h-10 pl-9 pr-3 bg-card border-border rounded-md text-xs font-bold"
+                          />
+                       </div>
+                    </div>
+ 
+                    {/* Timeframe */}
+                    <div className="space-y-1.5">
+                       <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Rentang Waktu</label>
+                       <select 
+                          value={timeframe} 
+                          onChange={(e) => setTimeframe(e.target.value)}
+                          className="w-full h-10 px-3 bg-card border border-border rounded-md text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                       >
+                          <option value="all">Semua Waktu</option>
+                          <option value="today">Hari Ini</option>
+                          <option value="week">7 Hari Terakhir</option>
+                          <option value="month">30 Hari Terakhir</option>
+                          <option value="custom">Custom Tanggal</option>
+                       </select>
+                    </div>
+ 
+                    {/* Class */}
+                    <div className="space-y-1.5">
+                       <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Jenis Mutasi</label>
+                       <select 
+                          value={mutationClass} 
+                          onChange={(e) => setMutationClass(e.target.value)}
+                          className="w-full h-10 px-3 bg-card border border-border rounded-md text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                       >
+                          <option value="all">Semua Jenis</option>
+                          <option value="inter">Inter Outlet (Antar Cabang)</option>
+                          <option value="intra">Intra Outlet (Internal)</option>
+                       </select>
+                    </div>
+ 
+                    {/* Direction */}
+                    <div className="space-y-1.5">
+                       <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Arah Stok</label>
+                       <select 
+                          value={direction} 
+                          onChange={(e) => setDirection(e.target.value)}
+                          className="w-full h-10 px-3 bg-card border border-border rounded-md text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/20"
+                       >
+                          <option value="all">Semua Arah</option>
+                          <option value="in">Mutasi Masuk (Inbound)</option>
+                          <option value="out">Mutasi Keluar (Outbound)</option>
+                       </select>
+                    </div>
+ 
+                    {/* Custom Date Inputs */}
+                    {timeframe === 'custom' && (
+                       <div className="lg:col-span-4 grid grid-cols-2 gap-4 pt-2 border-t border-dashed border-border">
+                          <div className="space-y-1.5">
+                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Tanggal Mulai</label>
+                             <Input 
+                                type="date" 
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="h-10 bg-card border-border rounded-md text-xs font-bold"
+                             />
+                          </div>
+                          <div className="space-y-1.5">
+                             <label className="text-[9px] font-black uppercase tracking-widest text-zinc-400">Tanggal Selesai</label>
+                             <Input 
+                                type="date" 
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                                className="h-10 bg-card border-border rounded-md text-xs font-bold"
+                             />
+                          </div>
+                       </div>
+                    )}
+                 </div>
+ 
+                 {/* Table */}
+                 <div className="overflow-x-auto" id="print-mutation-report">
+                    {logsLoading ? (
+                       <div className="flex flex-col items-center justify-center py-12 gap-2 text-zinc-400">
+                          <RefreshCw className="w-8 h-8 animate-spin text-amber-500" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Loading Mutation Audit Trail...</span>
+                       </div>
+                    ) : filteredLogs.length === 0 ? (
+                       <div className="flex flex-col items-center justify-center py-12 text-zinc-400 border border-dashed border-border rounded-lg bg-background">
+                          <AlertCircle className="w-8 h-8 text-zinc-400 mb-2" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Tidak ada riwayat mutasi yang cocok.</span>
+                       </div>
+                    ) : (
+                       <table className="w-full text-left border-collapse">
+                          <thead>
+                             <tr className="bg-background text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 border-b border-border">
+                                <th className="px-4 py-4">ID / Ref</th>
+                                <th className="px-4 py-4">Waktu</th>
+                                <th className="px-4 py-4">Bahan Baku</th>
+                                <th className="px-4 py-4">Alur Transit</th>
+                                <th className="px-4 py-4">Jenis</th>
+                                <th className="px-4 py-4">Arah</th>
+                                <th className="px-4 py-4 text-right">Qty</th>
+                                <th className="px-4 py-4 text-right">Saldo Stok</th>
+                             </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border text-xs">
+                             {filteredLogs.map((log, i) => {
+                                const isInter = log.notes?.includes('[INTER-OUTLET]');
+                                const cleanNotes = log.notes ? log.notes.replace('[INTER-OUTLET] ', '').replace('[INTRA-OUTLET] ', '') : '-';
+                                return (
+                                  <tr key={i} className="hover:bg-background transition-all">
+                                     <td className="px-4 py-4 font-mono font-bold tabular-nums text-amber-500">{log.reference_id}</td>
+                                     <td className="px-4 py-4 text-zinc-500 font-mono tabular-nums">{new Date(log.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                                     <td className="px-4 py-4 font-bold text-foreground uppercase tracking-tight">{log.bahan_name}</td>
+                                     <td className="px-4 py-4 text-zinc-500 dark:text-zinc-400 uppercase font-black text-[9px] tracking-tight">{cleanNotes}</td>
+                                     <td className="px-4 py-4">
+                                        <span className={cn(
+                                          "px-2 py-0.5 text-[8px] font-black uppercase rounded",
+                                          isInter 
+                                            ? "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800" 
+                                            : "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700"
+                                        )}>
+                                           {isInter ? 'Inter Outlet' : 'Intra Outlet'}
+                                        </span>
+                                     </td>
+                                     <td className="px-4 py-4">
+                                        <span className={cn(
+                                          "px-2 py-0.5 text-[8px] font-black uppercase rounded",
+                                          log.type === 'Transfer In' 
+                                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" 
+                                            : "bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
+                                        )}>
+                                           {log.type === 'Transfer In' ? 'Masuk' : 'Keluar'}
+                                        </span>
+                                     </td>
+                                     <td className="px-4 py-4 text-right font-mono font-bold tabular-nums text-foreground">
+                                        {log.change_qty > 0 ? `+${log.change_qty}` : log.change_qty} {log.unit || ''}
+                                     </td>
+                                     <td className="px-4 py-4 text-right font-mono text-zinc-400 tabular-nums">
+                                        {log.next_stock} {log.unit || ''}
+                                     </td>
+                                  </tr>
+                                );
+                             })}
+                          </tbody>
+                       </table>
+                    )}
+                 </div>
+              </CardContent>
+           </Card>
         </div>
       ) : (
         <div className="space-y-6">
