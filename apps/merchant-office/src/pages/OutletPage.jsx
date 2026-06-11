@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Store, Plus, MapPin, Phone, Edit2, Trash2, 
   ArrowRight, Globe, CheckCircle2, XCircle, 
   TrendingUp, Activity, LayoutGrid, Search,
   Filter, MoreHorizontal, Settings, Info,
-  Map, Server, ShieldCheck, RefreshCw, X
+  Map, Server, ShieldCheck, RefreshCw, X, Warehouse
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -12,6 +12,7 @@ import { Input } from "../components/ui/Input";
 import { cn } from "@/lib/utils";
 import { useOutletPage } from '../hooks/useOutletPage';
 import { useAppStore } from '../store/useAppStore';
+import { api } from '../api';
 
 const OutletPage = () => {
   const user = useAppStore(state => state.user);
@@ -29,6 +30,46 @@ const OutletPage = () => {
     handleDelete,
     filtered
   } = useOutletPage();
+
+  const [warehouseModalOpen, setWarehouseModalOpen] = useState(false);
+  const [selectedOutletForWarehouse, setSelectedOutletForWarehouse] = useState(null);
+  const [warehouses, setWarehouses] = useState([]);
+  const [warehousesLoading, setWarehousesLoading] = useState(false);
+  const [newWarehouseName, setNewWarehouseName] = useState('');
+  const [warehouseSaving, setWarehouseSaving] = useState(false);
+
+  const openWarehouseModal = async (outlet) => {
+    setSelectedOutletForWarehouse(outlet);
+    setWarehouseModalOpen(true);
+    setWarehousesLoading(true);
+    try {
+      const res = await api.getWarehouses();
+      setWarehouses(res.filter(w => w.outlet_id === outlet.id));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setWarehousesLoading(false);
+    }
+  };
+
+  const handleAddWarehouse = async (e) => {
+    e.preventDefault();
+    if (!newWarehouseName.trim()) return;
+    setWarehouseSaving(true);
+    try {
+      await api.addWarehouse({
+        outletId: selectedOutletForWarehouse.id,
+        name: newWarehouseName.trim()
+      });
+      const res = await api.getWarehouses();
+      setWarehouses(res.filter(w => w.outlet_id === selectedOutletForWarehouse.id));
+      setNewWarehouseName('');
+    } catch (e) {
+      alert("Gagal menambahkan gudang: " + e.message);
+    } finally {
+      setWarehouseSaving(false);
+    }
+  };
 
   if (loading && outlets.length === 0) return (
     <div className="flex flex-col items-center justify-center h-[60vh] gap-4 font-mono tabular-nums">
@@ -157,14 +198,17 @@ const OutletPage = () => {
                        </div>
                     </div>
 
-                    <div className="flex gap-4 pt-4">
-                      <Button variant="outline" className="flex-1 h-14 bg-card border-border text-[10px] font-black uppercase tracking-[0.2em] rounded-lg hover:bg-background group/btn">
-                        <TrendingUp size={16} className="mr-3 group-hover/btn:scale-110 transition-transform" /> ANALYTICS
-                      </Button>
-                      <Button variant="primary" className="flex-1 h-14 font-black uppercase tracking-[0.2em] rounded-lg">
-                        <Globe size={16} className="mr-3 group-hover/btn:rotate-12 transition-transform" /> MANAGE POS <ArrowRight size={14} className="ml-2" />
-                      </Button>
-                    </div>
+                     <div className="flex gap-2 pt-4">
+                       <Button variant="outline" className="flex-1 h-14 bg-card border-border text-[8px] font-black uppercase tracking-wider rounded-lg hover:bg-background group/btn">
+                         <TrendingUp size={14} className="mr-2 group-hover/btn:scale-110 transition-transform" /> ANALYTICS
+                       </Button>
+                       <Button variant="outline" className="flex-1 h-14 bg-card border-border text-[8px] font-black uppercase tracking-wider rounded-lg hover:bg-background group/btn" onClick={() => openWarehouseModal(outlet)}>
+                         <Warehouse size={14} className="mr-2 group-hover/btn:scale-110 transition-transform" /> GUDANG
+                       </Button>
+                       <Button variant="primary" className="flex-1 h-14 text-[8px] font-black uppercase tracking-wider rounded-lg">
+                         <Globe size={14} className="mr-2 group-hover/btn:rotate-12 transition-transform" /> POS <ArrowRight size={10} className="ml-1" />
+                       </Button>
+                     </div>
                   </CardContent>
                 </Card>
               ))}
@@ -260,6 +304,80 @@ const OutletPage = () => {
                   </Button>
                </CardFooter>
             </form>
+          </Card>
+        </div>
+      )}
+
+      {/* Warehouse Modal */}
+      {warehouseModalOpen && selectedOutletForWarehouse && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <Card className="w-full max-w-md shadow-2xl bg-card border border-border rounded-lg overflow-hidden flex flex-col max-h-[80vh]">
+            <CardHeader className="bg-background border-b border-border flex flex-row items-center justify-between p-5">
+              <div className="space-y-0.5">
+                <CardTitle className="text-lg font-black uppercase tracking-tighter">Kelola Gudang</CardTitle>
+                <CardDescription className="uppercase font-black tracking-[0.2em] text-[9px] text-amber-500">
+                  {selectedOutletForWarehouse.name}
+                </CardDescription>
+              </div>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-background" onClick={() => setWarehouseModalOpen(false)}>
+                <X size={18} />
+              </Button>
+            </CardHeader>
+
+            <CardContent className="p-5 flex-1 overflow-y-auto space-y-4">
+              {warehousesLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-2">
+                  <RefreshCw className="w-8 h-8 animate-spin text-amber-500" />
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-500">Syncing Warehouses...</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Daftar Gudang Aktif</p>
+                  <div className="space-y-2">
+                    {warehouses.map((wh) => (
+                      <div key={wh.id} className="flex items-center justify-between p-3 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/10">
+                        <div className="flex items-center gap-3">
+                          <Warehouse size={16} className="text-amber-500 shrink-0" />
+                          <div>
+                            <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 uppercase">{wh.name}</p>
+                            {wh.is_main ? (
+                              <span className="text-[8px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded px-1 py-0.5 uppercase tracking-wide mt-1 inline-block">Gudang Utama</span>
+                            ) : (
+                              <span className="text-[8px] font-black text-zinc-500 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded px-1 py-0.5 uppercase tracking-wide mt-1 inline-block">Gudang Cabang</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {warehouses.length === 0 && (
+                      <p className="text-xs text-zinc-400 italic text-center py-4">Belum ada gudang terdaftar</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleAddWarehouse} className="pt-4 border-t border-border space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Tambah Gudang Baru</p>
+                <div className="flex gap-2">
+                  <Input
+                    required
+                    className="h-10 text-xs font-bold animate-none"
+                    placeholder="Nama gudang (misal: Dapur, Bar)"
+                    value={newWarehouseName}
+                    onChange={(e) => setNewWarehouseName(e.target.value)}
+                  />
+                  <Button type="submit" variant="primary" className="h-10 text-[10px] font-black uppercase whitespace-nowrap px-4" disabled={warehouseSaving}>
+                    {warehouseSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : "Tambah"}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+
+            <CardFooter className="bg-background p-4 border-t border-border">
+              <Button type="button" variant="ghost" className="w-full h-11 font-black uppercase tracking-widest text-[9px] rounded-md" onClick={() => setWarehouseModalOpen(false)}>
+                Selesai
+              </Button>
+            </CardFooter>
           </Card>
         </div>
       )}
