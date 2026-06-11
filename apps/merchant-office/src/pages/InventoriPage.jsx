@@ -592,6 +592,67 @@ export default function InventoriPage() {
                         ))}
                      </CardContent>
                   </Card>
+
+                  {/* Smart Suggestion Card (Automated Procurement) */}
+                  <div className="p-6 bg-card text-card-foreground border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-lg relative group/promo active:scale-[0.98]">
+                     <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-500/10 dark:bg-amber-400/10 rounded-lg blur-3xl group-hover/promo:scale-150 transition-all duration-1000" />
+                     <div className="absolute top-0 right-0 p-6 text-zinc-700/20 dark:text-zinc-600/20 group-hover/promo:rotate-12 transition-transform duration-500">
+                        <ShoppingCart size={80} />
+                     </div>
+                     <div className="relative z-10 space-y-3">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 dark:border-amber-400/20 text-amber-600 dark:text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest">
+                          <Sparkles size={10} className="text-amber-500" /> Smart Suggestion
+                        </div>
+                        <div className="space-y-1">
+                           <h4 className="text-xl font-black uppercase tracking-tighter leading-none text-zinc-900 dark:text-zinc-100">
+                             Automated <span className="text-amber-500 italic">Procurement</span>
+                           </h4>
+                           <p className="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 leading-relaxed uppercase tracking-wider">
+                             Berdasarkan tren penjualan terakhir, sistem menyarankan pengadaan bahan baku segera untuk menjaga stok aman.
+                           </p>
+                        </div>
+                     </div>
+                     <Button 
+                         onClick={async () => {
+                           try {
+                             setPoHubLoading(true);
+                             const suggestions = await api.getReplenishmentPredictions();
+                             const criticals = suggestions.filter(s => s.status === 'Kritis' && !s.isOtw && s.suggestedQty > 0);
+                             if (criticals.length === 0) {
+                               alert("🎉 Semua bahan baku terpantau aman (atau sudah memiliki Purchase Order yang sedang berjalan)!");
+                               return;
+                             }
+                             const sData = await api.getSuppliers();
+                             setSuppliersList(sData || []);
+                             if (sData && sData.length > 0) {
+                               setUnassignedSupplierId(sData[0].id);
+                             }
+                             const supplierMap = {};
+                             (sData || []).forEach(s => { supplierMap[s.id] = s.name; });
+                             const groups = {};
+                             criticals.forEach(c => {
+                               const sId = c.supplier_id || 'unassigned';
+                               const sName = supplierMap[sId] || 'Tanpa Supplier / Vendor Lain';
+                               if (!groups[sId]) {
+                                 groups[sId] = { id: sId, name: sName, items: [] };
+                               }
+                               groups[sId].items.push(c);
+                             });
+                             setPoHubGroups(Object.values(groups));
+                             setShowPoHubModal(true);
+                           } catch (e) {
+                             alert("Gagal memproses saran pengadaan AI: " + e.message);
+                           } finally {
+                             setPoHubLoading(false);
+                           }
+                         }}
+                         disabled={poHubLoading}
+                         className="w-full h-12 mt-4 font-black uppercase tracking-widest text-xs bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 text-white active:scale-95 transition-all flex items-center justify-center gap-2"
+                      >
+                           {poHubLoading ? <RefreshCw className="animate-spin" size={14} /> : <BrainCircuit size={14} />}
+                           {poHubLoading ? 'MEMPROSES REKOMENDASI...' : 'GENERATE PURCHASE ORDER'}
+                      </Button>
+                  </div>
                </div>
 
                <div className="xl:col-span-4 space-y-6">
