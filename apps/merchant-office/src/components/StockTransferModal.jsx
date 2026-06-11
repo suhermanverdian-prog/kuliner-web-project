@@ -345,20 +345,11 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
               </div>
 
               {/* Material Lines */}
-              <div className="space-y-3 border-t border-zinc-200 dark:border-zinc-700 pt-5">
+              <div className="space-y-4 border-t border-zinc-200 dark:border-zinc-700 pt-5">
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
                     Daftar Bahan Baku
                   </label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 rounded-lg font-bold text-[10px] px-3"
-                    onClick={addItemRow}
-                  >
-                    <Plus size={10} className="mr-1.5" /> Tambah Bahan
-                  </Button>
                 </div>
 
                 <div className="space-y-3">
@@ -456,6 +447,14 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                     );
                   })}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={addItemRow}
+                  className="w-full py-4 border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-amber-500 dark:hover:border-amber-400 rounded-lg flex items-center justify-center gap-2 text-zinc-500 hover:text-amber-500 dark:hover:text-amber-400 text-xs font-black uppercase tracking-widest transition-all mt-4"
+                >
+                  <Plus size={14} /> + ADD NEW REQUISITION LINE
+                </button>
               </div>
 
             </CardContent>
