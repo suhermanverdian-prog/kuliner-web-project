@@ -132,8 +132,57 @@ export default function InventoriPage() {
     handleDeleteCategory,
     handleDeleteBahan,
     handleAssemble,
-    filtered
+    filtered,
+    warehouses,
+    selectedWarehouseId,
+    setSelectedWarehouseId
   } = useInventori();
+
+  const getDisplayStock = (item) => {
+    if (selectedWarehouseId === 'all') {
+      return item.stock;
+    }
+    const whStock = (item.warehouse_stocks || []).find(ws => ws.warehouse_id === selectedWarehouseId);
+    return whStock ? whStock.qty : 0;
+  };
+
+  const getDisplayMediumQty = (item, displayStock) => {
+    const mUnit = getMediumUnit(item);
+    const unit = (item.unit || '').toUpperCase();
+    if (unit === 'GRAM' && mUnit === 'KG') return displayStock / 1000;
+    if (unit === 'ML' && mUnit === 'LITER') return displayStock / 1000;
+    if ((unit === 'DUS' || unit === 'KARTON') && (mUnit === 'KG' || mUnit === 'LITER')) return displayStock * 12; 
+    return displayStock;
+  };
+
+  const getDisplayStockStatus = (item, displayStock) => {
+    const ratio = displayStock / (item.minStock || item.min_stock || 1);
+    if (displayStock === 0) {
+      return { 
+        label: 'HABIS', 
+        color: 'text-rose-700 dark:text-rose-400', 
+        bg: 'bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800/80', 
+        barCls: 'bg-rose-500', 
+        pct: 0 
+      };
+    }
+    if (ratio < 1) {
+      return { 
+        label: 'LOW', 
+        color: 'text-amber-700 dark:text-amber-400', 
+        bg: 'bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80', 
+        barCls: 'bg-amber-500', 
+        pct: Math.min((ratio * 100), 100) 
+      };
+    }
+    return { 
+      label: 'AMAN', 
+      color: 'text-emerald-700 dark:text-emerald-400', 
+      bg: 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/80', 
+      barCls: 'bg-emerald-500', 
+      pct: Math.min((ratio / 2 * 100), 100) 
+    };
+  };
 
   const [showAssemblyModal, setShowAssemblyModal] = useState(false);
   const [selectedAssemblyBahanId, setSelectedAssemblyBahanId] = useState('');
@@ -295,10 +344,18 @@ export default function InventoriPage() {
                              value={search} onChange={e => setSearch(e.target.value)}
                            />
                         </div>
-                        <Button variant={isOpnameMode ? "destructive" : "outline"} size="sm" className="h-9 px-4 font-black uppercase tracking-widest text-[9px] rounded-md border-zinc-200 dark:border-zinc-800 whitespace-nowrap" onClick={() => setIsOpnameMode(!isOpnameMode)}>
-                           {isOpnameMode ? <X size={14} className="mr-1.5" /> : <ClipboardCheck size={14} className="mr-1.5 text-amber-500" />}
-                           {isOpnameMode ? 'Cancel' : 'Opname'}
-                        </Button>
+                        <select 
+                           value={selectedWarehouseId} 
+                           onChange={(e) => setSelectedWarehouseId(e.target.value)}
+                           className="h-9 px-3 bg-background border border-zinc-200 dark:border-zinc-800 rounded-md text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-amber-500/20 shadow-sm"
+                        >
+                           <option value="all">Semua Gudang (Keseluruhan)</option>
+                           {warehouses.map(w => (
+                             <option key={w.id} value={w.id}>
+                               {w.outlet?.name ? `${w.outlet.name} - ${w.name}` : w.name}
+                             </option>
+                           ))}
+                        </select>
                      </div>
                   </div>
 
@@ -334,7 +391,8 @@ export default function InventoriPage() {
                      </thead>
                      <tbody className="divide-y divide-zinc-200/80 dark:divide-zinc-800/50">
                         {filtered.map(item => {
-                          const st = getStockStatus(item);
+                          const displayStock = getDisplayStock(item);
+                          const st = getDisplayStockStatus(item, displayStock);
                           const { isAssembly, bomCount } = getMaterialType(item);
                           return (
                             <tr key={item.id} className={cn(
@@ -375,7 +433,7 @@ export default function InventoriPage() {
                                   <div className="flex flex-col items-center gap-1">
                                      <div className="flex items-center gap-1.5">
                                         <p className="text-sm font-black font-mono tabular-nums leading-none text-zinc-900 dark:text-zinc-100">
-                                          {getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase">{getMediumUnit(item)}</span>
+                                          {getDisplayMediumQty(item, displayStock).toLocaleString('id-ID')} <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase">{getMediumUnit(item)}</span>
                                         </p>
                                         
                                         {item.warehouse_stocks && item.warehouse_stocks.length > 0 && (
@@ -419,15 +477,6 @@ export default function InventoriPage() {
                                   </span>
                                 </td>
                                <td className="px-4 py-3 text-right">
-                                  {isOpnameMode ? (
-                                    <Input 
-                                      type="number" 
-                                      className="w-20 h-8 bg-background border-amber-500/50 rounded-md text-center font-black font-mono tabular-nums text-xs"
-                                      placeholder={item.stock}
-                                      value={opnameData[item.id] ?? ''}
-                                      onChange={e => setOpnameData({...opnameData, [item.id]: e.target.value})}
-                                    />
-                                  ) : (
                                     <div className="flex justify-end gap-1.5">
                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md border border-zinc-200 dark:border-zinc-800/80 hover:bg-amber-50 dark:hover:bg-amber-950/30 hover:text-amber-500 text-zinc-500 dark:text-zinc-400" onClick={() => { setAdjItem(item); setShowAdjModal(true); }}><Scale size={14} /></Button>
                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-md border border-zinc-200 dark:border-zinc-800/80 hover:bg-background text-zinc-500" onClick={() => openEdit(item)}><Edit3 size={14} /></Button>
@@ -437,7 +486,6 @@ export default function InventoriPage() {
                                           }
                                         }}><Trash2 size={14} /></Button>
                                     </div>
-                                  )}
                                 </td>
                              </tr>
                            );
@@ -449,7 +497,8 @@ export default function InventoriPage() {
                {/* ── Mobile Card List — only on small screens ── */}
                <div className="block sm:hidden divide-y divide-zinc-200/80 dark:divide-zinc-800/50">
                  {filtered.map(item => {
-                   const st = getStockStatus(item);
+                   const displayStock = getDisplayStock(item);
+                   const st = getDisplayStockStatus(item, displayStock);
                    const { isAssembly, bomCount } = getMaterialType(item);
                    return (
                      <div key={item.id} className={cn(
@@ -485,7 +534,7 @@ export default function InventoriPage() {
                              <div className="flex items-center gap-2 mt-2">
                                <div className="flex items-center gap-1.5">
                                  <p className="text-sm font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">
-                                   {getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] uppercase text-zinc-400">{getMediumUnit(item)}</span>
+                                   {getDisplayMediumQty(item, displayStock).toLocaleString('id-ID')} <span className="text-[10px] uppercase text-zinc-400">{getMediumUnit(item)}</span>
                                  </p>
                                  {item.warehouse_stocks && item.warehouse_stocks.length > 0 && (
                                    <div className="relative group/wh inline-block">
@@ -520,9 +569,6 @@ export default function InventoriPage() {
                            <span className={cn("px-2 py-1 rounded-sm text-[8px] font-black uppercase tracking-widest border", st.bg, st.color)}>{st.label}</span>
                            <p className="text-xs font-black font-mono tabular-nums text-zinc-600 dark:text-zinc-300">{formatRupiah(item.cost || 0)}</p>
                            <div className="flex gap-1">
-                             {isOpnameMode ? (
-                               <Input type="number" className="w-16 h-7 text-xs text-center font-mono" placeholder={item.stock} value={opnameData[item.id] ?? ''} onChange={e => setOpnameData({...opnameData, [item.id]: e.target.value})} />
-                             ) : (<>
                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-amber-50 text-zinc-500" onClick={() => { setAdjItem(item); setShowAdjModal(true); }}><Scale size={12} /></Button>
                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md border border-zinc-200 dark:border-zinc-700 text-zinc-500" onClick={() => openEdit(item)}><Edit3 size={12} /></Button>
                                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md border border-zinc-200 dark:border-zinc-700 hover:bg-rose-50 hover:text-rose-600 text-zinc-500" onClick={() => {
@@ -530,7 +576,6 @@ export default function InventoriPage() {
                                    handleDeleteBahan(item.id);
                                  }
                                }}><Trash2 size={12} /></Button>
-                             </>)}
                            </div>
                          </div>
                        </div>

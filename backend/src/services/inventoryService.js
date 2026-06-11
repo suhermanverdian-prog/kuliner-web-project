@@ -20,6 +20,7 @@ class InventoryService {
       (whStocks || []).forEach(ws => {
         if (!whStocksMap[ws.bahan_id]) whStocksMap[ws.bahan_id] = [];
         whStocksMap[ws.bahan_id].push({
+          warehouse_id: ws.warehouse_id,
           warehouse_name: ws.warehouse?.name || 'Unknown',
           outlet_name: ws.warehouse?.outlet?.name || 'Unknown',
           qty: Number(ws.qty) || 0,

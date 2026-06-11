@@ -21,20 +21,24 @@ export function useInventori() {
   const [isAIEngaged, setIsAIEngaged] = useState(true);
   const [aiPredictions, setAiPredictions] = useState([]);
   const [stockLogs, setStockLogs] = useState([]);
+  const [warehouses, setWarehouses] = useState([]);
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState('all');
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
       
       // Phase 1: Load essential raw material lists & layouts instantly (Blocking)
-      const [bahanData, locData, metaData] = await Promise.all([
+      const [bahanData, locData, metaData, whsData] = await Promise.all([
         api.getBahan().catch(err => { console.error('Bahan Load Error:', err); return []; }), 
         api.getLocations().catch(err => { console.error('Locations Load Error:', err); return []; }), 
-        api.getInventoryMeta().catch(err => { console.error('Meta Load Error:', err); return { categories: [], units: [] }; })
+        api.getInventoryMeta().catch(err => { console.error('Meta Load Error:', err); return { categories: [], units: [] }; }),
+        api.getWarehouses().catch(err => { console.error('Warehouses Load Error:', err); return []; })
       ]);
       
       setBahan(bahanData);
       setLocations(locData);
+      setWarehouses(whsData);
       
       const initialMeta = {
         categories: (metaData.categories || []).map(c => c.trim().toUpperCase()),
@@ -233,6 +237,9 @@ export function useInventori() {
     handleAssemble,
     handleAdjustment,
     handleOpnameSave,
-    filtered
+    filtered,
+    warehouses,
+    selectedWarehouseId,
+    setSelectedWarehouseId
   };
 }
