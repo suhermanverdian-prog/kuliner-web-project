@@ -610,13 +610,14 @@ class InventoryService {
 
     if (destOutletId && destOutletId !== sourceWh.outlet_id) {
       isInterOutlet = true;
-      const { data: targetMainWh, error: targetMainErr } = await supabase
+      const { data: targetMainWhs, error: targetMainErr } = await supabase
         .from('warehouses')
         .select('*')
         .eq('outlet_id', destOutletId)
         .eq('is_main', true)
         .eq('tenant_id', tenantId)
-        .single();
+        .limit(1);
+      const targetMainWh = targetMainWhs && targetMainWhs[0];
       if (targetMainErr || !targetMainWh) {
         throw new Error('Gudang Utama untuk outlet tujuan tidak ditemukan.');
       }
