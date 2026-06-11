@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { X, ArrowRightLeft, Plus, Trash2, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, ArrowRightLeft, Plus, Trash2, Loader2, Info, CheckCircle2, ChevronRight, Store } from 'lucide-react';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Select } from './ui/Select';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from './ui/Card';
 import { api } from '../api';
 import { cn } from '../lib/utils';
+import { useAppStore } from '../store/useAppStore';
 
 export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
+  const user = useAppStore(state => state.user);
+  
+  // Resolve outlet ID from user info or storage fallback
+  const resolvedOutletId = user?.outlet_id || user?.outletId || '22222222-2222-2222-2222-222222222222'; 
+
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -17,9 +23,8 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
   const [bahanList, setBahanList] = useState([]);
 
   // Form State
-  const [sourceOutletId, setSourceOutletId] = useState('');
-  const [sourceWarehouseId, setSourceWarehouseId] = useState('');
   const [transferType, setTransferType] = useState('intra'); // 'intra' or 'inter'
+  const [sourceWarehouseId, setSourceWarehouseId] = useState('');
   
   // Destination State
   const [destWarehouseId, setDestWarehouseId] = useState(''); // for intra
@@ -45,11 +50,6 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
       setOutlets(outletsRes || []);
       setWarehouses(warehousesRes || []);
       setBahanList(bahanRes || []);
-      
-      // Auto-select source if outlets exist
-      if (outletsRes && outletsRes.length > 0) {
-        setSourceOutletId(outletsRes[0].id);
-      }
     } catch (e) {
       console.error("Failed loading transfer setup:", e);
     } finally {
@@ -57,20 +57,32 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
     }
   };
 
+  // Find source outlet name
+  const sourceOutlet = outlets.find(o => o.id === resolvedOutletId);
+  const sourceOutletName = sourceOutlet ? sourceOutlet.name : 'Outlet Saat Ini';
+
   // Filter warehouses based on source outlet
-  const sourceWarehouses = warehouses.filter(w => w.outlet_id === sourceOutletId);
+  const sourceWarehouses = warehouses.filter(w => w.outlet_id === resolvedOutletId);
 
   // Filter warehouses for destination (same outlet, excluding source warehouse)
-  const destWarehouses = warehouses.filter(w => w.outlet_id === sourceOutletId && w.id !== sourceWarehouseId);
+  const destWarehouses = warehouses.filter(w => w.outlet_id === resolvedOutletId && w.id !== sourceWarehouseId);
 
-  // Auto-select first source warehouse when source outlet changes
+  // Auto-select first source warehouse (or Main Warehouse) when warehouses load
   useEffect(() => {
-    if (sourceWarehouses.length > 0) {
-      setSourceWarehouseId(sourceWarehouses[0].id);
+    if (transferType === 'inter') {
+      // Branch transfer MUST start from Main Warehouse
+      const mainWH = sourceWarehouses.find(w => w.is_main);
+      if (mainWH) {
+        setSourceWarehouseId(mainWH.id);
+      } else if (sourceWarehouses.length > 0) {
+        setSourceWarehouseId(sourceWarehouses[0].id);
+      }
     } else {
-      setSourceWarehouseId('');
+      if (sourceWarehouses.length > 0 && !sourceWarehouseId) {
+        setSourceWarehouseId(sourceWarehouses[0].id);
+      }
     }
-  }, [sourceOutletId, warehouses]);
+  }, [resolvedOutletId, warehouses, transferType]);
 
   // Adjust items unit and price mapping
   const handleItemChange = (index, field, val) => {
@@ -128,8 +140,8 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-zinc-950/60 backdrop-blur-sm">
-      <Card className="w-full max-w-2xl border border-zinc-200 dark:border-zinc-700 shadow-2xl bg-white dark:bg-zinc-800 rounded-lg overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-zinc-950/60 backdrop-blur-sm">
+      <Card className="w-full max-w-4xl border border-zinc-200 dark:border-zinc-700 shadow-2xl bg-white dark:bg-zinc-800 rounded-lg overflow-hidden flex flex-col max-h-[85vh]">
         <CardHeader className="p-8 border-b border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/80">
           <div className="flex justify-between items-center">
             <div>
@@ -159,7 +171,7 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
             <CardContent className="p-8 space-y-6 flex-1">
               
               {/* Type selector */}
-              <div className="grid grid-cols-2 gap-4 bg-zinc-100 dark:bg-zinc-900 p-2 rounded-lg border border-border">
+              <div className="grid grid-cols-2 gap-4 bg-zinc-100 dark:bg-zinc-900 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700">
                 <button
                   type="button"
                   onClick={() => setTransferType('intra')}
@@ -201,81 +213,97 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                 </span>
               </div>
 
-              {/* Nodes Selectors */}
-              <div className="grid grid-cols-2 gap-6">
-                
-                {/* Source Selection */}
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
-                      Outlet Asal *
-                    </label>
-                    <Select
-                      value={sourceOutletId}
-                      onChange={e => setSourceOutletId(e.target.value)}
-                    >
-                      {outlets.map(o => (
-                        <option key={o.id} value={o.id}>{o.name}</option>
-                      ))}
-                    </Select>
+              {/* Proximity / Node Layout */}
+              <div className="p-5 bg-zinc-50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-700 rounded-lg">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  {/* Left Node (Source) */}
+                  <div className="flex-1 space-y-2">
+                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Node Asal</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-amber-500">
+                        <Store size={20} />
+                      </div>
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">{sourceOutletName}</p>
+                        {transferType === 'intra' ? (
+                          <div className="mt-1">
+                            <Select
+                              value={sourceWarehouseId}
+                              onChange={e => setSourceWarehouseId(e.target.value)}
+                              className="h-8 py-0 px-2 text-[10px] min-w-[150px]"
+                            >
+                              {sourceWarehouses.map(w => (
+                                <option key={w.id} value={w.id}>{w.name} {w.is_main ? '(Utama)' : ''}</option>
+                              ))}
+                            </Select>
+                          </div>
+                        ) : (
+                          <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-0.5">
+                            Gudang Utama (Otomatis)
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
-                      Gudang Asal *
-                    </label>
-                    <Select
-                      value={sourceWarehouseId}
-                      onChange={e => setSourceWarehouseId(e.target.value)}
-                    >
-                      {sourceWarehouses.map(w => (
-                        <option key={w.id} value={w.id}>{w.name} {w.is_main ? '(Utama)' : ''}</option>
-                      ))}
-                    </Select>
+                  {/* Flow Arrow */}
+                  <div className="flex items-center justify-center px-4">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
+                      <ChevronRight size={16} />
+                    </div>
                   </div>
-                </div>
 
-                {/* Destination Selection */}
-                <div className="space-y-4">
-                  {transferType === 'intra' ? (
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
-                        Gudang Tujuan *
-                      </label>
-                      <Select
-                        value={destWarehouseId}
-                        onChange={e => setDestWarehouseId(e.target.value)}
-                      >
-                        <option value="">-- Pilih gudang --</option>
-                        {destWarehouses.map(w => (
-                          <option key={w.id} value={w.id}>{w.name}</option>
-                        ))}
-                      </Select>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
-                        Outlet Tujuan *
-                      </label>
-                      <Select
-                        value={destOutletId}
-                        onChange={e => setDestOutletId(e.target.value)}
-                      >
-                        <option value="">-- Pilih outlet tujuan --</option>
-                        {outlets.filter(o => o.id !== sourceOutletId).map(o => (
-                          <option key={o.id} value={o.id}>{o.name}</option>
-                        ))}
-                      </Select>
-                      <p className="text-[9px] text-zinc-500 italic uppercase">
-                        * Transfer antar outlet otomatis dikirim ke Gudang Utama outlet tujuan.
-                      </p>
-                    </div>
-                  )}
+                  {/* Right Node (Destination) */}
+                  <div className="flex-1 space-y-2">
+                    <p className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Node Tujuan</p>
+                    
+                    {transferType === 'intra' ? (
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-500">
+                          <Store size={20} />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-black uppercase tracking-tight text-zinc-900 dark:text-zinc-100">{sourceOutletName}</p>
+                          <Select
+                            value={destWarehouseId}
+                            onChange={e => setDestWarehouseId(e.target.value)}
+                            className="h-8 py-0 px-2 text-[10px] mt-1"
+                          >
+                            <option value="">-- Pilih gudang --</option>
+                            {destWarehouses.map(w => (
+                              <option key={w.id} value={w.id}>{w.name}</option>
+                            ))}
+                          </Select>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white dark:bg-zinc-800 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center text-zinc-500">
+                          <Store size={20} />
+                        </div>
+                        <div className="flex-1">
+                          <Select
+                            value={destOutletId}
+                            onChange={e => setDestOutletId(e.target.value)}
+                            className="h-9 py-0 px-2 text-[10px]"
+                          >
+                            <option value="">-- Pilih outlet tujuan --</option>
+                            {outlets.filter(o => o.id !== resolvedOutletId).map(o => (
+                              <option key={o.id} value={o.id}>{o.name}</option>
+                            ))}
+                          </Select>
+                          <p className="text-[8px] text-zinc-500 italic uppercase mt-1">
+                            * Otomatis dikirim ke Gudang Utama outlet tujuan.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Material Lines */}
-              <div className="space-y-4 border-t border-border pt-6">
+              <div className="space-y-4 border-t border-zinc-200 dark:border-zinc-700 pt-6">
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">
                     Daftar Bahan Baku
@@ -295,7 +323,7 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                   {items.map((item, idx) => {
                     const selectedBahan = bahanList.find(b => b.id === item.bahanId) || {};
                     return (
-                      <div key={idx} className="flex gap-4 items-end bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-border">
+                      <div key={idx} className="flex gap-4 items-end bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
                         <div className="flex-1 space-y-1.5">
                           <label className="text-[8px] font-black uppercase text-zinc-500">Pilih Bahan</label>
                           <Select
@@ -309,7 +337,7 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                           </Select>
                         </div>
 
-                        <div className="w-24 space-y-1.5">
+                        <div className="w-32 space-y-1.5">
                           <label className="text-[8px] font-black uppercase text-zinc-500">Kuantitas</label>
                           <Input
                             type="number"
@@ -322,9 +350,9 @@ export default function StockTransferModal({ isOpen, onClose, onSuccess }) {
                           />
                         </div>
 
-                        <div className="w-28 space-y-1.5">
+                        <div className="w-36 space-y-1.5">
                           <label className="text-[8px] font-black uppercase text-zinc-500">Unit Cost (Read-only)</label>
-                          <div className="h-10 px-3 flex items-center justify-end border border-border bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-mono tabular-nums text-zinc-500 font-bold">
+                          <div className="h-10 px-3 flex items-center justify-end border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-mono tabular-nums text-zinc-500 font-bold">
                             Rp {(selectedBahan.cost || 0).toLocaleString('id-ID')}
                           </div>
                         </div>
