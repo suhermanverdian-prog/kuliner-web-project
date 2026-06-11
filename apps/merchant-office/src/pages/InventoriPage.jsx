@@ -373,9 +373,37 @@ export default function InventoriPage() {
                                </td>
                                <td className="px-4 py-3">
                                   <div className="flex flex-col items-center gap-1">
-                                     <p className="text-sm font-black font-mono tabular-nums leading-none text-zinc-900 dark:text-zinc-100">
-                                       {getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase">{getMediumUnit(item)}</span>
-                                     </p>
+                                     <div className="flex items-center gap-1.5">
+                                        <p className="text-sm font-black font-mono tabular-nums leading-none text-zinc-900 dark:text-zinc-100">
+                                          {getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase">{getMediumUnit(item)}</span>
+                                        </p>
+                                        
+                                        {item.warehouse_stocks && item.warehouse_stocks.length > 0 && (
+                                          <div className="relative group/wh inline-block">
+                                            <button className="text-zinc-400 hover:text-amber-500 p-0.5 rounded transition-colors">
+                                              <Warehouse size={12} />
+                                            </button>
+                                            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/wh:block z-50 w-56 bg-zinc-950/95 text-zinc-100 text-[10px] rounded-lg shadow-xl border border-zinc-800 p-3 pointer-events-none space-y-1.5 text-left">
+                                              <p className="font-black border-b border-zinc-800 pb-1.5 uppercase tracking-wider text-amber-500">Warehouse Breakdown</p>
+                                              {item.warehouse_stocks.map((ws, idx) => (
+                                                <div key={idx} className="flex justify-between items-center font-mono tracking-tight">
+                                                  <div className="flex flex-col">
+                                                    <span className="font-bold text-zinc-100 uppercase">{ws.warehouse_name}</span>
+                                                    <span className="text-[8px] text-zinc-400 uppercase">{ws.outlet_name}</span>
+                                                  </div>
+                                                  <span className="font-black text-amber-400 tabular-nums">
+                                                    {ws.qty.toLocaleString('id-ID')} {item.unit}
+                                                  </span>
+                                                </div>
+                                              ))}
+                                              <div className="border-t border-zinc-800 pt-1.5 flex justify-between font-bold text-zinc-300">
+                                                <span className="uppercase">Total Stock</span>
+                                                <span className="font-black text-white">{item.stock.toLocaleString('id-ID')} {item.unit}</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
+                                     </div>
                                      <div className="h-1 w-20 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-full overflow-hidden">
                                         <div className={cn("h-full transition-all duration-1000", st.barCls)} style={{ width: `${st.pct}%` }} />
                                      </div>
@@ -455,9 +483,32 @@ export default function InventoriPage() {
                              </div>
                              {/* Stock bar */}
                              <div className="flex items-center gap-2 mt-2">
-                               <p className="text-sm font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">
-                                 {getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] uppercase text-zinc-400">{getMediumUnit(item)}</span>
-                               </p>
+                               <div className="flex items-center gap-1.5">
+                                 <p className="text-sm font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100">
+                                   {getMediumQty(item).toLocaleString('id-ID')} <span className="text-[10px] uppercase text-zinc-400">{getMediumUnit(item)}</span>
+                                 </p>
+                                 {item.warehouse_stocks && item.warehouse_stocks.length > 0 && (
+                                   <div className="relative group/wh inline-block">
+                                     <button className="text-zinc-400 hover:text-amber-500 p-0.5 rounded transition-colors">
+                                       <Warehouse size={12} />
+                                     </button>
+                                     <div className="absolute left-0 bottom-full mb-2 hidden group-hover/wh:block z-50 w-52 bg-zinc-950/95 text-zinc-100 text-[10px] rounded-lg shadow-xl border border-zinc-800 p-3 pointer-events-none space-y-1.5 text-left">
+                                       <p className="font-black border-b border-zinc-800 pb-1.5 uppercase tracking-wider text-amber-500">Warehouse Breakdown</p>
+                                       {item.warehouse_stocks.map((ws, idx) => (
+                                         <div key={idx} className="flex justify-between items-center font-mono tracking-tight">
+                                           <div className="flex flex-col">
+                                             <span className="font-bold text-zinc-100 uppercase">{ws.warehouse_name}</span>
+                                             <span className="text-[8px] text-zinc-400 uppercase">{ws.outlet_name}</span>
+                                           </div>
+                                           <span className="font-black text-amber-400 tabular-nums">
+                                             {ws.qty.toLocaleString('id-ID')} {item.unit}
+                                           </span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
+                               </div>
                                <div className="h-1.5 flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                                  <div className={cn("h-full transition-all", st.barCls)} style={{ width: `${st.pct}%` }} />
                                </div>

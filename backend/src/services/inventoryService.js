@@ -9,6 +9,27 @@ class InventoryService {
   static async getAllInventory(tenantId, role) {
     const data = await InventoryRepository.getBahan(tenantId);
     
+    // Fetch all warehouse stocks for this tenant
+    let whStocksMap = {};
+    try {
+      const { data: whStocks } = await supabase
+        .from('warehouse_stock')
+        .select('*, warehouse:warehouse_id(name, is_main, outlet:outlet_id(name))')
+        .eq('tenant_id', tenantId);
+      
+      (whStocks || []).forEach(ws => {
+        if (!whStocksMap[ws.bahan_id]) whStocksMap[ws.bahan_id] = [];
+        whStocksMap[ws.bahan_id].push({
+          warehouse_name: ws.warehouse?.name || 'Unknown',
+          outlet_name: ws.warehouse?.outlet?.name || 'Unknown',
+          qty: Number(ws.qty) || 0,
+          is_main: ws.warehouse?.is_main || false
+        });
+      });
+    } catch (whErr) {
+      console.warn("⚠️ [Warehouse Stock Fetch Error]:", whErr.message);
+    }
+    
     // Neural Supplier Mapping & Virtual Column Recovery
     try {
       const { suppliers, poItems, pos } = await InventoryRepository.getLatestSuppliersInfo(tenantId);
@@ -38,11 +59,18 @@ class InventoryService {
 
           const supplier = supplierId ? suppliers.find(s => s.id === supplierId) : null;
 
+          // Calculate overall stock from warehouse stocks if they exist, otherwise fallback to legacy stock
+          const whStocks = whStocksMap[bahan.id] || [];
+          const totalWarehouseStock = whStocks.reduce((sum, s) => sum + s.qty, 0);
+          const finalStock = whStocks.length > 0 ? totalWarehouseStock : (Number(bahan.stock) || 0);
+
           return { 
             ...bahan, 
             bom: cleanBom,
             supplier_id: supplierId,
-            supplier: supplier || null 
+            supplier: supplier || null,
+            stock: finalStock,
+            warehouse_stocks: whStocks
           };
       });
     } catch (err) {
