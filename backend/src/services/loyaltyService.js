@@ -210,23 +210,48 @@ class LoyaltyService {
     let customerInfo = { points: 0, total_visits: 0, customer_name: 'Member Premium', customer_phone: phone };
     let history = [];
 
-    // 1. Fetch points & visits
+    // 1. Fetch points & visits from customers CRM table
     try {
       const { data, error } = await supabase
-        .from('customer_points')
-        .select('*')
+        .from('customers')
+        .select('name, loyalty_points')
         .eq('tenant_id', tenantId)
-        .eq('customer_phone', phone)
+        .eq('phone', phone)
         .maybeSingle();
 
       if (!error && data) {
-        customerInfo = data;
+        customerInfo = {
+          points: data.loyalty_points || 0,
+          total_visits: 0, // Fallback placeholder
+          customer_name: data.name,
+          customer_phone: phone
+        };
+        
+        // Enrich total_visits dynamically
+        const { count } = await supabase
+          .from('transactions')
+          .select('*', { count: 'exact', head: true })
+          .eq('tenant_id', tenantId)
+          .eq('customer_phone', phone)
+          .eq('payment_status', 'paid');
+        if (count) customerInfo.total_visits = count;
       } else {
-        // Fallback to local
-        const localPoints = getLocalPoints();
-        const found = localPoints.find(p => p.tenant_id === tenantId && p.customer_phone === phone);
-        if (found) {
-          customerInfo = found;
+        // Fallback to customer_points
+        const { data: cpData, error: cpErr } = await supabase
+          .from('customer_points')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .eq('customer_phone', phone)
+          .maybeSingle();
+        if (!cpErr && cpData) {
+          customerInfo = cpData;
+        } else {
+          // Fallback to local
+          const localPoints = getLocalPoints();
+          const found = localPoints.find(p => p.tenant_id === tenantId && p.customer_phone === phone);
+          if (found) {
+            customerInfo = found;
+          }
         }
       }
     } catch (e) {
