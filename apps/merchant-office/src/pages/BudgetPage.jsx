@@ -66,6 +66,48 @@ export default function BudgetPage() {
     return 'beban';
   };
 
+  // Dynamic Sub-Pos Handlers
+  const addSubItem = (accountId) => {
+    const edit = editedBudgets[accountId] || { amount: 0, notes: '', sub_items: [] };
+    const newSubItems = [...(edit.sub_items || []), { id: Date.now().toString(), name: '', limit: '' }];
+    updateBudgetField(accountId, 'sub_items', newSubItems);
+  };
+
+  const removeSubItem = (accountId, subItemId) => {
+    const edit = editedBudgets[accountId] || { amount: 0, notes: '', sub_items: [] };
+    const newSubItems = (edit.sub_items || []).filter(item => item.id !== subItemId);
+    const newAmount = newSubItems.reduce((sum, item) => sum + Number(item.limit || 0), 0);
+    
+    setEditedBudgets(prev => ({
+      ...prev,
+      [accountId]: {
+        ...prev[accountId],
+        sub_items: newSubItems,
+        amount: newAmount
+      }
+    }));
+  };
+
+  const updateSubItemField = (accountId, subItemId, field, value) => {
+    const edit = editedBudgets[accountId] || { amount: 0, notes: '', sub_items: [] };
+    const newSubItems = (edit.sub_items || []).map(item => {
+      if (item.id === subItemId) {
+        return { ...item, [field]: value };
+      }
+      return item;
+    });
+    const newAmount = newSubItems.reduce((sum, item) => sum + Number(item.limit || 0), 0);
+
+    setEditedBudgets(prev => ({
+      ...prev,
+      [accountId]: {
+        ...prev[accountId],
+        sub_items: newSubItems,
+        amount: newAmount
+      }
+    }));
+  };
+
   // Variance calculations
   const totals = variance?.totals || { total_budget: 0, total_actual: 0, total_variance: 0, total_percent_used: 0 };
   const items = variance?.items || [];
@@ -76,7 +118,6 @@ export default function BudgetPage() {
   const filteredVarianceItems = activeTab === 'all' 
     ? items 
     : items.filter(item => {
-        // Map account category to UI tab categories
         const acc = accounts.find(a => a.id === item.account_id || a.code === item.account_code);
         const mappedCat = getCategoryFromAccount(acc?.category || 'beban');
         return mappedCat === activeTab;
@@ -99,7 +140,7 @@ export default function BudgetPage() {
             </h2>
           </div>
           <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.4em] leading-loose">
-            Monthly Expense Planning & Leakage Control Panel (Supabase Connected)
+            Monthly Expense Planning & Flexible Sub-item Budgeting Control Panel
           </p>
         </div>
 
@@ -277,7 +318,7 @@ export default function BudgetPage() {
                   <tr className="bg-zinc-55/5 dark:bg-zinc-950/20 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
                     <th className="px-6 py-4">Kategori</th>
                     <th className="px-6 py-4">Kode Akun</th>
-                    <th className="px-6 py-4">Nama Pos Anggaran</th>
+                    <th className="px-6 py-4">Nama Pos Anggaran & Rencana Sub-Pos</th>
                     <th className="px-6 py-4 text-right">Limit Anggaran</th>
                     <th className="px-6 py-4 text-right">Realisasi Aktual</th>
                     <th className="px-6 py-4">Progress Alokasi & Penggunaan</th>
@@ -301,7 +342,7 @@ export default function BudgetPage() {
 
                     return (
                       <tr key={item.id} className="text-xs font-medium hover:bg-zinc-55/10 dark:hover:bg-zinc-700/10 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap align-top">
                           <span className={cn(
                             "px-2.5 py-1 rounded text-[8px] font-black uppercase tracking-widest",
                             cat === 'persediaan' && "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/40",
@@ -311,13 +352,27 @@ export default function BudgetPage() {
                             {cat === 'persediaan' ? 'Persediaan' : cat === 'beban' ? 'Beban OPEX' : 'Hutang'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 font-mono font-bold text-zinc-500">{item.account_code}</td>
-                        <td className="px-6 py-4 font-black text-zinc-900 dark:text-zinc-100">{item.account_name}</td>
-                        <td className="px-6 py-4 text-right font-mono tabular-nums text-zinc-900 dark:text-zinc-100 font-bold">{formatRupiah(item.budget_amount)}</td>
-                        <td className="px-6 py-4 text-right font-mono tabular-nums text-zinc-900 dark:text-zinc-100 font-bold">{formatRupiah(item.actual_amount)}</td>
+                        <td className="px-6 py-4 font-mono font-bold text-zinc-500 align-top">{item.account_code}</td>
+                        <td className="px-6 py-4 font-black text-zinc-900 dark:text-zinc-100 align-top">
+                          <div>{item.account_name}</div>
+                          
+                          {/* Nested Sub-items display */}
+                          {item.sub_items && item.sub_items.length > 0 && (
+                            <div className="mt-3 space-y-1.5 pl-4 border-l-2 border-zinc-200 dark:border-zinc-700">
+                              {item.sub_items.map((sub, idx) => (
+                                <div key={sub.id || idx} className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium flex items-center justify-between w-64">
+                                  <span>• {sub.name || 'Sub-pos'}</span>
+                                  <span className="font-mono tabular-nums text-zinc-700 dark:text-zinc-300 font-bold">{formatRupiah(sub.limit)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 text-right font-mono tabular-nums text-zinc-900 dark:text-zinc-100 font-bold align-top">{formatRupiah(item.budget_amount)}</td>
+                        <td className="px-6 py-4 text-right font-mono tabular-nums text-zinc-900 dark:text-zinc-100 font-bold align-top">{formatRupiah(item.actual_amount)}</td>
                         
                         {/* Progress Bar Column */}
-                        <td className="px-6 py-4 min-w-[200px]">
+                        <td className="px-6 py-4 min-w-[200px] align-top">
                           <div className="space-y-1">
                             <div className="flex justify-between text-[9px] font-black uppercase font-mono tabular-nums text-zinc-500">
                               <span>{ratio.toFixed(0)}% Terpakai</span>
@@ -339,7 +394,7 @@ export default function BudgetPage() {
                           </div>
                         </td>
 
-                        <td className="px-6 py-4 text-center whitespace-nowrap">
+                        <td className="px-6 py-4 text-center whitespace-nowrap align-top">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -357,7 +412,7 @@ export default function BudgetPage() {
             </div>
           </Card>
         ) : (
-          /* Edit/Input View */
+          /* Edit/Input View with Dynamic Sub-Pos */
           <Card className="border-none shadow-xl bg-card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -365,7 +420,7 @@ export default function BudgetPage() {
                   <tr className="bg-zinc-55/5 dark:bg-zinc-950/20 text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
                     <th className="px-6 py-4">Kategori</th>
                     <th className="px-6 py-4">Kode Akun</th>
-                    <th className="px-6 py-4">Nama Akun</th>
+                    <th className="px-6 py-4">Nama Akun & Rencana Rincian Pengeluaran (Sub-Pos)</th>
                     <th className="px-6 py-4 text-right" style={{ width: '250px' }}>Batas Limit Anggaran (Rp)</th>
                     <th className="px-6 py-4" style={{ width: '300px' }}>Catatan / Keterangan</th>
                   </tr>
@@ -378,12 +433,12 @@ export default function BudgetPage() {
                       </td>
                     </tr>
                   ) : filteredInputAccounts.map((acc) => {
-                    const edit = editedBudgets[acc.id] || { amount: '', notes: '' };
+                    const edit = editedBudgets[acc.id] || { amount: '', notes: '', sub_items: [] };
                     const cat = getCategoryFromAccount(acc.category);
 
                     return (
                       <tr key={acc.id} className="text-xs font-medium hover:bg-zinc-55/10 dark:hover:bg-zinc-700/10 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap align-top">
                           <span className={cn(
                             "px-2.5 py-1 rounded text-[8px] font-black uppercase tracking-widest",
                             cat === 'persediaan' && "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 border border-amber-200/50 dark:border-amber-800/40",
@@ -393,18 +448,60 @@ export default function BudgetPage() {
                             {cat === 'persediaan' ? 'Persediaan' : cat === 'beban' ? 'Beban OPEX' : 'Hutang'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 font-mono font-bold text-zinc-500">{acc.code}</td>
-                        <td className="px-6 py-4 font-black text-zinc-900 dark:text-zinc-100">{acc.name}</td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="px-6 py-4 font-mono font-bold text-zinc-500 align-top">{acc.code}</td>
+                        <td className="px-6 py-4 font-black text-zinc-900 dark:text-zinc-100 align-top">
+                          <div>{acc.name}</div>
+                          
+                          {/* Nested Sub-Items Input Form */}
+                          <div className="mt-4 space-y-2 pl-4 border-l-2 border-zinc-200 dark:border-zinc-700">
+                            {(edit.sub_items || []).map((sub, idx) => (
+                              <div key={sub.id || idx} className="flex items-center gap-2">
+                                <Input
+                                  placeholder="Nama Sub-pos (misal: Pembelian Sirup)"
+                                  value={sub.name}
+                                  onChange={(e) => updateSubItemField(acc.id, sub.id, 'name', e.target.value)}
+                                  className="h-8 text-[11px] w-48"
+                                />
+                                <Input
+                                  type="number"
+                                  placeholder="Limit (Rp)"
+                                  value={sub.limit}
+                                  onChange={(e) => updateSubItemField(acc.id, sub.id, 'limit', e.target.value)}
+                                  className="h-8 text-[11px] w-28 text-right font-mono"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => removeSubItem(acc.id, sub.id)}
+                                  className="h-8 w-8 text-zinc-400 hover:text-rose-600 active:scale-95"
+                                >
+                                  <Trash2 size={12} />
+                                </Button>
+                              </div>
+                            ))}
+                            <Button
+                              variant="ghost"
+                              onClick={() => addSubItem(acc.id)}
+                              className="h-7 px-2 text-[9px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 flex items-center gap-1 active:scale-95"
+                            >
+                              <Plus size={10} /> Tambah Rencana Sub-Pos
+                            </Button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right align-top">
                           <Input
                             type="number"
                             placeholder="Limit Anggaran"
-                            value={edit.amount}
+                            value={edit.amount || ''}
+                            disabled={(edit.sub_items || []).length > 0}
                             onChange={(e) => updateBudgetField(acc.id, 'amount', e.target.value)}
                             className="text-right font-mono font-bold"
                           />
+                          {(edit.sub_items || []).length > 0 && (
+                            <span className="text-[8px] font-black text-amber-500 uppercase tracking-wider block mt-1">Dihitung otomatis</span>
+                          )}
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 align-top">
                           <Input
                             placeholder="Catatan..."
                             value={edit.notes}

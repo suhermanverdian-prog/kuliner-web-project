@@ -5,6 +5,28 @@
 const budgetRepository = require('../repositories/budgetRepository');
 const accountingRepository = require('../repositories/accountingRepository');
 
+function parseBudgetMetadata(budget) {
+  if (!budget) return budget;
+  let subItems = [];
+  let userNotes = budget.notes || '';
+  if (budget.notes && budget.notes.startsWith('{') && budget.notes.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(budget.notes);
+      if (parsed.sub_items) {
+        subItems = parsed.sub_items;
+        userNotes = parsed.user_notes || '';
+      }
+    } catch (e) {
+      // Ignore JSON parse error
+    }
+  }
+  return {
+    ...budget,
+    sub_items: subItems,
+    notes: userNotes
+  };
+}
+
 class BudgetService {
 
   /**
@@ -12,7 +34,8 @@ class BudgetService {
    */
   async getBudgets(tenantId, query = {}) {
     const { year, month } = query;
-    return budgetRepository.getAll(tenantId, year ? Number(year) : null, month ? Number(month) : null);
+    const data = await budgetRepository.getAll(tenantId, year ? Number(year) : null, month ? Number(month) : null);
+    return (data || []).map(parseBudgetMetadata);
   }
 
   /**
@@ -20,13 +43,25 @@ class BudgetService {
    * Validates that the account exists and belongs to budgetable categories.
    */
   async saveBudget(tenantId, data) {
-    const { account_id, account_code, account_name, period_month, period_year, amount, notes } = data;
+    const { account_id, account_code, account_name, period_month, period_year, amount, notes, sub_items } = data;
 
     // Validation
     if (!account_id) throw new Error('Account ID wajib diisi');
     if (!period_month || period_month < 1 || period_month > 12) throw new Error('Bulan tidak valid (1-12)');
     if (!period_year || period_year < 2000) throw new Error('Tahun tidak valid');
-    if (amount === undefined || amount === null || Number(amount) < 0) throw new Error('Jumlah anggaran harus >= 0');
+    
+    let finalAmount = Number(amount || 0);
+    let finalNotes = notes || null;
+
+    if (Array.isArray(sub_items) && sub_items.length > 0) {
+      finalAmount = sub_items.reduce((sum, item) => sum + Number(item.limit || 0), 0);
+      finalNotes = JSON.stringify({
+        user_notes: notes || '',
+        sub_items: sub_items
+      });
+    } else if (amount === undefined || amount === null || Number(amount) < 0) {
+      throw new Error('Jumlah anggaran harus >= 0');
+    }
 
     const payload = {
       tenant_id: tenantId,
@@ -35,12 +70,13 @@ class BudgetService {
       account_name,
       period_month: Number(period_month),
       period_year: Number(period_year),
-      amount: Number(amount),
-      notes: notes || null,
+      amount: finalAmount,
+      notes: finalNotes,
       updated_at: new Date().toISOString()
     };
 
-    return budgetRepository.upsert(payload);
+    const saved = await budgetRepository.upsert(payload);
+    return parseBudgetMetadata(saved);
   }
 
   /**
@@ -69,14 +105,6 @@ class BudgetService {
 
   /**
    * Generate Variance Report: Budget vs Actual.
-   *
-   * Logic:
-   * 1. Get all budgets for the period
-   * 2. Get actual debit totals from journal_lines for the period
-   * 3. For each budgeted account:
-   *    - Actual = total debit (for Beban accounts)
-   *    - Variance = Budget - Actual
-   *    - Status: under_budget | on_budget | over_budget
    */
   async getVarianceReport(tenantId, year, month) {
     if (!year || !month) throw new Error('Tahun dan bulan wajib diisi');
@@ -99,14 +127,13 @@ class BudgetService {
     // 4. Generate variance report
     const report = budgets.map(budget => {
       const actual = actualMap[budget.account_code] || { total_debit: 0, total_credit: 0 };
-      
-      // For expense accounts (Beban), spending = total debit
-      // For asset accounts (Aset like Inventory), spending = total debit
-      // For liability accounts (Kewajiban), spending/repayment = total debit
       const actualAmount = actual.total_debit;
-      const variance = Number(budget.amount) - actualAmount;
-      const percentUsed = Number(budget.amount) > 0 
-        ? (actualAmount / Number(budget.amount)) * 100 
+
+      const parsedBudget = parseBudgetMetadata(budget);
+      const budgetAmount = Number(parsedBudget.amount);
+      const variance = budgetAmount - actualAmount;
+      const percentUsed = budgetAmount > 0 
+        ? (actualAmount / budgetAmount) * 100 
         : 0;
 
       let status = 'on_budget';
@@ -114,16 +141,17 @@ class BudgetService {
       else if (percentUsed <= 80) status = 'under_budget';
 
       return {
-        id: budget.id,
-        account_id: budget.account_id,
-        account_code: budget.account_code,
-        account_name: budget.account_name,
-        budget_amount: Number(budget.amount),
+        id: parsedBudget.id,
+        account_id: parsedBudget.account_id,
+        account_code: parsedBudget.account_code,
+        account_name: parsedBudget.account_name,
+        budget_amount: budgetAmount,
         actual_amount: actualAmount,
         variance,
         percent_used: Math.round(percentUsed * 10) / 10,
         status,
-        notes: budget.notes
+        notes: parsedBudget.notes,
+        sub_items: parsedBudget.sub_items || []
       };
     });
 
@@ -147,3 +175,4 @@ class BudgetService {
 }
 
 module.exports = new BudgetService();
+

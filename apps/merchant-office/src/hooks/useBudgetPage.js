@@ -38,7 +38,11 @@ export function useBudgetPage({ accounts = [] }) {
       // Pre-populate editedBudgets with existing data
       const map = {};
       arr.forEach(b => {
-        map[b.account_id] = { amount: Number(b.amount), notes: b.notes || '' };
+        map[b.account_id] = { 
+          amount: Number(b.amount), 
+          notes: b.notes || '',
+          sub_items: b.sub_items || []
+        };
       });
       setEditedBudgets(map);
     } catch (err) {
@@ -77,7 +81,7 @@ export function useBudgetPage({ accounts = [] }) {
     setEditedBudgets(prev => ({
       ...prev,
       [accountId]: {
-        ...(prev[accountId] || { amount: 0, notes: '' }),
+        ...(prev[accountId] || { amount: 0, notes: '', sub_items: [] }),
         [field]: value
       }
     }));
@@ -90,7 +94,7 @@ export function useBudgetPage({ accounts = [] }) {
       const items = budgetableAccounts
         .filter(acc => {
           const edit = editedBudgets[acc.id];
-          return edit && Number(edit.amount) > 0;
+          return edit && (Number(edit.amount) > 0 || (edit.sub_items && edit.sub_items.length > 0));
         })
         .map(acc => {
           const edit = editedBudgets[acc.id];
@@ -101,7 +105,8 @@ export function useBudgetPage({ accounts = [] }) {
             period_month: selectedMonth,
             period_year: selectedYear,
             amount: Number(edit.amount),
-            notes: edit.notes || ''
+            notes: edit.notes || '',
+            sub_items: edit.sub_items || []
           };
         });
 
