@@ -41,6 +41,19 @@ class MenuController {
     }
   }
 
+  async bulkAdjustPrices(req, res) {
+    try {
+      const { adjustments } = req.body;
+      const { tenantId, outletId } = req.userContext;
+
+      await MenuService.bulkAdjustPrices(adjustments, tenantId, outletId);
+      res.json({ ok: true, message: 'Harga menu berhasil disesuaikan' });
+    } catch (err) {
+      console.error('❌ [Menu Controller] BULK_ADJUST Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+  }
+
   async deleteMenu(req, res) {
     try {
       const menuId = req.params.id;

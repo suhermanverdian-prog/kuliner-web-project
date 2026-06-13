@@ -113,6 +113,7 @@ router.delete('/categories/:id', permissionGuard('inventory', 'delete'), invento
  */
 router.get('/warehouses', permissionGuard('inventory', 'view'), inventoryController.getWarehouses);
 router.post('/warehouses', permissionGuard('inventory', 'create'), inventoryController.createWarehouse);
+router.delete('/warehouses/:id', permissionGuard('inventory', 'delete'), inventoryController.deleteWarehouse);
 router.post('/transfers', permissionGuard('inventory', 'create'), inventoryController.executeTransfer);
 
 module.exports = router;

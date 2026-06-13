@@ -209,6 +209,10 @@ class SystemService {
         ai_api_key: data.ai_api_key,
         is_ai_enabled: data.is_ai_enabled,
         void_approvers: data.void_approvers,
+        tier_rules: data.tier_rules || {
+          member: { min_spend: 250000, min_visits: 3, points_multiplier: 1.5 },
+          vip: { min_spend: 1000000, min_visits: 10, points_multiplier: 2.0 }
+        },
         approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : false,
         opname_owner_approval_required: localSet.opname_owner_approval_required !== undefined ? localSet.opname_owner_approval_required : false
       };
@@ -226,6 +230,10 @@ class SystemService {
       radius: 100,
       geofence_radius: 100,
       is_ai_enabled: false,
+      tier_rules: {
+        member: { min_spend: 250000, min_visits: 3, points_multiplier: 1.5 },
+        vip: { min_spend: 1000000, min_visits: 10, points_multiplier: 2.0 }
+      },
       approval_workflow_enabled: localSet.approval_workflow_enabled !== undefined ? localSet.approval_workflow_enabled : false,
       opname_owner_approval_required: localSet.opname_owner_approval_required !== undefined ? localSet.opname_owner_approval_required : false
     };
@@ -245,7 +253,7 @@ class SystemService {
     }
 
     return {
-      enabled: false,
+      enabled: true,
       multiplier: 1,
       pointsValue: 100,
       points_value: 100
@@ -272,6 +280,12 @@ class SystemService {
     
     // Extract local config variables to prevent pg insert error if columns don't exist
     const { approval_workflow_enabled, opname_owner_approval_required, ...cleanPayload } = payload;
+    
+    // Clean up virtual helper columns to match Supabase database schema
+    delete cleanPayload.radius;
+    delete cleanPayload.storeName;
+    delete cleanPayload.taxPct;
+    delete cleanPayload.servicePct;
     
     const { data: existing } = await SystemRepository.getSettings(tenantId);
     const existingId = existing?.id;

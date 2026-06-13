@@ -74,6 +74,16 @@ class MenuService {
     return true;
   }
 
+  async bulkAdjustPrices(adjustments, tenantId, outletId) {
+    if (!Array.isArray(adjustments)) return false;
+    for (const adj of adjustments) {
+      if (!adj.id || !adj.suggested) continue;
+      await MenuRepository.updateMenu(adj.id, tenantId, { price: Number(adj.suggested) });
+    }
+    this._invalidateCache(tenantId, outletId);
+    return true;
+  }
+
   async softDeleteMenu(menuId, tenantId, outletId) {
     await MenuRepository.softDeleteMenu(menuId, tenantId);
     this._invalidateCache(tenantId, outletId);

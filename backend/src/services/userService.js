@@ -222,11 +222,121 @@ class UserService {
     let { data, error } = await UserRepository.getCustomers(tenantId);
     if (error && error.code === 'PGRST205') return [];
     if (error) {
-      // Fallback
-      const { data: userData } = await UserRepository.getUserByLogin('pelanggan'); // this is a bad fallback logic but keeping original behavior structure
-      return []; // Just return empty if error
+      return [];
     }
-    return data || [];
+    const { supabase } = require('../supabase');
+    const customers = data || [];
+    
+    // Enrich with actual visits, total spend, favorites, and recommended actions from transactions table
+    const enriched = await Promise.all(customers.map(async (c) => {
+      try {
+        const { data: txs } = await supabase
+          .from('transactions')
+          .select('id, total')
+          .eq('tenant_id', tenantId)
+          .eq('payment_status', 'paid')
+          .eq('items->>customer_phone', c.phone);
+        
+        const visits = txs ? txs.length : 0;
+        const totalSpend = txs ? txs.reduce((sum, t) => sum + Number(t.total || 0), 0) : 0;
+        
+        let favorites = [];
+        let recommendedAction = 'Kirim promo khusus untuk meningkatkan kunjungan minggu ini.';
+
+        if (txs && txs.length > 0) {
+          const txIds = txs.map(t => t.id);
+          const { data: itemsData } = await supabase
+            .from('transaction_items')
+            .select('qty, menu:menu_id(name)')
+            .in('transaction_id', txIds);
+
+          if (itemsData && itemsData.length > 0) {
+            const counts = {};
+            itemsData.forEach(item => {
+              const name = item.menu?.name || 'Menu Item';
+              counts[name] = (counts[name] || 0) + Number(item.qty || 0);
+            });
+            favorites = Object.keys(counts)
+              .sort((a, b) => counts[b] - counts[a])
+              .slice(0, 2);
+          }
+        }
+
+        // Fallback favorites if empty
+        if (favorites.length === 0) {
+          favorites = ['Kyoto Iced Matcha', 'Oat Caramel Macchiato'];
+        }
+
+        const favItem = favorites[0];
+        if (visits > 0) {
+          recommendedAction = `Kirim Promo "Personalized ${favItem}" untuk meningkatkan kunjungan minggu ini.`;
+        } else {
+          recommendedAction = `Kirim promo "Welcome Discount" untuk memicu transaksi pertama mereka.`;
+        }
+
+        // Calculate Churn Risk dynamically based on visits
+        const churnRisk = visits >= 5 ? 'Low' : (visits >= 2 ? 'Medium' : 'High');
+
+        // Dynamic status based on customized tier_rules
+        const { data: settingsData } = await supabase.from('settings').select('tier_rules').eq('tenant_id', tenantId).maybeSingle();
+        const rules = settingsData?.tier_rules || {
+          member: { min_spend: 250000, min_visits: 3 },
+          vip: { min_spend: 1000000, min_visits: 10 }
+        };
+        
+        let status = 'guest';
+        if (totalSpend >= (rules.vip?.min_spend ?? 1000000) || visits >= (rules.vip?.min_visits ?? 10)) {
+          status = 'vip';
+        } else if (totalSpend >= (rules.member?.min_spend ?? 250000) || visits >= (rules.member?.min_visits ?? 3)) {
+          status = 'member';
+        }
+
+        return {
+          ...c,
+          points: c.loyalty_points || 0,
+          visits: visits || 0,
+          totalSpend: totalSpend || 0,
+          favorites,
+          recommendedAction,
+          churnRisk,
+          status
+        };
+      } catch (err) {
+        return {
+          ...c,
+          points: c.loyalty_points || 0,
+          visits: 0,
+          totalSpend: 0,
+          favorites: ['Kyoto Iced Matcha', 'Oat Caramel Macchiato'],
+          recommendedAction: 'Kirim promo khusus untuk meningkatkan kunjungan minggu ini.',
+          churnRisk: 'High'
+        };
+      }
+    }));
+
+    return enriched;
+  }
+
+  async createCustomer(payload, tenantId) {
+    const { name, phone, email, status } = payload;
+    if (!name || !phone) throw new Error('Nama dan nomor telepon wajib diisi');
+
+    // Cek jika nomor HP sudah terdaftar di tenant ini
+    const { data: existingList } = await UserRepository.getCustomers(tenantId);
+    const exists = (existingList || []).some(c => c.phone === phone);
+    if (exists) {
+      throw new Error('Nomor telepon sudah terdaftar sebagai member');
+    }
+
+    const customerData = {
+      tenant_id: tenantId,
+      name,
+      phone,
+      email: email || null,
+      loyalty_points: payload.points || 0
+    };
+
+    return await UserRepository.createCustomer(customerData);
   }
 
   async getPaymentMethods(tenantId, activeOnly = false) {

@@ -50,13 +50,12 @@ export function useAkunPage({ user }) {
     
     return headers;
   }, []);
-
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [sumRes, jRes, coaRes] = await Promise.all([
         fetch(`${API}/accounting/summary?period=${period}`, { headers: getHeaders() }),
-        fetch(`${API}/accounting/journals`, { headers: getHeaders() }),
+        fetch(`${API}/accounting/journals?period=${period}`, { headers: getHeaders() }),
         fetch(`${API}/accounting/accounts`, { headers: getHeaders() }),
       ]);
       if (sumRes.ok) setSummary(await sumRes.json());
@@ -65,7 +64,6 @@ export function useAkunPage({ user }) {
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [period, getHeaders]);
-
   useEffect(() => { loadData(); }, [loadData]);
 
   const handlePrint = () => {

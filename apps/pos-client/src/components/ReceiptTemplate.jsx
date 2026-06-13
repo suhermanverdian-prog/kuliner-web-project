@@ -31,15 +31,63 @@ const parseItems = (items) => {
   return [];
 };
 
-/**
- * @component ReceiptTemplate
- * @description Desain Struk Thermal 58mm/80mm Standard Indonesia
- */
 export const ReceiptTemplate = React.forwardRef(({ tx, user }, ref) => {
   if (!tx) return null;
 
   return (
-    <div ref={ref} className="bg-white text-zinc-950 p-6 font-mono text-[11px] leading-tight w-[300px] mx-auto shadow-sm print:shadow-none">
+    <div ref={ref} className="receipt-container bg-white text-zinc-950 p-6 font-mono text-[11px] leading-tight w-[300px] mx-auto shadow-sm print:shadow-none">
+      <style>{`
+        @media print {
+          body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+          }
+        }
+        .receipt-container {
+          font-family: 'Courier New', Courier, monospace !important;
+          font-size: 11px !important;
+          line-height: 1.3 !important;
+          width: 280px !important;
+          color: #000 !important;
+          background: #fff !important;
+          margin: 0 auto;
+        }
+        .receipt-container .text-center { text-align: center !important; }
+        .receipt-container .uppercase { text-transform: uppercase !important; }
+        .receipt-container .font-bold { font-weight: bold !important; }
+        .receipt-container .font-black { font-weight: 900 !important; }
+        .receipt-container .text-lg { font-size: 15px !important; }
+        .receipt-container .text-base { font-size: 12px !important; }
+        .receipt-container .text-[10px] { font-size: 10px !important; }
+        .receipt-container .text-[9px] { font-size: 9px !important; }
+        .receipt-container .text-[8px] { font-size: 8px !important; }
+        .receipt-container .opacity-70 { opacity: 0.7 !important; }
+        .receipt-container .opacity-80 { opacity: 0.8 !important; }
+        .receipt-container .opacity-60 { opacity: 0.6 !important; }
+        .receipt-container .opacity-30 { opacity: 0.3 !important; }
+        .receipt-container .pl-2 { padding-left: 8px !important; }
+        .receipt-container .italic { font-style: italic !important; }
+        .receipt-container .flex {
+          display: flex !important;
+          justify-content: space-between !important;
+        }
+        .receipt-container .justify-between {
+          justify-content: space-between !important;
+        }
+        .receipt-container .mb-4 { margin-bottom: 12px !important; }
+        .receipt-container .mb-6 { margin-bottom: 18px !important; }
+        .receipt-container .pb-4 { padding-bottom: 12px !important; }
+        .receipt-container .pt-4 { padding-top: 12px !important; }
+        .receipt-container .pt-2 { padding-top: 6px !important; }
+        .receipt-container .border-b { border-bottom: 1px dashed #000 !important; }
+        .receipt-container .border-t { border-top: 1px dashed #000 !important; }
+        .receipt-container .border { border: 1px solid #000 !important; }
+        .receipt-container .p-2 { padding: 6px !important; }
+        .receipt-container .tracking-widest { letter-spacing: 0.1em !important; }
+        .receipt-container .tracking-tighter { letter-spacing: -0.05em !important; }
+        .receipt-container .tracking-\\[0\\.4em\\] { letter-spacing: 0.4em !important; }
+      `}</style>
       {/* HEADER */}
       <div className="text-center space-y-1 mb-4 border-b border-dashed border-zinc-300 pb-4">
         <h1 className="text-lg font-black tracking-tighter uppercase">BREWMASTER</h1>

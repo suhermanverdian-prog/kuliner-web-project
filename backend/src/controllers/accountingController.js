@@ -5,9 +5,9 @@ class AccountingController {
   
   async getSummary(req, res) {
     try {
-      const { tenantId } = req.userContext || {};
+      const userContext = req.userContext || {};
       const { period } = req.query; 
-      const result = await AccountingService.getSummary(tenantId, period);
+      const result = await AccountingService.getSummary(userContext, period);
       res.json(result);
     } catch (err) {
       console.error('❌ [Accounting Summary Error]:', err);
@@ -28,7 +28,8 @@ class AccountingController {
   async getJournals(req, res) {
     try {
       const { tenantId } = req.userContext || {};
-      const result = await AccountingService.getJournals(tenantId);
+      const { period } = req.query;
+      const result = await AccountingService.getJournals(tenantId, period);
       res.json(result);
     } catch (err) {
       res.status(500).json({ error: err.message });

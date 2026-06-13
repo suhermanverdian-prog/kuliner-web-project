@@ -18,13 +18,15 @@ class TransactionService {
       payment_method: paymentMethod,
       cashier_name: cashierName,
       table_type: tableType,
-      discountAmount,
-      taxAmount,
-      uniqueCode,
       total,
       items,
       created_at
     } = trxData;
+
+    // Self-healing check for both snake_case and camelCase variants
+    const discountAmount = trxData.discount_amount !== undefined ? trxData.discount_amount : (trxData.discountAmount !== undefined ? trxData.discountAmount : (trxData.discount || 0));
+    const taxAmount = trxData.tax_amount !== undefined ? trxData.tax_amount : (trxData.tax !== undefined ? trxData.tax : (trxData.taxAmount !== undefined ? trxData.taxAmount : 0));
+    const uniqueCode = trxData.unique_code !== undefined ? trxData.unique_code : (trxData.uniqueCode !== undefined ? trxData.uniqueCode : 0);
 
     // 1. Generate ID & Status
     const readableId = 'TRX-' + Date.now().toString().slice(-6) + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
@@ -175,11 +177,14 @@ class TransactionService {
     }
 
     // --- SPRINT 2 INTEGRATION: Loyalty & Promo Code Post-Processing ---
+    console.log(`[DEBUG Loyalty Trigger] isOffline: ${isOffline}, paymentStatus: ${paymentStatus}, customerPhone: ${customerPhone}, finalTotal: ${finalTotal}`);
     if (!isOffline) {
         if (paymentStatus === 'paid' && customerPhone) {
             try {
                 const LoyaltyService = require('./loyaltyService');
-                await LoyaltyService.earnPoints(tenantId, customerPhone, customerName, finalTotal);
+                console.log(`[DEBUG Loyalty Trigger] Calling earnPoints for phone: ${customerPhone}, name: ${customerName}, amount: ${finalTotal}`);
+                const res = await LoyaltyService.earnPoints(tenantId, customerPhone, customerName, finalTotal);
+                console.log(`[DEBUG Loyalty Trigger] earnPoints Result:`, res);
             } catch (lErr) {
                 console.warn('⚠️ [Loyalty] Non-blocking exception earning points on checkout:', lErr.message);
             }
@@ -569,6 +574,7 @@ class TransactionService {
                 let b2bAccountId = getAccountId(b2bAccountCode);
                 if (!b2bAccountId) {
                     try {
+                        const AccountingRepository = require('../repositories/accountingRepository');
                         const newAcc = await AccountingRepository.createAccount({
                             tenant_id: tenantId,
                             code: b2bAccountCode,

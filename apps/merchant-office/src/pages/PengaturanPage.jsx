@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
-import { BrainCircuit, KeyRound, Server, Sparkles, Zap, PackageOpen, MapPin, Globe, Coffee, SlidersHorizontal, Ticket, Droplets } from 'lucide-react';
+import { BrainCircuit, KeyRound, Server, Sparkles, Zap, PackageOpen, MapPin, Globe, Coffee, SlidersHorizontal, Ticket, Droplets, UserPlus, Crown } from 'lucide-react';
 import { FEATURE_CATALOG, TIER_DEFAULTS, resolveFeatures } from '../lib/featureFlags';
 import { useAppStore } from '../store/useAppStore';
 
@@ -931,6 +931,13 @@ function PromoPanel({ showToast }) {
   const [newPartner, setNewPartner] = useState({ company_name: '', billing_email: '', credit_limit: 5000000 });
   const [showAddPartner, setShowAddPartner] = useState(false);
 
+  const [loyaltyConfig, setLoyaltyConfig] = useState({ enabled: true, multiplier: 10000 });
+
+  const [tierRules, setTierRules] = useState({
+    member: { min_spend: 250000, min_visits: 3, points_multiplier: 1.5 },
+    vip: { min_spend: 1000000, min_visits: 10, points_multiplier: 2.0 }
+  });
+
   const loadPromos = async () => {
     try {
       const data = await api.getPromoCodes();
@@ -949,18 +956,45 @@ function PromoPanel({ showToast }) {
     }
   };
 
+   const loadSettings = async () => {
+    try {
+      const s = await api.getSettings();
+      if (s && s.tier_rules) {
+        setTierRules(s.tier_rules);
+      }
+      const l = await api.getSettingsLoyalty();
+      if (l) {
+        setLoyaltyConfig(l);
+      }
+    } catch (err) {
+      console.error('Gagal memuat aturan tier / loyalty:', err);
+    }
+  };
+
   useEffect(() => {
     loadPromos();
     loadPartners();
+    loadSettings();
   }, []);
 
   const handleSaveLoyalty = async () => {
     localStorage.setItem('ken_custom_loyalty_rate', loyaltyRate.toString());
     try {
-      await api.saveSettingsLoyalty({ enabled: true, multiplier: loyaltyRate * 1000, points_value: 100 });
-      showToast('Konfigurasi perolehan poin loyalty berhasil disimpan!');
-    } catch {
-      showToast('Konfigurasi disimpan lokal (gagal sinkronisasi server).');
+      await api.saveSettingsLoyalty({ 
+        enabled: loyaltyConfig?.enabled ?? true, 
+        multiplier: loyaltyRate * 1000, 
+        points_value: 100 
+      });
+      
+      const current = await api.getSettings();
+      await api.saveSettings({
+        ...current,
+        tier_rules: tierRules
+      });
+      
+      showToast('Konfigurasi perolehan poin loyalty & aturan tier berhasil disimpan!');
+    } catch (err) {
+      showToast('Gagal menyimpan ke server: ' + err.message, 'error');
     }
   };
 
@@ -1130,13 +1164,35 @@ function PromoPanel({ showToast }) {
           </Card>
 
           <Card className="border-none shadow-xl bg-card rounded-lg">
-            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
-              <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
-                ⭐ Aturan Loyalty Point Member
-              </CardTitle>
-              <CardDescription>
-                Konfigurasi rasio perolehan poin loyalitas yang didapatkan pelanggan saat bertransaksi.
-              </CardDescription>
+            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                  ⭐ Aturan Loyalty Point Member
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  Konfigurasi rasio perolehan poin loyalitas yang didapatkan pelanggan saat bertransaksi.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+                  {loyaltyConfig?.enabled ? 'Aktif' : 'Nonaktif'}
+                </span>
+                <input 
+                  type="checkbox" 
+                  className="w-10 h-6 accent-amber-500 cursor-pointer" 
+                  checked={loyaltyConfig?.enabled ?? true} 
+                  onChange={e => {
+                    const updated = { ...loyaltyConfig, enabled: e.target.checked };
+                    // We need to set it so handleSaveLoyalty can access it or we can dispatch saveSettingsLoyalty immediately
+                    setLoyaltyConfig(updated);
+                    api.saveSettingsLoyalty(updated).then(() => {
+                      showToast(`Program Loyalty berhasil ${e.target.checked ? 'diaktifkan' : 'dimatikan'}`);
+                    }).catch(() => {
+                      showToast('Gagal mengubah status program loyalty', 'error');
+                    });
+                  }} 
+                />
+              </div>
             </CardHeader>
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 max-w-xl">
@@ -1151,7 +1207,8 @@ function PromoPanel({ showToast }) {
                     type="number"
                     value={loyaltyRate}
                     onChange={e => setLoyaltyRate(Math.max(1, Number(e.target.value)))}
-                    className="w-full h-11 px-3 text-sm font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 text-right rounded-md text-foreground"
+                    disabled={!(loyaltyConfig?.enabled ?? true)}
+                    className="w-full h-11 px-3 text-sm font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 text-right rounded-md text-foreground disabled:opacity-50"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">Pts</span>
                 </div>
@@ -1163,6 +1220,120 @@ function PromoPanel({ showToast }) {
                 className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
               >
                 Simpan Aturan Poin
+              </Button>
+            </CardFooter>
+          </Card>
+
+          <Card className="border-none shadow-xl bg-card rounded-lg mt-6">
+            <CardHeader className="border-b bg-zinc-50 dark:bg-zinc-900/50 p-6">
+              <CardTitle className="text-lg font-black text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                👑 Aturan Kustomisasi Tier CRM Pelanggan
+              </CardTitle>
+              <CardDescription>
+                Tentukan parameter otomatisasi klasifikasi status pelanggan (Guest, Member, VIP) dan faktor pengali poin loyalitas.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              {/* Member Tier Section */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                  <UserPlus size={16} /> Tier 1: Member Status
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Minimum Belanja (Rp)</label>
+                    <input
+                      type="number"
+                      value={tierRules.member?.min_spend ?? 250000}
+                      onChange={e => setTierRules({
+                        ...tierRules,
+                        member: { ...tierRules.member, min_spend: Math.max(0, Number(e.target.value)) }
+                      })}
+                      className="w-full h-10 px-3 text-xs font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 rounded-md text-foreground"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Minimum Kunjungan (Visits)</label>
+                    <input
+                      type="number"
+                      value={tierRules.member?.min_visits ?? 3}
+                      onChange={e => setTierRules({
+                        ...tierRules,
+                        member: { ...tierRules.member, min_visits: Math.max(0, Number(e.target.value)) }
+                      })}
+                      className="w-full h-10 px-3 text-xs font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 rounded-md text-foreground"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Pengali Poin (Multiplier)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={tierRules.member?.points_multiplier ?? 1.5}
+                      onChange={e => setTierRules({
+                        ...tierRules,
+                        member: { ...tierRules.member, points_multiplier: Math.max(1.0, Number(e.target.value)) }
+                      })}
+                      className="w-full h-10 px-3 text-xs font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 rounded-md text-foreground"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <hr className="border-border" />
+
+              {/* VIP Tier Section */}
+              <div className="space-y-4">
+                <h4 className="text-xs font-black uppercase tracking-widest text-amber-500 flex items-center gap-2">
+                  <Crown size={16} /> Tier 2: VIP Status
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Minimum Belanja (Rp)</label>
+                    <input
+                      type="number"
+                      value={tierRules.vip?.min_spend ?? 1000000}
+                      onChange={e => setTierRules({
+                        ...tierRules,
+                        vip: { ...tierRules.vip, min_spend: Math.max(0, Number(e.target.value)) }
+                      })}
+                      className="w-full h-10 px-3 text-xs font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 rounded-md text-foreground"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Minimum Kunjungan (Visits)</label>
+                    <input
+                      type="number"
+                      value={tierRules.vip?.min_visits ?? 10}
+                      onChange={e => setTierRules({
+                        ...tierRules,
+                        vip: { ...tierRules.vip, min_visits: Math.max(0, Number(e.target.value)) }
+                      })}
+                      className="w-full h-10 px-3 text-xs font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 rounded-md text-foreground"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Pengali Poin (Multiplier)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={tierRules.vip?.points_multiplier ?? 2.0}
+                      onChange={e => setTierRules({
+                        ...tierRules,
+                        vip: { ...tierRules.vip, points_multiplier: Math.max(1.0, Number(e.target.value)) }
+                      })}
+                      className="w-full h-10 px-3 text-xs font-black font-mono bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus-visible:ring-2 focus-visible:ring-amber-500/20 rounded-md text-foreground"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+            <CardFooter className="p-6 border-t bg-zinc-50 dark:bg-zinc-900/50">
+              <Button 
+                onClick={handleSaveLoyalty} 
+                className="h-10 px-6 font-bold bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md shadow-lg shadow-amber-500/20 active:scale-95 transition-all"
+              >
+                Simpan Konfigurasi Tier & Poin
               </Button>
             </CardFooter>
           </Card>
@@ -2255,39 +2426,7 @@ export default function PengaturanPage() {
                 </div>
               </div>
 
-              <div className="pt-6 border-t space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold">Program Loyalty Member</h4>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-100 uppercase font-bold tracking-wider mt-1">Akumulasi poin belanja</p>
-                  </div>
-                  <input 
-                    type="checkbox" 
-                    className="w-10 h-6 accent-amber-500 cursor-pointer" 
-                    checked={loyaltyConfig.enabled} 
-                    onChange={e => setLoyaltyConfig({...loyaltyConfig, enabled: e.target.checked})} 
-                  />
-                </div>
-                {loyaltyConfig.enabled && (
-                  <div className="grid grid-cols-2 gap-6 animate-in slide-in-from-top-2 duration-300">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase">Setiap Belanja (Rp)</label>
-                      <Input 
-                        type="number" 
-                        value={loyaltyConfig.multiplier} 
-                        onChange={e => setLoyaltyConfig({...loyaltyConfig, multiplier: Number(e.target.value)})} 
-                        className="h-10 text-sm font-bold font-mono tabular-nums" 
-                      />
-                      <p className="text-[9px] text-zinc-500 dark:text-zinc-100 italic">Dapat 1 Poin</p>
-                    </div>
-                    <div className="space-y-2 ">
-                      <label className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase">Nilai 1 Poin (Rp)</label>
-                      <Input type="number" value={100} disabled className="h-10 text-sm font-bold font-mono tabular-nums" />
-                      <p className="text-[9px] text-zinc-500 dark:text-zinc-100 italic">Potongan diskon (Segera)</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+
 
               <div className="pt-6 border-t space-y-6">
                 <div>

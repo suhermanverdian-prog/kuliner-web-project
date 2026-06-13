@@ -82,6 +82,7 @@ router.post('/tenants', userController.createTenant);
  * @route GET /api/customers
  */
 router.get('/customers', userController.getCustomers);
+router.post('/customers', userController.addCustomer);
 
 /**
  * @route GET /api/paymentmethods

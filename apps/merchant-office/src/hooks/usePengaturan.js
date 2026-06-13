@@ -33,6 +33,10 @@ export function usePengaturan() {
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState('/logo-ken.webp');
   const [loyaltyConfig, setLoyaltyConfig] = useState({ enabled: true, multiplier: 10000 });
+  const [tierRules, setTierRules] = useState({
+    member: { min_spend: 250000, min_visits: 3, points_multiplier: 1.5 },
+    vip: { min_spend: 1000000, min_visits: 10, points_multiplier: 2.0 }
+  });
   const [geofence, setGeofence] = useState({ latitude: 0, longitude: 0, radius: 100 });
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [showAddPayment, setShowAddPayment] = useState(false);
@@ -69,7 +73,12 @@ export function usePengaturan() {
   useEffect(() => {
     fetchUsers();
     fetchRolePermissions();
-    api.getSettings().then(s => { if (s) setSettings(s); }).catch(() => {});
+    api.getSettings().then(s => { 
+      if (s) {
+        setSettings(s);
+        if (s.tier_rules) setTierRules(s.tier_rules);
+      } 
+    }).catch(() => {});
     api.getSettingsLoyalty().then(l => { if (l) setLoyaltyConfig(l); }).catch(() => {});
     api.getOutletInfo().then(o => { if (o) setGeofence({ latitude: o.latitude || 0, longitude: o.longitude || 0, radius: o.geofence_radius || 100 }); }).catch(() => {});
     api.getPaymentMethods().then(p => { if (p) setPaymentMethods(p); }).catch(() => {});
@@ -225,7 +234,8 @@ export function usePengaturan() {
         ...settings,
         ai_provider: aiConfig.provider,
         ai_api_key: aiConfig.apiKey,
-        is_ai_enabled: aiConfig.isEnabled
+        is_ai_enabled: aiConfig.isEnabled,
+        tier_rules: tierRules
       };
 
       await api.saveSettings(fullSettings);
@@ -320,6 +330,7 @@ export function usePengaturan() {
     logoFile, setLogoFile,
     logoPreview, setLogoPreview,
     loyaltyConfig, setLoyaltyConfig,
+    tierRules, setTierRules,
     geofence, setGeofence,
     paymentMethods, setPaymentMethods,
     showAddPayment, setShowAddPayment,

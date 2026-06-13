@@ -152,6 +152,12 @@ class UserRepository {
     return { data, error };
   }
 
+  async createCustomer(customerData) {
+    const { data, error } = await supabase.from('customers').insert([customerData]).select();
+    if (error) throw error;
+    return data[0];
+  }
+
   async getPaymentMethods(tenantId) {
     let query = supabase.from('payment_methods').select('*');
     if (tenantId) query = query.eq('tenant_id', tenantId);

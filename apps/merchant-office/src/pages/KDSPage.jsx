@@ -63,12 +63,12 @@ function WaitTime({ since }) {
   
   return (
     <div className={cn(
-      "flex items-center gap-2 px-4 py-1.5 rounded-lg border shadow-lg transition-all", 
+      "flex items-center gap-2 px-4 py-2 rounded-lg border shadow-lg transition-all", 
       isAlarm ? "bg-rose-500/10 border-rose-500/30" : "bg-card border-border",
       color
     )}>
-      <Timer size={14} className={cn("font-mono tabular-nums", isAlarm ? "animate-spin" : "animate-pulse")} />
-      <span className="font-mono tabular-nums text-[11px] font-black uppercase tracking-[0.2em]">{mins}m</span>
+      <Timer size={16} className={cn("font-mono tabular-nums", isAlarm ? "animate-spin" : "animate-pulse")} />
+      <span className="font-mono tabular-nums text-xs font-black uppercase tracking-widest">{mins}m</span>
     </div>
   );
 }
@@ -91,15 +91,15 @@ export default function KDSPage() {
   );
 
   return (
-    <div className="space-y-8 pb-20 min-h-screen">
+    <div className="space-y-8 py-8 pb-20 min-h-screen px-4">
       {/* Header - Sleek Premium Omnichannel Style */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
            <div className="flex items-center gap-4 mb-2">
-              <span className="px-2.5 py-1 bg-card border border-border rounded-sm text-[9px] font-black text-amber-500 uppercase tracking-widest">Kitchen Operations</span>
+              <span className="px-2.5 py-1 bg-card border border-border rounded-sm text-xs font-black text-amber-500 uppercase tracking-widest">Kitchen Operations</span>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">FIFO Engine Active</span>
+                <span className="text-xs font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">FIFO Engine Active</span>
               </div>
            </div>
            <h2 className="text-4xl font-black tracking-tighter text-foreground uppercase">Kitchen <span className="text-amber-500 italic">Display</span></h2>
@@ -132,7 +132,7 @@ export default function KDSPage() {
               <Icon size={14} className={cn("transition-colors", isSelected ? "text-white dark:text-zinc-900" : f.color)} />
               <span>{f.label}</span>
               <span className={cn(
-                "ml-1 px-2 py-0.5 rounded-lg text-[10px] font-black font-mono tabular-nums transition-colors",
+                "ml-1 px-2 py-0.5 rounded-lg text-xs font-black font-mono tabular-nums transition-colors",
                 isSelected
                   ? "bg-white/20 text-white dark:bg-zinc-900/15 dark:text-zinc-900"
                   : "bg-zinc-100 dark:bg-zinc-800/80 " + f.color
@@ -187,12 +187,12 @@ export default function KDSPage() {
                          <Icon size={16} />
                       </div>
                       <span className={cn(
-                        "text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5", 
+                        "text-xs font-black uppercase tracking-widest flex items-center gap-1.5", 
                         isFifoPriority ? "text-amber-600 dark:text-amber-400" : cfg.color
                       )}>
                         {cfg.label}
                         {isFifoPriority && (
-                          <span className="px-1.5 py-0.5 rounded-sm bg-amber-500 text-zinc-950 text-[8px] font-black tracking-widest animate-pulse leading-none">
+                          <span className="px-1.5 py-0.5 rounded-sm bg-amber-500 text-zinc-950 text-xs font-black tracking-widest animate-pulse leading-none">
                             FIFO PRIORITY
                           </span>
                         )}
@@ -205,11 +205,11 @@ export default function KDSPage() {
                 <div className="p-4 border-b bg-background space-y-3">
                    <div className="flex justify-between items-start">
                       <div>
-                         <p className="text-[9px] text-zinc-500 dark:text-zinc-100 font-black uppercase tracking-widest leading-none">Order Reference</p>
+                         <p className="text-xs text-zinc-500 dark:text-zinc-100 font-black uppercase tracking-widest leading-none">Order Reference</p>
                          <h4 className="font-mono tabular-nums text-xl font-black mt-2 text-zinc-900 dark:text-zinc-100 uppercase italic">#{order.id.toString().slice(-4)}</h4>
                       </div>
                       <div className="text-right">
-                         <p className="text-[9px] text-zinc-500 dark:text-zinc-100 font-black uppercase tracking-widest leading-none">Zone</p>
+                         <p className="text-xs text-zinc-500 dark:text-zinc-100 font-black uppercase tracking-widest leading-none">Zone</p>
                          <h4 className="text-xl font-black mt-2 text-primary uppercase italic tracking-tighter">{order.tableType || 'T. Away'}</h4>
                       </div>
                    </div>
@@ -221,7 +221,7 @@ export default function KDSPage() {
                          </div>
                          <p className="text-xs font-bold truncate text-zinc-900 dark:text-zinc-100">{order.customerName || 'Pelanggan'}</p>
                       </div>
-                      <span className="font-mono tabular-nums text-[8px] font-black px-2.5 py-1 rounded-sm bg-background uppercase text-zinc-500 dark:text-zinc-100 tracking-tighter shrink-0">
+                      <span className="font-mono tabular-nums text-xs font-black px-2.5 py-1 rounded-sm bg-background uppercase text-zinc-500 dark:text-zinc-100 tracking-tighter shrink-0">
                          {order.type === 'Self Order' ? 'Ditempat' : 'Kasir'}
                       </span>
                    </div>
@@ -238,19 +238,19 @@ export default function KDSPage() {
                             <div className="flex items-center gap-2 flex-wrap">
                                <p className="text-sm font-black leading-tight text-zinc-900 dark:text-zinc-100">{item.name}</p>
                                {item.skip_kds && (
-                                  <span className="px-1.5 py-0.5 rounded-sm bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[8px] font-black uppercase tracking-widest leading-none">
+                                  <span className="px-1.5 py-0.5 rounded-sm bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-xs font-black uppercase tracking-widest leading-none">
                                      Etalase
                                   </span>
                                 )}
                             </div>
                             {(item.customizationSummary || item.customization_summary) && (
-                              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 leading-tight font-medium italic">
+                              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-1 leading-tight font-medium italic">
                                 {item.customizationSummary || item.customization_summary}
                               </p>
                             )}
                             {(item.note || item.customization?.note || item.customization_summary?.note) && (
-                              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold italic mt-1 flex items-center gap-1 bg-amber-50 dark:bg-amber-950/30 px-2.5 py-1 rounded border border-amber-500/10">
-                                 <ClipboardList size={10} /> {item.note || item.customization?.note || item.customization_summary?.note}
+                              <p className="text-xs text-amber-600 dark:text-amber-400 font-bold italic mt-2 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 px-3 py-1.5 rounded border border-amber-500/10">
+                                 <ClipboardList size={12} /> {item.note || item.customization?.note || item.customization_summary?.note}
                               </p>
                             )}
                          </div>
@@ -259,8 +259,8 @@ export default function KDSPage() {
 
                    {order.note && (
                       <div className="mt-4 p-4 rounded-lg bg-background border border-dashed border-border">
-                         <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest mb-1">Catatan Pesanan</p>
-                         <p className="text-[11px] font-bold italic text-zinc-900 dark:text-zinc-100 leading-relaxed">{order.note}</p>
+                         <p className="text-xs font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest mb-2">Catatan Pesanan</p>
+                         <p className="text-xs font-bold italic text-zinc-900 dark:text-zinc-100 leading-relaxed">{order.note}</p>
                       </div>
                    )}
                 </CardContent>

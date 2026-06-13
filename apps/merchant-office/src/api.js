@@ -67,6 +67,7 @@ const getResource = (prop) => {
     'assembleInventory': 'inventory/assemble',
     'getWarehouses': 'inventory/warehouses',
     'addWarehouse': 'inventory/warehouses',
+    'deleteWarehouse': 'inventory/warehouses',
     'executeTransfer': 'inventory/transfers',
     
     // System & Shifts
@@ -304,6 +305,10 @@ const apiBase = {
 
   async getOpnameOutletSummary(outletId) {
     return this.request(`${API_URL}/opname/outlet/${outletId}/summary`, 'GET');
+  },
+
+  async bulkAdjustPrices(adjustments) {
+    return this.request(`${API_URL}/menu/bulk-adjust-prices`, 'POST', { adjustments });
   },
 
   async getSystemIntegrity() {

@@ -20,7 +20,7 @@ class LoyaltyController {
       const result = await LoyaltyService.earnPoints(tenantId, customer_phone, customer_name, Number(amount));
       res.json(result);
     } catch (err) {
-      new AppError(err.message, err.status || 500).send(res);
+      res.status(err.statusCode || 500).json({ error: err.message });
     }
   }
 
@@ -40,7 +40,7 @@ class LoyaltyController {
       const data = await LoyaltyService.getCustomerData(tenantId, phone);
       res.json(data);
     } catch (err) {
-      new AppError(err.message, err.status || 500).send(res);
+      res.status(err.statusCode || 500).json({ error: err.message });
     }
   }
 }

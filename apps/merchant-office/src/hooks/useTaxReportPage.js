@@ -24,7 +24,7 @@ export function useTaxReportPage() {
   }, [period]);
 
   const totalSales = data.reduce((acc, tx) => acc + (tx.payment_status === 'paid' ? tx.total : 0), 0);
-  const totalTax = data.reduce((acc, tx) => acc + (tx.payment_status === 'paid' ? (tx.tax || 0) : 0), 0);
+  const totalTax = data.reduce((acc, tx) => acc + (tx.payment_status === 'paid' ? (tx.tax || Math.round(tx.total * 0.11 / 1.11)) : 0), 0);
   const netRevenue = totalSales - totalTax;
 
   return {

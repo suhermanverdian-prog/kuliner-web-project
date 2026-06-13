@@ -40,6 +40,9 @@ router.post('/', validateBody(menuSchema), menuController.createMenu);
 // PUT /api/menu/:id
 router.put('/:id', validateBody(menuSchema), menuController.updateMenu);
 
+// POST /api/menu/bulk-adjust-prices
+router.post('/bulk-adjust-prices', menuController.bulkAdjustPrices);
+
 // DELETE /api/menu/:id
 router.delete('/:id', menuController.deleteMenu);
 

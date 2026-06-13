@@ -156,6 +156,16 @@ class UserController {
     }
   }
 
+  async addCustomer(req, res) {
+    try {
+      const { tenantId } = req.userContext;
+      const data = await UserService.createCustomer(req.body, tenantId);
+      res.status(201).json(data);
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  }
+
   async getPaymentMethods(req, res) {
     try {
       const { tenantId } = req.userContext;

@@ -1,7 +1,5 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import api from '../api';
-
-const API = api.url;
 
 export function useReportBuilderPage() {
   const [selectedNode, setSelectedNode] = useState(null);
@@ -10,37 +8,6 @@ export function useReportBuilderPage() {
   const [loading, setLoading] = useState(false);
   const [generated, setGenerated] = useState(false);
   const [reportData, setReportData] = useState(null);
-
-  const getHeaders = useCallback(() => {
-    let token = null;
-    let tenantId = null;
-
-    const storageStr = localStorage.getItem('ken-enterprise-storage');
-    if (storageStr) {
-      try {
-        const storage = JSON.parse(storageStr);
-        const state = storage.state || storage;
-        const user = state.user || state;
-        if (user) {
-          token = user.token;
-          const innerUser = user.user || user;
-          tenantId = innerUser.tenant_id || user.tenant_id;
-        }
-      } catch (e) {}
-    }
-
-    token = token || localStorage.getItem('token');
-    tenantId = tenantId || localStorage.getItem('tenantId');
-
-    const headers = { 'Content-Type': 'application/json' };
-    if (token && token !== 'null' && token !== 'undefined') {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    if (tenantId && tenantId !== 'null' && tenantId !== 'undefined') {
-      headers['x-tenant-id'] = tenantId;
-    }
-    return headers;
-  }, []);
 
   const toggleMetric = (m) => {
     if (selectedMetrics.includes(m)) {
@@ -55,15 +22,11 @@ export function useReportBuilderPage() {
     setLoading(true);
     try {
       const metricsStr = selectedMetrics.join(',');
-      const res = await fetch(`${API}/laporan/flex-compile?node=${selectedNode}&metrics=${encodeURIComponent(metricsStr)}&period=${encodeURIComponent(period)}`, {
-        headers: getHeaders()
-      });
-      if (!res.ok) throw new Error('Failed to compile report');
-      const data = await res.json();
+      const data = await api.request(`${api.url}/laporan/flex-compile?node=${selectedNode}&metrics=${encodeURIComponent(metricsStr)}&period=${encodeURIComponent(period)}`, 'GET');
       setReportData(data.results || {});
       setGenerated(true);
     } catch (err) {
-      alert(err.message);
+      alert(err.message || 'Gagal menyusun laporan');
       setGenerated(false);
     } finally {
       setLoading(false);

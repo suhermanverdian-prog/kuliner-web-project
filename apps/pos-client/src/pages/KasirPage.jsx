@@ -205,6 +205,58 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
   const [dynamicMethods, setDynamicMethods] = useState([]);
   const [complimentaryReason, setComplimentaryReason] = useState('');
   
+  // CRM & Quick Register States
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [customerLookupStatus, setCustomerLookupStatus] = useState(''); // 'found', 'not_found', ''
+  const [showQuickRegister, setShowQuickRegister] = useState(false);
+  const [registerForm, setRegisterForm] = useState({ name: '', email: '' });
+  const [registerError, setRegisterError] = useState('');
+
+  useEffect(() => {
+    api.getCustomers()
+      .then(data => setAllCustomers(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Gagal memuat daftar pelanggan:', err));
+  }, []);
+
+  const handlePhoneChange = (val) => {
+    const cleanVal = val.replace(/\D/g, '');
+    setCustomerPhone(cleanVal);
+    
+    if (cleanVal.length >= 8) {
+      const found = allCustomers.find(c => c.phone === cleanVal);
+      if (found) {
+        setCustomerName(found.name);
+        setCustomerLookupStatus('found');
+      } else {
+        setCustomerLookupStatus('not_found');
+      }
+    } else {
+      setCustomerLookupStatus('');
+    }
+  };
+
+  const handleQuickRegister = async () => {
+    if (!registerForm.name.trim()) {
+      setRegisterError('Nama pelanggan wajib diisi');
+      return;
+    }
+    setRegisterError('');
+    try {
+      const newCust = await api.addCustomers({
+        name: registerForm.name.trim(),
+        phone: customerPhone,
+        email: registerForm.email.trim() || null
+      });
+      setAllCustomers(prev => [newCust, ...prev]);
+      setCustomerName(newCust.name);
+      setCustomerLookupStatus('found');
+      setShowQuickRegister(false);
+      setRegisterForm({ name: '', email: '' });
+    } catch (err) {
+      setRegisterError(err.message || 'Gagal mendaftarkan pelanggan');
+    }
+  };
+  
   // B2B & Split Payment States
   const [b2bPartners, setB2bPartners] = useState([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
@@ -413,6 +465,7 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
               value={customerName}
               onChange={e => setCustomerName(e.target.value)}
               className="h-10 text-xs font-black rounded-lg bg-background border-border text-foreground focus-visible:ring-amber-500/20"
+              disabled={customerLookupStatus === 'found'}
             />
           </div>
 
@@ -422,9 +475,28 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
               <Input
                 placeholder="Contoh: 0812345678"
                 value={customerPhone}
-                onChange={e => setCustomerPhone(e.target.value)}
+                onChange={e => handlePhoneChange(e.target.value)}
                 className="h-10 text-xs font-black rounded-lg bg-background border-border text-foreground focus-visible:ring-amber-500/20"
               />
+              {customerLookupStatus === 'found' && (
+                <div className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1">
+                  ✓ Member Terdaftar: {customerName}
+                </div>
+              )}
+              {customerLookupStatus === 'not_found' && (
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <div className="text-[9px] font-bold text-rose-500">
+                    ✗ Nomor belum terdaftar sebagai member.
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => setShowQuickRegister(true)}
+                    className="h-7 text-[9px] px-2 self-start rounded-md bg-amber-500 hover:bg-amber-600 text-white font-bold active:scale-95"
+                  >
+                    + Daftarkan Member Baru
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="space-y-1">
               <h4 className="text-[9px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Kode Promo / Diskon</h4>
@@ -622,6 +694,69 @@ function CheckoutModal({ cart, onClose, onSuccess, user }) {
           </div>
         </div>
       </Card>
+
+      {/* Quick Register Dialog Overlay */}
+      {showQuickRegister && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+          <Card className="w-full max-w-sm p-6 bg-card border border-border rounded-lg space-y-4">
+            <div>
+              <h3 className="text-sm font-black uppercase text-foreground">Daftar Member Baru</h3>
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-medium">
+                Pendaftaran instan untuk nomor: <span className="font-bold text-amber-500">{customerPhone}</span>
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400">Nama Pelanggan *</label>
+                <Input
+                  placeholder="Nama Lengkap"
+                  value={registerForm.name}
+                  onChange={e => setRegisterForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="h-10 text-xs font-black rounded-lg bg-background border-border text-foreground"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] font-black uppercase text-zinc-500 dark:text-zinc-400">Email (Opsional)</label>
+                <Input
+                  type="email"
+                  placeholder="email@domain.com"
+                  value={registerForm.email}
+                  onChange={e => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
+                  className="h-10 text-xs font-black rounded-lg bg-background border-border text-foreground"
+                />
+              </div>
+
+              {registerError && (
+                <div className="text-[9px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 p-2 rounded-md">
+                  {registerError}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1 h-9 text-xs font-bold rounded-lg border-border text-foreground hover:bg-muted"
+                onClick={() => {
+                  setShowQuickRegister(false);
+                  setRegisterError('');
+                  setRegisterForm({ name: '', email: '' });
+                }}
+              >
+                Batal
+              </Button>
+              <Button
+                className="flex-1 h-9 text-xs font-black rounded-lg bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900"
+                onClick={handleQuickRegister}
+              >
+                Daftar & Pilih
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
@@ -948,24 +1083,24 @@ export default function KasirPage({ user }) {
               ) : (
                 <div className="divide-y divide-border">
                   {historyTxs.map(tx => (
-                    <div key={tx.id} className="p-6 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div key={tx.id} className="py-3 px-6 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border last:border-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/10 transition-colors">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono font-black text-amber-600 dark:text-amber-400">#{tx.id.substring(0, 8).toUpperCase()}</span>
-                          {tx.payment_status === 'paid' && <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold uppercase">Lunas</span>}
-                          {tx.payment_status === 'pending_void_approval' && <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-bold uppercase">Void Tertunda</span>}
-                          {tx.payment_status === 'void' && <span className="text-[10px] bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-bold uppercase">Void Disetujui</span>}
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="font-mono font-bold text-sm text-amber-600 dark:text-amber-400">#{tx.id.substring(0, 8).toUpperCase()}</span>
+                          {tx.payment_status === 'paid' && <span className="text-[9px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-1.5 py-0.5 rounded font-black uppercase">Lunas</span>}
+                          {tx.payment_status === 'pending_void_approval' && <span className="text-[9px] bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 px-1.5 py-0.5 rounded font-black uppercase">Void Tertunda</span>}
+                          {tx.payment_status === 'void' && <span className="text-[9px] bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 px-1.5 py-0.5 rounded font-black uppercase">Void Disetujui</span>}
                         </div>
-                        <p className="text-xs text-zinc-500 font-bold uppercase">{tx.customer_name} • {tx.payment_method}</p>
-                        <p className="text-sm mt-2">{tx.items ? (typeof tx.items === 'string' ? JSON.parse(tx.items) : tx.items).map(i => `${i.qty}x ${i.name}`).join(', ') : ''}</p>
+                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider">{tx.customer_name} • {tx.payment_method}</p>
+                        <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">{tx.items ? (typeof tx.items === 'string' ? JSON.parse(tx.items) : tx.items).map(i => `${i.qty}x ${i.name}`).join(', ') : ''}</p>
                       </div>
-                      <div className="flex items-center gap-4 text-right">
+                      <div className="flex items-center gap-4 text-right ml-auto sm:ml-0">
                         <div>
-                           <p className="text-xl font-black font-mono tabular-nums">{formatRupiah(tx.total)}</p>
-                           <p className="text-[10px] text-zinc-500 font-bold">{new Date(tx.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</p>
+                           <p className="text-base font-black font-mono tabular-nums text-zinc-900 dark:text-white">{formatRupiah(tx.total)}</p>
+                           <p className="text-[9px] text-zinc-500 font-bold font-mono tabular-nums">{new Date(tx.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</p>
                         </div>
                         {tx.payment_status === 'paid' && (
-                          <Button variant="outline" className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-bold ml-2" onClick={() => handleRequestVoid(tx.id)}>
+                          <Button variant="outline" className="h-8 text-[10px] border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/30 font-bold ml-2 active:scale-95 transition-all" onClick={() => handleRequestVoid(tx.id)}>
                             Batalkan (VOID)
                           </Button>
                         )}

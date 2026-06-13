@@ -163,35 +163,38 @@ export default function ProcurementPage() {
         {activeTab === 'create' && (
           <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
             <Card className="xl:col-span-3 border border-zinc-200 dark:border-zinc-800 shadow-2xl">
-              <CardHeader className="flex flex-row items-center justify-between pb-6">
-                <div>
-                   <CardTitle className="text-2xl">Material Requisition</CardTitle>
-                   <CardDescription>Master level supply chain oversight</CardDescription>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={handleAutoReplenish} className="h-7 px-3 rounded-md border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 active:scale-[0.98] transition-all flex items-center gap-1.5 font-bold">
-                         <Plus size={12} /> AUTO-SCAN LOW STOCK
-                      </Button>
-                      <Button onClick={async () => {
-                        try {
-                          setKenLoading(true);
-                          setShowKenModal(true);
-                          const res = await api.getReplenishmentPredictions();
-                          setKenPredictions(res || []);
-                        } catch (e) {
-                          alert("Gagal memuat prediksi: " + e.message);
-                          setShowKenModal(false);
-                        } finally {
-                          setKenLoading(false);
-                        }
-                      }} className="h-7 px-3 rounded-md bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 shadow-md flex items-center gap-1.5 font-bold transition-all active:scale-95">
-                         <span className="animate-pulse">✨</span> REKOMENDASI AI
-                      </Button>
-                    </div>
+              <CardHeader className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 pb-6">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <CardTitle className="text-2xl text-zinc-900 dark:text-white">Material Requisition</CardTitle>
+                    <CardDescription className="text-sm text-zinc-500 dark:text-zinc-400">Master level supply chain oversight</CardDescription>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleAutoReplenish} className="h-8 px-3 rounded-md border-amber-500/50 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 active:scale-[0.98] transition-all flex items-center gap-1.5 font-bold">
+                       <Plus size={12} /> AUTO-SCAN LOW STOCK
+                    </Button>
+                    <Button onClick={async () => {
+                      try {
+                        setKenLoading(true);
+                        setShowKenModal(true);
+                        const res = await api.getReplenishmentPredictions();
+                        setKenPredictions(res || []);
+                      } catch (e) {
+                        alert("Gagal memuat prediksi: " + e.message);
+                        setShowKenModal(false);
+                      } finally {
+                        setKenLoading(false);
+                      }
+                    }} className="h-8 px-3 rounded-md bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 shadow-md flex items-center gap-1.5 font-bold transition-all active:scale-95">
+                       <span className="animate-pulse">✨</span> REKOMENDASI AI
+                    </Button>
+                  </div>
                 </div>
-                <div className="w-72">
+                <div className="w-full md:w-72">
                   <Select 
                     value={selectedSupplier}
                     onChange={(e) => setSelectedSupplier(e.target.value)}
+                    className="h-10 text-sm font-bold bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 focus-visible:ring-amber-500/20 text-zinc-900 dark:text-zinc-100"
                   >
                     <option value="">-- AUTHORIZED VENDOR --</option>
                     {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}

@@ -18,7 +18,8 @@ const settingsSchema = z.object({
   ai_provider: z.string().optional().nullable(),
   ai_api_key: z.string().optional().nullable(),
   is_ai_enabled: z.boolean().optional().nullable(),
-  void_approvers: z.array(z.string()).optional().nullable()
+  void_approvers: z.array(z.string()).optional().nullable(),
+  tier_rules: z.any().optional()
 }).passthrough();
 
 const loyaltySettingsSchema = z.object({

@@ -25,10 +25,11 @@ export function usePelangganPage() {
         totalSpend: c.totalSpend || 0,
         status: c.status || (c.role === 'customer' ? 'member' : 'guest'),
         joinDate: c.created_at ? new Date(c.created_at).toISOString().split('T')[0] : '2026-01-01',
-        visits: c.visits || Math.floor(Math.random() * 20) + 1,
+        visits: c.visits !== undefined ? c.visits : 0,
         lastVisit: '2 days ago',
-        churnRisk: Math.random() > 0.8 ? 'High' : (Math.random() > 0.5 ? 'Medium' : 'Low'),
-        favorites: ['Starbucks Reserve', 'Caramel Macchiato']
+        churnRisk: c.churnRisk || 'High',
+        favorites: Array.isArray(c.favorites) && c.favorites.length > 0 ? c.favorites : ['Kyoto Iced Matcha', 'Oat Caramel Macchiato'],
+        recommendedAction: c.recommendedAction || 'Kirim promo khusus untuk meningkatkan kunjungan.'
       }));
       setCustomers(formatted);
     } catch (err) {

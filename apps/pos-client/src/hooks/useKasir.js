@@ -37,21 +37,34 @@ export function useKasir() {
     try {
       if (isInitial) setLoading(true);
       if (navigator.onLine) {
-        const [menuData, txData, shiftData] = await Promise.all([
-          api.getMenu().catch(() => []),
+        const promises = [
           api.getTransactions().catch(() => []),
           api.getActiveShift().catch(() => null)
-        ]);
-        setMenus(menuData);
+        ];
+        
+        // Only fetch menu if it's initial load or we don't have menus loaded yet
+        const shouldFetchMenu = isInitial || menus.length === 0;
+        if (shouldFetchMenu) {
+          promises.push(api.getMenu().catch(() => []));
+        }
+        
+        const results = await Promise.all(promises);
+        const txData = results[0];
+        const shiftData = results[1];
+        const menuData = shouldFetchMenu ? results[2] : null;
+        
+        if (menuData) {
+          setMenus(menuData);
+          // Cache menu items for offline use
+          if (Array.isArray(menuData) && menuData.length > 0) {
+            const { db } = await import('../db/offlineDb');
+            await db.cached_menu.clear();
+            await db.cached_menu.bulkPut(menuData);
+          }
+        }
+        
         setActiveShift(shiftData);
         setPendingOrders(Array.isArray(txData) ? txData.filter(t => t.paymentStatus === 'pending_payment' || t.paymentStatus === 'pending_acceptance') : []);
-        
-        // Cache menu items for offline use
-        if (Array.isArray(menuData) && menuData.length > 0) {
-          const { db } = await import('../db/offlineDb');
-          await db.cached_menu.clear();
-          await db.cached_menu.bulkPut(menuData);
-        }
       } else {
         // Retrieve from offline cache
         const { db } = await import('../db/offlineDb');
@@ -64,7 +77,7 @@ export function useKasir() {
     } finally {
       if (isInitial) setLoading(false);
     }
-  }, []);
+  }, [menus.length]);
 
   // Sync offline transactions once back online
   useEffect(() => {

@@ -27,9 +27,11 @@ export function useConsolidatedFinancePage() {
   const stats = summary?.incomeStatement || {};
   const balance = summary?.balanceSheet || {};
 
-  const outletPerformance = [
+  const outletPerformance = summary?.outletPerformance || [
     { name: 'All Outlets (Consolidated)', revenue: stats.revenue || 0, profit: stats.netProfit || 0, growth: 'Stable' },
   ];
+
+  const dailyTrend = summary?.dailyTrend || [];
 
   return {
     loading,
@@ -37,6 +39,7 @@ export function useConsolidatedFinancePage() {
     summary,
     stats,
     balance,
-    outletPerformance
+    outletPerformance,
+    dailyTrend
   };
 }

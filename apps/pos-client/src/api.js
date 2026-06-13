@@ -310,6 +310,10 @@ const apiBase = {
     return this.request(`${API_URL}/opname/outlet/${outletId}/summary`, 'GET');
   },
 
+  async bulkAdjustPrices(adjustments) {
+    return this.request(`${API_URL}/menu/bulk-adjust-prices`, 'POST', { adjustments });
+  },
+
   // Owner Security Audit: Endpoint verifikasi integritas kriptografis log audit
   async getSystemIntegrity() {
     return this.request(`${API_URL}/system/integrity`, 'GET');

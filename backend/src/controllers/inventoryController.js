@@ -192,6 +192,17 @@ class InventoryController {
     }
   }
 
+  async deleteWarehouse(req, res) {
+    try {
+      const { tenantId } = req.userContext || {};
+      const { id } = req.params;
+      const result = await InventoryService.deleteWarehouse(id, tenantId);
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  }
+
   async executeTransfer(req, res) {
     try {
       const { tenantId } = req.userContext || {};

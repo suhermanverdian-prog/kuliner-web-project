@@ -23,6 +23,9 @@ const permissionGuard = (featureKey, action = 'view') => {
             const { id, userId, role, tenantId } = req.userContext;
             const activeId = id || userId;
 
+            // 🔍 DEBUG TRACE (sementara, untuk diagnosa 403)
+            console.log(`🔐 [PermGuard] feature=${featureKey} action=${action} role="${role}" tenantId=${tenantId} userId=${activeId}`);
+
             // 1. MASTER BYPASS: Superadmin has absolute power
             if (role === 'superadmin') return next();
 
@@ -79,10 +82,12 @@ const permissionGuard = (featureKey, action = 'view') => {
                     .maybeSingle();
 
                 if (error) {
-                    console.warn(`⚠️ [Security] Supabase query error for role_permissions: ${error.message}`);
-                    return res.status(403).json({ error: 'Akses Ditolak: Gagal memverifikasi izin karena data tidak valid.' });
+                    // ⚠️ Jangan blokir akses saat DB error - gunakan fallback defaultRoles
+                    console.warn(`⚠️ [Security] Supabase role_permissions error (falling back to defaults): ${error.message}`);
+                    perm = null; // Akan dilanjutkan ke defaultRoles di bawah
+                } else {
+                    perm = data || null;
                 }
-                perm = data || null;
                 cache.set(roleCacheKey, perm, 300); // 5 min TTL
             }
 

@@ -132,7 +132,7 @@ class ReportService {
 
     if (node === 'sales') {
       let q = supabase.from('transactions')
-        .select('total, tax, discount_amount, id')
+        .select('total, tax, discount, id')
         .eq('payment_status', 'paid')
         .gte('created_at', dateStr);
       q = applyScopeFilter(q, userContext);
@@ -142,7 +142,7 @@ class ReportService {
       const count = txs.length;
       const gross = txs.reduce((s, t) => s + (t.total || 0), 0);
       const tax = txs.reduce((s, t) => s + (t.tax || 0), 0);
-      const discount = txs.reduce((s, t) => s + (t.discount_amount || 0), 0);
+      const discount = txs.reduce((s, t) => s + (t.discount || 0), 0);
       const avg = count > 0 ? Math.round(gross / count) : 0;
 
       // HPP
@@ -273,6 +273,78 @@ class ReportService {
       node,
       period,
       results
+    };
+  }
+
+  static async getReportData(userContext, type, query) {
+    const titleMap = {
+      'penjualan-harian': 'Laporan Penjualan Harian',
+      'penjualan-periode': 'Laporan Penjualan Periode',
+      'inventaris': 'Laporan Stok Barang',
+      'waste': 'Laporan Kerugian (Waste)',
+      'hpp': 'Laporan Beban Pokok Penjualan (HPP)',
+      'laba-rugi': 'Laporan Laba Rugi',
+      'stock-mutation': 'Laporan Log Mutasi Stok',
+      'activity-log': 'Laporan Audit Aktivitas',
+    };
+
+    const title = titleMap[type] || 'Laporan Operasional';
+    
+    const meta = {
+      storeName: 'BrewMaster Coffee & POS',
+      storeAddress: 'SCBD Grade A Office Jakarta',
+      storePhone: '+62-21-9988-7766',
+      periodLabel: query.period === 'custom' 
+        ? `${query.customStart} s/d ${query.customEnd}`
+        : query.period === '7days' ? '7 Hari Terakhir'
+        : query.period === 'month' ? 'Bulan Ini'
+        : query.period === 'year' ? 'Tahun Ini'
+        : 'Hari Ini',
+      printedAt: new Date().toLocaleString('id-ID'),
+    };
+
+    if (type === 'stock-mutation') {
+      const InventoryRepository = require('../repositories/inventoryRepository');
+      const logs = await InventoryRepository.getLogs(userContext, { limit: 100 });
+      return {
+        title,
+        meta,
+        items: logs || []
+      };
+    }
+
+    if (type === 'inventaris') {
+      const { supabase } = require('../supabase');
+      let q = supabase.from('bahan').select('*');
+      if (userContext && userContext.tenantId) q = q.eq('tenant_id', userContext.tenantId);
+      const { data: bahans } = await q;
+      const items = (bahans || []).map(b => ({
+        name: b.name,
+        unit: b.unit,
+        stock: b.stock,
+        minStock: b.min_stock,
+        status: b.stock <= 0 ? 'Habis' : b.stock <= b.min_stock ? 'Kritis' : 'Aman'
+      }));
+      return {
+        title,
+        meta,
+        items,
+        summary: {
+          total: items.length,
+          critical: items.filter(x => x.status === 'Kritis').length,
+          empty: items.filter(x => x.status === 'Habis').length
+        }
+      };
+    }
+
+    return {
+      title,
+      meta,
+      summary: {},
+      items: [],
+      rows: [],
+      byMethod: [],
+      payment: { total: 0, selisih: 0 }
     };
   }
 }

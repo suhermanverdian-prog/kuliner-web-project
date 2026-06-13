@@ -84,6 +84,18 @@ class ReportController {
     }
   }
 
+  async getReport(req, res) {
+    try {
+      const userContext = req.userContext || {};
+      const { type } = req.params;
+      const { period, customStart, customEnd } = req.query;
+      const result = await ReportService.getReportData(userContext, type, { period, customStart, customEnd });
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
 }
 
 module.exports = new ReportController();

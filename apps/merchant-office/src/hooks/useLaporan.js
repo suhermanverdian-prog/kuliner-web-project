@@ -96,14 +96,16 @@ export function useLaporan() {
   const handleExcel = async (type) => {
     setExporting(true);
     try {
-      const blob = await api.downloadReportExcel(type, period, customStart, customEnd);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `laporan-${type}-${new Date().toISOString().slice(0,10)}.xlsx`;
-      a.click();
+      if (type === 'all') {
+        const reportTypes = ['penjualan-harian', 'penjualan-periode', 'inventaris', 'waste', 'hpp', 'laba-rugi'];
+        for (const rt of reportTypes) {
+          await downloadCSV(rt, period, customStart, customEnd);
+        }
+      } else {
+        await downloadCSV(type, period, customStart, customEnd);
+      }
     } catch(err) {
-      console.error("Export Excel error", err);
+      console.error("Export Excel/CSV error", err);
     } finally { 
       setExporting(false); 
       setShowExport(false); 

@@ -6,25 +6,41 @@ export function useRevenueIntelligencePage() {
   const [analysisMode, setAnalysisMode] = useState('optimization'); // optimization | forecasting
   const [pricingSuggestions, setPricingSuggestions] = useState([]);
   
-  useEffect(() => {
-    const fetchPricingModel = async () => {
-      try {
-        setLoading(true);
-        const res = await api.getPricingSuggestions();
-        setPricingSuggestions(res || []);
-      } catch (error) {
-        console.error('Failed to fetch AI pricing suggestions', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchPricingModel = async () => {
+    try {
+      setLoading(true);
+      const res = await api.getPricingSuggestions();
+      setPricingSuggestions(res || []);
+    } catch (error) {
+      console.error('Failed to fetch AI pricing suggestions', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPricingModel();
   }, []);
+
+  const handleApplyChanges = async () => {
+    try {
+      setLoading(true);
+      await api.bulkAdjustPrices(pricingSuggestions);
+      alert('Saran kenaikan harga AI berhasil diterapkan pada menu!');
+      await fetchPricingModel();
+    } catch (error) {
+      console.error('Failed to apply pricing suggestions', error);
+      alert('Gagal menerapkan penyesuaian harga: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
     loading,
     analysisMode, setAnalysisMode,
-    pricingSuggestions
+    pricingSuggestions,
+    handleApplyChanges,
+    fetchPricingModel
   };
 }

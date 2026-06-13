@@ -36,8 +36,8 @@ function DonutChart({ pct, label, subLabel, color = "var(--amber)" }) {
         </div>
       </div>
       <div className="text-center">
-        <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">{label}</p>
-        <p className="text-xs font-black text-foreground mt-0.5">{subLabel}</p>
+        <p className="text-xs font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">{label}</p>
+        <p className="text-xs font-black text-foreground mt-2">{subLabel}</p>
       </div>
     </div>
   );
@@ -45,7 +45,7 @@ function DonutChart({ pct, label, subLabel, color = "var(--amber)" }) {
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-12 animate-in fade-in duration-500">
+    <div className="space-y-12 animate-in fade-in duration-500 py-8">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
         <div className="space-y-4">
           <Skeleton className="h-10 w-64" />
@@ -53,7 +53,6 @@ function DashboardSkeleton() {
         </div>
         <div className="flex gap-4">
           <Skeleton className="h-12 w-32 rounded-md" />
-          <Skeleton className="h-12 w-48 rounded-md" />
         </div>
       </header>
 
@@ -111,48 +110,47 @@ export default function Dashboard() {
   if (loading) return <DashboardSkeleton />;
 
   return (
-    <div className="space-y-8 pb-16 overflow-x-hidden max-w-full">
+    <div className="space-y-8 py-8 pb-16 overflow-x-hidden max-w-full">
       {/* Header Section - Sleek Premium Omnichannel Style */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 p-4">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
         <div>
-             <Badge variant="primary" className="text-[9px] font-black uppercase tracking-widest">
+             <Badge variant="primary" className="text-xs font-black uppercase tracking-widest">
               Tier: {tenant?.tier?.toUpperCase() || 'ENTERPRISE'}
             </Badge>
               <div className="flex items-center gap-2 mt-2">
                 <div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">System Status: Active</span>
+                <span className="text-xs font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-tighter">System Status: Active</span>
               </div>
-           <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium uppercase font-mono tabular-nums tracking-widest mt-1">
+           <p className="text-sm text-zinc-500 dark:text-zinc-100 font-medium uppercase font-mono tabular-nums tracking-widest mt-2">
              {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })}
            </p>
         </div>
         <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
           <Button className="flex-1 md:flex-none" variant="primary" aria-label="Export data" onClick={() => navigate('/reports')}>Export Data</Button>
-          <Button className="flex-1 md:flex-none" variant="primary" aria-label="New transaction" onClick={() => navigate('/kasir')}>New Transaction</Button>
         </div>
       </div>
 
       {/* AI Insights Bar */}
       {aiInsights.length > 0 && (
-        <div className="mx-4 mb-6 p-4 ">
-           <BrainCircuit size={20} className="animate-pulse" />
-           <p className="text-[10px] font-black uppercase tracking-[0.2em]">{aiInsights[0].message}</p>
+        <div className="mx-4 mb-8 p-4 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-lg flex items-center gap-3">
+           <BrainCircuit size={16} className="text-amber-500 animate-pulse shrink-0" />
+           <p className="text-xs font-bold uppercase tracking-widest text-zinc-700 dark:text-zinc-300">{aiInsights[0].message}</p>
         </div>
       )}
 
-      {/* Critical Alert */}
+      {/* Critical Alert - Styled in Rose (Danger) spectrum for accessibility and contrast */}
       {lowStockItems.length > 0 && (
-        <div className="mx-4 p-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-500/20 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="mx-4 p-6 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-4">
            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-500/10 rounded-lg flex items-center justify-center text-amber-500">
+              <div className="w-12 h-12 bg-rose-500/10 rounded-lg flex items-center justify-center text-rose-500 dark:text-rose-400">
                 <AlertTriangle size={24} />
-              </div>
-              <div>
-                 <p className="text-lg font-black text-foreground uppercase tracking-tighter">Stock Shortage Detected</p>
-                 <p className="text-xs text-zinc-500 dark:text-zinc-100 font-bold uppercase tracking-widest">{lowStockItems.length} items require attention.</p>
-              </div>
-           </div>
-            <Button variant="primary" size="sm" onClick={() => navigate('/inventory-intel')}>Audit Stock</Button>
+               </div>
+               <div>
+                  <p className="text-lg font-black text-rose-700 dark:text-rose-400 uppercase tracking-tighter">Stock Shortage Detected</p>
+                  <p className="text-xs text-rose-600 dark:text-rose-300 font-bold uppercase tracking-widest">{lowStockItems.length} items require attention.</p>
+               </div>
+            </div>
+             <Button variant="primary" size="sm" onClick={() => navigate('/inventory-intel')}>Audit Stock</Button>
         </div>
       )}
 
@@ -163,11 +161,11 @@ export default function Dashboard() {
           return (
             <Card key={i} className="p-6" variant="premium">
               <div className="flex justify-between items-center mb-4">
-                 <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest">{s.label}</p>
-                 <Icon size={18} className="text-amber-500 group-hover:text-amber-500 transition-colors" />
+                 <p className="text-xs font-black text-[var(--text-secondary)] uppercase tracking-widest">{s.label}</p>
+                 <Icon size={16} className="text-amber-500 group-hover:text-amber-500 transition-colors" />
               </div>
               <div className="text-2xl font-black font-mono tabular-nums tracking-tighter mb-4 text-foreground">{s.value}</div>
-              <div className={s.isUp ? "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" : "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800"}>
+              <div className={s.isUp ? "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800" : "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800"}>
                 {s.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                 <span>{s.trend}</span>
               </div>
@@ -181,7 +179,7 @@ export default function Dashboard() {
         <Card className="lg:col-span-8 p-8" variant="premium">
            <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-black uppercase tracking-tighter text-zinc-900 dark:text-zinc-50">Market Trajectory</h3>
-              <BarChart3 className="text-amber-500 " size={20} aria-label="Market Trajectory chart" role="img" />
+              <BarChart3 className="text-amber-500 " size={16} aria-label="Market Trajectory chart" role="img" />
            </div>
            <div className="w-full min-w-0 overflow-hidden">
              <ChartWrapper 
@@ -200,13 +198,13 @@ export default function Dashboard() {
               <div key={i} className="flex justify-between items-center border-b border-zinc-100 dark:border-zinc-800 pb-4 last:border-0">
                   <div>
                     <p className="text-xs font-black font-mono tabular-nums text-foreground">TX-{tx?.id?.slice(-4).toUpperCase() || 'NODE'}</p>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-100 font-bold uppercase tracking-widest">{tx?.payment_method || 'CASH'}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-100 font-bold uppercase tracking-widest">{tx?.payment_method || 'CASH'}</p>
                   </div>
                   <p className="text-sm font-black font-mono tabular-nums text-amber-500">{formatRupiah(tx?.total || 0)}</p>
               </div>
             ))}
            </div>
-           <Button variant="ghost" className="w-full text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 font-black text-[10px] uppercase tracking-widest" onClick={() => navigate('/activity-log')}>View Audit Log</Button>
+           <Button variant="ghost" className="w-full text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 font-black text-xs uppercase tracking-widest" onClick={() => navigate('/activity-log')}>View Audit Log</Button>
         </Card>
       </div>
 
@@ -235,8 +233,8 @@ export default function Dashboard() {
            <div className="space-y-6">
             {safeMenu.slice(0, 3).map((item, i) => (
               <div key={i} className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-amber-50 dark:bg-amber-950/30 rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
-                    <Coffee size={18} />
+                  <div className="w-8 h-8 bg-amber-50 dark:bg-amber-950/30 rounded-lg flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                    <Coffee size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between mb-1.5">

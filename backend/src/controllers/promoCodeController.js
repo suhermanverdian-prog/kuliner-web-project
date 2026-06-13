@@ -10,7 +10,7 @@ class PromoCodeController {
       const promo = await PromoCodeRepository.create(tenantId, data);
       res.status(201).json(promo);
     } catch (err) {
-      new AppError(err.message, err.status || 500).send(res);
+      res.status(err.statusCode || 500).json({ error: err.message });
     }
   }
 
@@ -20,7 +20,7 @@ class PromoCodeController {
       const promos = await PromoCodeRepository.findAll(tenantId);
       res.json(promos);
     } catch (err) {
-      new AppError(err.message, err.status || 500).send(res);
+      res.status(err.statusCode || 500).json({ error: err.message });
     }
   }
 
@@ -32,7 +32,7 @@ class PromoCodeController {
       if (!promo) return res.status(404).json({ error: 'Promo not found' });
       res.json(promo);
     } catch (err) {
-      new AppError(err.message, err.status || 500).send(res);
+      res.status(err.statusCode || 500).json({ error: err.message });
     }
   }
 
@@ -44,7 +44,7 @@ class PromoCodeController {
       const updated = await PromoCodeRepository.update(tenantId, id, data);
       res.json(updated);
     } catch (err) {
-      new AppError(err.message, err.status || 500).send(res);
+      res.status(err.statusCode || 500).json({ error: err.message });
     }
   }
 
@@ -55,7 +55,7 @@ class PromoCodeController {
       await PromoCodeRepository.delete(tenantId, id);
       res.status(204).send();
     } catch (err) {
-      new AppError(err.message, err.status || 500).send(res);
+      res.status(err.statusCode || 500).json({ error: err.message });
     }
   }
   async validate(req, res) {
@@ -114,7 +114,7 @@ class PromoCodeController {
         partner_id: promo.partner_id
       });
     } catch (err) {
-      new AppError(err.message, err.status || 500).send(res);
+      res.status(err.statusCode || 500).json({ error: err.message });
     }
   }
 }

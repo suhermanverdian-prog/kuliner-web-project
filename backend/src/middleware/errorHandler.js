@@ -40,8 +40,17 @@ const sendErrorProd = (err, res) => {
 };
 
 module.exports = (err, req, res, next) => {
+  if (typeof err.status === 'number') {
+    err.statusCode = err.status;
+  }
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
+  
+  // Flag client-side HTTP errors (400, 401, 403, 404) as operational to prevent 500 fallback
+  if (err.statusCode >= 400 && err.statusCode < 500) {
+    err.isOperational = true;
+  }
+
   // Attach request context for logging
   err.requestId = req.id || null;
   err.path = req.originalUrl;

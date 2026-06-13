@@ -66,6 +66,8 @@ const authMiddleware = (req, res, next) => {
         scope: decoded.scope || 'outlet',
         allowed_outlets: decoded.allowed_outlets || []
       };
+      // 🔍 DEBUG: Log role dari JWT untuk diagnosa
+      console.log(`🔑 [Auth] JWT decoded: userId=${req.userContext.userId} role="${decoded.role}" tenantId=${tenantId}`);
       return next();
     } catch (err) {
       if (!publicPaths.includes(req.path) && !req.path.startsWith('/uploads')) {
@@ -104,17 +106,9 @@ const authMiddleware = (req, res, next) => {
     };
     return next();
   }
-  req.userContext = {
-    userId: 'guest-user',
-    role: 'guest',
-    tenantId: '00000000-0000-0000-0000-000000000000',
-    outletId: null
-  };
-  return next();
-
   // 4. DEVELOPMENT FALLBACK: Penyelamat saat pengembangan lokal tanpa token
   if (process.env.NODE_ENV !== 'production') {
-    console.warn('⚠️ [Identity] No token found. Injecting Master Context...');
+    console.warn('⚠️ [Identity] No token found. Injecting Master Context for DEV...');
     req.userContext = { 
       userId: '00000000-0000-0000-0000-000000000000',
       role: 'superadmin', 

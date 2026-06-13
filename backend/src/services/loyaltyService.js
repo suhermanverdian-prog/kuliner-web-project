@@ -35,32 +35,94 @@ class LoyaltyService {
   static async earnPoints(tenantId, customerPhone, customerName, amount) {
     if (!customerPhone) throw new Error('Nomor telepon pelanggan wajib disertakan');
     
-    // 1. Get loyalty multiplier from settings
-    let multiplier = 1;
+    // 1. Get loyalty configuration
+    let baseMultiplier = 1;
     let enabled = true;
+    let tierRules = {
+      member: { min_spend: 250000, min_visits: 3, points_multiplier: 1.5 },
+      vip: { min_spend: 1000000, min_visits: 10, points_multiplier: 2.0 }
+    };
+
     try {
       const settings = await SystemService.getLoyaltySettings(tenantId);
       if (settings) {
         enabled = settings.enabled !== false;
-        multiplier = Number(settings.multiplier || 1);
+        baseMultiplier = Number(settings.multiplier || 1);
+      }
+      
+      const { data: sData } = await supabase.from('settings').select('tier_rules').eq('tenant_id', tenantId).maybeSingle();
+      if (sData && sData.tier_rules) {
+        tierRules = sData.tier_rules;
       }
     } catch (e) {
-      console.warn('⚠️ Gagal memuat pengaturan loyalty, menggunakan multiplier default (1):', e.message);
+      console.warn('⚠️ Gagal memuat pengaturan loyalty/tier_rules:', e.message);
     }
 
     if (!enabled) {
       return { success: false, message: 'Program loyalty dinonaktifkan', pointsEarned: 0 };
     }
 
-    // 1 point per Rp 10.000 multiplied by setting multiplier
-    const pointsEarned = Math.floor((amount / 10000) * multiplier);
+    // 2. Fetch current customer totalSpend and visits to determine their multiplier
+    let totalSpend = 0;
+    let visits = 0;
+    try {
+      const { data: txs } = await supabase
+        .from('transactions')
+        .select('total')
+        .eq('tenant_id', tenantId)
+        .eq('payment_status', 'paid')
+        .eq('items->>customer_phone', customerPhone);
+      
+      visits = txs ? txs.length : 0;
+      totalSpend = txs ? txs.reduce((sum, t) => sum + Number(t.total || 0), 0) : 0;
+    } catch (err) {
+      console.warn('⚠️ Gagal memuat transaksi untuk perhitungan tier:', err.message);
+    }
+
+    // Determine tier multiplier
+    let tierMultiplier = 1.0;
+    if (totalSpend >= (tierRules.vip?.min_spend ?? 1000000) || visits >= (tierRules.vip?.min_visits ?? 10)) {
+      tierMultiplier = Number(tierRules.vip?.points_multiplier ?? 2.0);
+    } else if (totalSpend >= (tierRules.member?.min_spend ?? 250000) || visits >= (tierRules.member?.min_visits ?? 3)) {
+      tierMultiplier = Number(tierRules.member?.points_multiplier ?? 1.5);
+    }
+
+    // Calculate points earned
+    const pointsEarned = Math.floor((amount / 10000) * baseMultiplier * tierMultiplier);
     if (pointsEarned <= 0) {
       return { success: true, pointsEarned: 0, message: 'Transaksi kurang dari batas minimal poin' };
     }
+    let finalPoints = pointsEarned;
+    let finalVisits = 1;
+    let success = false;
 
+    // A. Update primary CRM table: 'customers'
     try {
-      // Try Supabase first
-      // Check if table exists by trying to fetch
+      const { data: customer, error: custFetchErr } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('phone', customerPhone)
+        .maybeSingle();
+
+      if (!custFetchErr && customer) {
+        finalPoints = Number(customer.loyalty_points || 0) + pointsEarned;
+        const { error: custUpdateErr } = await supabase
+          .from('customers')
+          .update({ loyalty_points: finalPoints })
+          .eq('id', customer.id);
+        
+        if (!custUpdateErr) {
+          success = true;
+          console.log(`✓ CRM points synced for ${customerName}. New points: ${finalPoints}`);
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Gagal memperbarui poin di tabel customers:', e.message);
+    }
+
+    // B. Update/Insert into legacy 'customer_points' table if it exists
+    try {
       const { data: existing, error: fetchErr } = await supabase
         .from('customer_points')
         .select('*')
@@ -68,48 +130,46 @@ class LoyaltyService {
         .eq('customer_phone', customerPhone)
         .maybeSingle();
 
-      if (fetchErr) throw fetchErr;
-
-      let finalPoints = pointsEarned;
-      let finalVisits = 1;
-      
-      if (existing) {
-        finalPoints = Number(existing.points || 0) + pointsEarned;
-        finalVisits = Number(existing.total_visits || 0) + 1;
-        
-        const { error: updateErr } = await supabase
-          .from('customer_points')
-          .update({
+      if (!fetchErr) {
+        if (existing) {
+          finalVisits = Number(existing.total_visits || 0) + 1;
+          const { error: updateErr } = await supabase
+            .from('customer_points')
+            .update({
+              points: finalPoints,
+              total_visits: finalVisits,
+              customer_name: customerName || existing.customer_name,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existing.id);
+          if (!updateErr) success = true;
+        } else {
+          const payload = {
+            id: supabase.auth.admin ? undefined : require('crypto').randomUUID(),
+            tenant_id: tenantId,
+            customer_phone: customerPhone,
+            customer_name: customerName || 'Tamu Member',
             points: finalPoints,
             total_visits: finalVisits,
-            customer_name: customerName || existing.customer_name,
             updated_at: new Date().toISOString()
-          })
-          .eq('id', existing.id);
-        
-        if (updateErr) throw updateErr;
-      } else {
-        const payload = {
-          id: supabase.auth.admin ? undefined : require('crypto').randomUUID(),
-          tenant_id: tenantId,
-          customer_phone: customerPhone,
-          customer_name: customerName || 'Tamu Member',
-          points: finalPoints,
-          total_visits: finalVisits,
-          updated_at: new Date().toISOString()
-        };
-        const { error: insertErr } = await supabase
-          .from('customer_points')
-          .insert([payload]);
-          
-        if (insertErr) throw insertErr;
+          };
+          const { error: insertErr } = await supabase
+            .from('customer_points')
+            .insert([payload]);
+          if (!insertErr) success = true;
+        }
       }
-
-      return { success: true, pointsEarned, totalPoints: finalPoints, totalVisits: finalVisits };
     } catch (err) {
-      console.warn('⚠️ Supabase customer_points update failed, falling back to local storage:', err.message);
-      
-      // Fallback to local data.json
+      // Legacy table update failed (likely missing table)
+    }
+
+    if (success) {
+      return { success: true, pointsEarned, totalPoints: finalPoints, totalVisits: finalVisits };
+    }
+
+    // Fallback to local data.json if all database writes fail or offline
+    console.warn('⚠️ Supabase database update failed, falling back to local storage');
+    try {
       const localPoints = getLocalPoints();
       const idx = localPoints.findIndex(p => p.tenant_id === tenantId && p.customer_phone === customerPhone);
       let totalPoints = pointsEarned;
@@ -139,6 +199,8 @@ class LoyaltyService {
       
       saveLocalPoints(localPoints);
       return { success: true, pointsEarned, totalPoints, totalVisits };
+    } catch (fallbackErr) {
+      return { success: false, error: fallbackErr.message };
     }
   }
 

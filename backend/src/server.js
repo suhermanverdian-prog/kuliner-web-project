@@ -15,13 +15,6 @@ try {
   // MENCEGAH VERCEL CRASH:
   // const { nodeProfilingIntegration } = require("@sentry/profiling-node");
 
-
-  Sentry.init({
-    dsn: "https://d12d810e0ed1be3ceeb39ce32badf469@o4511436228067328.ingest.us.sentry.io/4511436240650240",
-    integrations: [],
-    tracesSampleRate: 1.0,
-  });
-
   const express = require('express');
   const cors = require('cors');
   const path = require('path');
@@ -116,7 +109,7 @@ try {
   app.get('/api/health', (req, res) => res.json({ status: 'ok', source: 'vercel' }));
   // New simple health check that bypasses auth & other middleware
   app.get('/api/healthz', (req, res) => res.json({ status: 'ok' }));
-app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
+  app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
 
   // Swagger UI Integration
   const swaggerUi = require('swagger-ui-express');
@@ -151,8 +144,9 @@ app.get('/healthz', (req, res) => res.json({ status: 'ok' }));
   app.use('/api/loyalty', require('./routes/loyaltyRoutes'));
   app.use('/api/assets', requireFeature('accounting'), require('./routes/assetRoutes'));
   app.use('/api/closings', requireFeature('accounting'), require('./routes/closingRoutes'));
-app.use('/api/corporate', require('./routes/corporateRoutes'));
-app.use('/api/customisations', require('./routes/customisationRoutes'));
+  app.use('/api/corporate', require('./routes/corporateRoutes'));
+  app.use('/api/customisations', require('./routes/customisationRoutes'));
+
 
   const { supabase } = require('./supabase');
   app.post('/api/upload', upload.single('image'), async (req, res) => {
@@ -234,4 +228,3 @@ app.use('/api/customisations', require('./routes/customisationRoutes'));
 }
 
 module.exports = app;
-

@@ -622,6 +622,50 @@ class InventoryService {
     return data;
   }
 
+  static async deleteWarehouse(id, tenantId) {
+    // 1. Cek apakah gudang yang bersangkutan memiliki stok bahan baku aktif
+    const { data: stocks, error: stockErr } = await supabase
+      .from('warehouse_stock')
+      .select('qty, bahan(name)')
+      .eq('warehouse_id', id)
+      .eq('tenant_id', tenantId)
+      .gt('qty', 0);
+
+    if (stockErr) throw stockErr;
+
+    if (stocks && stocks.length > 0) {
+      const activeItems = stocks.map(s => `${s.bahan?.name || 'Item'} (${s.qty})`).join(', ');
+      throw new Error(`Gudang tidak bisa dihapus karena masih memiliki stok aktif: ${activeItems}. Silakan lakukan transfer atau pemindahan stok terlebih dahulu.`);
+    }
+
+    // 2. Dilarang menghapus Gudang Utama (is_main: true) demi integritas sistem
+    const { data: wh, error: whErr } = await supabase
+      .from('warehouses')
+      .select('is_main')
+      .eq('id', id)
+      .eq('tenant_id', tenantId)
+      .single();
+
+    if (whErr) throw whErr;
+    if (wh && wh.is_main) {
+      throw new Error('Gudang Utama outlet tidak boleh dihapus demi menjaga kestabilan data stok utama.');
+    }
+
+    // 3. Hapus relasi warehouse_stock kosong jika ada
+    await supabase.from('warehouse_stock').delete().eq('warehouse_id', id).eq('tenant_id', tenantId);
+
+    // 4. Lakukan delete fisik atau soft-delete (karena gudang tidak terikat pembukuan langsung melainkan stok batch-nya, delete aman)
+    const { error: delErr } = await supabase
+      .from('warehouses')
+      .delete()
+      .eq('id', id)
+      .eq('tenant_id', tenantId);
+
+    if (delErr) throw delErr;
+
+    return { success: true, message: 'Gudang berhasil dihapus.' };
+  }
+
   static async executeStockTransfer(payload, tenantId) {
     const { sourceWarehouseId, destWarehouseId, destOutletId, items } = payload;
 

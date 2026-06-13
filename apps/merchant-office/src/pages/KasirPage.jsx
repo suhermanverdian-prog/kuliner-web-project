@@ -925,24 +925,24 @@ export default function KasirPage({ user }) {
               ) : (
                 <div className="divide-y divide-border">
                   {historyTxs.map(tx => (
-                    <div key={tx.id} className="p-6 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div key={tx.id} className="py-3 px-6 bg-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border last:border-0 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/10 transition-colors">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono font-black text-amber-600 dark:text-amber-400">#{tx.id.substring(0, 8).toUpperCase()}</span>
-                          {tx.payment_status === 'paid' && <span className="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-bold uppercase">Lunas</span>}
-                          {tx.payment_status === 'pending_void_approval' && <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded font-bold uppercase">Void Tertunda</span>}
-                          {tx.payment_status === 'void' && <span className="text-[10px] bg-rose-50 text-rose-700 px-2 py-0.5 rounded font-bold uppercase">Void Disetujui</span>}
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <span className="font-mono font-bold text-sm text-amber-600 dark:text-amber-400">#{tx.id.substring(0, 8).toUpperCase()}</span>
+                          {tx.payment_status === 'paid' && <span className="text-[9px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-1.5 py-0.5 rounded font-black uppercase">Lunas</span>}
+                          {tx.payment_status === 'pending_void_approval' && <span className="text-[9px] bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400 px-1.5 py-0.5 rounded font-black uppercase">Void Tertunda</span>}
+                          {tx.payment_status === 'void' && <span className="text-[9px] bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400 px-1.5 py-0.5 rounded font-black uppercase">Void Disetujui</span>}
                         </div>
-                        <p className="text-xs text-zinc-500 font-bold uppercase">{tx.customer_name} • {tx.payment_method}</p>
-                        <p className="text-sm mt-2">{tx.items ? (typeof tx.items === 'string' ? JSON.parse(tx.items) : tx.items).map(i => `${i.qty}x ${i.name}`).join(', ') : ''}</p>
+                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-wider">{tx.customer_name} • {tx.payment_method}</p>
+                        <p className="text-xs text-zinc-600 dark:text-zinc-300 mt-1">{tx.items ? (typeof tx.items === 'string' ? JSON.parse(tx.items) : tx.items).map(i => `${i.qty}x ${i.name}`).join(', ') : ''}</p>
                       </div>
-                      <div className="flex items-center gap-4 text-right">
+                      <div className="flex items-center gap-4 text-right ml-auto sm:ml-0">
                         <div>
-                           <p className="text-xl font-black font-mono tabular-nums">{formatRupiah(tx.total)}</p>
-                           <p className="text-[10px] text-zinc-500 font-bold">{new Date(tx.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</p>
+                           <p className="text-base font-black font-mono tabular-nums text-zinc-900 dark:text-white">{formatRupiah(tx.total)}</p>
+                           <p className="text-[9px] text-zinc-500 font-bold font-mono tabular-nums">{new Date(tx.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</p>
                         </div>
                         {tx.payment_status === 'paid' && (
-                          <Button variant="outline" className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 font-bold ml-2" onClick={() => handleRequestVoid(tx.id)}>
+                          <Button variant="outline" className="h-8 text-[10px] border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900/50 dark:text-rose-400 dark:hover:bg-rose-950/30 font-bold ml-2 active:scale-95 transition-all" onClick={() => handleRequestVoid(tx.id)}>
                             Batalkan (VOID)
                           </Button>
                         )}

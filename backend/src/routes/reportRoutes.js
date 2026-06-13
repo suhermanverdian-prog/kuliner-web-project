@@ -42,4 +42,9 @@ router.get('/insights', reportController.getInsights);
  */
 router.get('/flex-compile', reportController.getFlexCompile);
 
+/**
+ * @route GET /api/laporan/report/:type
+ */
+router.get('/report/:type', reportController.getReport);
+
 module.exports = router;
