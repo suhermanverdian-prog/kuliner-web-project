@@ -217,6 +217,129 @@ const initJobs = () => {
       // Fail silently for missing table
     }
   });
+
+  // ==========================================
+  // FASE 3 (JANGKA PANJANG) — OBSERVABILITY
+  // ==========================================
+
+  // 9. Report Pre-Generation Worker (Setiap Pagi Jam 04:00)
+  // Melakukan kalkulasi awal untuk summary dashboard (today, 7days, month) dan disimpan ke cache
+  cron.schedule('0 4 * * *', async () => {
+    console.log('📊 [Worker] Starting Report Pre-Generation...');
+    try {
+      const cache = require('../utils/cache');
+      const ReportService = require('../services/reportService');
+      const { data: tenants } = await supabase.from('settings').select('tenant_id');
+
+      for (const t of (tenants || [])) {
+        const userContext = { tenantId: t.tenant_id, role: 'owner' };
+        
+        // Pre-warm data untuk dashboard summary
+        const summaryToday = await ReportService.getSummary(userContext, 'today');
+        const summary7Days = await ReportService.getSummary(userContext, '7days');
+        const summaryMonth = await ReportService.getSummary(userContext, 'month');
+
+        cache.set(`report_summary_${t.tenant_id}_today`, summaryToday, 24 * 60 * 60); // 24h cache
+        cache.set(`report_summary_${t.tenant_id}_7days`, summary7Days, 24 * 60 * 60);
+        cache.set(`report_summary_${t.tenant_id}_month`, summaryMonth, 24 * 60 * 60);
+      }
+      console.log('✅ [Worker] Report Pre-Generation Complete');
+    } catch (err) {
+      console.error('❌ [Worker] Report Pre-Generation Failed:', err.message);
+    }
+  });
+
+  // 10. Database Health Monitor (Setiap 30 Menit)
+  // Memeriksa performa latensi Supabase & ketersediaan koneksi Redis
+  cron.schedule('*/30 * * * *', async () => {
+    console.log('📡 [Worker] Running Database Health Monitor...');
+    try {
+      const startDb = Date.now();
+      const { error } = await supabase.from('settings').select('tenant_id').limit(1);
+      const dbLatency = Date.now() - startDb;
+
+      if (error) {
+        throw new Error(`Supabase query failed: ${error.message}`);
+      }
+
+      console.log(`✅ [Worker] DB Health Status - Supabase Latency: ${dbLatency}ms`);
+
+      // Log anomali latensi jika > 1.5 detik
+      if (dbLatency > 1500) {
+        console.warn(`⚠️ [Worker] High Database Latency Detected: ${dbLatency}ms`);
+        await supabase.from('activity_logs').insert([{
+          tenant_id: '00000000-0000-0000-0000-000000000000',
+          user_name: 'Database Monitor',
+          role: 'system',
+          activity_type: 'LATENCY_ALERT',
+          description: `Anomali latensi Supabase terdeteksi: ${dbLatency}ms`,
+          created_at: new Date().toISOString()
+        }]);
+      }
+    } catch (err) {
+      console.error('🚨 [Worker] Database Health Alert:', err.message);
+      try {
+        await supabase.from('activity_logs').insert([{
+          tenant_id: '00000000-0000-0000-0000-000000000000',
+          user_name: 'Database Monitor',
+          role: 'system',
+          activity_type: 'DB_HEALTH_ERROR',
+          description: `Koneksi database/Supabase terganggu: ${err.message}`,
+          created_at: new Date().toISOString()
+        }]);
+      } catch (logErr) {
+        console.error('❌ [Worker] Failed to write database health error log:', logErr.message);
+      }
+    }
+  });
+
+  // 11. Waste Auto-Record Worker (Setiap Malam Jam 23:30)
+  // Secara otomatis memindahkan sisa stok harian bahan segar/kedaluwarsa yang tidak terjual ke log waste
+  cron.schedule('30 23 * * *', async () => {
+    console.log('🗑️ [Worker] Running Waste Auto-Record Engine...');
+    try {
+      // Ambil bahan baku bertipe perishable/segar yang kedaluwarsa cepat jika ada atau dari deskripsi/nama
+      const { data: materials, error } = await supabase
+        .from('bahan')
+        .select('*')
+        .gt('stock', 0);
+
+      if (error) throw error;
+
+      // Filter bahan perishable (misalnya susu segar, whipped cream, buah yang berumur < 2 hari)
+      const perishableKeywords = ['susu', 'fresh milk', 'cream', 'strawberry', 'peach', 'avocado'];
+      const perishableMaterials = (materials || []).filter(b => 
+        perishableKeywords.some(keyword => b.name.toLowerCase().includes(keyword))
+      );
+
+      for (const m of perishableMaterials) {
+        const wasteQty = m.stock; // Anggap sisa stok segar tidak terpakai dibuang di akhir hari
+        const nextStock = 0;
+
+        console.warn(`🗑️ [Worker] Auto-recording waste for perishable item: ${m.name} (${wasteQty} ${m.unit})`);
+
+        // Update stok di database ke 0
+        await supabase.from('bahan').update({ stock: 0 }).eq('id', m.id);
+
+        // Sisipkan log inventory waste
+        await supabase.from('inventory_logs').insert([{
+          tenant_id: m.tenant_id,
+          bahan_id: m.id,
+          bahan_name: m.name,
+          type: 'Waste',
+          change_qty: -wasteQty,
+          prev_stock: wasteQty,
+          next_stock: nextStock,
+          reference_id: `AUTO-WASTE-${Date.now().toString().slice(-4)}`,
+          notes: 'Auto-recorded by Waste Auto-Record Worker (Daily perishable cleanup)',
+          created_at: new Date().toISOString()
+        }]);
+      }
+      console.log('✅ [Worker] Waste Auto-Record complete');
+    } catch (err) {
+      console.error('❌ [Worker] Waste Auto-Record Worker Failed:', err.message);
+    }
+  });
 };
 
 module.exports = { initJobs };
