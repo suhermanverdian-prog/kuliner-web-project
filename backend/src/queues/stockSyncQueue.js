@@ -60,12 +60,45 @@ const addStockSyncJob = async (tenantId, channelName, itemCode, newStock) => {
 // Worker initialization wrapped in check
 if (connection) {
   try {
-    new Worker('StockSync', async job => {
+    const worker = new Worker('StockSync', async job => {
       const { tenantId, channelName, itemCode, newStock } = job.data;
       const channel = ChannelFactory.getChannel(channelName, tenantId);
       await channel.syncStock(itemCode, newStock);
     }, { connection });
-  } catch (e) {}
+
+    // Dead Letter Alert (BullMQ DLA Worker Event Listeners)
+    // Aturan KEN OS: Logging kegagalan antrean asinkron secara detail ke activity_logs
+    const { supabase } = require('../supabase');
+
+    worker.on('failed', async (job, err) => {
+      console.error(`🚨 [Queue] Job ${job.id} failed:`, err.message);
+      try {
+        await supabase.from('activity_logs').insert([{
+          tenant_id: job.data.tenantId || '00000000-0000-0000-0000-000000000000',
+          user_name: 'BullMQ StockSync Worker',
+          role: 'system',
+          activity_type: 'QUEUE_FAILED',
+          description: `Job ${job.id} (Sync ${job.data.itemCode} -> ${job.data.channelName}) failed after attempts limit: ${err.message}`,
+          old_value: job.data,
+          new_value: { error: err.message, stack: err.stack },
+          created_at: new Date().toISOString()
+        }]);
+      } catch (logErr) {
+        console.error('❌ Failed to log Queue DLA event:', logErr.message);
+      }
+    });
+
+    worker.on('error', (err) => {
+      console.error('🚨 [Queue] Worker internal error:', err.message);
+    });
+
+    worker.on('stalled', (jobId) => {
+      console.warn(`⚠️ [Queue] Job ${jobId} stalled. It will be retried or marked as failed.`);
+    });
+
+  } catch (e) {
+    console.error('❌ Failed to initialize BullMQ Worker:', e.message);
+  }
 }
 
 module.exports = { addStockSyncJob };

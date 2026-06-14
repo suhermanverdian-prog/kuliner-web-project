@@ -120,17 +120,29 @@ async function saveCloudTransactionJournal(trxData, tenantId, outletId) {
 
 // Core sync runner
 async function syncOfflineData() {
-  const isOnline = await checkOnline();
-  if (!isOnline) {
-    console.log('📡 [SyncDaemon] System is currently OFFLINE. Postponing reconciliation...');
-    return;
-  }
-
   if (!fs.existsSync(dataPath)) return;
 
   try {
     const fileContent = fs.readFileSync(dataPath, 'utf8');
     const parsed = JSON.parse(fileContent);
+
+    // Guard Check: Skip execution if all synchronizable arrays are empty
+    const hasData = (
+      (parsed.suppliers && parsed.suppliers.length > 0) ||
+      (parsed.transactions && parsed.transactions.length > 0) ||
+      (parsed.purchase_orders && parsed.purchase_orders.length > 0) ||
+      (parsed.grns && parsed.grns.length > 0) ||
+      (parsed.purchase_invoices && parsed.purchase_invoices.length > 0)
+    );
+
+    if (!hasData) return;
+
+    const isOnline = await checkOnline();
+    if (!isOnline) {
+      console.log('📡 [SyncDaemon] System is currently OFFLINE. Postponing reconciliation...');
+      return;
+    }
+
     let modified = false;
 
     // Helper for Controlled Parallel Execution
