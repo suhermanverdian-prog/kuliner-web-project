@@ -121,82 +121,82 @@ export default function PelangganPage() {
       {/* Main Layout Grid */}
       <div className="flex flex-col xl:flex-row gap-8 items-start w-full">
         {/* Left Side: Search & Table */}
-        <div className="flex-1 space-y-6 w-full">
-          <div className="flex flex-col sm:flex-row gap-4">
-             <div className="relative flex-1 group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 group-focus-within:text-amber-500 transition-colors" size={20} />
-                <Input 
-                  className="pl-12 h-10 rounded-md bg-card border border-zinc-200 dark:border-zinc-800 shadow-sm font-medium focus:ring-amber-500 text-sm" 
-                  placeholder="Cari identitas pelanggan atau nomor WhatsApp..." 
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
-             </div>
-             <Button variant="outline" size="sm" className="font-bold uppercase tracking-widest rounded-md bg-card">
-                <Filter size={18} className="mr-2" /> Filter Database
-             </Button>
-          </div>
+        <div className="flex-1 min-w-0 space-y-6 w-full">
+           <div className="flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1 group">
+                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 group-focus-within:text-amber-500 transition-colors" size={20} />
+                 <Input 
+                   className="pl-12 h-10 rounded-md bg-card border border-zinc-200 dark:border-zinc-800 shadow-sm font-medium focus:ring-amber-500 text-sm" 
+                   placeholder="Cari identitas pelanggan atau nomor WhatsApp..." 
+                   value={search}
+                   onChange={e => setSearch(e.target.value)}
+                 />
+              </div>
+              <Button variant="outline" size="sm" className="font-bold uppercase tracking-widest rounded-md bg-card">
+                 <Filter size={18} className="mr-2" /> Filter Database
+              </Button>
+           </div>
 
-          <Card className="border border-zinc-200 dark:border-zinc-800 bg-card shadow-xl rounded-lg overflow-hidden">
-             <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[1000px]">
-                   <thead>
-                      <tr className="bg-background text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 border-b border-border">
-                         <th className="px-6 py-4">Identity</th>
-                         <th className="px-6 py-4">Engagement</th>
-                         <th className="px-6 py-4">Tier Status</th>
-                         <th className="px-6 py-4">Balance</th>
-                         <th className="px-6 py-4">Churn Risk</th>
-                         <th className="px-6 py-4 text-right">Action</th>
-                      </tr>
-                   </thead>
-                   <tbody className="divide-y divide-border">
-                      {filtered.map(c => (
-                        <tr key={c.id} className={cn("hover:bg-background transition-all group cursor-pointer", selected?.id === c.id && "bg-amber-50 dark:bg-amber-950/30")} onClick={() => setSelected(c)}>
-                           <td className="px-6 py-4">
-                              <div className="flex items-center gap-4">
-                                  <div className="w-14 h-14 rounded-md bg-zinc-150 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 font-black group-hover:scale-110 border border-border">
-                                    {c.avatar ? (
-                                      <img src={c.avatar} alt={c.name} className="w-full h-full object-cover rounded-md" />
-                                    ) : (
-                                      c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-                                    )}
+           <Card className="border border-zinc-200 dark:border-zinc-800 bg-card shadow-xl rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                 <table className="w-full text-left border-collapse min-w-[1000px]">
+                    <thead>
+                       <tr className="bg-background text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 border-b border-border">
+                          <th className="px-6 py-2">Identity</th>
+                          <th className="px-6 py-2">Engagement</th>
+                          <th className="px-6 py-2">Tier Status</th>
+                          <th className="px-6 py-2">Balance</th>
+                          <th className="px-6 py-2">Churn Risk</th>
+                          <th className="px-6 py-2 text-right">Action</th>
+                       </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                       {filtered.map(c => (
+                         <tr key={c.id} className={cn("hover:bg-background transition-all group cursor-pointer", selected?.id === c.id && "bg-amber-50 dark:bg-amber-950/30")} onClick={() => setSelected(c)}>
+                            <td className="px-6 py-2">
+                               <div className="flex items-center gap-4">
+                                   <div className="w-10 h-10 rounded-md bg-zinc-150 dark:bg-zinc-800 flex items-center justify-center text-zinc-900 dark:text-zinc-100 font-black group-hover:scale-110 border border-border">
+                                     {c.avatar ? (
+                                       <img src={c.avatar} alt={c.name} className="w-full h-full object-cover rounded-md" />
+                                     ) : (
+                                       c.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                                     )}
+                                   </div>
+                                  <div>
+                                     <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-amber-500 transition-colors">{c.name}</p>
+                                     <p className="text-[9px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-widest mt-0.5">Join: {c.joinDate}</p>
                                   </div>
-                                 <div>
-                                    <p className="text-base font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-amber-500 transition-colors">{c.name}</p>
-                                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase tracking-widest mt-1">Join: {c.joinDate}</p>
-                                 </div>
-                              </div>
-                           </td>
-                           <td className="px-6 py-4">
-                              <p className="text-xs font-black font-mono tabular-nums text-zinc-800 dark:text-zinc-100">{c.phone}</p>
-                              <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase font-mono tabular-nums">Visits: {c.visits}</p>
-                           </td>
-                           <td className="px-6 py-4">
-                              <span className={cn(
-                                "px-2.5 py-1 rounded-sm text-[9px] font-black uppercase tracking-widest border border-transparent",
-                                STATUS_BADGE[c.status].bg, STATUS_BADGE[c.status].text
-                              )}>
-                                 {STATUS_BADGE[c.status].label}
-                              </span>
-                           </td>
-                           <td className="px-6 py-4">
-                              <div className="flex items-center gap-2 font-black text-sm text-amber-500 font-mono tabular-nums">
-                                 <Star size={16} fill="currentColor" /> {c.points}
-                              </div>
-                              <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase mt-1 font-mono tabular-nums">{formatRupiah(c.totalSpend)}</p>
-                           </td>
-                           <td className="px-6 py-4">
-                              <div className={cn(
-                                "inline-flex items-center gap-2 px-2.5 py-1 rounded-sm text-[9px] font-black uppercase tracking-widest border",
-                                c.churnRisk === 'Low' ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-200 dark:border-emerald-800" : 
-                                (c.churnRisk === 'Medium' ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-500/20" : "bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800")
-                              )}>
-                                 <div className={cn("w-1.5 h-1.5 rounded-sm", c.churnRisk === 'Low' ? "bg-emerald-500" : (c.churnRisk === 'Medium' ? "bg-amber-500" : "bg-rose-500 animate-pulse"))} />
-                                 {c.churnRisk} Risk
-                              </div>
-                           </td>
-                           <td className="px-6 py-4 text-right">
+                               </div>
+                            </td>
+                            <td className="px-6 py-2">
+                               <p className="text-xs font-black font-mono tabular-nums text-zinc-800 dark:text-zinc-100">{c.phone}</p>
+                               <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-bold uppercase font-mono tabular-nums">Visits: {c.visits}</p>
+                            </td>
+                            <td className="px-6 py-2">
+                               <span className={cn(
+                                 "px-2.5 py-1 rounded-sm text-[9px] font-black uppercase tracking-widest border border-transparent",
+                                 STATUS_BADGE[c.status].bg, STATUS_BADGE[c.status].text
+                               )}>
+                                  {STATUS_BADGE[c.status].label}
+                               </span>
+                            </td>
+                            <td className="px-6 py-2">
+                               <div className="flex items-center gap-2 font-black text-sm text-amber-500 font-mono tabular-nums">
+                                  <Star size={16} fill="currentColor" /> {c.points}
+                               </div>
+                               <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase mt-0.5 font-mono tabular-nums">{formatRupiah(c.totalSpend)}</p>
+                            </td>
+                            <td className="px-6 py-2">
+                               <div className={cn(
+                                 "inline-flex items-center gap-2 px-2.5 py-1 rounded-sm text-[9px] font-black uppercase tracking-widest border",
+                                 c.churnRisk === 'Low' ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-200 dark:border-emerald-800" : 
+                                 (c.churnRisk === 'Medium' ? "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-500/20" : "bg-rose-50 dark:bg-rose-950/30 text-rose-600 border-rose-200 dark:border-rose-800")
+                               )}>
+                                  <div className={cn("w-1.5 h-1.5 rounded-sm", c.churnRisk === 'Low' ? "bg-emerald-500" : (c.churnRisk === 'Medium' ? "bg-amber-500" : "bg-rose-500 animate-pulse"))} />
+                                  {c.churnRisk} Risk
+                               </div>
+                            </td>
+                            <td className="px-6 py-2 text-right">
                                <Button 
                                  variant="ghost" 
                                  size="xs" 
@@ -208,102 +208,111 @@ export default function PelangganPage() {
                                >
                                    <ChevronRight size={20} />
                                </Button>
-                           </td>
-                        </tr>
-                      ))}
-                   </tbody>
-                </table>
-             </div>
-          </Card>
+                            </td>
+                         </tr>
+                       ))}
+                    </tbody>
+                 </table>
+              </div>
+           </Card>
         </div>
 
-        {/* Right Side: Deep Analytics Profile */}
+        {/* Modal: Deep Analytics Profile (Tampil di Tengah Layar) */}
         {selected && (
-          <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60 p-4 xl:relative xl:inset-auto xl:z-0 xl:bg-transparent xl:p-0 xl:w-[450px] xl:shrink-0 xl:sticky xl:top-24">
-             <Card className="w-full max-w-lg xl:max-w-none bg-card rounded-lg overflow-y-auto max-h-[90vh] xl:max-h-none shadow-2xl xl:shadow-none border border-border">
-                <div className="p-6 bg-background border-b border-border flex flex-col items-center text-center relative overflow-hidden">
-                   <div className="absolute top-0 right-0 p-4 text-zinc-200/50 dark:text-zinc-800/30 pointer-events-none">
-                      <Zap size={120} className="rotate-12" />
-                   </div>
-                   <Button variant="ghost" size="xs" className="absolute top-4 right-4 h-8 w-8 p-0 rounded-md hover:bg-background" onClick={() => setSelected(null)}>
-                      <X size={20} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white" />
-                   </Button>
-                   <div className="w-28 h-28 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-border overflow-hidden mb-4">
-                      {selected.avatar ? (
-                        <img src={selected.avatar} alt={selected.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-3xl font-black text-zinc-700 dark:text-zinc-200">{selected.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
-                      )}
-                   </div>
-                   <h3 className="text-2xl font-semibold tracking-tighter uppercase text-zinc-800 dark:text-zinc-100">{selected.name}</h3>
-                   <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mt-2">Executive Loyalty ID: <span className="text-amber-500 font-mono tabular-nums">#{selected.id.slice(-6)}</span></p>
-                </div>
-
-                <div className="p-6 space-y-6">
-                   {/* Metrics Drills */}
-                   <div className="grid grid-cols-2 gap-6">
-                      <div className="p-4 bg-background rounded-md space-y-1 border border-border">
-                         <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">LTV (Lifetime Value)</p>
-                         <p className="text-lg font-black text-foreground font-mono tabular-nums">{formatRupiah(selected.totalSpend)}</p>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+             {/* Backdrop Overlay */}
+             <div className="absolute inset-0" onClick={() => setSelected(null)} />
+             
+             {/* Modal Container */}
+             <div className="relative w-full max-w-2xl bg-card border border-border shadow-2xl rounded-lg overflow-hidden z-[110] flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh]">
+                <Card className="border-0 rounded-none bg-card flex flex-col overflow-y-auto no-scrollbar">
+                   {/* Modal Header */}
+                   <div className="p-6 bg-background border-b border-border flex items-center gap-6 relative">
+                      <div className="absolute top-0 right-0 p-4 text-zinc-200/50 dark:text-zinc-800/30 pointer-events-none">
+                         <Zap size={80} className="rotate-12" />
                       </div>
-                      <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-md space-y-1 border border-amber-500/10">
-                         <p className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em]">Reward Assets</p>
-                         <p className="text-lg font-black text-amber-500 flex items-center gap-1.5 font-mono tabular-nums"><Star size={16} fill="currentColor" /> {selected.points}</p>
+                      <Button variant="ghost" size="xs" className="absolute top-4 right-4 h-8 w-8 p-0 rounded-md hover:bg-background" onClick={() => setSelected(null)}>
+                         <X size={20} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white" />
+                      </Button>
+
+                      <div className="w-20 h-20 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-border overflow-hidden shrink-0">
+                         {selected.avatar ? (
+                           <img src={selected.avatar} alt={selected.name} className="w-full h-full object-cover" />
+                         ) : (
+                           <span className="text-2xl font-black text-zinc-700 dark:text-zinc-200">{selected.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                         )}
+                      </div>
+
+                      <div className="space-y-1">
+                         <h3 className="text-2xl font-semibold tracking-tighter uppercase text-zinc-800 dark:text-zinc-100">{selected.name}</h3>
+                         <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Executive Loyalty ID: <span className="text-amber-500 font-mono tabular-nums">#{selected.id.slice(-6)}</span></p>
                       </div>
                    </div>
 
-                   {/* Behavioral Tags */}
-                   <div className="space-y-4">
-                      <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest border-b border-border pb-4 flex items-center gap-2">
-                        <Zap size={12} className="text-amber-500" /> AI Behavioral Insight
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                         <div className="px-3 py-1.5 bg-background rounded-sm text-[10px] font-black uppercase text-zinc-800 dark:text-zinc-200 border border-border">Loyal Customer</div>
-                         <div className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/30 rounded-sm text-[10px] font-black uppercase text-amber-500 border border-amber-500/20">High Ticket Spender</div>
-                         <div className="px-3 py-1.5 bg-background rounded-sm text-[10px] font-black uppercase text-zinc-800 dark:text-zinc-200 border border-border">Morning Regular</div>
+                   {/* Modal Body */}
+                   <div className="p-6 space-y-6 overflow-y-auto max-h-[50vh] no-scrollbar">
+                      {/* Metrics Drills */}
+                      <div className="grid grid-cols-2 gap-6">
+                         <div className="p-4 bg-background rounded-md space-y-1 border border-border">
+                            <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">LTV (Lifetime Value)</p>
+                            <p className="text-lg font-black text-foreground font-mono tabular-nums">{formatRupiah(selected.totalSpend)}</p>
+                         </div>
+                         <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-md space-y-1 border border-amber-500/10">
+                            <p className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em]">Reward Assets</p>
+                            <p className="text-lg font-black text-amber-500 flex items-center gap-1.5 font-mono tabular-nums"><Star size={16} fill="currentColor" /> {selected.points}</p>
+                         </div>
                       </div>
-                   </div>
 
-                   {/* Favorites Section */}
-                   <div className="space-y-4">
-                      <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest border-b border-border pb-4 flex items-center gap-2">
-                        <Heart size={12} className="text-rose-600 dark:text-rose-400" /> Menu Favorites
-                      </p>
+                      {/* Behavioral Tags */}
                       <div className="space-y-3">
-                         {selected.favorites.map((fav, i) => (
-                           <div key={i} className="flex items-center justify-between p-4 bg-background border border-border rounded-md hover:bg-background transition-all">
-                              <span className="text-xs font-black uppercase text-zinc-800 dark:text-zinc-200">{fav}</span>
-                              <div className="px-2.5 py-0.5 bg-background rounded-sm text-[9px] font-bold text-zinc-500 dark:text-zinc-400 border border-border">Top Choice</div>
-                           </div>
-                          ))}
+                         <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest border-b border-border pb-2 flex items-center gap-2">
+                           <Zap size={12} className="text-amber-500" /> AI Behavioral Insight
+                         </p>
+                         <div className="flex flex-wrap gap-2">
+                            <div className="px-3 py-1.5 bg-background rounded-sm text-[10px] font-black uppercase text-zinc-800 dark:text-zinc-200 border border-border">Loyal Customer</div>
+                            <div className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/30 rounded-sm text-[10px] font-black uppercase text-amber-500 border border-amber-500/20">High Ticket Spender</div>
+                            <div className="px-3 py-1.5 bg-background rounded-sm text-[10px] font-black uppercase text-zinc-800 dark:text-zinc-200 border border-border">Morning Regular</div>
+                         </div>
+                      </div>
+
+                      {/* Favorites Section */}
+                      <div className="space-y-3">
+                         <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest border-b border-border pb-2 flex items-center gap-2">
+                           <Heart size={12} className="text-rose-600 dark:text-rose-400" /> Menu Favorites
+                         </p>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {selected.favorites.map((fav, i) => (
+                              <div key={i} className="flex items-center justify-between p-3 bg-background border border-border rounded-md hover:bg-background transition-all">
+                                 <span className="text-xs font-black uppercase text-zinc-800 dark:text-zinc-200">{fav}</span>
+                                 <div className="px-2.5 py-0.5 bg-background rounded-sm text-[9px] font-bold text-zinc-500 dark:text-zinc-400 border border-border">Top Choice</div>
+                              </div>
+                             ))}
+                         </div>
+                      </div>
+
+                      {/* Predictive Action */}
+                      <div className="p-4 bg-background border border-border rounded-md relative group/promo overflow-hidden">
+                         <div className="absolute -top-4 -right-4 text-zinc-200/40 dark:text-zinc-800/40 pointer-events-none group-hover/promo:scale-110 transition-transform">
+                           <Sparkles size={80} />
+                         </div>
+                         <div className="relative z-10 space-y-3">
+                           <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Recommended AI Action</p>
+                           <p className="text-xs font-bold text-zinc-850 dark:text-zinc-100 uppercase leading-snug">{selected.recommendedAction}</p>
+                         </div>
                       </div>
                    </div>
 
-                   {/* Predictive Action */}
-                   <div className="p-4 bg-background border border-border rounded-md relative group/promo overflow-hidden">
-                      <div className="absolute -top-4 -right-4 text-zinc-200/40 dark:text-zinc-800/40 pointer-events-none group-hover/promo:scale-110 transition-transform">
-                        <Sparkles size={80} />
-                      </div>
-                      <div className="relative z-10 space-y-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">Recommended AI Action</p>
-                        <p className="text-xs font-bold text-zinc-850 dark:text-zinc-100 uppercase leading-snug">{selected.recommendedAction}</p>
-                        <Button variant="primary" size="sm" className="w-full font-bold">
-                           EKSEKUSI PROMO SEKARANG
-                        </Button>
-                      </div>
+                   {/* Modal Footer */}
+                   <div className="p-6 bg-background border-t border-border flex justify-end gap-3">
+                      <Button variant="ghost" size="sm" className="font-bold rounded-md" onClick={() => setSelected(null)}>
+                         BATAL
+                      </Button>
+                      <Button variant="primary" size="sm" className="font-bold rounded-md">
+                         EKSEKUSI PROMO SEKARANG
+                      </Button>
                    </div>
-                </div>
-             </Card>
-          </div>
-        )}
-
-        {!selected && (
-          <div className="hidden xl:block w-[450px] shrink-0 sticky top-24">
-             <Card className="h-[600px] border-dashed border-2 border-border bg-background rounded-lg flex flex-col items-center justify-center p-6 text-center ">
-                <Users size={120} strokeWidth={0.5} className="mb-8 text-zinc-400 dark:text-zinc-650" />
-                <h4 className="text-xl font-semibold uppercase tracking-tighter text-zinc-800 dark:text-zinc-100">Deep Analytics Cockpit</h4>
-                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase mt-2 tracking-widest leading-loose max-w-sm">Pilih pelanggan untuk membedah data perilaku dan menjalankan kampanye presisi.</p>
-             </Card>
+                </Card>
+             </div>
           </div>
         )}
       </div>
