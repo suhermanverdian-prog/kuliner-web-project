@@ -116,7 +116,8 @@ const permissionGuard = (featureKey, action = 'view') => {
                 'staff': ['pos', 'dashboard', 'shifts', 'tables', 'inventory'].includes(featureKey),
                 'cashier': ['pos', 'dashboard', 'shifts', 'tables', 'inventory'].includes(featureKey),
                 'kasir': ['pos', 'dashboard', 'shifts', 'tables', 'inventory'].includes(featureKey),
-                'hrd': ['hrd', 'dashboard'].includes(featureKey)
+                'hrd': ['hrd', 'dashboard'].includes(featureKey),
+                'guest': action === 'view'
             };
 
             if (defaultRoles[normRole] === true || (Array.isArray(defaultRoles[normRole]) && defaultRoles[normRole].includes(featureKey))) {
