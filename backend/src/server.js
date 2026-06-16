@@ -176,7 +176,6 @@ try {
 
 
   const { supabase } = require('./supabase');
-  const sharp = require('sharp');
   app.post('/api/upload', upload.single('image'), async (req, res) => {
     try {
       if (!req.file) return res.status(400).json({ error: 'No file' });
@@ -187,6 +186,7 @@ try {
       let contentType = 'image/webp';
 
       try {
+        const sharp = require('sharp');
         imageBuffer = await sharp(req.file.buffer)
           .webp({ quality: 80 })
           .toBuffer();
