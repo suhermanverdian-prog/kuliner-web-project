@@ -29,13 +29,16 @@ const getHeaders = () => {
   // Fallbacks: direct localStorage keys
   token = token || localStorage.getItem('token');
   tenantId = tenantId || localStorage.getItem('tenantId') || localStorage.getItem('tenant_id');
+  const outletId = localStorage.getItem('outletId') || localStorage.getItem('outlet_id');
 
   console.log("[KEN API] Headers Debug:", {
     hasStoreStr: !!storageStr,
     tokenFound: !!token,
     tenantIdFound: !!tenantId,
+    outletIdFound: !!outletId,
     tokenPrefix: token ? token.substring(0, 10) + '...' : null,
-    tenantId
+    tenantId,
+    outletId
   });
 
   const headers = { 'Content-Type': 'application/json' };
@@ -44,6 +47,9 @@ const getHeaders = () => {
   }
   if (tenantId && tenantId !== 'null' && tenantId !== 'undefined') {
     headers['x-tenant-id'] = tenantId;
+  }
+  if (outletId && outletId !== 'null' && outletId !== 'undefined') {
+    headers['x-outlet-id'] = outletId;
   }
   
   return headers;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../api';
 
-export function useGuestMenu({ user, tableFromQR, tenantId }) {
+export function useGuestMenu({ user, tableFromQR, tenantId, outletId }) {
   const [category, setCategory] = useState('Semua');
   const [search, setSearch] = useState('');
   const [cart, setCart] = useState([]);
@@ -17,15 +17,21 @@ export function useGuestMenu({ user, tableFromQR, tenantId }) {
   useEffect(() => {
     // Ambil tenantId dari prop (URL param) atau fallback ke localStorage
     const tId = tenantId || localStorage.getItem('tenantId');
+    const oId = outletId || localStorage.getItem('outletId');
 
     const fetchMenu = () => {
-      // Kirim tenantId sebagai query param agar authMiddleware dapat inject context yang benar
-      const params = tId ? { tenantId: tId } : {};
+      // Kirim tenantId & outletId sebagai query param agar authMiddleware dapat inject context yang benar
+      const params = {};
+      if (tId) params.tenantId = tId;
+      if (oId) params.outletId = oId;
       return api.getMenu(params).then(data => setMenu(Array.isArray(data) ? data : [])).catch(() => setMenu([]));
     };
 
     const fetchShift = () => {
-      return api.getActiveShift(tId ? { tenantId: tId } : {}).then(data => {
+      const params = {};
+      if (tId) params.tenantId = tId;
+      if (oId) params.outletId = oId;
+      return api.getActiveShift(params).then(data => {
         setActiveShift(data);
         setLoadingShift(false);
       }).catch(() => setLoadingShift(false));
@@ -38,7 +44,7 @@ export function useGuestMenu({ user, tableFromQR, tenantId }) {
       fetchShift();
     }, 10000);
     return () => clearInterval(interval);
-  }, [tenantId]);
+  }, [tenantId, outletId]);
 
 
   useEffect(() => {

@@ -819,6 +819,14 @@ export default function GuestMenuPage({ user }) {
     localStorage.setItem('tenantId', tenantId);
   }
 
+  // Parse outletId dari URL Query Parameters (?outletId=...)
+  const queryParams = new URLSearchParams(window.location.search);
+  const queryOutletId = queryParams.get('outletId');
+  if (queryOutletId) {
+    localStorage.setItem('outletId', queryOutletId);
+  }
+  const activeOutletId = queryOutletId || localStorage.getItem('outletId');
+
   const {
     category, setCategory,
     search, setSearch,
@@ -837,7 +845,7 @@ export default function GuestMenuPage({ user }) {
     addToCart,
     changeQty,
     getQty
-  } = useGuestMenu({ user, tableFromQR, tenantId });
+  } = useGuestMenu({ user, tableFromQR, tenantId, outletId: activeOutletId });
 
 
   const [customizingItem, setCustomizingItem] = useState(null);
