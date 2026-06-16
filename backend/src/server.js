@@ -69,7 +69,10 @@ try {
   app.use(cors(corsOptions));
   // Explicitly handle OPTIONS preflight — must respond 200 before auth middleware
   app.options('*', (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    const origin = req.headers.origin;
+    if (getAllowedOrigin(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    }
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant-id, x-outlet-id, x-user-id, x-user-role, X-Requested-With, Accept, sentry-trace, baggage');
@@ -120,7 +123,7 @@ try {
 
   // ── RUTE PUBLIK (Tanpa JWT) ─────────────────────────────────────────────
   // Endpoint ini harus didaftarkan SEBELUM authMiddleware agar tamu (browser
-  // pelanggan tanpa token) bisa mengecek status shift kasir aktif.
+  // pelanggan tanpa token) bisa mengecek status shift kasir aktif dan melihat menu.
   app.get('/api/shifts/active-public', async (req, res, next) => {
     try {
       const tenantId = req.headers['x-tenant-id'] || req.query.tenantId;
@@ -130,6 +133,15 @@ try {
       const shiftService = require('./services/shiftService');
       const activeShift = await shiftService.getActiveShift(tenantId);
       res.json(activeShift);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  app.get('/api/menu', async (req, res, next) => {
+    try {
+      const menuController = require('./controllers/menuController');
+      return menuController.getAllMenu(req, res, next);
     } catch (err) {
       next(err);
     }
