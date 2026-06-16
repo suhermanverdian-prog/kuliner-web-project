@@ -61,7 +61,7 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
 
         {/* Right Side: Form Card */}
         <Card className="w-full max-w-[480px] border-none shadow-[0_32px_128px_-32px_rgba(0,0,0,0.2)] bg-background/80 backdrop-blur-3xl animate-in fade-in slide-in-from-bottom-12 duration-1000 rounded-lg overflow-hidden">
-           <CardHeader className="text-center pt-12 pb-8 space-y-2">
+           <CardHeader className="text-center pt-8 sm:pt-12 pb-6 sm:pb-8 space-y-2">
               <div className="w-16 h-16 ">
                  <Coffee className="text-zinc-900" size={32} />
               </div>
@@ -69,7 +69,7 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
               <CardDescription className="text-sm font-medium uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100">Mulai Perjalanan Anda</CardDescription>
            </CardHeader>
 
-           <CardContent className="px-10 pb-10">
+           <CardContent className="px-5 sm:px-10 pb-8 sm:pb-10">
               <form onSubmit={handleSubmit} className="space-y-6">
                  <div className="space-y-2">
                     <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest px-2">Nama Lengkap *</label>
@@ -96,7 +96,7 @@ export default function RegisterPage({ onSuccess, onGoLogin }) {
                     </div>
                  </div>
 
-                 <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                        <label className="text-[10px] font-black text-zinc-500 dark:text-zinc-100 uppercase tracking-widest px-2">Password</label>
                        <Input type="password" className="h-12 bg-background border-transparent focus:bg-background rounded-lg font-bold" placeholder="••••••" value={form.password} onChange={e => setForm({...form, password: e.target.value})} />

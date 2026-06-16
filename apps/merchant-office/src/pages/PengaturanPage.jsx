@@ -15,26 +15,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { cn } from "../lib/utils";
-import { BrainCircuit, KeyRound, Server, Sparkles, Zap, PackageOpen, MapPin, Globe, Coffee, SlidersHorizontal, Ticket, Droplets, UserPlus, Crown } from 'lucide-react';
+import { BrainCircuit, KeyRound, Server, Sparkles, Zap, PackageOpen, MapPin, Globe, Coffee, SlidersHorizontal, Ticket, Droplets, UserPlus, Crown, ChefHat, TrendingUp, Coins } from 'lucide-react';
 import { FEATURE_CATALOG, TIER_DEFAULTS, resolveFeatures } from '../lib/featureFlags';
 import { useAppStore } from '../store/useAppStore';
 
 const PERMISSIONS = [
-  { key: 'akses_kasir', label: 'Akses Menu Kasir', icon: '💰' },
-  { key: 'akses_gudang', label: 'Akses Menu Gudang', icon: '📦' },
-  { key: 'akses_dapur', label: 'Akses Menu Dapur (KDS)', icon: '👨‍🍳' },
-  { key: 'akses_keuangan', label: 'Akses Data Keuangan', icon: '📊' },
-  { key: 'lihat_hpp', label: 'Lihat HPP & Modal', icon: '💹' },
-  { key: 'lihat_laba', label: 'Lihat Laba Rugi', icon: '📈' },
-  { key: 'hapus_transaksi', label: 'Hapus Transaksi', icon: '🗑️' },
-  { key: 'atur_user', label: 'Atur Pengguna', icon: '👥' },
+  { key: 'akses_kasir', label: 'Akses Menu Kasir', icon: CreditCard },
+  { key: 'akses_gudang', label: 'Akses Menu Gudang', icon: PackageOpen },
+  { key: 'akses_dapur', label: 'Akses Menu Dapur (KDS)', icon: ChefHat },
+  { key: 'akses_keuangan', label: 'Akses Data Keuangan', icon: Coins },
+  { key: 'lihat_hpp', label: 'Lihat HPP & Modal', icon: FileCheck2 },
+  { key: 'lihat_laba', label: 'Lihat Laba Rugi', icon: TrendingUp },
+  { key: 'hapus_transaksi', label: 'Hapus Transaksi', icon: Trash2 },
+  { key: 'atur_user', label: 'Atur Pengguna', icon: Users },
 ];
 
 const ROLE_LABELS = { admin:'Admin', owner:'Owner', kasir:'Kasir', koki:'Koki/Barista', gudang:'Gudang', akuntan:'Akuntan' };
 const ROLE_COLORS = { admin:'bg-amber-500', owner:'bg-primary', kasir:'bg-amber-500', koki:'bg-zinc-700', gudang:'bg-zinc-600', akuntan:'bg-zinc-900' };
 
-function AddUserModal({ onClose, onSave, loading }) {
-  const [form, setForm] = useState({ name: '', username: '', password: '', role: 'kasir', avatar_url: '' });
+function AddUserModal({ onClose, onSave, loading, outlets = [] }) {
+  const [form, setForm] = useState({ name: '', username: '', password: '', role: 'kasir', avatar_url: '', scope: 'tenant', allowed_outlets: [] });
   const [uploading, setUploading] = useState(false);
 
   return (
@@ -58,9 +58,9 @@ function AddUserModal({ onClose, onSave, loading }) {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             {/* Kolom Foto - 4 grid */}
             <div className="md:col-span-4 flex flex-col items-center gap-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 w-full text-center">Foto Profil</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 w-full text-center">Foto Profil</label>
               <div className="relative group">
-                <div className="w-32 h-32 rounded-lg bg-background border-4 border-background shadow-xl flex items-center justify-center overflow-hidden transition-all group-hover:scale-105">
+                <div className="w-48 h-48 rounded-lg bg-background border-4 border-background shadow-xl flex items-center justify-center overflow-hidden transition-all group-hover:scale-105">
                   {form.avatar_url ? (
                     <img src={form.avatar_url} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
@@ -74,7 +74,7 @@ function AddUserModal({ onClose, onSave, loading }) {
                   <Upload size={16} />
                 </button>
               </div>
-              <p className="text-[9px] text-zinc-500 dark:text-zinc-100 text-center px-4 leading-relaxed uppercase font-bold tracking-widest ">Format JPG/PNG, Maks 2MB. Foto akan tampil di struk dan dashboard.</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 text-center px-4 leading-relaxed font-medium">Format JPG/PNG, Maks 2MB. Foto akan tampil di struk dan dashboard.</p>
               <input 
                 id="avatar-upload"
                 type="file" 
@@ -96,9 +96,9 @@ function AddUserModal({ onClose, onSave, loading }) {
             </div>
 
             {/* Kolom Form - 8 grid */}
-            <div className="md:col-span-8 space-y-5">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 px-1">Nama Lengkap</label>
+            <div className="md:col-span-8 space-y-3">
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1">Nama Lengkap</label>
                 <Input 
                   className="h-12 bg-background border-none focus:ring-2 focus:ring-amber-500/20 rounded-lg font-medium" 
                   value={form.name} onChange={e => setForm({...form, name: e.target.value})} 
@@ -106,28 +106,53 @@ function AddUserModal({ onClose, onSave, loading }) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 px-1">Username</label>
-                  <Input 
-                    className="h-12 bg-background border-none focus:ring-2 focus:ring-amber-500/20 rounded-lg font-medium" 
-                    value={form.username} onChange={e => setForm({...form, username: e.target.value})} 
-                    placeholder="id_pegawai" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 px-1">Role / Jabatan</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1">Role / Jabatan</label>
                   <select 
-                    className="flex h-12 w-full rounded-lg border-none bg-background px-4 py-1 text-sm font-bold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20" 
+                    className="flex h-12 w-full rounded-lg border-none bg-background px-4 py-1 text-sm font-bold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20 text-zinc-900 dark:text-zinc-100" 
                     value={form.role} onChange={e => setForm({...form, role: e.target.value})}
                   >
                     {Object.keys(ROLE_LABELS).map(k => <option key={k} value={k}>{ROLE_LABELS[k]}</option>)}
                   </select>
                 </div>
+                {outlets.length > 1 ? (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1">Lokasi Akses</label>
+                    <select 
+                      className="flex h-12 w-full rounded-lg border-none bg-background px-4 py-1 text-sm font-bold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20 text-zinc-900 dark:text-zinc-100" 
+                      value={form.scope === 'tenant' ? 'hq' : (form.allowed_outlets?.[0] || 'hq')}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === 'hq') {
+                          setForm({ ...form, scope: 'tenant', allowed_outlets: [] });
+                        } else {
+                          setForm({ ...form, scope: 'outlet', allowed_outlets: [val] });
+                        }
+                      }}
+                    >
+                      <option value="hq">HQ / Pusat (Semua Cabang)</option>
+                      {outlets.map(o => (
+                        <option key={o.id} value={o.id}>{o.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div />
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1">Username</label>
+                <Input 
+                  className="h-12 bg-background border-none focus:ring-2 focus:ring-amber-500/20 rounded-lg font-medium" 
+                  value={form.username} onChange={e => setForm({...form, username: e.target.value})} 
+                  placeholder="id_pegawai" 
+                />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 px-1">Kata Sandi (Password)</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1">Kata Sandi (Password)</label>
                 <div className="relative">
                   <Input 
                     type="password" 
@@ -143,7 +168,7 @@ function AddUserModal({ onClose, onSave, loading }) {
         </CardContent>
         <CardFooter className="border-t bg-background p-6 gap-4">
           <Button variant="ghost" className="flex-1 h-12 rounded-lg font-bold" onClick={onClose} disabled={loading || uploading}>Batal</Button>
-          <Button variant="primary" className="flex-[2] h-12 rounded-lg font-black" onClick={() => onSave(form)} disabled={loading || uploading}>
+          <Button className="flex-[2] h-12 rounded-lg font-bold text-sm bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 transition-all active:scale-95 shadow-md shadow-amber-500/10" onClick={() => onSave(form)} disabled={loading || uploading}>
             {loading ? <RefreshCw className="animate-spin mr-2" /> : null}
             {loading ? 'MENYIMPAN...' : 'DAFTARKAN ANGGOTA'}
           </Button>
@@ -180,6 +205,7 @@ function POSCustomizationPanel({ showToast }) {
   ]);
 
   const [doseEspresso, setDoseEspresso] = useState(7);
+  const [priceEspressoShot, setPriceEspressoShot] = useState(5000);
   const [defaultSkipKds, setDefaultSkipKds] = useState(false);
   const [bahanList, setBahanList] = useState([]);
   const [loadingCloud, setLoadingCloud] = useState(true);
@@ -265,15 +291,45 @@ function POSCustomizationPanel({ showToast }) {
         if (saved) setMilks(parseSafeArray(saved, milks));
       }
 
-      // Dose Espresso
-      const cloudDose = cloudData.ken_dose_espresso;
-      if (cloudDose !== undefined && cloudDose !== null) {
-        const parsedDose = Number(cloudDose) || 7;
-        setDoseEspresso(parsedDose);
-        localStorage.setItem('ken_dose_espresso', parsedDose.toString());
+      // Espresso Customization (Dose & Price)
+      const cloudEspresso = cloudData.ken_custom_espresso;
+      if (cloudEspresso) {
+        let parsed = null;
+        try {
+          parsed = typeof cloudEspresso === 'string' ? JSON.parse(cloudEspresso) : cloudEspresso;
+        } catch (e) {
+          console.warn('[KEN] Failed to parse cloudEspresso:', e);
+        }
+        if (parsed) {
+          const dose = Number(parsed.dose) || 7;
+          const price = Number(parsed.priceAdd || parsed.price || 5000);
+          setDoseEspresso(dose);
+          setPriceEspressoShot(price);
+          localStorage.setItem('ken_custom_espresso', JSON.stringify({ dose, priceAdd: price }));
+          localStorage.setItem('ken_dose_espresso', dose.toString());
+          localStorage.setItem('ken_price_espresso_shot', price.toString());
+        }
       } else {
-        const saved = localStorage.getItem('ken_dose_espresso');
-        if (saved) setDoseEspresso(Number(saved) || 7);
+        const saved = localStorage.getItem('ken_custom_espresso');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            const dose = Number(parsed.dose) || 7;
+            const price = Number(parsed.priceAdd || parsed.price) || 5000;
+            setDoseEspresso(dose);
+            setPriceEspressoShot(price);
+            localStorage.setItem('ken_dose_espresso', dose.toString());
+            localStorage.setItem('ken_price_espresso_shot', price.toString());
+          } catch (e) {
+            console.warn('[KEN] Failed to parse local cached espresso:', e);
+          }
+        } else {
+          // Fallback to legacy separate localStorage keys if present
+          const savedDose = localStorage.getItem('ken_dose_espresso');
+          const savedPrice = localStorage.getItem('ken_price_espresso_shot');
+          if (savedDose) setDoseEspresso(Number(savedDose) || 7);
+          if (savedPrice) setPriceEspressoShot(Number(savedPrice) || 5000);
+        }
       }
 
       // Default Skip KDS
@@ -297,6 +353,8 @@ function POSCustomizationPanel({ showToast }) {
       if (savedMilks) setMilks(parseSafeArray(savedMilks, milks));
       const savedDose = localStorage.getItem('ken_dose_espresso');
       if (savedDose) setDoseEspresso(Number(savedDose) || 7);
+      const savedPrice = localStorage.getItem('ken_price_espresso_shot');
+      if (savedPrice) setPriceEspressoShot(Number(savedPrice) || 5000);
       const savedSkip = localStorage.getItem('ken_default_skip_kds');
       if (savedSkip) setDefaultSkipKds(savedSkip === 'true');
     }).finally(() => {
@@ -407,12 +465,16 @@ function POSCustomizationPanel({ showToast }) {
   };
 
   const handleSaveDoses = async () => {
+    const espressoObj = { dose: doseEspresso, priceAdd: priceEspressoShot };
+    localStorage.setItem('ken_custom_espresso', JSON.stringify(espressoObj));
+    // Backwards compatibility keys in localStorage
     localStorage.setItem('ken_dose_espresso', doseEspresso.toString());
+    localStorage.setItem('ken_price_espresso_shot', priceEspressoShot.toString());
     try {
-      await api.saveCustomisations({ key: 'ken_dose_espresso', value: doseEspresso });
-      showToast('Dosis & gramasi espresso berhasil disimpan ke Cloud!');
+      await api.saveCustomisations({ key: 'ken_custom_espresso', value: espressoObj });
+      showToast('Dosis & harga espresso shot berhasil disimpan ke Cloud!');
     } catch (e) {
-      showToast('Dosis & gramasi espresso disimpan secara offline.', 'warning');
+      showToast('Dosis & harga espresso shot disimpan secara offline.', 'warning');
     }
   };
 
@@ -724,6 +786,19 @@ function POSCustomizationPanel({ showToast }) {
                     className="w-full h-10 pr-12 text-xs font-black font-mono bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-right"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">gram</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-zinc-50 dark:bg-zinc-900/30 rounded-lg border border-border space-y-2">
+                <span className="text-xs font-black uppercase text-zinc-400">Harga Extra Shot</span>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={priceEspressoShot}
+                    onChange={e => setPriceEspressoShot(Math.max(0, Number(e.target.value)))}
+                    className="w-full h-10 pr-12 text-xs font-black font-mono bg-card border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500/20 text-right font-mono tabular-nums"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-zinc-400 pointer-events-none">Rupiah</span>
                 </div>
               </div>
 
@@ -1815,7 +1890,8 @@ export default function PengaturanPage() {
     handleLogoUpload,
     handleSaveBranding,
     handleSaveSettings,
-    handleBackup
+    handleBackup,
+    outlets
   } = usePengaturan();
 
   const tabInfo = {
@@ -1934,10 +2010,10 @@ export default function PengaturanPage() {
       )}
 
       {activeTab === 'users' && (
-        <div className="space-y-6">
+        <div className="space-y-8 pt-4 pb-12">
           <div className="flex items-center gap-2 bg-background p-1 rounded-lg w-fit">
-            <button className={cn("px-6 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all", userSubTab === 'profil' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-zinc-500 dark:text-zinc-100 hover:bg-background')} onClick={() => setUserSubTab('profil')}>Profil Individu</button>
-            <button className={cn("px-6 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-lg transition-all", userSubTab === 'roles' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-zinc-500 dark:text-zinc-100 hover:bg-background')} onClick={() => setUserSubTab('roles')}>Manajemen Hak Akses (Role)</button>
+            <button className={cn("px-6 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all", userSubTab === 'profil' ? 'bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/10' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800')} onClick={() => setUserSubTab('profil')}>Profil Individu</button>
+            <button className={cn("px-6 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all", userSubTab === 'roles' ? 'bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-md shadow-amber-500/10' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800')} onClick={() => setUserSubTab('roles')}>Manajemen Hak Akses (Role)</button>
           </div>
 
           {userSubTab === 'profil' && (
@@ -1947,7 +2023,7 @@ export default function PengaturanPage() {
                 <CardHeader className="border-b bg-background">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">Daftar Pengguna</CardTitle>
-                    <Button size="sm" className="h-10 font-black text-[10px] uppercase tracking-widest bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-6 shadow-lg shadow-primary/20 transition-all active:scale-95" onClick={() => setShowAddModal(true)}>
+                    <Button size="sm" className="h-10 font-bold text-xs uppercase tracking-wider bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-lg px-6 shadow-md shadow-amber-500/10 transition-all active:scale-95" onClick={() => setShowAddModal(true)}>
                       <Plus size={16} className="mr-2 stroke-[3]" /> Tambah Anggota
                     </Button>
                   </div>
@@ -1955,7 +2031,7 @@ export default function PengaturanPage() {
                 <CardContent className="p-2 flex flex-col h-[500px]">
                   <div className="px-2 pb-2">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-100 w-4 h-4" />
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 dark:text-zinc-400 w-4 h-4" />
                       <Input 
                         placeholder="Cari nama, username, atau role..." 
                         value={userSearchQuery}
@@ -1987,9 +2063,9 @@ export default function PengaturanPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold truncate group-hover:text-amber-600 dark:text-amber-400 transition-colors">{u.name}</p>
-                          <p className="text-[10px] text-zinc-500 dark:text-zinc-100 uppercase tracking-widest font-black">{ROLE_LABELS[u.role] || u.role}</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">{ROLE_LABELS[u.role] || u.role}</p>
                         </div>
-                        <div className="text-[10px] font-bold bg-background px-2 py-0.5 rounded text-zinc-500 dark:text-zinc-100 group-hover:bg-background transition-colors">
+                        <div className="text-xs font-medium bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-sm text-zinc-500 dark:text-zinc-400 group-hover:bg-zinc-200 dark:group-hover:bg-zinc-700 transition-colors">
                           @{u.username}
                         </div>
                       </button>
@@ -2005,13 +2081,6 @@ export default function PengaturanPage() {
                     <CardHeader className="border-b bg-background">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className={cn("w-12 h-12 rounded-lg flex items-center justify-center text-zinc-900 dark:text-zinc-100 text-xl font-black shadow-lg overflow-hidden", !selected.avatar_url && (ROLE_COLORS[selected.role] || "bg-amber-500"))}>
-                            {selected.avatar_url ? (
-                              <img src={selected.avatar_url} alt={selected.name} className="w-full h-full object-cover" />
-                            ) : (
-                              selected.avatar || selected.name[0]
-                            )}
-                          </div>
                           <div>
                             <CardTitle className="text-xl">Edit Profil: {selected.name}</CardTitle>
                             <CardDescription>Ubah detail informasi anggota tim</CardDescription>
@@ -2025,9 +2094,9 @@ export default function PengaturanPage() {
                     <CardContent className="p-8">
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
                         <div className="md:col-span-4 flex flex-col items-center gap-4">
-                          <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 w-full text-center">Foto Profil</label>
+                          <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 w-full text-center">Foto Profil</label>
                           <div className="relative group">
-                            <div className="w-32 h-32 rounded-lg bg-background border-4 border-background shadow-xl flex items-center justify-center overflow-hidden transition-all group-hover:scale-105">
+                            <div className="w-48 h-48 rounded-lg bg-background border-4 border-background shadow-xl flex items-center justify-center overflow-hidden transition-all group-hover:scale-105">
                               {selected.avatar_url ? (
                                 <img src={selected.avatar_url} alt="Preview" className="w-full h-full object-cover" />
                               ) : (
@@ -2036,7 +2105,7 @@ export default function PengaturanPage() {
                             </div>
                             <button 
                               onClick={() => document.getElementById('edit-avatar-upload').click()}
-                              className="absolute bottom-0 right-0 w-10 h-10 bg-primary text-primary-foreground rounded-lg flex items-center justify-center shadow-lg hover:scale-110 transition-all border-4 border-background"
+                              className="absolute bottom-0 right-0 w-10 h-10 bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 rounded-lg flex items-center justify-center shadow-lg hover:scale-110 transition-all border-4 border-background"
                             >
                               <Upload size={16} />
                             </button>
@@ -2061,19 +2130,16 @@ export default function PengaturanPage() {
                           />
                         </div>
 
-                        <div className="md:col-span-8 space-y-5">
-                          <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 px-1">Nama Lengkap</label>
+                        <div className="md:col-span-8 space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1">Nama Lengkap</label>
                             <Input className="h-12 bg-background border-none focus:ring-2 focus:ring-amber-500/20 rounded-lg font-medium" value={selected.name} onChange={e => setSelected({...selected, name: e.target.value})} />
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 px-1">Username</label>
-                              <Input className="h-12 bg-background border-none focus:ring-2 focus:ring-amber-500/20 rounded-lg font-medium" value={selected.username} onChange={e => setSelected({...selected, username: e.target.value})} />
-                            </div>
-                            <div className="space-y-2">
-                              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 px-1">Role / Jabatan</label>
-                              <select className="flex h-12 w-full rounded-lg border-none bg-background px-4 py-1 text-sm font-bold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20" value={selected.role} onChange={e => setSelected({...selected, role: e.target.value})}>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1">Role / Jabatan</label>
+                              <select className="flex h-12 w-full rounded-lg border-none bg-background px-4 py-1 text-sm font-bold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20 text-zinc-900 dark:text-zinc-100" value={selected.role} onChange={e => setSelected({...selected, role: e.target.value})}>
                                 {Object.keys(ROLE_LABELS).map(k => <option key={k} value={k}>{ROLE_LABELS[k]}</option>)}
                                 <option value="superadmin">SuperAdmin</option>
                                 <option value="manager">Manager</option>
@@ -2081,16 +2147,46 @@ export default function PengaturanPage() {
                                 <option value="hrd">HRD</option>
                               </select>
                             </div>
+                            {outlets.length > 1 ? (
+                              <div className="space-y-1">
+                                <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1">Lokasi Akses</label>
+                                <select 
+                                  className="flex h-12 w-full rounded-lg border-none bg-background px-4 py-1 text-sm font-bold shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/20 text-zinc-900 dark:text-zinc-100" 
+                                  value={selected.scope === 'tenant' ? 'hq' : (selected.allowed_outlets?.[0] || 'hq')}
+                                  onChange={e => {
+                                    const val = e.target.value;
+                                    if (val === 'hq') {
+                                      setSelected({ ...selected, scope: 'tenant', allowed_outlets: [] });
+                                    } else {
+                                      setSelected({ ...selected, scope: 'outlet', allowed_outlets: [val] });
+                                    }
+                                  }}
+                                >
+                                  <option value="hq">HQ / Pusat (Semua Cabang)</option>
+                                  {outlets.map(o => (
+                                    <option key={o.id} value={o.id}>{o.name}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            ) : (
+                              <div />
+                            )}
                           </div>
-                          <div className="space-y-2 pt-4">
-                            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-100 px-1">Ubah Password (Opsional)</label>
+
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1">Username</label>
+                            <Input className="h-12 bg-background border-none focus:ring-2 focus:ring-amber-500/20 rounded-lg font-medium" value={selected.username} onChange={e => setSelected({...selected, username: e.target.value})} />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 px-1">Ubah Password (Opsional)</label>
                             <Input type="password" placeholder="Biarkan kosong jika tidak ingin mengubah" className="h-12 bg-background border-none focus:ring-2 focus:ring-amber-500/20 rounded-lg font-medium" value={selected.password || ''} onChange={e => setSelected({...selected, password: e.target.value})} />
                           </div>
                         </div>
                       </div>
                     </CardContent>
                     <CardFooter className="border-t bg-background p-6 gap-4">
-                      <Button variant="primary" className="w-full h-12 font-black" onClick={handleSaveUser} disabled={loading}>
+                      <Button className="w-full h-12 font-bold text-sm bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md active:scale-95 transition-all shadow-md shadow-amber-500/10" onClick={handleSaveUser} disabled={loading}>
                         <Save size={18} className="mr-2" /> Simpan Profil
                       </Button>
                     </CardFooter>
@@ -2131,7 +2227,7 @@ export default function PengaturanPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold truncate group-hover:text-amber-600 dark:text-amber-400 transition-colors">{ROLE_LABELS[roleKey] || roleKey.toUpperCase()}</p>
-                          <p className="text-[10px] text-zinc-500 dark:text-zinc-100 uppercase tracking-widest font-black">Pengaturan Global</p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider font-semibold">Pengaturan Global</p>
                         </div>
                       </button>
                     ))}
@@ -2178,7 +2274,8 @@ export default function PengaturanPage() {
                           };
                           const featureKey = revKeyMap[perm.key] || perm.key;
                           const hasPerm = selectedRole === 'superadmin' || rolePermissions.some(p => p.role === selectedRole && p.feature_key === featureKey);
-                          
+                          const IconComp = perm.icon;
+
                           return (
                             <div 
                               key={perm.key} 
@@ -2188,7 +2285,7 @@ export default function PengaturanPage() {
                               )}
                             >
                               <div className="flex items-center gap-4">
-                                <span className="text-xl grayscale-[0.5]">{perm.icon}</span>
+                                <IconComp className={cn("w-5 h-5 shrink-0", hasPerm ? "text-amber-600 dark:text-amber-400" : "text-zinc-500 dark:text-zinc-400")} />
                                 <span className="text-sm font-bold">{perm.label}</span>
                               </div>
                               <input 
@@ -2204,7 +2301,7 @@ export default function PengaturanPage() {
                       </div>
                     </CardContent>
                     <CardFooter className="border-t bg-background p-6 gap-4">
-                      <Button variant="primary" className="w-full h-12 font-black" onClick={handleSaveRolePermissions} disabled={loading || selectedRole === 'superadmin'}>
+                      <Button className="w-full h-12 font-bold text-sm bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 rounded-md active:scale-95 transition-all shadow-md shadow-amber-500/10" onClick={handleSaveRolePermissions} disabled={loading || selectedRole === 'superadmin'}>
                         <Save size={18} className="mr-2" /> Simpan Hak Akses Jabatan
                       </Button>
                     </CardFooter>
@@ -3119,7 +3216,7 @@ export default function PengaturanPage() {
         <PromoPanel showToast={showToast} />
       )}
 
-      {showAddModal && <AddUserModal onClose={() => setShowAddModal(false)} onSave={handleAddUser} loading={loading} />}
+      {showAddModal && <AddUserModal onClose={() => setShowAddModal(false)} onSave={handleAddUser} loading={loading} outlets={outlets} />}
       
       {/* Toast Notification */}
       {toast.msg && (

@@ -242,8 +242,12 @@ export default function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse
       <div className="p-4 border-t border-border bg-background/50 dark:bg-zinc-950/50 dark:border-zinc-900">
         {!isCollapsed ? (
           <div className="flex items-center gap-4 p-2 rounded-lg bg-muted/50 border border-border dark:bg-zinc-900/50 dark:border-zinc-900">
-             <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-foreground font-black dark:bg-zinc-800">
-                {user?.name?.[0] || 'U'}
+             <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-foreground font-black dark:bg-zinc-800 overflow-hidden shrink-0">
+                {user?.avatar_url || user?.avatar ? (
+                  <img src={user.avatar_url || user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  user?.name?.[0] || 'U'
+                )}
              </div>
              <div className="flex-1 min-w-0">
                 <p className="text-xs font-black text-foreground truncate">{user?.name}</p>

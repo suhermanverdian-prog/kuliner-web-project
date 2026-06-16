@@ -217,49 +217,59 @@ export default function PelangganPage() {
            </Card>
         </div>
 
-        {/* Modal: Deep Analytics Profile (Tampil di Tengah Layar) */}
+        {/* Modal: Deep Analytics Profile (Tampil 2 Kolom Seperti ID Card) */}
         {selected && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
              {/* Backdrop Overlay */}
              <div className="absolute inset-0" onClick={() => setSelected(null)} />
              
              {/* Modal Container */}
-             <div className="relative w-full max-w-2xl bg-card border border-border shadow-2xl rounded-lg overflow-hidden z-[110] flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh]">
-                <Card className="border-0 rounded-none bg-card flex flex-col overflow-y-auto no-scrollbar">
-                   {/* Modal Header */}
-                   <div className="p-6 bg-background border-b border-border flex items-center gap-6 relative">
-                      <div className="absolute top-0 right-0 p-4 text-zinc-200/50 dark:text-zinc-800/30 pointer-events-none">
-                         <Zap size={80} className="rotate-12" />
-                      </div>
-                      <Button variant="ghost" size="xs" className="absolute top-4 right-4 h-8 w-8 p-0 rounded-md hover:bg-background" onClick={() => setSelected(null)}>
-                         <X size={20} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white" />
-                      </Button>
+             <div className="relative w-full max-w-4xl bg-card border border-border shadow-2xl rounded-lg overflow-hidden z-[110] flex flex-col animate-in zoom-in-95 duration-300 max-h-[90vh]">
+                {/* Modal Title Bar / Header */}
+                <div className="p-4 bg-background border-b border-border flex items-center justify-between relative">
+                   <div className="flex items-center gap-2">
+                      <Zap size={16} className="text-amber-500" />
+                      <span className="text-xs font-black uppercase tracking-widest text-zinc-800 dark:text-zinc-100">AI Customer Intelligence Profile</span>
+                   </div>
+                   <Button variant="ghost" size="xs" className="h-8 w-8 p-0 rounded-md hover:bg-background" onClick={() => setSelected(null)}>
+                      <X size={20} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white" />
+                   </Button>
+                </div>
 
-                      <div className="w-20 h-20 rounded-md bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-border overflow-hidden shrink-0">
+                 <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-border">
+                   {/* Column 1: ID Card (Left Side Profile Card) */}
+                   <div className="w-full md:w-[340px] p-6 flex flex-col items-center justify-center text-center bg-background/50 shrink-0 relative overflow-hidden">
+                      {/* Stylized background chip */}
+                      <div className="absolute -top-10 -left-10 w-40 h-40 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+                      
+                      {/* Avatar Wrapper */}
+                      <div className="w-32 h-32 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border-2 border-border shadow-md overflow-hidden mb-5 relative group">
                          {selected.avatar ? (
                            <img src={selected.avatar} alt={selected.name} className="w-full h-full object-cover" />
                          ) : (
-                           <span className="text-2xl font-black text-zinc-700 dark:text-zinc-200">{selected.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
+                           <span className="text-4xl font-black text-zinc-700 dark:text-zinc-200">{selected.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}</span>
                          )}
                       </div>
 
+                      {/* Info Identity */}
                       <div className="space-y-1">
-                         <h3 className="text-2xl font-semibold tracking-tighter uppercase text-zinc-800 dark:text-zinc-100">{selected.name}</h3>
-                         <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest">Executive Loyalty ID: <span className="text-amber-500 font-mono tabular-nums">#{selected.id.slice(-6)}</span></p>
+                         <h3 className="text-2xl font-semibold tracking-tighter uppercase text-zinc-900 dark:text-zinc-50 leading-tight">{selected.name}</h3>
+                         <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest mt-2">Executive Loyalty ID</p>
+                         <p className="text-sm font-black text-amber-500 font-mono tracking-tight">#{selected.id.slice(-6).toUpperCase()}</p>
                       </div>
                    </div>
 
-                   {/* Modal Body */}
-                   <div className="p-6 space-y-6 overflow-y-auto max-h-[50vh] no-scrollbar">
-                      {/* Metrics Drills */}
-                      <div className="grid grid-cols-2 gap-6">
-                         <div className="p-4 bg-background rounded-md space-y-1 border border-border">
-                            <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-[0.2em]">LTV (Lifetime Value)</p>
-                            <p className="text-lg font-black text-foreground font-mono tabular-nums">{formatRupiah(selected.totalSpend)}</p>
+                   {/* Column 2: Detailed Intelligence Report (Right Side) */}
+                   <div className="flex-1 p-6 space-y-6 overflow-y-auto max-h-[60vh] md:max-h-[500px] no-scrollbar">
+                      {/* LTV & Rewards (Moved to Right Column) */}
+                      <div className="grid grid-cols-2 gap-4">
+                         <div className="p-3 bg-card rounded-md space-y-0.5 border border-border text-left">
+                            <p className="text-[9px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">LTV (Lifetime Value)</p>
+                            <p className="text-base font-black text-foreground font-mono tabular-nums">{formatRupiah(selected.totalSpend)}</p>
                          </div>
-                         <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-md space-y-1 border border-amber-500/10">
-                            <p className="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em]">Reward Assets</p>
-                            <p className="text-lg font-black text-amber-500 flex items-center gap-1.5 font-mono tabular-nums"><Star size={16} fill="currentColor" /> {selected.points}</p>
+                         <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-md space-y-0.5 border border-amber-500/10 text-left">
+                            <p className="text-[9px] font-black text-amber-500 uppercase tracking-wider">Reward Assets</p>
+                            <p className="text-base font-black text-amber-500 flex items-center gap-1.5 font-mono tabular-nums"><Star size={16} fill="currentColor" /> {selected.points} Points</p>
                          </div>
                       </div>
 
@@ -280,7 +290,7 @@ export default function PelangganPage() {
                          <p className="text-[10px] font-black text-zinc-500 dark:text-zinc-400 uppercase tracking-widest border-b border-border pb-2 flex items-center gap-2">
                            <Heart size={12} className="text-rose-600 dark:text-rose-400" /> Menu Favorites
                          </p>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {selected.favorites.map((fav, i) => (
                               <div key={i} className="flex items-center justify-between p-3 bg-background border border-border rounded-md hover:bg-background transition-all">
                                  <span className="text-xs font-black uppercase text-zinc-800 dark:text-zinc-200">{fav}</span>
@@ -301,17 +311,17 @@ export default function PelangganPage() {
                          </div>
                       </div>
                    </div>
+                </div>
 
-                   {/* Modal Footer */}
-                   <div className="p-6 bg-background border-t border-border flex justify-end gap-3">
-                      <Button variant="ghost" size="sm" className="font-bold rounded-md" onClick={() => setSelected(null)}>
-                         BATAL
-                      </Button>
-                      <Button variant="primary" size="sm" className="font-bold rounded-md">
-                         EKSEKUSI PROMO SEKARANG
-                      </Button>
-                   </div>
-                </Card>
+                {/* Modal Footer */}
+                <div className="p-4 bg-background border-t border-border flex justify-end gap-3">
+                   <Button variant="ghost" size="sm" className="font-bold rounded-md" onClick={() => setSelected(null)}>
+                      BATAL
+                   </Button>
+                   <Button variant="primary" size="sm" className="font-bold rounded-md">
+                      EKSEKUSI PROMO SEKARANG
+                   </Button>
+                </div>
              </div>
           </div>
         )}

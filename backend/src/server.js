@@ -138,14 +138,11 @@ try {
     }
   });
 
-  app.get('/api/menu', async (req, res, next) => {
-    try {
-      const menuController = require('./controllers/menuController');
-      return menuController.getAllMenu(req, res, next);
-    } catch (err) {
-      next(err);
-    }
-  });
+  // ────────────────────────────────────────────────────────────────────────
+  // CATATAN: /api/menu TIDAK perlu didaftarkan di sini karena authMiddleware
+  // sudah memiliki '/api/menu' dalam daftar publicPaths-nya. Route ini akan
+  // ditangani secara benar oleh app.use('/api/menu', menuRoutes) di bawah,
+  // setelah authMiddleware menyuntikkan req.userContext yang benar.
   // ────────────────────────────────────────────────────────────────────────
 
   const authMiddleware = require('./middleware/authMiddleware');

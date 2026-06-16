@@ -33,8 +33,6 @@ import {
   Send
 } from 'lucide-react';
 import { ReceiptTemplate } from '../components/ReceiptTemplate';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -70,6 +68,10 @@ function OrderTracking({ orderId, onBack }) {
   const handleDownloadPDF = async () => {
     try {
       const element = receiptRef.current;
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf')
+      ]);
       const canvas = await html2canvas(element, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', [80, 200]);

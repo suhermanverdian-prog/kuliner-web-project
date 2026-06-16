@@ -84,6 +84,13 @@ class AIRepository {
     const { data } = await query;
     return data || [];
   }
+
+  async getBahanList(tenantId) {
+    let query = supabase.from('bahan').select('id, name, stock, min_stock, unit');
+    if (tenantId) query = query.eq('tenant_id', tenantId);
+    const { data } = await query;
+    return data || [];
+  }
 }
 
 module.exports = new AIRepository();

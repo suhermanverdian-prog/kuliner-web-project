@@ -209,8 +209,29 @@ class LoyaltyService {
 
     let customerInfo = { points: 0, total_visits: 0, customer_name: 'Member Premium', customer_phone: phone };
     let history = [];
+    let totalSpend = 0;
+    let visits = 0;
 
-    // 1. Fetch points & visits from customers CRM table
+    // 1. Get tier settings
+    let tierRules = {
+      member: { min_spend: 250000, min_visits: 3, points_multiplier: 1.5 },
+      vip: { min_spend: 1000000, min_visits: 10, points_multiplier: 2.0 }
+    };
+
+    try {
+      const { data: sData } = await supabase
+        .from('settings')
+        .select('tier_rules')
+        .eq('tenant_id', tenantId)
+        .maybeSingle();
+      if (sData && sData.tier_rules) {
+        tierRules = sData.tier_rules;
+      }
+    } catch (e) {
+      console.warn('⚠️ Gagal mengambil tier_rules dari database:', e.message);
+    }
+
+    // 2. Fetch points & visits from customers CRM table
     try {
       const { data, error } = await supabase
         .from('customers')
@@ -222,19 +243,24 @@ class LoyaltyService {
       if (!error && data) {
         customerInfo = {
           points: data.loyalty_points || 0,
-          total_visits: 0, // Fallback placeholder
+          total_visits: 0,
           customer_name: data.name,
           customer_phone: phone
         };
         
-        // Enrich total_visits dynamically
-        const { count } = await supabase
+        // Enrich visits & totalSpend dynamically from paid transactions
+        const { data: txs, error: txsErr } = await supabase
           .from('transactions')
-          .select('*', { count: 'exact', head: true })
+          .select('total')
           .eq('tenant_id', tenantId)
           .eq('customer_phone', phone)
           .eq('payment_status', 'paid');
-        if (count) customerInfo.total_visits = count;
+        
+        if (!txsErr && txs) {
+          visits = txs.length;
+          totalSpend = txs.reduce((sum, t) => sum + Number(t.total || 0), 0);
+          customerInfo.total_visits = visits;
+        }
       } else {
         // Fallback to customer_points
         const { data: cpData, error: cpErr } = await supabase
@@ -245,12 +271,14 @@ class LoyaltyService {
           .maybeSingle();
         if (!cpErr && cpData) {
           customerInfo = cpData;
+          visits = cpData.total_visits || 0;
         } else {
           // Fallback to local
           const localPoints = getLocalPoints();
           const found = localPoints.find(p => p.tenant_id === tenantId && p.customer_phone === phone);
           if (found) {
             customerInfo = found;
+            visits = found.total_visits || 0;
           }
         }
       }
@@ -259,16 +287,17 @@ class LoyaltyService {
       const found = localPoints.find(p => p.tenant_id === tenantId && p.customer_phone === phone);
       if (found) {
         customerInfo = found;
+        visits = found.total_visits || 0;
       }
     }
 
-    // 2. Fetch last 5 transactions
+    // 3. Fetch last 5 transactions
     try {
       const { data, error } = await supabase
         .from('transactions')
         .select('*')
         .eq('tenant_id', tenantId)
-        .eq('customer_name', customerInfo.customer_name)
+        .eq('customer_phone', phone)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -279,11 +308,56 @@ class LoyaltyService {
       console.warn('⚠️ Gagal mengambil riwayat transaksi dari Supabase:', e.message);
     }
 
+    // Determine current tier
+    let currentTier = 'Guest';
+    let nextTier = 'Member';
+    let progressPercent = 0;
+    let progressLabel = '';
+    
+    const minSpendMember = Number(tierRules.member?.min_spend ?? 250000);
+    const minVisitsMember = Number(tierRules.member?.min_visits ?? 3);
+    const minSpendVip = Number(tierRules.vip?.min_spend ?? 1000000);
+    const minVisitsVip = Number(tierRules.vip?.min_visits ?? 10);
+
+    if (totalSpend >= minSpendVip || visits >= minVisitsVip) {
+      currentTier = 'VIP';
+      nextTier = null;
+      progressPercent = 100;
+      progressLabel = 'Anda berada di level tertinggi (VIP)';
+    } else if (totalSpend >= minSpendMember || visits >= minVisitsMember) {
+      currentTier = 'Member';
+      nextTier = 'VIP';
+      
+      const spendProgress = Math.min(100, (totalSpend / minSpendVip) * 100);
+      const visitProgress = Math.min(100, (visits / minVisitsVip) * 100);
+      progressPercent = Math.round(Math.max(spendProgress, visitProgress));
+      
+      const spendLeft = Math.max(0, minSpendVip - totalSpend);
+      const visitsLeft = Math.max(0, minVisitsVip - visits);
+      progressLabel = `Belanja Rp ${spendLeft.toLocaleString('id-ID')} lagi atau ${visitsLeft} kunjungan lagi untuk menjadi VIP`;
+    } else {
+      currentTier = 'Guest';
+      nextTier = 'Member';
+      
+      const spendProgress = Math.min(100, (totalSpend / minSpendMember) * 100);
+      const visitProgress = Math.min(100, (visits / minVisitsMember) * 100);
+      progressPercent = Math.round(Math.max(spendProgress, visitProgress));
+      
+      const spendLeft = Math.max(0, minSpendMember - totalSpend);
+      const visitsLeft = Math.max(0, minVisitsMember - visits);
+      progressLabel = `Belanja Rp ${spendLeft.toLocaleString('id-ID')} lagi atau ${visitsLeft} kunjungan lagi untuk menjadi Member`;
+    }
+
     return {
       points: customerInfo.points || 0,
-      total_visits: customerInfo.total_visits || 0,
+      total_visits: visits,
+      total_spend: totalSpend,
       customer_name: customerInfo.customer_name,
       customer_phone: customerInfo.customer_phone,
+      tier: currentTier,
+      next_tier: nextTier,
+      progress_percent: progressPercent,
+      progress_label: progressLabel,
       history
     };
   }

@@ -38,7 +38,9 @@ export function useMenuPage() {
         api.getBahan().catch(err => { console.error('Bahan Error:', err); return []; })
       ]);
 
-      const augmentedMenus = (m || []).map(menu => {
+      // Guard: pastikan response adalah array dan setiap item memiliki name
+      const safeMenus = Array.isArray(m) ? m.filter(item => item && typeof item === 'object') : [];
+      const augmentedMenus = safeMenus.map(menu => {
         const cost = (menu.bom || []).reduce((sum, row) => {
           const bahan = (b || []).find(x => String(x.id) === String(row.bahanId || row.bahan_id));
           if (!bahan) return sum;
@@ -46,10 +48,10 @@ export function useMenuPage() {
           const materialCost = bahan.cost || bahan.price || 0;
           return sum + (materialCost / conv.ratio) * Number(row.qty || row.qty_needed || 0);
         }, 0);
-        return { ...menu, cost };
+        return { ...menu, name: menu.name || '', cost };
       });
 
-      setMenus(augmentedMenus); 
+      setMenus(augmentedMenus);
       setBahanList(b || []);
     } finally { setLoading(false); }
   };
@@ -93,7 +95,8 @@ export function useMenuPage() {
     }
   };
 
-  const filtered = menus.filter(m => (category === 'Semua' || m.category === category) && m.name.toLowerCase().includes(search.toLowerCase()));
+  // Guard: gunakan optional chaining untuk mencegah crash jika name null/undefined
+  const filtered = menus.filter(m => m && (category === 'Semua' || m.category === category) && (m.name || '').toLowerCase().includes(search.toLowerCase()));
 
   return {
     menus, setMenus,

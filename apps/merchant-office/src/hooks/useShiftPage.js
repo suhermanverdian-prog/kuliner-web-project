@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { jsPDF } from 'jspdf';
 import { useShifts, useAddShift, useCloseShift } from './queries/useShifts';
 
 const formatCurrency = (n) =>
@@ -86,7 +85,8 @@ export function useShiftPage({ user }) {
 
   const getKasirName = (s) => s?.userName || s?.kasir || 'Kasir';
   
-  const generatePDF = (s) => {
+  const generatePDF = async (s) => {
+    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
 
     doc.setFontSize(20);

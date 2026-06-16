@@ -367,7 +367,8 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
     : (FOOD_SIZES.find(s => s.key === size) || FOOD_SIZES[0]);
 
   // Premium Pricing Calculations for Espresso Shots & Alternative Milk
-  const strengthPriceAdd = strength === 'single' ? 5000 : strength === 'double' ? 10000 : strength === 'triple' ? 15000 : 0;
+  const espressoPrice = Number(localStorage.getItem('ken_price_espresso_shot') || 5000);
+  const strengthPriceAdd = strength === 'single' ? espressoPrice : strength === 'double' ? espressoPrice * 2 : strength === 'triple' ? espressoPrice * 3 : 0;
   const chosenMilk = milksList.find(m => m.key === milk);
   const milkPriceAdd = chosenMilk ? (chosenMilk.priceAdd || 0) : 0;
 

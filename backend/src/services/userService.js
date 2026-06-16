@@ -31,10 +31,37 @@ class UserService {
       throw new Error('Identitas atau password tidak valid');
     }
 
-    const [settings, primaryOutlet] = await Promise.all([
+    const [settings, primaryOutlet, rolePermissions] = await Promise.all([
       UserRepository.getSettings(user.tenant_id),
-      UserRepository.getPrimaryOutlet(user.tenant_id)
+      UserRepository.getPrimaryOutlet(user.tenant_id),
+      UserRepository.getRolePermissions(user.tenant_id)
     ]);
+
+    const userRolePerms = (rolePermissions || []).filter(p => p.role === user.role);
+    const revKeyMap = {
+      'pos': 'akses_kasir',
+      'inventory': 'akses_gudang',
+      'kds': 'akses_dapur',
+      'accounting': 'akses_keuangan',
+      'laporan': 'lihat_hpp',
+      'dashboard': 'lihat_laba',
+      'transactions': 'hapus_transaksi',
+      'system': 'atur_user'
+    };
+
+    let userPerms = {};
+    if (user.permissions) {
+      userPerms = typeof user.permissions === 'string' ? JSON.parse(user.permissions) : user.permissions;
+    }
+
+    userRolePerms.forEach(p => {
+      const uiKey = revKeyMap[p.feature_key] || p.feature_key;
+      if (p.can_view) {
+        userPerms[uiKey] = true;
+      }
+    });
+
+    user.permissions = userPerms;
 
     const token = jwt.sign(
       { 
@@ -112,11 +139,18 @@ class UserService {
 
   async createUser(userData, tenantId) {
     const hash = userData.password ? await bcrypt.hash(userData.password, 10) : null;
-    return await UserRepository.createUser({
+    const result = await UserRepository.createUser({
       ...userData,
       password: hash,
       tenant_id: tenantId
     });
+    try {
+      const cache = require('../utils/cache');
+      cache.flush();
+    } catch (e) {
+      console.warn("Failed to clear cache:", e.message);
+    }
+    return result;
   }
 
   async updateUser(id, tenantId, updateData) {
@@ -124,11 +158,25 @@ class UserService {
     if (updateData.password && updateData.password.trim() !== '') {
        finalUpdate.password = await bcrypt.hash(updateData.password, 10);
     }
-    return await UserRepository.updateUser(id, tenantId, finalUpdate);
+    const result = await UserRepository.updateUser(id, tenantId, finalUpdate);
+    try {
+      const cache = require('../utils/cache');
+      cache.flush();
+    } catch (e) {
+      console.warn("Failed to clear cache:", e.message);
+    }
+    return result;
   }
 
   async deleteUser(id, tenantId) {
-    return await UserRepository.softDeleteUser(id, tenantId);
+    const result = await UserRepository.softDeleteUser(id, tenantId);
+    try {
+      const cache = require('../utils/cache');
+      cache.flush();
+    } catch (e) {
+      console.warn("Failed to clear cache:", e.message);
+    }
+    return result;
   }
 
   // --- Roles ---
@@ -162,7 +210,14 @@ class UserService {
           });
        }
     }
-    return await UserRepository.saveRolePermissions(role, tenantId, inserts);
+    const result = await UserRepository.saveRolePermissions(role, tenantId, inserts);
+    try {
+      const cache = require('../utils/cache');
+      cache.flush();
+    } catch (e) {
+      console.warn("Failed to clear cache:", e.message);
+    }
+    return result;
   }
 
   // --- Tenants (Superadmin) ---
@@ -232,7 +287,7 @@ class UserService {
       try {
         const { data: txs } = await supabase
           .from('transactions')
-          .select('id, total')
+          .select('id, total, created_at')
           .eq('tenant_id', tenantId)
           .eq('payment_status', 'paid')
           .eq('items->>customer_phone', c.phone);
@@ -274,8 +329,30 @@ class UserService {
           recommendedAction = `Kirim promo "Welcome Discount" untuk memicu transaksi pertama mereka.`;
         }
 
-        // Calculate Churn Risk dynamically based on visits
-        const churnRisk = visits >= 5 ? 'Low' : (visits >= 2 ? 'Medium' : 'High');
+        // Calculate Churn Risk dynamically based on days since last transaction
+        let churnRisk = 'High';
+        if (visits > 0 && txs && txs.length > 0) {
+          const dates = txs.map(t => new Date(t.created_at).getTime());
+          const lastTxTime = Math.max(...dates);
+          const diffDays = (new Date().getTime() - lastTxTime) / (1000 * 60 * 60 * 24);
+          
+          if (diffDays <= 7) {
+            churnRisk = 'Low';
+          } else if (diffDays <= 21) {
+            churnRisk = 'Medium';
+          } else {
+            churnRisk = 'High';
+          }
+        } else {
+          // New member or guest with no transaction history yet
+          const joinTime = new Date(c.created_at || new Date()).getTime();
+          const diffJoinDays = (new Date().getTime() - joinTime) / (1000 * 60 * 60 * 24);
+          if (diffJoinDays <= 7) {
+            churnRisk = 'Low';
+          } else {
+            churnRisk = 'High';
+          }
+        }
 
         // Dynamic status based on customized tier_rules
         const { data: settingsData } = await supabase.from('settings').select('tier_rules').eq('tenant_id', tenantId).maybeSingle();

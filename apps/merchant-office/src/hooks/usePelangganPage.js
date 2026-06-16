@@ -40,8 +40,8 @@ export function usePelangganPage() {
   };
 
   const filtered = customers.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone.includes(search)
+    (c.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (c.phone || '').includes(search)
   );
 
   const totalPoints = customers.reduce((s, c) => s + c.points, 0);

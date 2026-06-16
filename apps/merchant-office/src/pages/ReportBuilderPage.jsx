@@ -11,7 +11,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Button } from "../components/ui/Button";
 import { cn } from "../lib/utils";
 import { useReportBuilderPage } from '../hooks/useReportBuilderPage';
-import { jsPDF } from 'jspdf';
 
 const DATA_NODES = [
   { id: 'sales', label: 'Sales & Transactions', icon: BarChart3, color: 'text-amber-500' },
@@ -39,8 +38,9 @@ export default function ReportBuilderPage() {
     reportData
   } = useReportBuilderPage();
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     if (!reportData) return;
+    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     doc.setFont("courier", "bold");
     doc.setFontSize(18);

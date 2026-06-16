@@ -25,9 +25,7 @@ const DEFAULT_TEMPERATURES = [
 
 const DEFAULT_SWEETNESS = [
   { key: 'no-sugar', label: 'Tanpa Gula' },
-  { key: 'less',     label: 'Sedikit' },
   { key: 'normal',   label: 'Normal' },
-  { key: 'sweet',    label: 'Manis' },
   { key: 'extra',    label: 'Extra Manis' },
 ];
 
@@ -181,6 +179,19 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
             ]);
           } catch (_) {}
         }
+
+        // 4. Espresso Customization
+        const dbEspresso = cfg['ken_custom_espresso'];
+        if (dbEspresso) {
+          try {
+            const parsed = typeof dbEspresso === 'string' ? JSON.parse(dbEspresso) : dbEspresso;
+            localStorage.setItem('ken_custom_espresso', JSON.stringify(parsed));
+            localStorage.setItem('ken_price_espresso_shot', (Number(parsed.priceAdd || parsed.price) || 5000).toString());
+            localStorage.setItem('ken_dose_espresso', (Number(parsed.dose) || 7).toString());
+          } catch (e) {
+            console.warn('[KEN CustomizationModal] Failed to parse dbEspresso:', e);
+          }
+        }
       })
       .catch(err => {
         console.warn('[KEN CustomizationModal] getCustomisations gagal, fallback ke localStorage:', err);
@@ -193,6 +204,13 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
         try {
           const m = JSON.parse(localStorage.getItem('ken_custom_milks'));
           if (m) setMilksList([{ key: 'standard', label: 'Standard', priceAdd: 0 }, ...m, { key: 'no-milk', label: 'Tanpa Susu', priceAdd: 0 }]);
+        } catch (_) {}
+        try {
+          const esp = JSON.parse(localStorage.getItem('ken_custom_espresso'));
+          if (esp) {
+            localStorage.setItem('ken_price_espresso_shot', (Number(esp.priceAdd || esp.price) || 5000).toString());
+            localStorage.setItem('ken_dose_espresso', (Number(esp.dose) || 7).toString());
+          }
         } catch (_) {}
       })
       .finally(() => setCustomisationsLoading(false));
@@ -379,7 +397,8 @@ export default function ItemCustomizationModal({ item, onConfirm, onClose }) {
     : (FOOD_SIZES.find(s => s.key === size) || FOOD_SIZES[0]);
 
   // Premium Pricing Calculations for Espresso Shots & Alternative Milk
-  const strengthPriceAdd = strength === 'single' ? 5000 : strength === 'double' ? 10000 : strength === 'triple' ? 15000 : 0;
+  const espressoPrice = Number(localStorage.getItem('ken_price_espresso_shot') || 5000);
+  const strengthPriceAdd = strength === 'single' ? espressoPrice : strength === 'double' ? espressoPrice * 2 : strength === 'triple' ? espressoPrice * 3 : 0;
   const chosenMilk = milksList.find(m => m.key === milk);
   const milkPriceAdd = chosenMilk ? (chosenMilk.priceAdd || 0) : 0;
 

@@ -42,6 +42,7 @@ export function usePengaturan() {
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [newPayment, setNewPayment] = useState({ type: 'manual_transfer', account_number: '', account_name: '', instructions: '' });
   const [editingPayment, setEditingPayment] = useState(null);
+  const [outlets, setOutlets] = useState([]);
 
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type });
@@ -82,6 +83,7 @@ export function usePengaturan() {
     api.getSettingsLoyalty().then(l => { if (l) setLoyaltyConfig(l); }).catch(() => {});
     api.getOutletInfo().then(o => { if (o) setGeofence({ latitude: o.latitude || 0, longitude: o.longitude || 0, radius: o.geofence_radius || 100 }); }).catch(() => {});
     api.getPaymentMethods().then(p => { if (p) setPaymentMethods(p); }).catch(() => {});
+    api.getOutlets().then(o => { if (o) setOutlets(Array.isArray(o) ? o : []); }).catch(() => {});
     
     // Load AI Config from localStorage
     const savedAi = localStorage.getItem('ken_ai_config');
@@ -336,6 +338,7 @@ export function usePengaturan() {
     showAddPayment, setShowAddPayment,
     newPayment, setNewPayment,
     editingPayment, setEditingPayment,
+    outlets,
     showToast,
     toggleRolePerm,
     handleSaveUser,

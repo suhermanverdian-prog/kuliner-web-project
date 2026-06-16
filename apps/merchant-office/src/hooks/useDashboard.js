@@ -40,7 +40,12 @@ export function useDashboard() {
         setInvoices(inv);
         setAccountingSummary(acc);
         setLowStockItems(low);
-        setTrendData(trnd.current || []);
+        
+        const formattedTrend = (trnd.current || []).map(h => ({
+          label: `${String(h.hour).padStart(2, '0')}:00`,
+          value: h.value
+        }));
+        setTrendData(formattedTrend);
       } catch (err) {
         console.error('Dashboard Sync Error:', err);
       } finally {

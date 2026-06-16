@@ -84,7 +84,7 @@ export function useOutletPage() {
     }
   };
 
-  const filtered = outlets.filter(o => o.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = outlets.filter(o => (o.name || '').toLowerCase().includes(search.toLowerCase()));
 
   return {
     outlets,

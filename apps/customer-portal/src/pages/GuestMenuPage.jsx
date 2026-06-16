@@ -813,12 +813,11 @@ export default function GuestMenuPage({ user }) {
     }
   };
 
-  // Initialize storage if accessing via a direct store link
-  useEffect(() => {
-    if (tenantId) {
-      localStorage.setItem('tenantId', tenantId);
-    }
-  }, [tenantId]);
+  // ── Simpan tenantId ke localStorage SEGERA (synchronous, bukan di useEffect)
+  // agar getHeaders() sudah bisa membacanya saat hook pertama kali fetch data.
+  if (tenantId) {
+    localStorage.setItem('tenantId', tenantId);
+  }
 
   const {
     category, setCategory,
@@ -838,7 +837,8 @@ export default function GuestMenuPage({ user }) {
     addToCart,
     changeQty,
     getQty
-  } = useGuestMenu({ user, tableFromQR });
+  } = useGuestMenu({ user, tableFromQR, tenantId });
+
 
   const [customizingItem, setCustomizingItem] = useState(null);
 
