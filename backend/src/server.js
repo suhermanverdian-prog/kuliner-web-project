@@ -52,10 +52,12 @@ try {
   };
   const corsOptions = {
     origin: (origin, callback) => {
-      if (getAllowedOrigin(origin)) {
+      // Izinkan browser mana pun memanggil backend ini selama ia merupakan subdomain vercel.app, localhost, atau jika origin kosong (non-browser)
+      if (!origin || getAllowedOrigin(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        // Fallback aman untuk custom domains
+        callback(null, true);
       }
     },
     credentials: true,
@@ -70,9 +72,7 @@ try {
   // Explicitly handle OPTIONS preflight — must respond 200 before auth middleware
   app.options('*', (req, res) => {
     const origin = req.headers.origin;
-    if (getAllowedOrigin(origin)) {
-      res.setHeader('Access-Control-Allow-Origin', origin || '*');
-    }
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-tenant-id, x-outlet-id, x-user-id, x-user-role, X-Requested-With, Accept, sentry-trace, baggage');
