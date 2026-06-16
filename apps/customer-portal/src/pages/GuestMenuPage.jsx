@@ -1,11 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { formatRupiah } from '../utils/formatters';
 import { MENU_CATEGORIES } from '../utils/constants';
 import { api } from '../api';
 import { useGuestMenu } from '../hooks/useGuestMenu';
 import { useRealtimeSync } from '../hooks/useRealtimeSync';
-import ItemCustomizationModal from '../components/ItemCustomizationModal';
+
+// ── Lazy-loaded modals — hanya dimuat saat pertama kali dibuka ──────────────
+const ItemCustomizationModal = lazy(() => import('../components/ItemCustomizationModal'));
+const GuestCustomizerModal   = lazy(() => import('../components/guest/GuestCustomizerModal'));
+
+// Fallback spinner ringan untuk modal
+const ModalLoader = () => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/80 backdrop-blur-sm">
+    <div className="flex flex-col items-center gap-3">
+      <span className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin" />
+      <span className="text-xs text-zinc-400 font-mono">Memuat…</span>
+    </div>
+  </div>
+);
 import { 
   ShoppingBag, 
   Search, 
@@ -33,8 +46,8 @@ import {
   Send
 } from 'lucide-react';
 import { ReceiptTemplate } from '../components/ReceiptTemplate';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+// html2canvas & jsPDF dimuat secara dinamis hanya saat tombol Download PDF diklik
+// → menghemat ~200 kB dari initial bundle GuestMenuPage
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -65,11 +78,17 @@ function ProductImage({ src, alt, icon, className }) {
 
 function OrderTracking({ orderId, onBack }) {
   const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
   const receiptRef = useRef();
 
   const handleDownloadPDF = async () => {
     try {
       const element = receiptRef.current;
+      // Dynamic import — library baru diunduh saat tombol ini diklik
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
       const canvas = await html2canvas(element, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', [80, 200]);
@@ -230,7 +249,7 @@ function OrderTracking({ orderId, onBack }) {
                     >
                       <CreditCard className="mr-2" size={18} /> Simulasikan Bayar ({order.paymentMethod})
                     </Button>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-100 mt-4 uppercase tracking-wider font-bold">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-4 uppercase tracking-wider font-semibold">
                       *Tombol ini khusus untuk demonstrasi webhook otomatis.
                     </p>
                   </>
@@ -579,24 +598,10 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
                     {pm.icon}
                   </div>
                   <div className="font-black text-sm">{pm.label}</div>
-                  <div className="text-[10px] text-zinc-500 dark:text-zinc-100 mt-0.5 line-clamp-1">{pm.desc}</div>
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 line-clamp-1">{pm.desc}</div>
                 </button>
               ))}
             </div>
-          </section>
-
-          {/* Section: Note */}
-          <section className="space-y-4 pb-10">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-1.5 h-6 bg-primary rounded-lg" />
-              <h2 className="text-lg font-black">Catatan Pesanan</h2>
-            </div>
-            <textarea
-              value={form.note}
-              onChange={e => setForm({...form, note: e.target.value})}
-              placeholder="Contoh: Kurangi gula, es batu dipisah, dll."
-              className="w-full p-4 rounded-lg bg-background border-none min-h-[100px] text-sm font-medium outline-none"
-            />
           </section>
         </form>
 
@@ -611,13 +616,13 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
             )}
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-widest">Total Bayar</p>
-                <p className="text-xl font-black text-primary font-mono tabular-nums">{formatRupiah(finalTotal)}</p>
+                <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Total Bayar</p>
+                <p className="text-xl font-black text-amber-600 dark:text-amber-400 font-mono tabular-nums">{formatRupiah(finalTotal)}</p>
               </div>
               <Button 
                 onClick={handleSubmit} 
                 disabled={loading}
-                className="flex-[1.5] h-14 rounded-lg font-black text-lg shadow-xl shadow-primary/30"
+                className="flex-[1.5] h-14 rounded-lg font-bold text-sm bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 active:scale-95 shadow-lg shadow-amber-500/20"
               >
                 {loading ? (
                   <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-lg animate-spin" />
@@ -640,7 +645,7 @@ function CartDrawer({ cart, onClose, onChangeQty, onCheckout }) {
 
   return (
     <div className="fixed inset-0 z-[1000] flex animate-in fade-in duration-300">
-      <div className="absolute inset-0 " onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[4px] transition-opacity" onClick={onClose} />
       <div className="ml-auto w-full max-w-sm bg-background h-full shadow-2xl relative flex flex-col animate-in slide-in-from-right duration-500">
         <div className="p-6 border-b flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -671,12 +676,12 @@ function CartDrawer({ cart, onClose, onChangeQty, onCheckout }) {
                 </div>
                 <div className="flex-1 min-w-0 py-1">
                   <h4 className="font-bold text-sm truncate">{item.name}</h4>
-                  <p className="text-primary font-black text-sm mt-0.5 font-mono tabular-nums">{formatRupiah(item.price)}</p>
+                  <p className="text-amber-600 dark:text-amber-400 font-bold text-sm mt-0.5 font-mono tabular-nums">{formatRupiah(item.price)}</p>
                   {item.customizationSummary && (
-                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 italic leading-tight">{item.customizationSummary}</p>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5 italic leading-tight">{item.customizationSummary}</p>
                   )}
                   {item.customization?.note && (
-                    <p className="text-[10px] text-amber-600 dark:text-amber-500/70 mt-0.5 leading-tight font-medium">📋: "{item.customization.note}"</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-500/70 mt-0.5 leading-tight font-medium">📋: "{item.customization.note}"</p>
                   )}
                   
                   <div className="flex items-center gap-4 mt-4">
@@ -689,7 +694,7 @@ function CartDrawer({ cart, onClose, onChangeQty, onCheckout }) {
                     <span className="font-bold text-sm min-w-[20px] text-center">{item.qty}</span>
                     <button 
                       onClick={() => onChangeQty(item.customKey || item.id, 1)}
-                      className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                      className="w-8 h-8 rounded-lg bg-amber-500 hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-500 text-white dark:text-zinc-900 flex items-center justify-center transition-colors"
                     >
                       <Plus size={14} />
                     </button>
@@ -701,7 +706,7 @@ function CartDrawer({ cart, onClose, onChangeQty, onCheckout }) {
         </div>
 
         {cart.length > 0 && (
-          <div className="p-6 border-t space-y-4 bg-background">
+          <div className="p-6 pb-20 sm:pb-6 border-t space-y-4 bg-background">
             <div className="space-y-2">
               <div className="flex justify-between text-sm text-zinc-500 dark:text-zinc-100">
                 <span>Subtotal</span>
@@ -731,21 +736,78 @@ function CartDrawer({ cart, onClose, onChangeQty, onCheckout }) {
 
 export default function GuestMenuPage({ user }) {
   const { tenantId, tableNumber: tableFromQR } = useParams();
+  const navigate = useNavigate();
   const setUser = useAppStore(state => state.setUser);
   const [showLogin, setShowLogin] = useState(false);
   const [loginPhone, setLoginPhone] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  const [loginMode, setLoginMode] = useState('login'); // 'login' | 'register'
+  const [regName, setRegName] = useState('');
+  const [regPhone, setRegPhone] = useState('');
+  const [regEmail, setRegEmail] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
   const handleMemberLogin = async (e) => {
     e.preventDefault();
     setLoginLoading(true);
     try {
-      const res = await api.login({ username: loginPhone, password: loginPassword });
-      setUser(res);
-      setShowLogin(false);
+      const customersList = await api.getCustomers();
+      const found = (customersList || []).find(c => c.phone === loginPhone);
+      if (found) {
+        setUser({
+          id: found.id,
+          name: found.name,
+          phone: found.phone,
+          loyalty_points: found.loyalty_points || 0,
+          role: 'customer'
+        });
+        setShowLogin(false);
+        navigate('/customer');
+      } else {
+        alert('Nomor HP belum terdaftar sebagai member. Silakan gunakan tab "Daftar" untuk menjadi member baru.');
+      }
     } catch (err) {
       alert('Gagal login: ' + err.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleMemberRegister = async (e) => {
+    e.preventDefault();
+    if (!regName || !regPhone) return alert('Nama dan Nomor HP wajib diisi!');
+    setLoginLoading(true);
+    try {
+      const customersList = await api.getCustomers();
+      const exists = (customersList || []).some(c => c.phone === regPhone);
+      if (exists) {
+        alert('Nomor HP sudah terdaftar. Silakan masuk lewat tab Login.');
+        setLoginMode('login');
+        setLoginPhone(regPhone);
+        setLoginLoading(false);
+        return;
+      }
+
+      const newMember = await api.addCustomers({
+        name: regName,
+        phone: regPhone,
+        email: regEmail || '',
+        points: 0
+      });
+
+      if (newMember) {
+        setUser({
+          id: newMember.id,
+          name: newMember.name,
+          phone: newMember.phone,
+          loyalty_points: newMember.loyalty_points || 0,
+          role: 'customer'
+        });
+        setShowLogin(false);
+        navigate('/customer');
+        alert('Pendaftaran berhasil! Selamat bergabung sebagai member baru.');
+      }
+    } catch (err) {
+      alert('Gagal mendaftar: ' + err.message);
     } finally {
       setLoginLoading(false);
     }
@@ -834,7 +896,7 @@ export default function GuestMenuPage({ user }) {
                   {user.name[0].toUpperCase()}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black uppercase text-amber-600 dark:text-amber-400 leading-none">{user.points || 0} PTS</span>
+                  <span className="text-xs font-black uppercase text-amber-600 dark:text-amber-400 leading-none">{user.points || 0} PTS</span>
                 </div>
               </div>
             ) : (
@@ -868,16 +930,16 @@ export default function GuestMenuPage({ user }) {
         
         <div className="max-w-3xl mx-auto px-6 relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="space-y-2">
-            <p className="text-amber-600 dark:text-amber-400 font-black uppercase tracking-[0.3em] text-[9px] mb-1">BrewMaster Culinary</p>
+            <p className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider text-xs mb-1">BrewMaster Culinary</p>
             <h1 className="text-3xl md:text-4xl font-black text-zinc-900 dark:text-zinc-50 tracking-tighter leading-none">
               Crafted Coffee & <span className="text-amber-500 italic">Premium Desserts</span>
             </h1>
-            <p className="text-[11px] md:text-xs text-zinc-500 dark:text-zinc-400 font-medium max-w-[400px] leading-relaxed">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium max-w-[400px] leading-relaxed">
               Pilih menu favorit Anda, lakukan pemesanan secara praktis dari meja, dan nikmati karya racikan terbaik dari barista kami.
             </p>
           </div>
           <div className="hidden md:block pb-1">
-             <div className="flex gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+             <div className="flex gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                 <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-lg bg-emerald-500 animate-pulse"/> Dapur Siap Melayani</span>
              </div>
           </div>
@@ -903,7 +965,7 @@ export default function GuestMenuPage({ user }) {
                 key={c} 
                 onClick={() => setCategory(c)}
                 className={cn(
-                  "px-6 h-10 rounded-lg whitespace-nowrap font-black text-[10px] uppercase tracking-widest transition-all",
+                  "px-6 h-10 rounded-lg whitespace-nowrap font-bold text-xs uppercase tracking-wider transition-all",
                   category === c 
                   ? 'bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 scale-105' 
                   : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-50 hover:bg-zinc-200 dark:hover:bg-zinc-700'
@@ -927,34 +989,44 @@ export default function GuestMenuPage({ user }) {
             filtered.map(item => {
               const qty = getQty(item.id);
               return (
-                <div key={item.id} className={`group bg-card rounded-lg border overflow-hidden transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 ${ qty > 0 ? 'border-primary ring-2 ring-primary/10 bg-primary/5' : 'border-muted/50' }`}>
+                <div 
+                  key={item.id} 
+                  onClick={() => setCustomizingItem(item)}
+                  className={`group bg-card rounded-lg border overflow-hidden transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 cursor-pointer active:scale-[0.99] select-none ${ qty > 0 ? 'border-amber-500 ring-2 ring-amber-500/10 bg-amber-500/5' : 'border-muted/50' }`}
+                >
                   <div className="flex p-4 gap-4 h-[140px]">
                     <div className="w-1/3 aspect-square rounded-lg overflow-hidden bg-background relative">
                       <ProductImage src={item.image} alt={item.name} icon={item.icon} />
                       {qty > 0 && (
-                        <div className="absolute top-2 right-2 w-6 h-6 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-[10px] font-black shadow-lg">
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-amber-500 text-white dark:bg-amber-400 dark:text-zinc-900 rounded-lg flex items-center justify-center text-xs font-bold shadow-lg">
                           {qty}
                         </div>
                       )}
                     </div>
                     <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
                       <div>
-                        <h3 className="font-black text-base truncate group-hover:text-primary transition-colors">{item.name}</h3>
-                        <p className="text-[10px] font-bold text-zinc-500 dark:text-zinc-100 uppercase tracking-widest mt-1">{item.category}</p>
+                        <h3 className="font-black text-base truncate group-hover:text-amber-500 transition-colors">{item.name}</h3>
+                        <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-1">{item.category}</p>
                       </div>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="font-black text-lg text-zinc-900 font-mono tabular-nums">{formatRupiah(item.price)}</span>
+                        <span className="font-black text-lg text-zinc-900 dark:text-white font-mono tabular-nums">{formatRupiah(item.price)}</span>
                         
                         {qty === 0 ? (
                           <button 
                             id={`btn-tambah-${item.id}`}
-                            onClick={() => setCustomizingItem(item)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCustomizingItem(item);
+                            }}
                             className="w-10 h-10 rounded-lg bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 flex items-center justify-center shadow-md active:scale-90 transition-all"
                           >
                             <Plus size={20} />
                           </button>
                         ) : (
-                          <div className="flex items-center gap-4 bg-background/50 backdrop-blur-md rounded-lg p-1 border">
+                          <div 
+                            onClick={(e) => e.stopPropagation()} 
+                            className="flex items-center gap-4 bg-background/50 backdrop-blur-md rounded-lg p-1 border"
+                          >
                             <button onClick={() => changeQty(item.id, -1)} className="w-8 h-8 rounded-lg hover:bg-background transition-colors flex items-center justify-center text-foreground"><Minus size={14} /></button>
                             <span className="font-black text-sm text-foreground">{qty}</span>
                             <button onClick={() => changeQty(item.id, 1)} className="w-8 h-8 rounded-lg bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 flex items-center justify-center shadow-md"><Plus size={14} /></button>
@@ -972,41 +1044,40 @@ export default function GuestMenuPage({ user }) {
 
       {/* Persistent Floating Checkout Bar */}
       {totalItems > 0 && (
-        <div className="fixed bottom-8 left-6 right-6 z-[500] animate-in slide-in-from-bottom-10 duration-500">
-          <div className="max-w-xl mx-auto ">
-            <div className="flex items-center gap-2 md:gap-4 pl-2 md:pl-4 min-w-0">
-              <div className="w-10 h-10 md:w-12 md:h-12 ">
-                <ShoppingBag size={20} className="md:w-6 md:h-6" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 md:w-6 md:h-6 ">
-                  {totalItems}
-                </span>
-              </div>
-              <div className="min-w-0">
-                <p className="text-[8px] md:text-[10px] font-bold  uppercase tracking-widest leading-none mb-1 truncate">Total</p>
-                <p className="text-sm md:text-xl font-black font-mono tabular-nums text-zinc-900 dark:text-zinc-100 truncate">{formatRupiah(cart.reduce((s, i) => s + i.price * i.qty, 0))}</p>
-              </div>
+        <div className="fixed bottom-20 sm:bottom-8 left-4 right-4 z-[500] animate-in slide-in-from-bottom-10 duration-500">
+          <div className="max-w-md mx-auto bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200 dark:border-zinc-800 shadow-xl rounded-2xl p-4 flex items-center justify-between gap-4">
+            
+            {/* Cart Button with Badge */}
+            <button 
+              onClick={() => setShowCart(true)}
+              className="relative w-12 h-12 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center shrink-0 active:scale-95"
+            >
+              <ShoppingBag size={20} />
+              <span className="absolute -top-1.5 -right-1.5 bg-amber-500 dark:bg-amber-400 text-white dark:text-zinc-900 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md font-mono tabular-nums">
+                {totalItems}
+              </span>
+            </button>
+
+            {/* Total Price Column */}
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest leading-none mb-1">Total</p>
+              <p className="text-lg font-black font-mono tabular-nums text-amber-600 dark:text-amber-400 truncate leading-none">
+                {formatRupiah(cart.reduce((s, i) => s + i.price * i.qty, 0))}
+              </p>
             </div>
             
-            <div className="flex gap-1 md:gap-2">
-              <Button 
-                onClick={() => setShowCart(true)} 
-                variant="ghost" 
-                className="rounded-lg md:rounded-lg w-10 h-10 md:w-14 md:h-14 p-0 bg-background/5 hover:bg-background/10 border-none shrink-0"
-              >
-                <ShoppingBag size={20} className="md:w-6 md:h-6" />
-              </Button>
-              <Button 
-                onClick={() => {
-                  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-                  const total = subtotal + Math.round(subtotal * 0.11);
-                  setCheckoutTotal(total);
-                }}
-                className="bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 flex-[2] h-10 md:h-14 font-black shadow-lg shadow-amber-500/20 dark:shadow-amber-400/10 rounded-lg active:scale-95 transition-all"
-              >
-                Pesan <span className="hidden xs:inline ml-1">Sekarang</span>
-                <ChevronRight size={16} className="ml-1 md:ml-2 group-hover:translate-x-1 transition-transform md:w-6 md:h-6" />
-              </Button>
-            </div>
+            {/* Primary Action Button */}
+            <Button 
+              onClick={() => {
+                const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+                const total = subtotal + Math.round(subtotal * 0.11);
+                setCheckoutTotal(total);
+              }}
+              className="bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-400 dark:text-zinc-900 dark:hover:bg-amber-500 h-12 px-6 font-black shadow-md shadow-amber-500/20 dark:shadow-amber-400/5 rounded-xl active:scale-95 transition-all flex items-center gap-1.5 shrink-0"
+            >
+              <span>Pesan Sekarang</span>
+              <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            </Button>
           </div>
         </div>
       )}
@@ -1027,59 +1098,108 @@ export default function GuestMenuPage({ user }) {
           <div className="bg-card w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 border border-muted">
             <div className="p-6 border-b flex justify-between items-center bg-primary/5">
               <h3 className="text-xl font-black flex items-center gap-2">
-                <User className="text-primary" /> Member Login
+                <User className="text-primary" /> {loginMode === 'login' ? 'Member Login' : 'Daftar Member'}
               </h3>
               <Button variant="ghost" size="icon" onClick={() => setShowLogin(false)} className="rounded-lg hover:bg-rose-500/10 hover:text-rose-500">
                 <X size={20} />
               </Button>
             </div>
-            <form onSubmit={handleMemberLogin} className="p-6 space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-zinc-500 uppercase">Nomor HP</label>
-                <Input 
-                  value={loginPhone}
-                  onChange={e => setLoginPhone(e.target.value)}
-                  placeholder="0812xxxxxx"
-                  className="rounded-lg h-12 bg-background font-mono"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-zinc-500 uppercase">Kata Sandi</label>
-                <Input 
-                  type="password"
-                  value={loginPassword}
-                  onChange={e => setLoginPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="rounded-lg h-12 bg-background font-mono"
-                  required
-                />
-              </div>
-              <Button 
-                type="submit" 
-                disabled={loginLoading}
-                className="w-full h-12 font-black rounded-lg mt-4 shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all"
+            
+            {/* Tabs Selector */}
+            <div className="grid grid-cols-2 border-b text-center text-xs font-black uppercase tracking-wider">
+              <button 
+                onClick={() => setLoginMode('login')} 
+                className={`py-3 transition-colors ${loginMode === 'login' ? 'border-b-2 border-amber-500 text-amber-600 font-black' : 'text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/20'}`}
               >
-                {loginLoading ? 'Memproses...' : 'Masuk Sekarang'}
-              </Button>
-            </form>
+                Masuk
+              </button>
+              <button 
+                onClick={() => setLoginMode('register')} 
+                className={`py-3 transition-colors ${loginMode === 'register' ? 'border-b-2 border-amber-500 text-amber-600 font-black' : 'text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/20'}`}
+              >
+                Daftar Baru
+              </button>
+            </div>
+
+            {loginMode === 'login' ? (
+              <form onSubmit={handleMemberLogin} className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-500 uppercase">Nomor HP</label>
+                  <Input 
+                    value={loginPhone}
+                    onChange={e => setLoginPhone(e.target.value)}
+                    placeholder="0812xxxxxx"
+                    className="rounded-lg h-12 bg-background font-mono"
+                    required
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  disabled={loginLoading}
+                  className="w-full h-12 font-black rounded-lg mt-4 shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all"
+                >
+                  {loginLoading ? 'Memproses...' : 'Masuk Sekarang'}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleMemberRegister} className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-500 uppercase">Nama Lengkap</label>
+                  <Input 
+                    value={regName}
+                    onChange={e => setRegName(e.target.value)}
+                    placeholder="Contoh: Rina Amelia"
+                    className="rounded-lg h-12 bg-background font-bold"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-500 uppercase">Nomor HP / WhatsApp</label>
+                  <Input 
+                    value={regPhone}
+                    onChange={e => setRegPhone(e.target.value)}
+                    placeholder="0812xxxxxx"
+                    className="rounded-lg h-12 bg-background font-mono"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-500 uppercase">Email (Opsional)</label>
+                  <Input 
+                    value={regEmail}
+                    onChange={e => setRegEmail(e.target.value)}
+                    placeholder="rina@example.com"
+                    className="rounded-lg h-12 bg-background"
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  disabled={loginLoading}
+                  className="w-full h-12 font-black rounded-lg mt-4 shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all"
+                >
+                  {loginLoading ? 'Memproses...' : 'Daftar & Masuk'}
+                </Button>
+              </form>
+            )}
           </div>
         </div>
       )}
       {customizingItem && (
-        <ItemCustomizationModal
-          item={customizingItem}
-          onClose={() => setCustomizingItem(null)}
-          onConfirm={(customizedItem) => {
-            addToCart(
-              customizingItem,
-              customizedItem.customization,
-              customizedItem.finalPrice,
-              customizedItem.customizationSummary
-            );
-            setCustomizingItem(null);
-          }}
-        />
+        <Suspense fallback={<ModalLoader />}>
+          <GuestCustomizerModal
+            item={customizingItem}
+            onClose={() => setCustomizingItem(null)}
+            onConfirm={(customizedItem) => {
+              addToCart(
+                customizingItem,
+                customizedItem.customization,
+                customizedItem.finalPrice,
+                customizedItem.customizationSummary
+              );
+              setCustomizingItem(null);
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

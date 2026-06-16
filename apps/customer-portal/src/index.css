@@ -75,7 +75,7 @@
     border-color: var(--border-subtle);
   }
   body {
-    background-color: var(--bg-app);
+    background: var(--bg-app);
     color: var(--text-primary);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -97,3 +97,194 @@
 ::-webkit-scrollbar-thumb:hover { 
   background-color: var(--text-tertiary); 
 }
+
+
+/* ==========================================
+   💎 LIQUID GLASS THEME — "FROSTED AURORA"
+   Premium Edition v2.0
+   ========================================== */
+
+/* ── Lapisan gradasi aurora yang tertancap tetap di belakang halaman ── */
+.theme-liquid::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(139, 92, 246, 0.38) 0%, transparent 55%),
+    radial-gradient(circle at 85% 15%, rgba(14, 165, 233, 0.35) 0%, transparent 50%),
+    radial-gradient(circle at 75% 85%, rgba(20, 184, 166, 0.28) 0%, transparent 60%),
+    radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.22) 0%, transparent 50%),
+    linear-gradient(135deg, #eef2ff 0%, #fae8ff 50%, #e0f2fe 100%); /* Latar pastel aurora terang dan segar */
+  pointer-events: none;
+}
+
+/* ── Root variabel untuk Liquid Glass ── */
+.theme-liquid {
+  --bg-app: transparent;
+  --bg-card: rgba(255, 255, 255, 0.28); /* Sedikit lebih tebal agar nyaman dibaca di latar terang */
+  --border-subtle: rgba(139, 92, 246, 0.18);
+  --border-strong: rgba(139, 92, 246, 0.28);
+  --text-primary: #18181b; /* Kembali ke teks gelap bawaan light mode agar nyaman di mata */
+  --text-secondary: #3f3f46;
+  --text-tertiary: #71717a;
+}
+
+.theme-liquid body {
+  background: transparent !important;
+  color: #18181b !important;
+}
+
+/* ── Dark mode ── */
+.theme-liquid.dark::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 10%,  rgba(139, 92, 246, 0.30) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 80% at 85% 20%,  rgba(14, 165, 233, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 60% at 50% 95%,  rgba(245, 158, 11, 0.15) 0%, transparent 60%),
+    linear-gradient(145deg, #09090b 0%, #0f0a1a 50%, #070d0d 100%);
+}
+
+.theme-liquid.dark {
+  --bg-app: transparent;
+  --bg-card: rgba(15, 10, 26, 0.55);
+  --border-subtle: rgba(139, 92, 246, 0.2);
+}
+
+/* ── Kartu, panel, modal — true glassmorphism ── */
+.theme-liquid .bg-card,
+.theme-liquid .bg-white,
+.theme-liquid [class*="bg-zinc-50"],
+.theme-liquid [class*="bg-zinc-100"] {
+  background-color: rgba(255, 255, 255, 0.35) !important; /* Kaca semi transparan yang cerah dan nyaman di mata */
+  backdrop-filter: blur(20px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.8) !important;
+  border: 1px solid rgba(139, 92, 246, 0.18) !important;
+  box-shadow:
+    0 8px 32px rgba(139, 92, 246, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.6) inset !important;
+}
+
+
+
+
+.theme-liquid.dark .bg-card,
+.theme-liquid.dark .bg-white,
+.theme-liquid.dark [class*="bg-zinc-800"],
+.theme-liquid.dark [class*="bg-zinc-900"] {
+  background-color: rgba(15, 10, 26, 0.55) !important;
+  backdrop-filter: blur(24px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.6) !important;
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset !important;
+}
+
+/* ── Pengecualian Khusus Modal, Dialog, & Drawer Keranjang agar Aurora Tembus Cantik ── */
+.theme-liquid [role="dialog"],
+.theme-liquid .fixed.inset-0.flex + .relative,
+.theme-liquid [class*="max-w-sm"].bg-background,
+.theme-liquid [class*="max-w-md"].bg-background,
+.theme-liquid [class*="bg-background"].shadow-2xl {
+  background-color: rgba(245, 243, 255, 0.65) !important; /* Kaca violet transparan tipis agar warna aurora tembus */
+  backdrop-filter: blur(28px) saturate(1.8) !important; /* Blur sangat tinggi agar menu di bawah tidak terbaca/bertumpuk */
+  -webkit-backdrop-filter: blur(28px) saturate(1.8) !important;
+  border-left: 1px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: -10px 0 40px rgba(139, 92, 246, 0.1) !important;
+}
+
+.theme-liquid.dark [role="dialog"],
+.theme-liquid.dark .fixed.inset-0.flex + .relative,
+.theme-liquid.dark [class*="max-w-sm"].bg-background,
+.theme-liquid.dark [class*="max-w-md"].bg-background,
+.theme-liquid.dark [class*="bg-background"].shadow-2xl {
+  background-color: rgba(15, 10, 26, 0.72) !important; /* Kaca hitam ungu transparan */
+  backdrop-filter: blur(28px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(1.6) !important;
+  border-left: 1px solid rgba(139, 92, 246, 0.25) !important;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* Floating Bar "Pesan Sekarang" agar ikut terkena efek Kaca Aurora */
+.theme-liquid [class*="fixed"][class*="bottom-20"] > div,
+.theme-liquid [class*="fixed"][class*="bottom-8"] > div {
+  background-color: rgba(245, 243, 255, 0.65) !important;
+  backdrop-filter: blur(24px) saturate(1.7) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.7) !important;
+  border: 1px solid rgba(139, 92, 246, 0.2) !important;
+  box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1) !important;
+}
+
+.theme-liquid.dark [class*="fixed"][class*="bottom-20"] > div,
+.theme-liquid.dark [class*="fixed"][class*="bottom-8"] > div {
+  background-color: rgba(15, 10, 26, 0.75) !important;
+  backdrop-filter: blur(24px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.5) !important;
+  border: 1px solid rgba(139, 92, 246, 0.25) !important;
+}
+
+
+/* Backdrop gelap di belakang modal/drawer */
+.theme-liquid .fixed.inset-0.bg-black\/50,
+.theme-liquid .fixed.inset-0.bg-black\/20,
+.theme-liquid [class*="absolute inset-0"].onClick,
+.theme-liquid div.fixed.inset-0:has(+ [class*="max-w-sm"]),
+.theme-liquid div.fixed.inset-0:has(+ [class*="max-w-md"]) {
+  background-color: rgba(9, 7, 16, 0.35) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+
+/* ── Header & bottom navigation ── */
+.theme-liquid header,
+.theme-liquid nav {
+  background-color: rgba(248, 246, 255, 0.72) !important;
+  backdrop-filter: blur(16px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.8) !important;
+  border-bottom: 1px solid rgba(168, 162, 255, 0.2) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
+}
+
+.theme-liquid.dark header,
+.theme-liquid.dark nav {
+  background-color: rgba(9, 7, 16, 0.68) !important;
+  backdrop-filter: blur(20px) saturate(1.5) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.5) !important;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.15) !important;
+}
+
+/* ── Input, select, textarea ── */
+.theme-liquid input,
+.theme-liquid select,
+.theme-liquid textarea {
+  background-color: rgba(255, 255, 255, 0.55) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-color: rgba(168, 162, 255, 0.35) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset !important;
+}
+
+.theme-liquid.dark input,
+.theme-liquid.dark select,
+.theme-liquid.dark textarea {
+  background-color: rgba(15, 10, 26, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border-color: rgba(139, 92, 246, 0.25) !important;
+}
+
+/* ── Tombol kategori & pill tabs ── */
+.theme-liquid button:not([class*="bg-amber"]):not([class*="bg-primary"]) {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+/* ── Scrollbar bertema ungu lembut ── */
+.theme-liquid ::-webkit-scrollbar-thumb {
+  background-color: rgba(139, 92, 246, 0.3) !important;
+}
+.theme-liquid ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(139, 92, 246, 0.55) !important;
+}
+
