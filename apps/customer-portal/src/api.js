@@ -359,12 +359,15 @@ const apiProxy = new Proxy(apiBase, {
         if (prop === 'updateKdsStatus') {
           payload = { status: optionalData };
         }
-      } else {
         // Pattern: method(data) -> /resource
         payload = idOrData;
         if (idOrData && typeof idOrData !== 'object') {
-           url += `/${idOrData}`;
-           payload = null;
+          if (method === 'GET' && prop === 'getActiveShift') {
+            payload = { tenantId: idOrData };
+          } else {
+            url += `/${idOrData}`;
+            payload = null;
+          }
         }
       }
 
