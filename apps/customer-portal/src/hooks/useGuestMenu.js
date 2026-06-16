@@ -16,10 +16,13 @@ export function useGuestMenu({ user, tableFromQR }) {
 
   useEffect(() => {
     const fetchMenu = () => api.getMenu().then(data => setMenu(data));
-    const fetchShift = () => api.getActiveShift().then(data => {
-      setActiveShift(data);
-      setLoadingShift(false);
-    }).catch(() => setLoadingShift(false));
+    const fetchShift = () => {
+      const tId = localStorage.getItem('tenantId');
+      return api.getActiveShift(tId ? { tenantId: tId } : {}).then(data => {
+        setActiveShift(data);
+        setLoadingShift(false);
+      }).catch(() => setLoadingShift(false));
+    };
     
     fetchMenu();
     fetchShift();

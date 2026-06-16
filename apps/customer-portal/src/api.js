@@ -71,7 +71,7 @@ const getResource = (prop) => {
     // System & Shifts
     'getShifts': 'shifts',
     'addShift': 'shifts',
-    'getActiveShift': 'shifts/active',
+    'getActiveShift': 'shifts/active-public',
     'closeShift': 'shifts',
     'getTables': 'system/tables',
     'saveTable': 'system/tables',

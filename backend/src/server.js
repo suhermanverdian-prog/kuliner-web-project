@@ -121,6 +121,24 @@ try {
   const jwt = require('jsonwebtoken');
   const SECRET = process.env.JWT_SECRET || 'ken_enterprise_secret_2024';
 
+  // ── RUTE PUBLIK (Tanpa JWT) ─────────────────────────────────────────────
+  // Endpoint ini harus didaftarkan SEBELUM authMiddleware agar tamu (browser
+  // pelanggan tanpa token) bisa mengecek status shift kasir aktif.
+  app.get('/api/shifts/active-public', async (req, res, next) => {
+    try {
+      const tenantId = req.headers['x-tenant-id'] || req.query.tenantId;
+      if (!tenantId) {
+        return res.status(400).json({ error: 'Tenant ID wajib disertakan di Header (x-tenant-id) atau Query (?tenantId=...).' });
+      }
+      const shiftService = require('./services/shiftService');
+      const activeShift = await shiftService.getActiveShift(tenantId);
+      res.json(activeShift);
+    } catch (err) {
+      next(err);
+    }
+  });
+  // ────────────────────────────────────────────────────────────────────────
+
   const authMiddleware = require('./middleware/authMiddleware');
   app.use(authMiddleware);
 
@@ -149,19 +167,34 @@ try {
 
 
   const { supabase } = require('./supabase');
+  const sharp = require('sharp');
   app.post('/api/upload', upload.single('image'), async (req, res) => {
     try {
       if (!req.file) return res.status(400).json({ error: 'No file' });
       
-      const fileExt = req.file.originalname.split('.').pop();
+      // Mengompresi dan mengonversi gambar ke format WebP dengan kualitas 80
+      let imageBuffer = req.file.buffer;
+      let fileExt = 'webp';
+      let contentType = 'image/webp';
+
+      try {
+        imageBuffer = await sharp(req.file.buffer)
+          .webp({ quality: 80 })
+          .toBuffer();
+      } catch (sharpErr) {
+        console.warn('⚠️ [Upload Engine] Sharp failed to process image, uploading raw file instead:', sharpErr.message);
+        fileExt = req.file.originalname.split('.').pop();
+        contentType = req.file.mimetype;
+      }
+      
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `public/${fileName}`;
       
       // Upload ke Supabase Storage (bucket: 'uploads')
       let uploadRes = await supabase.storage
         .from('uploads')
-        .upload(filePath, req.file.buffer, {
-          contentType: req.file.mimetype,
+        .upload(filePath, imageBuffer, {
+          contentType: contentType,
           upsert: true
         });
         
@@ -172,8 +205,8 @@ try {
           console.log('✅ [Upload Engine] Bucket "uploads" successfully created programmatically. Retrying upload...');
           uploadRes = await supabase.storage
             .from('uploads')
-            .upload(filePath, req.file.buffer, {
-              contentType: req.file.mimetype,
+            .upload(filePath, imageBuffer, {
+              contentType: contentType,
               upsert: true
             });
         }
