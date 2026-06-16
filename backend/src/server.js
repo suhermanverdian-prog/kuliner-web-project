@@ -46,12 +46,9 @@ try {
   // Configure CORS to allow any origin (including all Vercel preview domains)
   const getAllowedOrigin = (origin) => {
     if (!origin) return true; // server-to-server
-    if (
-      origin.includes('vercel.app') ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1')
-    ) return true;
-    return false;
+    const isVercel = /\.vercel\.app$/.test(origin) || origin.endsWith('vercel.app');
+    const isLocal = origin.includes('localhost') || origin.includes('127.0.0.1');
+    return isVercel || isLocal;
   };
   const corsOptions = {
     origin: (origin, callback) => {
