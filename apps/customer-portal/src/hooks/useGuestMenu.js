@@ -15,8 +15,9 @@ export function useGuestMenu({ user, tableFromQR, tenantId, outletId }) {
   const [loadingShift, setLoadingShift] = useState(true);
 
   useEffect(() => {
-    // Ambil tenantId dari prop (URL param) atau fallback ke localStorage
-    const tId = tenantId || localStorage.getItem('tenantId');
+    // Ambil tenantId dari prop (URL param) atau fallback ke localStorage atau Master Default Tenant
+    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000000';
+    const tId = tenantId || localStorage.getItem('tenantId') || DEFAULT_TENANT_ID;
     const oId = outletId || localStorage.getItem('outletId');
 
     const fetchMenu = () => {

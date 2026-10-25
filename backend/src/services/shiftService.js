@@ -4,8 +4,9 @@ const AppError = require('../utils/AppError');
 class ShiftService {
   async _populateShift(shift, tenantId) {
     if (!shift) return null;
+    const outletId = shift.outlet_id || null;
     if (shift.status === 'open') {
-      const stats = await shiftRepository.getSalesAggregation(tenantId, shift.start_time);
+      const stats = await shiftRepository.getSalesAggregation(tenantId, shift.start_time, outletId);
       return {
         ...shift,
         openCash: shift.initial_cash,
@@ -31,19 +32,21 @@ class ShiftService {
     return await Promise.all(shifts.map(s => this._populateShift(s, tenantId)));
   }
 
-  async getActiveShift(tenantId) {
+  async getActiveShift(tenantId, outletId = null) {
     if (!tenantId) throw new AppError('Akses Ditolak: Tenant ID tidak ditemukan.', 401);
-    const shift = await shiftRepository.findActiveShift(tenantId);
+    const shift = await shiftRepository.findActiveShift(tenantId, outletId);
     return await this._populateShift(shift, tenantId);
   }
 
-  async openShift(tenantId, shiftData) {
+  async openShift(tenantId, shiftData, outletId = null) {
     if (!tenantId) throw new AppError('Akses Ditolak: Tenant ID tidak ditemukan.', 401);
 
-    // Cek apakah sudah ada shift yang berjalan
-    const existingShift = await shiftRepository.findActiveShift(tenantId);
+    const effectiveOutletId = outletId || shiftData.outletId || shiftData.outlet_id || null;
+
+    // Cek apakah sudah ada shift yang berjalan untuk outlet ini
+    const existingShift = await shiftRepository.findActiveShift(tenantId, effectiveOutletId);
     if (existingShift) {
-      throw new AppError('Sudah ada sesi shift yang berjalan. Tutup shift aktif terlebih dahulu.', 400);
+      throw new AppError('Sudah ada sesi shift yang berjalan untuk cabang ini. Tutup shift aktif terlebih dahulu.', 400);
     }
 
     // Validate openCash must be a finite number >= 0
@@ -56,6 +59,7 @@ class ShiftService {
     }
 
     return await shiftRepository.create(tenantId, {
+      outlet_id: effectiveOutletId,
       user_id: shiftData.userId,
       start_time: shiftData.openTime || new Date().toISOString(),
       initial_cash: shiftData.openCash,
@@ -75,7 +79,7 @@ class ShiftService {
     // Hitung agregasi penjualan sejak start_time with safe fallback
     let stats = { currentSales: 0, currentCash: 0, currentQris: 0, currentDebit: 0 };
     try {
-        stats = await shiftRepository.getSalesAggregation(tenantId, startTime);
+        stats = await shiftRepository.getSalesAggregation(tenantId, startTime, shift.outlet_id || null);
     } catch (e) {
         console.warn('⚠️ Sales aggregation failed, proceeding with zeros:', e.message);
     }
@@ -110,7 +114,7 @@ class ShiftService {
     const startTime = shift.start_time || new Date().toISOString();
     let stats = { currentSales: 0, currentCash: 0, currentQris: 0, currentDebit: 0, currentSalesCount: 0 };
     try {
-      stats = await shiftRepository.getSalesAggregation(tenantId, startTime);
+      stats = await shiftRepository.getSalesAggregation(tenantId, startTime, shift.outlet_id || null);
     } catch (e) {
       console.warn('⚠️ [ShiftService] Sales aggregation failed on close, using zeros:', e.message);
     }

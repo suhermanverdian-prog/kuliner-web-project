@@ -334,7 +334,7 @@ const PAYMENT_METHODS = [
   { key: 'E-Wallet',      label: 'E-Wallet',     icon: <Wallet size={20} />, desc: 'GoPay / OVO / Dana' },
 ];
 
-function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, defaultTableNum }) {
+function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, defaultTableNum, outletId }) {
   const [form, setForm] = useState({ 
     name: user?.name || '', 
     phone: user?.phone || '', 
@@ -454,7 +454,9 @@ function CheckoutForm({ total, cart, onBack, onSuccess, user, defaultOrderType, 
         customerPhone: form.phone,
         note: form.note,
         type: 'Self Order',
-        cashierName: 'Self Service (Paid)'
+        cashierName: 'Self Service (Paid)',
+        outletId: outletId || localStorage.getItem('outletId') || null,
+        outlet_id: outletId || localStorage.getItem('outletId') || null
       };
       const res = await api.checkout(trxData);
       onSuccess(res.id);
@@ -864,6 +866,7 @@ export default function GuestMenuPage({ user }) {
         user={user}
         defaultOrderType={orderMode || 'Take Away'}
         defaultTableNum={tableNumber}
+        outletId={activeOutletId}
       />
     );
   }

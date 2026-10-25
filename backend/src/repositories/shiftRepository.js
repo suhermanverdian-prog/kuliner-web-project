@@ -17,18 +17,35 @@ class ShiftRepository {
   }
 
   /**
-   * Mencari shift yang sedang "open" untuk tenant tertentu.
+   * Mencari shift yang sedang "open" untuk tenant tertentu dan opsional outlet tertentu.
    */
-  async findActiveShift(tenantId) {
-    const { data, error } = await supabase
+  async findActiveShift(tenantId, outletId = null) {
+    let query = supabase
       .from('shifts')
       .select('*')
       .eq('tenant_id', tenantId)
-      .eq('status', 'open')
-      .maybeSingle();
+      .eq('status', 'open');
+
+    if (outletId && typeof query.or === 'function') {
+      query = query.or(`outlet_id.eq.${outletId},outlet_id.is.null`);
+    }
+
+    if (typeof query.order === 'function') {
+      query = query.order('created_at', { ascending: false });
+    }
+
+    if (typeof query.limit === 'function') {
+      query = query.limit(1);
+    }
+
+    const res = typeof query.maybeSingle === 'function'
+      ? await query.maybeSingle()
+      : await query;
+
+    const { data, error } = res || {};
 
     if (error) throw new AppError('Gagal mencari shift aktif', 500);
-    return data;
+    return (Array.isArray(data) ? (data[0] || null) : (data || null));
   }
 
   /**
@@ -85,15 +102,21 @@ class ShiftRepository {
   }
 
   /**
-   * Mengambil agregasi penjualan (transactions) sejak shift dimulai.
+   * Mengambil agregasi penjualan (transactions) sejak shift dimulai untuk tenant dan opsional outlet tertentu.
    */
-  async getSalesAggregation(tenantId, startTime) {
-    const { data: transactions, error } = await supabase
+  async getSalesAggregation(tenantId, startTime, outletId = null) {
+    let query = supabase
       .from('transactions')
       .select('total, payment_method')
       .eq('tenant_id', tenantId)
       .eq('payment_status', 'paid')
       .gte('created_at', startTime);
+
+    if (outletId) {
+      query = query.eq('outlet_id', outletId);
+    }
+
+    const { data: transactions, error } = await query;
 
     if (error) throw new AppError('Gagal mengambil data transaksi shift', 500);
 

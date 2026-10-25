@@ -22,6 +22,8 @@ function createChain() {
     eq: jest.fn(() => chain),
     gte: jest.fn(() => chain),
     order: jest.fn(() => chain),
+    limit: jest.fn(() => chain),
+    or: jest.fn(() => chain),
     single: jest.fn(() => Promise.resolve({ data: null, error: null })),
     maybeSingle: jest.fn(() => Promise.resolve({ data: null, error: null })),
   };

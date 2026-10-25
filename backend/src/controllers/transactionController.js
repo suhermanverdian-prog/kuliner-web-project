@@ -37,8 +37,8 @@ class TransactionController {
 
   async createTransaction(req, res) {
     try {
-      const tenantId = req.userContext?.tenantId || req.headers['x-tenant-id'];
-      const outletId = req.userContext?.outletId || req.headers['x-outlet-id'];
+      const tenantId = req.userContext?.tenantId || req.headers['x-tenant-id'] || req.body?.tenantId || req.body?.tenant_id || '00000000-0000-0000-0000-000000000000';
+      const outletId = req.body?.outletId || req.body?.outlet_id || req.userContext?.outletId || req.headers['x-outlet-id'] || null;
 
       if (!tenantId || tenantId === 'undefined') {
           if (req.userContext?.role !== 'superadmin') {

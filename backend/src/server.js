@@ -126,12 +126,14 @@ try {
   // pelanggan tanpa token) bisa mengecek status shift kasir aktif dan melihat menu.
   app.get('/api/shifts/active-public', async (req, res, next) => {
     try {
-      const tenantId = req.headers['x-tenant-id'] || req.query.tenantId;
-      if (!tenantId) {
-        return res.status(400).json({ error: 'Tenant ID wajib disertakan di Header (x-tenant-id) atau Query (?tenantId=...).' });
+      const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000000';
+      let tenantId = req.headers['x-tenant-id'] || req.query.tenantId || req.query.tenant_id;
+      if (!tenantId || typeof tenantId !== 'string') {
+        tenantId = DEFAULT_TENANT_ID;
       }
+      const outletId = req.headers['x-outlet-id'] || req.query.outletId || req.query.outlet_id || null;
       const shiftService = require('./services/shiftService');
-      const activeShift = await shiftService.getActiveShift(tenantId);
+      const activeShift = await shiftService.getActiveShift(tenantId, outletId);
       res.json(activeShift);
     } catch (err) {
       next(err);

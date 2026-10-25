@@ -12,8 +12,9 @@ exports.getAllShifts = async (req, res, next) => {
 
 exports.getActiveShift = async (req, res, next) => {
   try {
-    const tenantId = req.userContext.tenantId;
-    const activeShift = await shiftService.getActiveShift(tenantId);
+    const tenantId = req.userContext?.tenantId || req.headers['x-tenant-id'] || '00000000-0000-0000-0000-000000000000';
+    const outletId = req.userContext?.outletId || req.query?.outletId || req.query?.outlet_id || req.headers['x-outlet-id'] || null;
+    const activeShift = await shiftService.getActiveShift(tenantId, outletId);
     res.json(activeShift);
   } catch (err) {
     next(err);
@@ -23,7 +24,8 @@ exports.getActiveShift = async (req, res, next) => {
 exports.openShift = async (req, res, next) => {
   try {
     const tenantId = req.userContext.tenantId;
-    const newShift = await shiftService.openShift(tenantId, req.body);
+    const outletId = req.userContext?.outletId || req.body?.outletId || req.body?.outlet_id || req.headers['x-outlet-id'] || null;
+    const newShift = await shiftService.openShift(tenantId, req.body, outletId);
     res.status(201).json({ message: 'Shift berhasil dibuka.', data: newShift });
   } catch (err) {
     next(err);
