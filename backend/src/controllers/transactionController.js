@@ -1,6 +1,7 @@
 const { z } = require('zod');
 const TransactionService = require('../services/transactionService');
 const TransactionRepository = require('../repositories/transactionRepository');
+const RealtimeNotifier = require('../utils/realtimeNotifier');
 
 class TransactionController {
 
@@ -62,12 +63,8 @@ class TransactionController {
           };
       }
 
-      // BROADCAST REAL-TIME (KDS & Admin Panel)
-      const io = req.app.get('io');
-      if (io) {
-          io.emit('NEW_TRANSACTION', normalizedResult);
-          console.log(`📡 [RealTime] Broadcast NEW_TRANSACTION: ${normalizedResult.order_number}`);
-      }
+      // BROADCAST REAL-TIME (KDS & Admin Panel via Supabase Broadcast)
+      RealtimeNotifier.emitNewTransaction(normalizedResult);
 
       res.status(201).json({
           ...normalizedResult,
@@ -107,11 +104,8 @@ class TransactionController {
       
       await TransactionService.updateKdsStatus(id, parsedStatus.data);
       
-      const io = req.app.get('io');
-      if (io) {
-          io.emit('KDS_UPDATE', { id, status: parsedStatus.data });
-          console.log(`📡 [RealTime] Broadcast KDS_UPDATE for ${id}`);
-      }
+      // BROADCAST REAL-TIME (KDS & Customer Portal Live Tracker via Supabase Broadcast)
+      RealtimeNotifier.emitOrderUpdate(id, { status: parsedStatus.data });
 
       res.json({ ok: true });
     } catch (error) {

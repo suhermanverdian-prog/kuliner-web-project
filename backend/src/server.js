@@ -20,8 +20,6 @@ try {
   const path = require('path');
   const multer = require('multer');
   const upload = multer({ storage: multer.memoryStorage() }); // Use memory storage for Supabase
-  const http = require('http');
-  const { Server } = require('socket.io');
 
   app = express();
   app.use((req, res, next) => {
@@ -31,12 +29,6 @@ try {
     }
     next();
   });
-  const server = http.createServer(app);
-  const io = new Server(server, { cors: { origin: '*' } });
-
-  app.set('io', io);
-  // Expose a getter for utils/realtimeNotifier to retrieve the Socket.IO instance
-  app.getIo = () => io;
 
   // ⚠️ On Vercel, static files (manifest.json, sw.js, favicon) are served
   // directly by Vercel's CDN edge via vercel.json routing rules.
@@ -245,7 +237,7 @@ try {
   const { initJobs } = require('./jobs');
 
   startServer = () => {
-    server.listen(PORT, () => {
+    app.listen(PORT, () => {
       console.log(`🚀 KEN ENTERPRISE CORE ACTIVE ON PORT ${PORT}`);
       startSyncDaemon();
       initJobs();

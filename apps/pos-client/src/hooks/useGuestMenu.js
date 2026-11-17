@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
+import { useRealtimeSync } from './useRealtimeSync';
 
 export function useGuestMenu({ user, tableFromQR }) {
   const [category, setCategory] = useState('Semua');
@@ -14,13 +15,26 @@ export function useGuestMenu({ user, tableFromQR }) {
   const [activeShift, setActiveShift] = useState(null);
   const [loadingShift, setLoadingShift] = useState(true);
 
+  const fetchMenu = useCallback(() => api.getMenu().then(data => setMenu(data)), []);
+  const fetchShift = useCallback(() => api.getActiveShift().then(data => {
+    setActiveShift(data);
+    setLoadingShift(false);
+  }).catch(() => setLoadingShift(false)), []);
+
+  useRealtimeSync({
+    'SHIFT_UPDATE': (shift) => {
+      if (shift && shift.status === 'open') {
+        setActiveShift(shift);
+        setLoadingShift(false);
+      } else {
+        setActiveShift(null);
+        setLoadingShift(false);
+      }
+    },
+    'MENU_UPDATE': () => fetchMenu()
+  });
+
   useEffect(() => {
-    const fetchMenu = () => api.getMenu().then(data => setMenu(data));
-    const fetchShift = () => api.getActiveShift().then(data => {
-      setActiveShift(data);
-      setLoadingShift(false);
-    }).catch(() => setLoadingShift(false));
-    
     fetchMenu();
     fetchShift();
     const interval = setInterval(() => {
@@ -28,7 +42,7 @@ export function useGuestMenu({ user, tableFromQR }) {
       fetchShift();
     }, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchMenu, fetchShift]);
 
   useEffect(() => {
     if (user) {

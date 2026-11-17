@@ -1,4 +1,5 @@
 const shiftService = require('../services/shiftService');
+const RealtimeNotifier = require('../utils/realtimeNotifier');
 
 exports.getAllShifts = async (req, res, next) => {
   try {
@@ -26,6 +27,7 @@ exports.openShift = async (req, res, next) => {
     const tenantId = req.userContext.tenantId;
     const outletId = req.userContext?.outletId || req.body?.outletId || req.body?.outlet_id || req.headers['x-outlet-id'] || null;
     const newShift = await shiftService.openShift(tenantId, req.body, outletId);
+    RealtimeNotifier.emitShiftUpdate(newShift);
     res.status(201).json({ message: 'Shift berhasil dibuka.', data: newShift });
   } catch (err) {
     next(err);
@@ -49,6 +51,7 @@ exports.closeShift = async (req, res, next) => {
     const tenantId = req.userContext.tenantId;
     const shiftId = req.params.id;
     const updatedShift = await shiftService.closeShift(tenantId, shiftId, req.body);
+    RealtimeNotifier.emitShiftUpdate(updatedShift);
     res.json({ message: 'Shift berhasil ditutup.', data: updatedShift });
   } catch (err) {
     next(err);

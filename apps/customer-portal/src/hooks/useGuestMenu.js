@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '../api';
+import { useRealtimeSync } from './useRealtimeSync';
 
 export function useGuestMenu({ user, tableFromQR, tenantId, outletId }) {
   const [category, setCategory] = useState('Semua');
@@ -14,30 +15,46 @@ export function useGuestMenu({ user, tableFromQR, tenantId, outletId }) {
   const [activeShift, setActiveShift] = useState(null);
   const [loadingShift, setLoadingShift] = useState(true);
 
-  useEffect(() => {
-    // Ambil tenantId dari prop (URL param) atau fallback ke localStorage atau Master Default Tenant
-    const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000000';
-    const tId = tenantId || localStorage.getItem('tenantId') || DEFAULT_TENANT_ID;
-    const oId = outletId || localStorage.getItem('outletId');
+  // Ambil tenantId dari prop (URL param) atau fallback ke localStorage atau Master Default Tenant
+  const DEFAULT_TENANT_ID = '00000000-0000-0000-0000-000000000000';
+  const tId = tenantId || localStorage.getItem('tenantId') || DEFAULT_TENANT_ID;
+  const oId = outletId || localStorage.getItem('outletId');
 
-    const fetchMenu = () => {
-      // Kirim tenantId & outletId sebagai query param agar authMiddleware dapat inject context yang benar
-      const params = {};
-      if (tId) params.tenantId = tId;
-      if (oId) params.outletId = oId;
-      return api.getMenu(params).then(data => setMenu(Array.isArray(data) ? data : [])).catch(() => setMenu([]));
-    };
+  const fetchMenu = useCallback(() => {
+    const params = {};
+    if (tId) params.tenantId = tId;
+    if (oId) params.outletId = oId;
+    return api.getMenu(params).then(data => setMenu(Array.isArray(data) ? data : [])).catch(() => setMenu([]));
+  }, [tId, oId]);
 
-    const fetchShift = () => {
-      const params = {};
-      if (tId) params.tenantId = tId;
-      if (oId) params.outletId = oId;
-      return api.getActiveShift(params).then(data => {
-        setActiveShift(data);
+  const fetchShift = useCallback(() => {
+    const params = {};
+    if (tId) params.tenantId = tId;
+    if (oId) params.outletId = oId;
+    return api.getActiveShift(params).then(data => {
+      setActiveShift(data);
+      setLoadingShift(false);
+    }).catch(() => setLoadingShift(false));
+  }, [tId, oId]);
+
+  useRealtimeSync({
+    'SHIFT_UPDATE': (shift) => {
+      console.log('🔔 [GuestMenu] Real-time Shift update received:', shift?.status);
+      if (shift && shift.status === 'open') {
+        setActiveShift(shift);
         setLoadingShift(false);
-      }).catch(() => setLoadingShift(false));
-    };
-    
+      } else {
+        setActiveShift(null);
+        setLoadingShift(false);
+      }
+    },
+    'MENU_UPDATE': () => {
+      console.log('🔔 [GuestMenu] Real-time Menu update received.');
+      fetchMenu();
+    }
+  });
+
+  useEffect(() => {
     fetchMenu();
     fetchShift();
     const interval = setInterval(() => {
@@ -45,7 +62,7 @@ export function useGuestMenu({ user, tableFromQR, tenantId, outletId }) {
       fetchShift();
     }, 10000);
     return () => clearInterval(interval);
-  }, [tenantId, outletId]);
+  }, [fetchMenu, fetchShift]);
 
 
   useEffect(() => {

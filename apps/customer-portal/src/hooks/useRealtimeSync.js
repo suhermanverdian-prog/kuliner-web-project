@@ -22,7 +22,8 @@ export function useRealtimeSync(events) {
 
     // Register a generic broadcast listener that forwards to the appropriate handler
     channel.on('broadcast', {}, payload => {
-      const { event, data } = payload;
+      const event = payload?.event;
+      const data = payload?.data !== undefined ? payload.data : payload?.payload;
       const handler = eventsRef.current?.[event];
       if (handler) {
         handler(data);
